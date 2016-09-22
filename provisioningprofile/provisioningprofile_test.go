@@ -3,7 +3,7 @@ package provisioningprofile
 import (
 	"testing"
 
-	"github.com/bitrise-tools/xcode-go/exportoptions"
+	"github.com/bitrise-tools/go-xcode/exportoptions"
 	"github.com/stretchr/testify/require"
 )
 

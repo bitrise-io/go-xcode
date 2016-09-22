@@ -6,7 +6,7 @@ import (
 
 	plist "github.com/DHowett/go-plist"
 	"github.com/bitrise-io/go-utils/cmdex"
-	"github.com/bitrise-tools/xcode-go/exportoptions"
+	"github.com/bitrise-tools/go-xcode/exportoptions"
 )
 
 // EntitlementsModel ...

@@ -1,1 +1,1 @@
-# xcode-go
+# go-xcode

@@ -68,3 +68,9 @@ workflows:
 
             # Go lint
             go get -u -v github.com/golang/lint/golint
+
+            go get -u -v github.com/stretchr/testify/require
+            go get -u -v github.com/DHowett/go-plist
+            go get -u -v github.com/bitrise-io/go-utils/fileutil
+            go get -u -v github.com/bitrise-io/go-utils/pathutil
+            go get -u -v github.com/bitrise-io/go-utils/cmdex

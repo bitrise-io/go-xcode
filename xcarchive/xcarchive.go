@@ -8,8 +8,8 @@ import (
 
 	"github.com/bitrise-io/go-utils/cmdex"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-tools/xcode-go/exportoptions"
-	"github.com/bitrise-tools/xcode-go/provisioningprofile"
+	"github.com/bitrise-tools/go-xcode/exportoptions"
+	"github.com/bitrise-tools/go-xcode/provisioningprofile"
 )
 
 func embeddedMobileProvisionPth(archivePth string) (string, error) {
