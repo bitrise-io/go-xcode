@@ -53,15 +53,15 @@ func DefaultExportOptions(archivePth string) (exportoptions.ExportOptions, error
 
 // ExportDSYMs ...
 func ExportDSYMs(archivePth string) (string, []string, error) {
-	dsymsPattern := filepath.Join(archivePth, "dSYMs", "*.DSYM")
+	dsymsPattern := filepath.Join(archivePth, "dSYMs", "*.dSYM")
 	dsyms, err := filepath.Glob(dsymsPattern)
 	if err != nil {
-		return "", []string{}, fmt.Errorf("failed to find DSYMs with pattern: %s, error: %s", dsymsPattern, err)
+		return "", []string{}, fmt.Errorf("failed to find dSYM with pattern: %s, error: %s", dsymsPattern, err)
 	}
 	appDSYM := ""
 	frameworkDSYMs := []string{}
 	for _, dsym := range dsyms {
-		if strings.HasSuffix(dsym, ".app.dSYM") {
+		if strings.HasSuffix(dsym, "*.app.dSYM") {
 			appDSYM = dsym
 		} else {
 			frameworkDSYMs = append(frameworkDSYMs, dsym)
