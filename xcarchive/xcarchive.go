@@ -70,8 +70,20 @@ func ExportDSYMs(archivePth string) (string, []string, error) {
 	return appDSYM, frameworkDSYMs, nil
 }
 
-// ExportIpa ...
-func ExportIpa(archivePth, exportOptionsPth string) (string, error) {
+// CommandCallback ...
+type CommandCallback func(printableCommand string)
+
+// ExportIPA ...
+func ExportIPA(archivePth, exportOptionsPth string, callback CommandCallback) (string, error) {
+	return export(archivePth, exportOptionsPth, ExportFormatIPA, callback)
+}
+
+// ExportAPP ...
+func ExportAPP(archivePth, exportOptionsPth string, callback CommandCallback) (string, error) {
+	return export(archivePth, exportOptionsPth, ExportFormatAPP, callback)
+}
+
+func export(archivePth, exportOptionsPth string, exportFormat ExportFormat, callback CommandCallback) (string, error) {
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("output")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp dir, error: %s", err)
@@ -84,7 +96,9 @@ func ExportIpa(archivePth, exportOptionsPth string) (string, error) {
 		"-exportPath", tmpDir,
 	}
 
-	fmt.Printf("=> %s\n", cmdex.PrintableCommandArgs(false, cmdSlice))
+	if callback != nil {
+		callback(cmdex.PrintableCommandArgs(false, cmdSlice))
+	}
 
 	cmd, err := cmdex.NewCommandFromSlice(cmdSlice)
 	if err != nil {
@@ -98,10 +112,10 @@ func ExportIpa(archivePth, exportOptionsPth string) (string, error) {
 		return "", fmt.Errorf("export command failed, error: %s", err)
 	}
 
-	ipaPthPattern := filepath.Join(tmpDir, "*.ipa")
-	matches, err := filepath.Glob(ipaPthPattern)
+	pattern := filepath.Join(tmpDir, exportFormat.Ext())
+	matches, err := filepath.Glob(pattern)
 	if len(matches) == 0 {
-		return "", fmt.Errorf("no ipa found with pattern: %s", ipaPthPattern)
+		return "", fmt.Errorf("no %s found with pattern: %s", exportFormat.String(), pattern)
 	}
 
 	return matches[0], nil
@@ -125,25 +139,62 @@ func EmbeddedProfileName(archivePth string) (string, error) {
 	return *provProfile.Name, nil
 }
 
-// LegacyExportIpa ...
-func LegacyExportIpa(archivePth, provisioningProfileName string) (string, error) {
+// ExportFormat ...
+type ExportFormat string
+
+const (
+	// ExportFormatIPA ...
+	ExportFormatIPA ExportFormat = "ipa"
+	// ExportFormatAPP ...
+	ExportFormatAPP ExportFormat = "app"
+)
+
+// Ext ...
+func (exportFormat ExportFormat) Ext() string {
+	switch exportFormat {
+	case ExportFormatIPA:
+		return ".ipa"
+	case ExportFormatAPP:
+		return ".app"
+	default:
+		return ""
+	}
+}
+
+// String ...
+func (exportFormat ExportFormat) String() string {
+	switch exportFormat {
+	case ExportFormatIPA:
+		return "ipa"
+	case ExportFormatAPP:
+		return "app"
+	default:
+		return ""
+	}
+}
+
+// LegacyExport ...
+func LegacyExport(archivePth, provisioningProfileName string, exportFormat ExportFormat, callback CommandCallback) (string, error) {
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("output")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp dir, error: %s", err)
 	}
 
-	archiveName := strings.TrimSuffix(filepath.Base(archivePth), filepath.Ext(archivePth))
-	ipaPth := filepath.Join(tmpDir, archiveName+".ipa")
+	outputName := strings.TrimSuffix(filepath.Base(archivePth), filepath.Ext(archivePth))
+	outputExt := exportFormat.Ext()
+	outputPth := filepath.Join(tmpDir, outputName+outputExt)
 
 	cmdSlice := []string{
 		"xcodebuild", "-exportArchive",
 		"-archivePath", archivePth,
-		"-exportFormat", "ipa",
 		"-exportProvisioningProfile", provisioningProfileName,
-		"-exportPath", ipaPth,
+		"-exportFormat", exportFormat.String(),
+		"-exportPath", outputPth,
 	}
 
-	fmt.Printf("=> %s\n", cmdex.PrintableCommandArgs(false, cmdSlice))
+	if callback != nil {
+		callback(cmdex.PrintableCommandArgs(false, cmdSlice))
+	}
 
 	cmd, err := cmdex.NewCommandFromSlice(cmdSlice)
 	if err != nil {
@@ -157,5 +208,5 @@ func LegacyExportIpa(archivePth, provisioningProfileName string) (string, error)
 		return "", fmt.Errorf("export command failed, error: %s", err)
 	}
 
-	return ipaPth, nil
+	return outputPth, nil
 }
