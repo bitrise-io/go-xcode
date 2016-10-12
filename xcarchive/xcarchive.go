@@ -1,6 +1,7 @@
 package xcarchive
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -102,7 +103,7 @@ func DefaultExportOptions(provProfile provisioningprofile.Model) (exportoptions.
 }
 
 // Export ...
-func Export(archivePth, exportOptionsPth string, exportFormat ExportFormat, callback CommandCallback) (string, error) {
+func Export(archivePth, exportOptionsPth string, callback CommandCallback) (string, error) {
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("output")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp dir, error: %s", err)
@@ -131,13 +132,20 @@ func Export(archivePth, exportOptionsPth string, exportFormat ExportFormat, call
 		return "", fmt.Errorf("export command failed, error: %s", err)
 	}
 
-	pattern := filepath.Join(tmpDir, "*"+exportFormat.Ext())
+	pattern := filepath.Join(tmpDir, "*")
 	matches, err := filepath.Glob(pattern)
-	if len(matches) == 0 {
-		return "", fmt.Errorf("no %s found with pattern: %s", exportFormat.String(), pattern)
+	validOutputs := []string{}
+	for _, pth := range matches {
+		ext := filepath.Ext(pth)
+		if ext == ".ipa" || ext == ".app" || ext == ".pkg" {
+			validOutputs = append(validOutputs, pth)
+		}
+	}
+	if len(validOutputs) == 0 {
+		return "", errors.New("no output (.ipa/.app/.pkg) found")
 	}
 
-	return matches[0], nil
+	return validOutputs[0], nil
 }
 
 // LegacyExport ...
