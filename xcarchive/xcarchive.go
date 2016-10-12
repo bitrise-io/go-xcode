@@ -71,7 +71,8 @@ func (exportFormat ExportFormat) String() string {
 	}
 }
 
-func embeddedMobileProvisionPth(archivePth string) (string, error) {
+// EmbeddedMobileProvisionPth ...
+func EmbeddedMobileProvisionPth(archivePth string) (string, error) {
 	applicationPth := filepath.Join(archivePth, "/Products/Applications")
 	mobileProvisionPthPattern := filepath.Join(applicationPth, "*.app/embedded.mobileprovision")
 	mobileProvisionPths, err := filepath.Glob(mobileProvisionPthPattern)
@@ -84,36 +85,8 @@ func embeddedMobileProvisionPth(archivePth string) (string, error) {
 	return mobileProvisionPths[0], nil
 }
 
-// EmbeddedProfileName ...
-func EmbeddedProfileName(archivePth string) (string, error) {
-	embeddedProfilePth, err := embeddedMobileProvisionPth(archivePth)
-	if err != nil {
-		return "", fmt.Errorf("failed to get embedded mobileprovision path, error: %s", err)
-	}
-
-	provProfile, err := provisioningprofile.NewFromFile(embeddedProfilePth)
-	if err != nil {
-		return "", fmt.Errorf("failed to collect embedded mobile provision, error: %s", err)
-	}
-	if provProfile.Name == nil {
-		return "", fmt.Errorf("Name not found in prov profile")
-	}
-
-	return *provProfile.Name, nil
-}
-
 // DefaultExportOptions ...
-func DefaultExportOptions(archivePth string) (exportoptions.ExportOptions, error) {
-	embeddedProfilePth, err := embeddedMobileProvisionPth(archivePth)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get embedded mobileprovision path, error: %s", err)
-	}
-
-	provProfile, err := provisioningprofile.NewFromFile(embeddedProfilePth)
-	if err != nil {
-		return nil, fmt.Errorf("failed to collect embedded mobile provision, error: %s", err)
-	}
-
+func DefaultExportOptions(provProfile provisioningprofile.Model) (exportoptions.ExportOptions, error) {
 	method := provProfile.GetExportMethod()
 	developerTeamID := provProfile.GetDeveloperTeam()
 
