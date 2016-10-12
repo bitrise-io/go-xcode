@@ -117,7 +117,7 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 	t.Log("default app-store type options creates hash with method")
 	{
 		options := NewAppStoreOptions()
-		hash := options.ToHash()
+		hash := options.Hash()
 		require.Equal(t, 1, len(hash))
 
 		{
@@ -134,7 +134,7 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 		options.UploadBitcode = false
 		options.UploadSymbols = false
 
-		hash := options.ToHash()
+		hash := options.Hash()
 		require.Equal(t, 4, len(hash))
 
 		{
@@ -231,7 +231,7 @@ func TestNonAppStoreOptionsToHash(t *testing.T) {
 	t.Log("default NON app-store type options creates hash with method")
 	{
 		options := NewNonAppStoreOptions(MethodDevelopment)
-		hash := options.ToHash()
+		hash := options.Hash()
 		require.Equal(t, 1, len(hash))
 
 		{
@@ -257,7 +257,7 @@ func TestNonAppStoreOptionsToHash(t *testing.T) {
 			AssetPackManifestURL: "assetPackManifestURL",
 		}
 
-		hash := options.ToHash()
+		hash := options.Hash()
 		require.Equal(t, 8, len(hash))
 
 		{

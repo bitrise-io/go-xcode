@@ -12,7 +12,7 @@ import (
 // ExportOptions ...
 type ExportOptions interface {
 	Hash() map[string]interface{}
-	String() string
+	String() (string, error)
 	WriteToFile(pth string) error
 	WriteToTmpFile() (string, error)
 }
