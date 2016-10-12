@@ -11,7 +11,8 @@ import (
 
 // ExportOptions ...
 type ExportOptions interface {
-	ToHash() map[string]interface{}
+	Hash() map[string]interface{}
+	String() string
 	WriteToFile(pth string) error
 	WriteToTmpFile() (string, error)
 }
@@ -33,8 +34,8 @@ func NewAppStoreOptions() AppStoreOptionsModel {
 	}
 }
 
-// ToHash ...
-func (options AppStoreOptionsModel) ToHash() map[string]interface{} {
+// Hash ...
+func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	hash := map[string]interface{}{}
 	hash[MethodKey] = MethodAppStore
 	if options.TeamID != "" {
@@ -49,14 +50,24 @@ func (options AppStoreOptionsModel) ToHash() map[string]interface{} {
 	return hash
 }
 
+// String ...
+func (options AppStoreOptionsModel) String() (string, error) {
+	hash := options.Hash()
+	plistBytes, err := plist.MarshalIndent(hash, plist.XMLFormat, "\t")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal export options model, error: %s", err)
+	}
+	return string(plistBytes), err
+}
+
 // WriteToFile ...
 func (options AppStoreOptionsModel) WriteToFile(pth string) error {
-	return WritePlistToFile(options.ToHash(), pth)
+	return WritePlistToFile(options.Hash(), pth)
 }
 
 // WriteToTmpFile ...
 func (options AppStoreOptionsModel) WriteToTmpFile() (string, error) {
-	return WritePlistToTmpFile(options.ToHash())
+	return WritePlistToTmpFile(options.Hash())
 }
 
 // NonAppStoreOptionsModel ...
@@ -84,8 +95,8 @@ func NewNonAppStoreOptions(method Method) NonAppStoreOptionsModel {
 	}
 }
 
-// ToHash ...
-func (options NonAppStoreOptionsModel) ToHash() map[string]interface{} {
+// Hash ...
+func (options NonAppStoreOptionsModel) Hash() map[string]interface{} {
 	hash := map[string]interface{}{}
 	if options.Method != "" {
 		hash[MethodKey] = options.Method
@@ -114,14 +125,24 @@ func (options NonAppStoreOptionsModel) ToHash() map[string]interface{} {
 	return hash
 }
 
+// String ...
+func (options NonAppStoreOptionsModel) String() (string, error) {
+	hash := options.Hash()
+	plistBytes, err := plist.MarshalIndent(hash, plist.XMLFormat, "\t")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal export options model, error: %s", err)
+	}
+	return string(plistBytes), err
+}
+
 // WriteToFile ...
 func (options NonAppStoreOptionsModel) WriteToFile(pth string) error {
-	return WritePlistToFile(options.ToHash(), pth)
+	return WritePlistToFile(options.Hash(), pth)
 }
 
 // WriteToTmpFile ...
 func (options NonAppStoreOptionsModel) WriteToTmpFile() (string, error) {
-	return WritePlistToTmpFile(options.ToHash())
+	return WritePlistToTmpFile(options.Hash())
 }
 
 // WritePlistToFile ...
