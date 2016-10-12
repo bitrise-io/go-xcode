@@ -36,8 +36,6 @@ func newFromProfileContent(content string) (Model, error) {
 func NewFromFile(pth string) (Model, error) {
 	cmdSlice := []string{"security", "cms", "-D", "-i", pth}
 
-	fmt.Printf("=> %s\n", cmdex.PrintableCommandArgs(false, cmdSlice))
-
 	cmd, err := cmdex.NewCommandFromSlice(cmdSlice)
 	if err != nil {
 		return Model{}, fmt.Errorf("failed to create command from (%s)", strings.Join(cmdSlice, " "))
