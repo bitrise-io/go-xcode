@@ -45,8 +45,6 @@ func NewFromFile(pth string) (Model, error) {
 		return Model{}, fmt.Errorf("command failed, error: %s", err)
 	}
 
-	fmt.Printf("out: %s\n", out)
-
 	outSplit := strings.Split(out, "\n")
 	if len(outSplit) > 0 {
 		if strings.Contains(outSplit[0], notValidParameterErrorMessage) {
@@ -54,8 +52,6 @@ func NewFromFile(pth string) (Model, error) {
 			out = strings.Join(fixedOutSplit, "\n")
 		}
 	}
-
-	fmt.Printf("fixed out: %s\n", out)
 
 	return newFromProfileContent(out)
 }
