@@ -1,6 +1,8 @@
 package xcodebuild
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"os/exec"
 
@@ -78,4 +80,20 @@ func (c ExportCommandModel) Run() error {
 	command.SetStderr(os.Stderr)
 
 	return command.Run()
+}
+
+// RunAndReturnOutput ...
+func (c ExportCommandModel) RunAndReturnOutput() (string, error) {
+	command := c.Command()
+
+	var outBuffer bytes.Buffer
+	outWriter := io.MultiWriter(&outBuffer, os.Stdout)
+
+	command.SetStdout(outWriter)
+	command.SetStderr(outWriter)
+
+	err := command.Run()
+	out := outBuffer.String()
+
+	return out, err
 }
