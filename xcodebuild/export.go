@@ -9,6 +9,13 @@ import (
 	"github.com/bitrise-io/go-utils/cmdex"
 )
 
+/*
+xcodebuild -exportArchive \
+	-archivePath <xcarchivepath> \
+	-exportPath <destinationpath> \
+	-exportOptionsPlist <plistpath>
+*/
+
 // ExportCommandModel ...
 type ExportCommandModel struct {
 	archivePath        string
@@ -40,8 +47,7 @@ func (c *ExportCommandModel) SetExportOptionsPlist(exportOptionsPlist string) *E
 }
 
 func (c ExportCommandModel) cmdSlice() []string {
-	slice := []string{xcodeBuildToolName}
-	slice = append(slice, "-exportArchive")
+	slice := []string{toolName, "-exportArchive"}
 	if c.archivePath != "" {
 		slice = append(slice, "-archivePath", c.archivePath)
 	}

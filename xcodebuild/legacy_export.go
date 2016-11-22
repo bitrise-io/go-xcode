@@ -7,6 +7,16 @@ import (
 	"github.com/bitrise-io/go-utils/cmdex"
 )
 
+/*
+xcodebuild -exportArchive \
+	-exportFormat format \
+	-archivePath xcarchivepath \
+    -exportPath destinationpath \
+    [-exportProvisioningProfile profilename] \
+	[-exportSigningIdentity identityname] \
+	[-exportInstallerIdentity identityname]
+*/
+
 // LegacyExportCommandModel ...
 type LegacyExportCommandModel struct {
 	exportFormat                  string
@@ -45,8 +55,7 @@ func (c *LegacyExportCommandModel) SetExportProvisioningProfileName(exportProvis
 }
 
 func (c LegacyExportCommandModel) cmdSlice() []string {
-	slice := []string{xcodeBuildToolName}
-	slice = append(slice, "-exportArchive")
+	slice := []string{toolName, "-exportArchive"}
 	if c.exportFormat != "" {
 		slice = append(slice, "-exportFormat", c.exportFormat)
 	}

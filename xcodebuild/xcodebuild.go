@@ -3,7 +3,7 @@ package xcodebuild
 import "github.com/bitrise-io/go-utils/cmdex"
 
 const (
-	xcodeBuildToolName = "xcodebuild"
+	toolName = "xcodebuild"
 )
 
 // CommandModel ...
