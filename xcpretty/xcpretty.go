@@ -12,27 +12,32 @@ import (
 )
 
 const (
-	xcprettyToolName = "xcpretty"
+	toolName = "xcpretty"
 )
 
 // CommandModel ...
 type CommandModel struct {
 	xcodebuildCommand xcodebuild.CommandModel
+
+	customOptions []string
 }
 
-// NewCommand ...
-func NewCommand() *CommandModel {
-	return &CommandModel{}
+// New ...
+func New(xcodebuildCommand xcodebuild.CommandModel) *CommandModel {
+	return &CommandModel{
+		xcodebuildCommand: xcodebuildCommand,
+	}
 }
 
-// SetXcodebuildCommand ...
-func (c *CommandModel) SetXcodebuildCommand(xcodebuildCommand xcodebuild.CommandModel) *CommandModel {
-	c.xcodebuildCommand = xcodebuildCommand
+// SetCustomOptions ...
+func (c *CommandModel) SetCustomOptions(customOptions []string) *CommandModel {
+	c.customOptions = customOptions
 	return c
 }
 
 func (c CommandModel) cmdSlice() []string {
-	slice := []string{xcprettyToolName}
+	slice := []string{toolName}
+	slice = append(slice, c.customOptions...)
 	return slice
 }
 

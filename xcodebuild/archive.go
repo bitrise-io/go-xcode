@@ -8,40 +8,55 @@ import (
 	"github.com/bitrise-io/go-utils/cmdex"
 )
 
+/*
+xcodebuild [-project <projectname>] \
+	-scheme <schemeName> \
+	[-destination <destinationspecifier>]... \
+	[-configuration <configurationname>] \
+	[-arch <architecture>]... \
+	[-sdk [<sdkname>|<sdkpath>]] \
+	[-showBuildSettings] \
+	[<buildsetting>=<value>]... \
+	[<buildaction>]...
+
+xcodebuild -workspace <workspacename> \
+	-scheme <schemeName> \
+	[-destination <destinationspecifier>]... \
+	[-configuration <configurationname>] \
+	[-arch <architecture>]... \
+	[-sdk [<sdkname>|<sdkpath>]] \
+	[-showBuildSettings] \
+	[<buildsetting>=<value>]... \
+	[<buildaction>]...
+*/
+
 // ArchiveCommandModel ...
 type ArchiveCommandModel struct {
 	projectPath   string
-	workspacePath string
+	isWorkspace   bool
 	scheme        string
 	configuration string
 
-	isCleanBuild bool
-
-	archivePath string
-
+	// buildsetting
 	forceDevelopmentTeam              string
 	forceProvisioningProfileSpecifier string
 	forceProvisioningProfile          string
 	forceCodeSignIdentity             string
 
+	// buildaction
+	customBuildActions []string
+
+	// Options
+	archivePath   string
 	customOptions []string
 }
 
-// NewArchiveCommandModel ...
-func NewArchiveCommandModel() *ArchiveCommandModel {
-	return &ArchiveCommandModel{}
-}
-
-// SetProjectPath ...
-func (c *ArchiveCommandModel) SetProjectPath(projectPath string) *ArchiveCommandModel {
-	c.projectPath = projectPath
-	return c
-}
-
-// SetWorkspacePath ...
-func (c *ArchiveCommandModel) SetWorkspacePath(workspacePath string) *ArchiveCommandModel {
-	c.workspacePath = workspacePath
-	return c
+// NewArchiveCommand ...
+func NewArchiveCommand(projectPath string, isWorkspace bool) *ArchiveCommandModel {
+	return &ArchiveCommandModel{
+		projectPath: projectPath,
+		isWorkspace: isWorkspace,
+	}
 }
 
 // SetScheme ...
@@ -53,18 +68,6 @@ func (c *ArchiveCommandModel) SetScheme(scheme string) *ArchiveCommandModel {
 // SetConfiguration ...
 func (c *ArchiveCommandModel) SetConfiguration(configuration string) *ArchiveCommandModel {
 	c.configuration = configuration
-	return c
-}
-
-// SetIsCleanBuild ...
-func (c *ArchiveCommandModel) SetIsCleanBuild(isCleanBuild bool) *ArchiveCommandModel {
-	c.isCleanBuild = isCleanBuild
-	return c
-}
-
-// SetArchivePath ...
-func (c *ArchiveCommandModel) SetArchivePath(archivePath string) *ArchiveCommandModel {
-	c.archivePath = archivePath
 	return c
 }
 
@@ -92,6 +95,18 @@ func (c *ArchiveCommandModel) SetForceCodeSignIdentity(forceCodeSignIdentity str
 	return c
 }
 
+// SetCustomBuildAction ...
+func (c *ArchiveCommandModel) SetCustomBuildAction(buildAction ...string) *ArchiveCommandModel {
+	c.customBuildActions = buildAction
+	return c
+}
+
+// SetArchivePath ...
+func (c *ArchiveCommandModel) SetArchivePath(archivePath string) *ArchiveCommandModel {
+	c.archivePath = archivePath
+	return c
+}
+
 // SetCustomOptions ...
 func (c *ArchiveCommandModel) SetCustomOptions(customOptions []string) *ArchiveCommandModel {
 	c.customOptions = customOptions
@@ -99,30 +114,21 @@ func (c *ArchiveCommandModel) SetCustomOptions(customOptions []string) *ArchiveC
 }
 
 func (c *ArchiveCommandModel) cmdSlice() []string {
-	slice := []string{xcodeBuildToolName}
+	slice := []string{toolName}
 
 	if c.projectPath != "" {
-		slice = append(slice, "-project", c.projectPath)
-	} else if c.workspacePath != "" {
-		slice = append(slice, "-workspace", c.workspacePath)
+		if c.isWorkspace {
+			slice = append(slice, "-workspace", c.projectPath)
+		} else {
+			slice = append(slice, "-project", c.projectPath)
+		}
 	}
 
 	if c.scheme != "" {
 		slice = append(slice, "-scheme", c.scheme)
 	}
-
 	if c.configuration != "" {
 		slice = append(slice, "-configuration", c.configuration)
-	}
-
-	if c.isCleanBuild {
-		slice = append(slice, "clean")
-	}
-
-	slice = append(slice, "archive")
-
-	if c.archivePath != "" {
-		slice = append(slice, "-archivePath", c.archivePath)
 	}
 
 	if c.forceDevelopmentTeam != "" {
@@ -136,6 +142,13 @@ func (c *ArchiveCommandModel) cmdSlice() []string {
 	}
 	if c.forceCodeSignIdentity != "" {
 		slice = append(slice, fmt.Sprintf("CODE_SIGN_IDENTITY=%s", c.forceCodeSignIdentity))
+	}
+
+	slice = append(slice, c.customBuildActions...)
+	slice = append(slice, "archive")
+
+	if c.archivePath != "" {
+		slice = append(slice, "-archivePath", c.archivePath)
 	}
 
 	slice = append(slice, c.customOptions...)
