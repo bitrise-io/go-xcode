@@ -51,8 +51,8 @@ type ArchiveCommandModel struct {
 	customOptions []string
 }
 
-// NewArchiveCommandModel ...
-func NewArchiveCommandModel(projectPath string, isWorkspace bool) *ArchiveCommandModel {
+// NewArchiveCommand ...
+func NewArchiveCommand(projectPath string, isWorkspace bool) *ArchiveCommandModel {
 	return &ArchiveCommandModel{
 		projectPath: projectPath,
 		isWorkspace: isWorkspace,

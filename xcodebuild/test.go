@@ -39,8 +39,8 @@ type TestCommandModel struct {
 	customOptions []string
 }
 
-// NewTestCommandModel ...
-func NewTestCommandModel(projectPath string, isWorkspace bool) *TestCommandModel {
+// NewTestCommand ...
+func NewTestCommand(projectPath string, isWorkspace bool) *TestCommandModel {
 	return &TestCommandModel{
 		projectPath: projectPath,
 		isWorkspace: isWorkspace,

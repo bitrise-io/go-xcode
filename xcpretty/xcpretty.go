@@ -22,15 +22,11 @@ type CommandModel struct {
 	customOptions []string
 }
 
-// NewCommand ...
-func NewCommand() *CommandModel {
-	return &CommandModel{}
-}
-
-// SetXcodebuildCommand ...
-func (c *CommandModel) SetXcodebuildCommand(xcodebuildCommand xcodebuild.CommandModel) *CommandModel {
-	c.xcodebuildCommand = xcodebuildCommand
-	return c
+// New ...
+func New(xcodebuildCommand xcodebuild.CommandModel) *CommandModel {
+	return &CommandModel{
+		xcodebuildCommand: xcodebuildCommand,
+	}
 }
 
 // SetCustomOptions ...
