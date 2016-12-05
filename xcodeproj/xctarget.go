@@ -323,7 +323,7 @@ func pbxprojContentTartgets(pbxprojContent string) ([]TargetModel, error) {
 	}
 
 	targets := []TargetModel{}
-	for name, target := range targetMap {
+	for _, target := range targetMap {
 		targets = append(targets, target)
 	}
 
