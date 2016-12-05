@@ -12,6 +12,12 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 )
 
+// TargetModel ...
+type TargetModel struct {
+	Name      string
+	HasXCTest bool
+}
+
 // PBXNativeTarget ...
 type PBXNativeTarget struct {
 	id           string
@@ -20,6 +26,13 @@ type PBXNativeTarget struct {
 	name         string
 	productPath  string
 	productType  string
+}
+
+// PBXTargetDependency ...
+type PBXTargetDependency struct {
+	id     string
+	isa    string
+	target string
 }
 
 func parsePBXNativeTargets(pbxprojContent string) ([]PBXNativeTarget, error) {
@@ -160,13 +173,6 @@ func parsePBXNativeTargets(pbxprojContent string) ([]PBXNativeTarget, error) {
 	return pbxNativeTargets, nil
 }
 
-// PBXTargetDependency ...
-type PBXTargetDependency struct {
-	id     string
-	isa    string
-	target string
-}
-
 func parsePBXTargetDependencies(pbxprojContent string) ([]PBXTargetDependency, error) {
 	pbxTargetDependencies := []PBXTargetDependency{}
 
@@ -270,29 +276,32 @@ func targetWithID(targets []PBXNativeTarget, id string) (PBXNativeTarget, bool) 
 	return PBXNativeTarget{}, false
 }
 
-func pbxprojContentTartgets(pbxprojContent string) (map[string]bool, error) {
-	targetMap := map[string]bool{}
+func pbxprojContentTartgets(pbxprojContent string) ([]TargetModel, error) {
+	targetMap := map[string]TargetModel{}
 
-	targets, err := parsePBXNativeTargets(pbxprojContent)
+	nativeTargets, err := parsePBXNativeTargets(pbxprojContent)
 	if err != nil {
-		return map[string]bool{}, err
+		return []TargetModel{}, err
 	}
 
 	targetDependencies, err := parsePBXTargetDependencies(pbxprojContent)
 	if err != nil {
-		return map[string]bool{}, err
+		return []TargetModel{}, err
 	}
 
 	// Add targets which has test targets
-	for _, target := range targets {
+	for _, target := range nativeTargets {
 		if path.Ext(target.productPath) == ".xctest" {
 			if len(target.dependencies) > 0 {
 				for _, dependencieID := range target.dependencies {
 					dependency, found := targetDependencieWithID(targetDependencies, dependencieID)
 					if found {
-						dependentTarget, found := targetWithID(targets, dependency.target)
+						dependentTarget, found := targetWithID(nativeTargets, dependency.target)
 						if found {
-							targetMap[dependentTarget.name] = true
+							targetMap[dependentTarget.name] = TargetModel{
+								Name:      dependentTarget.name,
+								HasXCTest: true,
+							}
 						}
 					}
 				}
@@ -301,32 +310,59 @@ func pbxprojContentTartgets(pbxprojContent string) (map[string]bool, error) {
 	}
 
 	// Add targets which has NO test targets
-	for _, target := range targets {
+	for _, target := range nativeTargets {
 		if path.Ext(target.productPath) != ".xctest" {
 			_, found := targetMap[target.name]
 			if !found {
-				targetMap[target.name] = false
+				targetMap[target.name] = TargetModel{
+					Name:      target.name,
+					HasXCTest: false,
+				}
 			}
 		}
 	}
 
-	return targetMap, nil
+	targets := []TargetModel{}
+	for name, target := range targetMap {
+		targets = append(targets, target)
+	}
+
+	return targets, nil
 }
 
 // ProjectTargets ...
-func ProjectTargets(projectPth string) (map[string]bool, error) {
+func ProjectTargets(projectPth string) ([]TargetModel, error) {
 	pbxProjPth := filepath.Join(projectPth, "project.pbxproj")
 	if exist, err := pathutil.IsPathExists(pbxProjPth); err != nil {
-		return map[string]bool{}, err
+		return []TargetModel{}, err
 	} else if !exist {
-		return map[string]bool{}, fmt.Errorf("project.pbxproj does not exist at: %s", pbxProjPth)
+		return []TargetModel{}, fmt.Errorf("project.pbxproj does not exist at: %s", pbxProjPth)
 	}
 
 	content, err := fileutil.ReadStringFromFile(pbxProjPth)
 	if err != nil {
-		return map[string]bool{}, err
+		return []TargetModel{}, err
 	}
 
 	return pbxprojContentTartgets(content)
+}
 
+// WorkspaceTargets ...
+func WorkspaceTargets(workspacePth string) ([]TargetModel, error) {
+	projects, err := WorkspaceProjectReferences(workspacePth)
+	if err != nil {
+		return []TargetModel{}, err
+	}
+
+	targets := []TargetModel{}
+	for _, project := range projects {
+		projectTargets, err := ProjectTargets(project)
+		if err != nil {
+			return []TargetModel{}, err
+		}
+
+		targets = append(targets, projectTargets...)
+	}
+
+	return targets, nil
 }

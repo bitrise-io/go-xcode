@@ -10,9 +10,15 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/fileutil"
+	"github.com/bitrise-io/go-utils/pathutil"
 )
+
+// SchemeModel ...
+type SchemeModel struct {
+	Name      string
+	HasXCTest bool
+}
 
 func filterSharedSchemeFilePaths(paths []string) []string {
 	isSharedSchemeFilePath := func(pth string) bool {
@@ -138,28 +144,32 @@ func SchemeFileContainsXCTestBuildAction(schemeFilePth string) (bool, error) {
 	return schemeFileContentContainsXCTestBuildAction(content)
 }
 
-func sharedSchemes(projectOrWorkspacePth string) (map[string]bool, error) {
+func sharedSchemes(projectOrWorkspacePth string) ([]SchemeModel, error) {
 	schemePaths, err := sharedSchemeFilePaths(projectOrWorkspacePth)
 	if err != nil {
-		return map[string]bool{}, err
+		return []SchemeModel{}, err
 	}
 
-	schemeMap := map[string]bool{}
+	schemes := []SchemeModel{}
 	for _, schemePth := range schemePaths {
 		schemeName := SchemeNameFromPath(schemePth)
+
 		hasXCTest, err := SchemeFileContainsXCTestBuildAction(schemePth)
 		if err != nil {
-			return map[string]bool{}, err
+			return []SchemeModel{}, err
 		}
 
-		schemeMap[schemeName] = hasXCTest
+		schemes = append(schemes, SchemeModel{
+			Name:      schemeName,
+			HasXCTest: hasXCTest,
+		})
 	}
 
-	return schemeMap, nil
+	return schemes, nil
 }
 
 // ProjectSharedSchemes ...
-func ProjectSharedSchemes(projectPth string) (map[string]bool, error) {
+func ProjectSharedSchemes(projectPth string) ([]SchemeModel, error) {
 	return sharedSchemes(projectPth)
 }
 
@@ -208,10 +218,10 @@ func WorkspaceProjectReferences(workspace string) ([]string, error) {
 }
 
 // WorkspaceSharedSchemes ...
-func WorkspaceSharedSchemes(workspacePth string) (map[string]bool, error) {
+func WorkspaceSharedSchemes(workspacePth string) ([]SchemeModel, error) {
 	schemeMap, err := sharedSchemes(workspacePth)
 	if err != nil {
-		return map[string]bool{}, err
+		return []SchemeModel{}, err
 	}
 
 	projects, err := WorkspaceProjectReferences(workspacePth)
@@ -222,7 +232,7 @@ func WorkspaceSharedSchemes(workspacePth string) (map[string]bool, error) {
 	for _, project := range projects {
 		projectSchemeMap, err := sharedSchemes(project)
 		if err != nil {
-			return map[string]bool{}, err
+			return []SchemeModel{}, err
 		}
 
 		for name, hasXCtest := range projectSchemeMap {
@@ -231,26 +241,4 @@ func WorkspaceSharedSchemes(workspacePth string) (map[string]bool, error) {
 	}
 
 	return schemeMap, nil
-}
-
-// WorkspaceTargets ...
-func WorkspaceTargets(workspacePth string) (map[string]bool, error) {
-	projects, err := WorkspaceProjectReferences(workspacePth)
-	if err != nil {
-		return nil, err
-	}
-
-	targetMap := map[string]bool{}
-	for _, project := range projects {
-		projectTargetMap, err := ProjectTargets(project)
-		if err != nil {
-			return map[string]bool{}, err
-		}
-
-		for name, hasXCTest := range projectTargetMap {
-			targetMap[name] = hasXCTest
-		}
-	}
-
-	return targetMap, nil
 }
