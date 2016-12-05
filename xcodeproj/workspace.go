@@ -6,12 +6,15 @@ import (
 
 // WorkspaceModel ...
 type WorkspaceModel struct {
+	Pth      string
 	Projects []ProjectModel
 }
 
 // NewWorkspace ...
 func NewWorkspace(xcworkspacePth string) (WorkspaceModel, error) {
-	workspace := WorkspaceModel{}
+	workspace := WorkspaceModel{
+		Pth: xcworkspacePth,
+	}
 
 	projects, err := WorkspaceProjectReferences(xcworkspacePth)
 	if err != nil {
