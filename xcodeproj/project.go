@@ -3,6 +3,7 @@ package xcodeproj
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/bitrise-io/go-utils/pathutil"
 )
@@ -10,6 +11,7 @@ import (
 // ProjectModel ...
 type ProjectModel struct {
 	Pth           string
+	Name          string
 	SDK           string
 	SharedSchemes []SchemeModel
 	Targets       []TargetModel
@@ -18,7 +20,8 @@ type ProjectModel struct {
 // NewProject ...
 func NewProject(xcodeprojPth string) (ProjectModel, error) {
 	project := ProjectModel{
-		Pth: xcodeprojPth,
+		Pth:  xcodeprojPth,
+		Name: strings.TrimSuffix(filepath.Base(xcodeprojPth), filepath.Ext(xcodeprojPth)),
 	}
 
 	// SDK

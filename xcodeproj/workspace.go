@@ -2,6 +2,8 @@ package xcodeproj
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/bitrise-io/go-utils/pathutil"
 )
@@ -9,6 +11,7 @@ import (
 // WorkspaceModel ...
 type WorkspaceModel struct {
 	Pth            string
+	Name           string
 	Projects       []ProjectModel
 	IsPodWorkspace bool
 }
@@ -16,7 +19,8 @@ type WorkspaceModel struct {
 // NewWorkspace ...
 func NewWorkspace(xcworkspacePth string) (WorkspaceModel, error) {
 	workspace := WorkspaceModel{
-		Pth: xcworkspacePth,
+		Pth:  xcworkspacePth,
+		Name: strings.TrimSuffix(filepath.Base(xcworkspacePth), filepath.Ext(xcworkspacePth)),
 	}
 
 	projects, err := WorkspaceProjectReferences(xcworkspacePth)
@@ -40,4 +44,22 @@ func NewWorkspace(xcworkspacePth string) (WorkspaceModel, error) {
 	}
 
 	return workspace, nil
+}
+
+// GetSharedSchemes ...
+func (w WorkspaceModel) GetSharedSchemes() []SchemeModel {
+	schemes := []SchemeModel{}
+	for _, project := range w.Projects {
+		schemes = append(schemes, project.SharedSchemes...)
+	}
+	return schemes
+}
+
+// GetTargets ...
+func (w WorkspaceModel) GetTargets() []TargetModel {
+	targets := []TargetModel{}
+	for _, project := range w.Projects {
+		targets = append(targets, project.Targets...)
+	}
+	return targets
 }
