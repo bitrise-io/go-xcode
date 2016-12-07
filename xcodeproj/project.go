@@ -12,7 +12,7 @@ import (
 type ProjectModel struct {
 	Pth           string
 	Name          string
-	SDK           string
+	SDKs          []string
 	SharedSchemes []SchemeModel
 	Targets       []TargetModel
 }
@@ -33,12 +33,12 @@ func NewProject(xcodeprojPth string) (ProjectModel, error) {
 		return ProjectModel{}, fmt.Errorf("Project descriptor not found at: %s", pbxprojPth)
 	}
 
-	sdk, err := GetBuildConfigSDKRoot(pbxprojPth)
+	sdks, err := GetBuildConfigSDKs(pbxprojPth)
 	if err != nil {
 		return ProjectModel{}, err
 	}
 
-	project.SDK = sdk
+	project.SDKs = sdks
 
 	// Shared Schemes
 	schemes, err := ProjectSharedSchemes(xcodeprojPth)
@@ -57,4 +57,14 @@ func NewProject(xcodeprojPth string) (ProjectModel, error) {
 	project.Targets = targets
 
 	return project, nil
+}
+
+// ContainsSDK ...
+func (p ProjectModel) ContainsSDK(sdk string) bool {
+	for _, s := range p.SDKs {
+		if s == sdk {
+			return true
+		}
+	}
+	return false
 }

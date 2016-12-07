@@ -2,7 +2,6 @@ package xcodeproj
 
 import (
 	"bufio"
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -29,18 +28,18 @@ func IsXCWorkspace(pth string) bool {
 	return strings.HasSuffix(pth, XCWorkspaceExt)
 }
 
-// GetBuildConfigSDKRoot ...
-func GetBuildConfigSDKRoot(pbxprojPth string) (string, error) {
+// GetBuildConfigSDKs ...
+func GetBuildConfigSDKs(pbxprojPth string) ([]string, error) {
 	content, err := fileutil.ReadStringFromFile(pbxprojPth)
 	if err != nil {
-		return "", err
+		return []string{}, err
 	}
 
-	return getBuildConfigSDKRootFromContent(content)
+	return getBuildConfigSDKsFromContent(content)
 }
 
-func getBuildConfigSDKRootFromContent(pbxprojContent string) (string, error) {
-	sdkRoot := ""
+func getBuildConfigSDKsFromContent(pbxprojContent string) ([]string, error) {
+	sdkMap := map[string]bool{}
 
 	beginXCBuildConfigurationSection := `/* Begin XCBuildConfiguration section */`
 	endXCBuildConfigurationSection := `/* End XCBuildConfiguration section */`
@@ -69,15 +68,17 @@ func getBuildConfigSDKRootFromContent(pbxprojContent string) (string, error) {
 
 		if match := regexp.FindStringSubmatch(line); len(match) == 2 {
 			sdk := match[1]
-			if sdkRoot != "" && sdkRoot != sdk {
-				return "", fmt.Errorf("multiple sdk found (%s, %s)", sdk, sdkRoot)
-			}
-			sdkRoot = sdk
+			sdkMap[sdk] = true
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return "", err
+		return []string{}, err
 	}
 
-	return sdkRoot, nil
+	sdks := []string{}
+	for sdk := range sdkMap {
+		sdks = append(sdks, sdk)
+	}
+
+	return sdks, nil
 }

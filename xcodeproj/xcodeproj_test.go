@@ -3,6 +3,7 @@ package xcodeproj
 import (
 	"testing"
 
+	"github.com/bitrise-io/go-utils/testutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,9 +13,9 @@ func TestGetBuildConfigSDKRoot(t *testing.T) {
 		pbxprojPth, err := testIOSPbxprojPth()
 		require.NoError(t, err)
 
-		sdk, err := GetBuildConfigSDKRoot(pbxprojPth)
+		sdks, err := GetBuildConfigSDKs(pbxprojPth)
 		require.NoError(t, err)
-		require.Equal(t, "iphoneos", sdk)
+		testutil.EqualSlicesWithoutOrder(t, []string{"iphoneos"}, sdks)
 	}
 
 	t.Log("macos")
@@ -22,8 +23,8 @@ func TestGetBuildConfigSDKRoot(t *testing.T) {
 		pbxprojPth, err := testMacOSPbxprojPth()
 		require.NoError(t, err)
 
-		sdk, err := GetBuildConfigSDKRoot(pbxprojPth)
+		sdks, err := GetBuildConfigSDKs(pbxprojPth)
 		require.NoError(t, err)
-		require.Equal(t, "macosx", sdk)
+		testutil.EqualSlicesWithoutOrder(t, []string{"macosx"}, sdks)
 	}
 }
