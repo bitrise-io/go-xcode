@@ -1,13 +1,16 @@
 package xcodeproj
 
 import (
+	"fmt"
+
 	"github.com/bitrise-io/go-utils/pathutil"
 )
 
 // WorkspaceModel ...
 type WorkspaceModel struct {
-	Pth      string
-	Projects []ProjectModel
+	Pth            string
+	Projects       []ProjectModel
+	IsPodWorkspace bool
 }
 
 // NewWorkspace ...
@@ -25,7 +28,7 @@ func NewWorkspace(xcworkspacePth string) (WorkspaceModel, error) {
 		if exist, err := pathutil.IsPathExists(xcodeprojPth); err != nil {
 			return WorkspaceModel{}, err
 		} else if !exist {
-			continue
+			return WorkspaceModel{}, fmt.Errorf("referred project (%s) not found", xcodeprojPth)
 		}
 
 		project, err := NewProject(xcodeprojPth)
