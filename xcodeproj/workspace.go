@@ -17,7 +17,7 @@ type WorkspaceModel struct {
 }
 
 // NewWorkspace ...
-func NewWorkspace(xcworkspacePth string) (WorkspaceModel, error) {
+func NewWorkspace(xcworkspacePth string, projectsToCheck ...string) (WorkspaceModel, error) {
 	workspace := WorkspaceModel{
 		Pth:  xcworkspacePth,
 		Name: strings.TrimSuffix(filepath.Base(xcworkspacePth), filepath.Ext(xcworkspacePth)),
@@ -28,7 +28,20 @@ func NewWorkspace(xcworkspacePth string) (WorkspaceModel, error) {
 		return WorkspaceModel{}, err
 	}
 
+	if len(projectsToCheck) > 0 {
+		filteredProjects := []string{}
+		for _, project := range projects {
+			for _, projectToCheck := range projectsToCheck {
+				if project == projectToCheck {
+					filteredProjects = append(filteredProjects, project)
+				}
+			}
+		}
+		projects = filteredProjects
+	}
+
 	for _, xcodeprojPth := range projects {
+
 		if exist, err := pathutil.IsPathExists(xcodeprojPth); err != nil {
 			return WorkspaceModel{}, err
 		} else if !exist {
