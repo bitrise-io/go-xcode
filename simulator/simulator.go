@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
+	version "github.com/hashicorp/go-version"
 )
 
 // InfoModel ...
@@ -102,4 +103,100 @@ func GetOsVersionSimulatorInfosMap() (OsVersionSimulatorInfosMap, error) {
 	}
 
 	return getOsVersionSimulatorInfosMapFromSimctlList(simctlListOut)
+}
+
+func getSimulatorInfoFromSimctlOut(simctlListOut, osNameAndVersion, deviceName string) (InfoModel, error) {
+	osVersionSimulatorInfosMap, err := getOsVersionSimulatorInfosMapFromSimctlList(simctlListOut)
+	if err != nil {
+		return InfoModel{}, err
+	}
+
+	infos, ok := osVersionSimulatorInfosMap[osNameAndVersion]
+	if !ok {
+		return InfoModel{}, fmt.Errorf("no simulators found for os version: %s", osNameAndVersion)
+	}
+
+	for _, info := range infos {
+		if info.Name == deviceName {
+			return info, nil
+		}
+	}
+
+	return InfoModel{}, fmt.Errorf("no simulators found for os version: (%s), device name: (%s)", osNameAndVersion, deviceName)
+}
+
+// GetSimulatorInfo ...
+func GetSimulatorInfo(osNameAndVersion, deviceName string) (InfoModel, error) {
+	cmd := command.New("xcrun", "simctl", "list")
+	simctlListOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return InfoModel{}, err
+	}
+
+	return getSimulatorInfoFromSimctlOut(simctlListOut, osNameAndVersion, deviceName)
+}
+
+func getLatestSimulatorInfoFromSimctlOut(simctlListOut, osName, deviceName string) (InfoModel, string, error) {
+	osVersionSimulatorInfosMap, err := getOsVersionSimulatorInfosMapFromSimctlList(simctlListOut)
+	if err != nil {
+		return InfoModel{}, "", err
+	}
+
+	var latestVersionPtr *version.Version
+	latestInfo := InfoModel{}
+	for osVersion, infos := range osVersionSimulatorInfosMap {
+		if !strings.HasPrefix(osVersion, osName) {
+			continue
+		}
+
+		deviceInfo := InfoModel{}
+		deviceFound := false
+		for _, info := range infos {
+			if info.Name == deviceName {
+				deviceFound = true
+				deviceInfo = info
+				break
+			}
+		}
+		if !deviceFound {
+			continue
+		}
+
+		versionStr := strings.TrimPrefix(osVersion, osName)
+		versionStr = strings.TrimSpace(versionStr)
+
+		versionPtr, err := version.NewVersion(versionStr)
+		if err != nil {
+			return InfoModel{}, "", fmt.Errorf("failed to parse version (%s), error: %s", versionStr, err)
+		}
+
+		if latestVersionPtr == nil || versionPtr.GreaterThan(latestVersionPtr) {
+			latestVersionPtr = versionPtr
+			latestInfo = deviceInfo
+		}
+	}
+
+	if latestVersionPtr == nil {
+		return InfoModel{}, "", fmt.Errorf("failed to determin latest iOS simulator version")
+	}
+
+	versionSegments := latestVersionPtr.Segments()
+	if len(versionSegments) < 2 {
+		return InfoModel{}, "", fmt.Errorf("invalid version created: %s, segments count < 2", latestVersionPtr.String())
+	}
+
+	osVersion := fmt.Sprintf("%s %d.%d", osName, versionSegments[0], versionSegments[1])
+
+	return latestInfo, osVersion, nil
+}
+
+// GetLatestSimulatorInfoAndVersion ...
+func GetLatestSimulatorInfoAndVersion(osName, deviceName string) (InfoModel, string, error) {
+	cmd := command.New("xcrun", "simctl", "list")
+	simctlListOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return InfoModel{}, "", err
+	}
+
+	return getLatestSimulatorInfoFromSimctlOut(simctlListOut, osName, deviceName)
 }
