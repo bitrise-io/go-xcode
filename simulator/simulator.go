@@ -177,7 +177,7 @@ func getLatestSimulatorInfoFromSimctlOut(simctlListOut, osName, deviceName strin
 	}
 
 	if latestVersionPtr == nil {
-		return InfoModel{}, "", fmt.Errorf("failed to determin latest iOS simulator version")
+		return InfoModel{}, "", fmt.Errorf("failed to determin latest (%s) simulator version", osName)
 	}
 
 	versionSegments := latestVersionPtr.Segments()
