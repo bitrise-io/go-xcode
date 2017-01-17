@@ -74,3 +74,4 @@ workflows:
             go get -u -v github.com/bitrise-io/go-utils/fileutil
             go get -u -v github.com/bitrise-io/go-utils/pathutil
             go get -u -v github.com/bitrise-io/go-utils/command
+            go get -u -v github.com/hashicorp/go-version
