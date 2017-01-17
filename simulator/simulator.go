@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/cmdex"
+	"github.com/bitrise-io/go-utils/command"
 )
 
 // InfoModel ...
@@ -95,7 +95,7 @@ func getOsVersionSimulatorInfosMapFromSimctlList(simctlList string) (OsVersionSi
 
 // GetOsVersionSimulatorInfosMap ...
 func GetOsVersionSimulatorInfosMap() (OsVersionSimulatorInfosMap, error) {
-	cmd := cmdex.NewCommand("xcrun", "simctl", "list")
+	cmd := command.New("xcrun", "simctl", "list")
 	simctlListOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return OsVersionSimulatorInfosMap{}, err
