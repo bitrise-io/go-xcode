@@ -31,6 +31,63 @@ func TestGetSimulatorInfoFromSimctlOut(t *testing.T) {
 	}
 }
 
+func TestIs64BitArchitecture(t *testing.T) {
+	t.Log("64-bit simulators")
+	{
+		iPhoneSimulators := []string{
+			"iPhone 5S",
+			"iPhone 6", "iPhone 6 Plus", "iPhone 6S", "iPhone 6S Plus",
+			"iPhone SE",
+			"iPhone 7", "iPhone 7 Plus",
+		}
+
+		for _, iPhoneSimulator := range iPhoneSimulators {
+			is64bit, err := Is64BitArchitecture(iPhoneSimulator)
+			require.NoError(t, err, iPhoneSimulator)
+			require.Equal(t, true, is64bit, iPhoneSimulator)
+		}
+
+		iPadSimulators := []string{
+			"iPad Mini 2", "iPad Mini 3", "iPad Mini 4",
+			"iPad Air", "iPad Air 2",
+			"iPad Pro (12.9 inch)", "iPad Pro (9.7 inch)",
+		}
+
+		for _, iPadSimulator := range iPadSimulators {
+			is64bit, err := Is64BitArchitecture(iPadSimulator)
+			require.NoError(t, err, iPadSimulator)
+			require.Equal(t, true, is64bit, iPadSimulator)
+		}
+	}
+
+	t.Log("not 64-bit simulators")
+	{
+		iPhoneSimulators := []string{
+			"iPhone 5", "iPhone 5C",
+			"iPhone 4", "iPhone 4s",
+			"iPhone 3G", "iPhone 3GS",
+		}
+
+		for _, iPhoneSimulator := range iPhoneSimulators {
+			is64bit, err := Is64BitArchitecture(iPhoneSimulator)
+			require.NoError(t, err, iPhoneSimulator)
+			require.Equal(t, false, is64bit, iPhoneSimulator)
+		}
+
+		iPadSimulators := []string{
+			"iPad", "iPad 2", "iPad 3", "iPad 4",
+			"iPad Mini",
+		}
+
+		for _, iPadSimulator := range iPadSimulators {
+			is64bit, err := Is64BitArchitecture(iPadSimulator)
+			require.NoError(t, err, iPadSimulator)
+			require.Equal(t, false, is64bit, iPadSimulator)
+		}
+	}
+
+}
+
 const simctlListOut = `== Device Types ==
 iPhone 4s (com.apple.CoreSimulator.SimDeviceType.iPhone-4s)
 iPhone 5 (com.apple.CoreSimulator.SimDeviceType.iPhone-5)

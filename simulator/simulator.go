@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
@@ -199,4 +200,75 @@ func GetLatestSimulatorInfoAndVersion(osName, deviceName string) (InfoModel, str
 	}
 
 	return getLatestSimulatorInfoFromSimctlOut(simctlListOut, osName, deviceName)
+}
+
+// Is64BitArchitecture ...
+func Is64BitArchitecture(simulatorDevice string) (bool, error) {
+	// 64 bit processor iPhones:
+	// - iPhone 5S,
+	// - iPhone 6, iPhone 6 Plus, iPhone 6S, iPhone 6S Plus,
+	// - iPhone SE,
+	// - iPhone 7, iPhone 7 Plus
+
+	// 64 bit processor iPads:
+	// - iPad Mini 2, iPad Mini 3, iPad Mini 4
+	// - iPad Air, iPad Air 2
+	// - iPad Pro (12.9 inch), iPad Pro (9.7 inch)
+	deviceSplit := strings.Split(simulatorDevice, " ")
+	if len(deviceSplit) == 1 && deviceSplit[0] == "iPad" {
+		return false, nil
+	}
+
+	if len(deviceSplit) < 2 {
+		return false, fmt.Errorf("Unexpected deivice name (%s)", simulatorDevice)
+	}
+
+	name := strings.TrimSpace(deviceSplit[0])
+	versionSlice := deviceSplit[1:]
+
+	if name == "iPhone" {
+		if versionSlice[0] == "SE" {
+			return true, nil
+		}
+
+		versionNumber := versionSlice[0]
+		if versionNumber == "5S" {
+			return true, nil
+		}
+
+		majorVersionStr := string(versionNumber[0])
+		majorVersion, err := strconv.Atoi(majorVersionStr)
+		if err != nil {
+			return false, err
+		}
+
+		if majorVersion >= 6 {
+			return true, nil
+		}
+	} else if name == "iPad" {
+		subNameOrVersion := strings.TrimSpace(versionSlice[0])
+
+		if subNameOrVersion == "Mini" {
+			if len(versionSlice) == 2 {
+				version, err := strconv.Atoi(versionSlice[1])
+				if err != nil {
+					return false, err
+				}
+
+				if version > 1 {
+					return true, nil
+				}
+			}
+		}
+
+		if subNameOrVersion == "Air" {
+			return true, nil
+		}
+
+		if subNameOrVersion == "Pro" {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
