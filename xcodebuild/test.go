@@ -105,7 +105,9 @@ func (c *TestCommandModel) cmdSlice() []string {
 
 	slice = append(slice, c.customBuildActions...)
 	slice = append(slice, "test")
-	slice = append(slice, "-destination", c.destination)
+	if c.destination != "" {
+		slice = append(slice, "-destination", c.destination)
+	}
 	slice = append(slice, c.customOptions...)
 
 	return slice
