@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -278,10 +277,8 @@ func Is64BitArchitecture(simulatorDevice string) (bool, error) {
 }
 
 func getXcodeDeveloperDirPath() (string, error) {
-	cmd := exec.Command("xcode-select", "--print-path")
-	outBytes, err := cmd.CombinedOutput()
-	outStr := string(outBytes)
-	return strings.TrimSpace(outStr), err
+	cmd := command.New("xcode-select", "--print-path")
+	return cmd.RunAndReturnTrimmedCombinedOutput()
 }
 
 // BootSimulator ...
@@ -292,16 +289,15 @@ func BootSimulator(simulator InfoModel, xcodebuildVersion models.XcodebuildVersi
 	}
 	xcodeDevDirPth, err := getXcodeDeveloperDirPath()
 	if err != nil {
-		return fmt.Errorf("Failed to get Xcode Developer Directory - most likely Xcode.app is not installed")
+		return fmt.Errorf("failed to get Xcode Developer Directory - most likely Xcode.app is not installed")
 	}
 	simulatorAppFullPath := filepath.Join(xcodeDevDirPth, "Applications", simulatorApp+".app")
 
-	openCmd := exec.Command("open", simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulator.ID)
+	openCmd := command.New("open", simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulator.ID)
 
-	log.Printf("$ %s", command.PrintableCommandArgs(true, openCmd.Args))
+	log.Printf("$ %s", openCmd.PrintableCommandArgs())
 
-	out, err := openCmd.CombinedOutput()
-	outStr := string(out)
+	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to start simulators (%s), output: %s, error: %s", simulator.ID, outStr, err)
 	}

@@ -2,10 +2,10 @@ package utility
 
 import (
 	"fmt"
-	"os/exec"
 	"strconv"
 	"strings"
 
+	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-tools/go-xcode/models"
 )
 
@@ -15,9 +15,8 @@ import (
 
 // GetXcodeVersion ...
 func GetXcodeVersion() (models.XcodebuildVersionModel, error) {
-	cmd := exec.Command("xcodebuild", "-version")
-	outBytes, err := cmd.CombinedOutput()
-	outStr := string(outBytes)
+	cmd := command.New("xcodebuild", "-version")
+	outStr, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return models.XcodebuildVersionModel{}, fmt.Errorf("xcodebuild -version failed, err: %s, details: %s", err, outStr)
 	}
