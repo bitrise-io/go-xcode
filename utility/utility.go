@@ -13,14 +13,7 @@ import (
 // Utility
 //=======================================
 
-// GetXcodeVersion ...
-func GetXcodeVersion() (models.XcodebuildVersionModel, error) {
-	cmd := command.New("xcodebuild", "-version")
-	outStr, err := cmd.RunAndReturnTrimmedCombinedOutput()
-	if err != nil {
-		return models.XcodebuildVersionModel{}, fmt.Errorf("xcodebuild -version failed, err: %s, details: %s", err, outStr)
-	}
-
+func getXcodeVersionFromXcodebuildOutput(outStr string) (models.XcodebuildVersionModel, error) {
 	split := strings.Split(outStr, "\n")
 	if len(split) == 0 {
 		return models.XcodebuildVersionModel{}, fmt.Errorf("failed to parse xcodebuild version output (%s)", outStr)
@@ -49,4 +42,14 @@ func GetXcodeVersion() (models.XcodebuildVersionModel, error) {
 		BuildVersion: buildVersion,
 		MajorVersion: majorVersion,
 	}, nil
+}
+
+// GetXcodeVersion ...
+func GetXcodeVersion() (models.XcodebuildVersionModel, error) {
+	cmd := command.New("xcodebuild", "-version")
+	outStr, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return models.XcodebuildVersionModel{}, fmt.Errorf("xcodebuild -version failed, err: %s, details: %s", err, outStr)
+	}
+	return getXcodeVersionFromXcodebuildOutput(outStr)
 }
