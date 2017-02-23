@@ -3,11 +3,14 @@ package simulator
 import (
 	"bufio"
 	"fmt"
+	"log"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-tools/go-xcode/models"
 	version "github.com/hashicorp/go-version"
 )
 
@@ -271,4 +274,33 @@ func Is64BitArchitecture(simulatorDevice string) (bool, error) {
 	}
 
 	return false, nil
+}
+
+func getXcodeDeveloperDirPath() (string, error) {
+	cmd := command.New("xcode-select", "--print-path")
+	return cmd.RunAndReturnTrimmedCombinedOutput()
+}
+
+// BootSimulator ...
+func BootSimulator(simulator InfoModel, xcodebuildVersion models.XcodebuildVersionModel) error {
+	simulatorApp := "Simulator"
+	if xcodebuildVersion.MajorVersion == 6 {
+		simulatorApp = "iOS Simulator"
+	}
+	xcodeDevDirPth, err := getXcodeDeveloperDirPath()
+	if err != nil {
+		return fmt.Errorf("failed to get Xcode Developer Directory - most likely Xcode.app is not installed")
+	}
+	simulatorAppFullPath := filepath.Join(xcodeDevDirPth, "Applications", simulatorApp+".app")
+
+	openCmd := command.New("open", simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulator.ID)
+
+	log.Printf("$ %s", openCmd.PrintableCommandArgs())
+
+	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to start simulators (%s), output: %s, error: %s", simulator.ID, outStr, err)
+	}
+
+	return nil
 }
