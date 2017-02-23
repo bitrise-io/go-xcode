@@ -13,14 +13,14 @@ Build version 8C1002`
 func TestGetXcodeVersionFromXcodebuildOutput(t *testing.T) {
 	t.Log("GetXcodeVersionFromXcodebuildOutput")
 	{
-		validModelOutput := models.XcodebuildVersionModel{
+		expectedVersion := models.XcodebuildVersionModel{
 			Version:      "Xcode 8.2.1",
 			BuildVersion: "Build version 8C1002",
 			MajorVersion: 8,
 		}
 
-		testModel, err := getXcodeVersionFromXcodebuildOutput(testXcodebuildVersionOutput)
-		require.NoError(t, err, testModel)
-		require.Equal(t, validModelOutput, testModel)
+		currentVersion, err := getXcodeVersionFromXcodebuildOutput(testXcodebuildVersionOutput)
+		require.NoError(t, err)
+		require.Equal(t, expectedVersion, currentVersion)
 	}
 }

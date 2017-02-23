@@ -9,10 +9,6 @@ import (
 	"github.com/bitrise-tools/go-xcode/models"
 )
 
-//=======================================
-// Utility
-//=======================================
-
 func getXcodeVersionFromXcodebuildOutput(outStr string) (models.XcodebuildVersionModel, error) {
 	split := strings.Split(outStr, "\n")
 	if len(split) == 0 {
