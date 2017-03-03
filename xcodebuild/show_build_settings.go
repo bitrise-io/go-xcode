@@ -60,8 +60,8 @@ func parseBuildSettings(out string) (map[string]string, error) {
 	scanner := bufio.NewScanner(strings.NewReader(out))
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		split := strings.Split(line, "=")
-		if len(split) == 2 {
+
+		if split := strings.Split(line, "="); len(split) == 2 {
 			key := strings.TrimSpace(split[0])
 			value := strings.TrimSpace(split[1])
 			value = strings.Trim(value, `"`)
