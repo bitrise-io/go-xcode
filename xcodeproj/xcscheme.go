@@ -219,7 +219,7 @@ func WorkspaceProjectReferences(workspace string) ([]string, error) {
 
 // WorkspaceSharedSchemes ...
 func WorkspaceSharedSchemes(workspacePth string) ([]SchemeModel, error) {
-	schemeMap, err := sharedSchemes(workspacePth)
+	workspaceSharedSchemes, err := sharedSchemes(workspacePth)
 	if err != nil {
 		return []SchemeModel{}, err
 	}
@@ -230,15 +230,21 @@ func WorkspaceSharedSchemes(workspacePth string) ([]SchemeModel, error) {
 	}
 
 	for _, project := range projects {
-		projectSchemeMap, err := sharedSchemes(project)
+		projectSharedSchemes, err := sharedSchemes(project)
 		if err != nil {
 			return []SchemeModel{}, err
 		}
 
-		for name, hasXCtest := range projectSchemeMap {
-			schemeMap[name] = hasXCtest
+		for _, projectSharedScheme := range projectSharedSchemes {
+			for _, workspaceSharedScheme := range workspaceSharedSchemes {
+				if workspaceSharedScheme.Name == projectSharedScheme.Name {
+					continue
+				}
+			}
+
+			workspaceSharedSchemes = append(workspaceSharedSchemes, projectSharedScheme)
 		}
 	}
 
-	return schemeMap, nil
+	return workspaceSharedSchemes, nil
 }
