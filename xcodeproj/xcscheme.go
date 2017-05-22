@@ -235,8 +235,10 @@ func WorkspaceSharedSchemes(workspacePth string) ([]SchemeModel, error) {
 			return []SchemeModel{}, err
 		}
 
-		for name, hasXCtest := range projectSchemeMap {
-			schemeMap[name] = hasXCtest
+		for i, scheme := range projectSchemeMap {
+			if schemeMap[i].Name == scheme.Name {
+				schemeMap[i].HasXCTest = scheme.HasXCTest
+			}
 		}
 	}
 
