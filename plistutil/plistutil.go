@@ -43,8 +43,8 @@ func (data PlistData) GetString(forKey string) (string, bool) {
 	return casted, true
 }
 
-// GetInt ...
-func (data PlistData) GetInt(forKey string) (uint64, bool) {
+// GetUInt64 ...
+func (data PlistData) GetUInt64(forKey string) (uint64, bool) {
 	value, ok := data[forKey]
 	if !ok {
 		return 0, false
@@ -84,6 +84,34 @@ func (data PlistData) GetTime(forKey string) (time.Time, bool) {
 		return time.Time{}, false
 	}
 	return casted, true
+}
+
+// GetUInt64Array ...
+func (data PlistData) GetUInt64Array(forKey string) ([]uint64, bool) {
+	value, ok := data[forKey]
+	if !ok {
+		return nil, false
+	}
+
+	if casted, ok := value.([]uint64); ok {
+		return casted, true
+	}
+
+	casted, ok := value.([]interface{})
+	if !ok {
+		return nil, false
+	}
+
+	array := []uint64{}
+	for _, v := range casted {
+		casted, ok := v.(uint64)
+		if !ok {
+			return nil, false
+		}
+
+		array = append(array, casted)
+	}
+	return array, true
 }
 
 // GetStringArray ...
