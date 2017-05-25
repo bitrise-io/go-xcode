@@ -9,15 +9,8 @@ import (
 	"github.com/bitrise-io/go-utils/ziputil"
 )
 
-func unwrapFileEmbeddedInAppDir(ipaPth, fileName string) (string, error) {
-	payloadPth, err := ziputil.UnZip(ipaPth)
-	if err != nil {
-		return "", err
-	}
-
-	// Check the most common location
-	baseName := strings.TrimSuffix(filepath.Base(ipaPth), filepath.Ext(ipaPth))
-	appDir := filepath.Join(payloadPth, baseName+".app")
+func findFileInPayloadDir(payloadPth, ipaName, fileName string) (string, error) {
+	appDir := filepath.Join(payloadPth, ipaName+".app")
 
 	filePth := filepath.Join(appDir, fileName)
 	if exist, err := pathutil.IsPathExists(filePth); err != nil {
@@ -37,6 +30,17 @@ func unwrapFileEmbeddedInAppDir(ipaPth, fileName string) (string, error) {
 	// ---
 
 	return "", fmt.Errorf("failed to find %s", fileName)
+}
+
+func unwrapFileEmbeddedInAppDir(ipaPth, fileName string) (string, error) {
+	payloadPth, err := ziputil.UnZip(ipaPth)
+	if err != nil {
+		return "", err
+	}
+
+	ipaName := strings.TrimSuffix(filepath.Base(ipaPth), filepath.Ext(ipaPth))
+
+	return findFileInPayloadDir(payloadPth, ipaName, fileName)
 }
 
 // UnwrapEmbeddedMobileProvision ...
