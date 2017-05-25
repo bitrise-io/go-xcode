@@ -21,7 +21,7 @@ func findFileInPayloadDir(payloadPth, ipaName, fileName string) (string, error) 
 	// ---
 
 	// It's somewhere else - let's find it!
-	pattern := filepath.Join("*.app", fileName)
+	pattern := filepath.Join(payloadPth, "*.app", fileName)
 	if filePths, err := filepath.Glob(pattern); err != nil {
 		return "", err
 	} else if len(filePths) > 0 {
