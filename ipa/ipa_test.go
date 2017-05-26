@@ -19,12 +19,12 @@ func TestFindFileInPayloadDir(t *testing.T) {
 
 		payloadDir := filepath.Join(tmpDir, "Payload")
 		appDir := filepath.Join(payloadDir, "test.app")
-		require.NoError(t, os.MkdirAll(appDir, 0700))
+		require.NoError(t, os.MkdirAll(appDir, 0777))
 
 		infoPlistPth := filepath.Join(appDir, "Info.plist")
 		require.NoError(t, fileutil.WriteStringToFile(infoPlistPth, ""))
 
-		pth, err := findFileInPayloadDir(payloadDir, "test", "Info.plist")
+		pth, err := findFileInPayloadAppDir(payloadDir, "test", "Info.plist")
 		require.NoError(t, err)
 		require.Equal(t, infoPlistPth, pth)
 	}
@@ -36,12 +36,12 @@ func TestFindFileInPayloadDir(t *testing.T) {
 
 		payloadDir := filepath.Join(tmpDir, "Payload")
 		appDir := filepath.Join(payloadDir, "test.app")
-		require.NoError(t, os.MkdirAll(appDir, 0700))
+		require.NoError(t, os.MkdirAll(appDir, 0777))
 
 		infoPlistPth := filepath.Join(appDir, "Info.plist")
 		require.NoError(t, fileutil.WriteStringToFile(infoPlistPth, ""))
 
-		pth, err := findFileInPayloadDir(payloadDir, "not_test", "Info.plist")
+		pth, err := findFileInPayloadAppDir(payloadDir, "not_test", "Info.plist")
 		require.NoError(t, err)
 		require.Equal(t, infoPlistPth, pth)
 	}
