@@ -11,6 +11,8 @@ workflows:
     - test
     
   test:
+    after_run:
+    - integration-test
     steps:
     - script:
         title: Export go files to test
@@ -53,6 +55,19 @@ workflows:
             set -ex
 
             go test ./...
+
+  integration-test:
+    after_run:
+    steps:
+    - script:
+        title: Run integration tests
+        inputs:
+        - content: |-
+            #!/bin/bash
+            echo "Running integration tests ..."
+            set -ex
+
+            go test -v ./_tests/integration/...
 
   _install_test_tools:
     steps:
