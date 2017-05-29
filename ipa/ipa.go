@@ -9,8 +9,8 @@ import (
 	"github.com/bitrise-io/go-utils/ziputil"
 )
 
-func findFileInPayloadDir(payloadPth, ipaName, fileName string) (string, error) {
-	appDir := filepath.Join(payloadPth, ipaName+".app")
+func findFileInPayloadAppDir(payloadPth, preferedAppName, fileName string) (string, error) {
+	appDir := filepath.Join(payloadPth, preferedAppName+".app")
 
 	filePth := filepath.Join(appDir, fileName)
 	if exist, err := pathutil.IsPathExists(filePth); err != nil {
@@ -32,23 +32,28 @@ func findFileInPayloadDir(payloadPth, ipaName, fileName string) (string, error) 
 	return "", fmt.Errorf("failed to find %s", fileName)
 }
 
-func unwrapFileEmbeddedInAppDir(ipaPth, fileName string) (string, error) {
-	payloadPth, err := ziputil.UnZip(ipaPth)
+func unwrapFileEmbeddedInPayloadAppDir(ipaPth, fileName string) (string, error) {
+	tmpDir, err := pathutil.NormalizedOSTempDirPath("__ipa__")
 	if err != nil {
 		return "", err
 	}
 
+	if err := ziputil.UnZip(ipaPth, tmpDir); err != nil {
+		return "", err
+	}
+
+	payloadPth := filepath.Join(tmpDir, "Payload")
 	ipaName := strings.TrimSuffix(filepath.Base(ipaPth), filepath.Ext(ipaPth))
 
-	return findFileInPayloadDir(payloadPth, ipaName, fileName)
+	return findFileInPayloadAppDir(payloadPth, ipaName, fileName)
 }
 
 // UnwrapEmbeddedMobileProvision ...
 func UnwrapEmbeddedMobileProvision(ipaPth string) (string, error) {
-	return unwrapFileEmbeddedInAppDir(ipaPth, "embedded.mobileprovision")
+	return unwrapFileEmbeddedInPayloadAppDir(ipaPth, "embedded.mobileprovision")
 }
 
 // UnwrapEmbeddedInfoPlist ...
 func UnwrapEmbeddedInfoPlist(ipaPth string) (string, error) {
-	return unwrapFileEmbeddedInAppDir(ipaPth, "Info.plist")
+	return unwrapFileEmbeddedInPayloadAppDir(ipaPth, "Info.plist")
 }
