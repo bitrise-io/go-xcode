@@ -3,8 +3,8 @@ package plistutil
 import (
 	"time"
 
-	plist "github.com/DHowett/go-plist"
 	"github.com/bitrise-io/go-utils/fileutil"
+	"howett.net/plist"
 )
 
 // PlistData ...
