@@ -7,6 +7,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/ziputil"
+	"github.com/bitrise-tools/go-xcode/utility"
 )
 
 func findFileInPayloadAppDir(payloadPth, preferedAppName, fileName string) (string, error) {
@@ -21,11 +22,20 @@ func findFileInPayloadAppDir(payloadPth, preferedAppName, fileName string) (stri
 	// ---
 
 	// It's somewhere else - let's find it!
-	pattern := filepath.Join(payloadPth, "*.app", fileName)
-	if filePths, err := filepath.Glob(pattern); err != nil {
+	apps, err := utility.ListEntries(payloadPth, utility.ExtensionFilter(".app", true))
+	if err != nil {
 		return "", err
-	} else if len(filePths) > 0 {
-		return filePths[0], nil
+	}
+
+	for _, app := range apps {
+		pths, err := utility.ListEntries(app, utility.BaseFilter(fileName, true))
+		if err != nil {
+			return "", err
+		}
+
+		if len(pths) > 0 {
+			return pths[0], nil
+		}
 	}
 	// ---
 
