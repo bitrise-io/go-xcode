@@ -67,3 +67,11 @@ func TestGetDeveloperTeam(t *testing.T) {
 		require.Equal(t, "PF3BP78LQ8", GetDeveloperTeam(profile))
 	}
 }
+
+func TestParseBuildSettingsOut(t *testing.T) {
+	buildSettings, err := parseBuildSettingsOut(buildSettingsOut)
+	require.NoError(t, err)
+	require.Equal(t, 384, len(buildSettings))
+	require.Equal(t, "Bitrise.ios-simple-objc", buildSettings["PRODUCT_BUNDLE_IDENTIFIER"])
+	require.Equal(t, "ios-simple-objc", buildSettings["PRODUCT_NAME"])
+}
