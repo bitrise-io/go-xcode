@@ -31,40 +31,40 @@ func TestTargetCodeSignMapping(t *testing.T) {
 			properties, ok := mapping["watchkit-app Extension"]
 			require.True(t, ok)
 			require.Equal(t, "com.bitrise.code-sign-test.watchkitapp.watchkitextension", properties.BundleIdentifier)
-			require.Equal(t, "Automatic", properties.ProvisioningStyle)
+			require.Equal(t, "Manual", properties.ProvisioningStyle)
 			require.Equal(t, "iPhone Developer", properties.CodeSignIdentity)
-			require.Equal(t, "", properties.ProvisioningProfile)
-			require.Equal(t, "", properties.ProvisioningProfileSpecifier)
+			require.Equal(t, "548cd560-c511-4540-8b6b-cbec4a22f49d", properties.ProvisioningProfile)
+			require.Equal(t, "BitriseBot-Wildcard", properties.ProvisioningProfileSpecifier)
 		}
 
 		{
 			properties, ok := mapping["code-sign-test"]
 			require.True(t, ok)
 			require.Equal(t, "com.bitrise.code-sign-test", properties.BundleIdentifier)
-			require.Equal(t, "Automatic", properties.ProvisioningStyle)
+			require.Equal(t, "Manual", properties.ProvisioningStyle)
 			require.Equal(t, "iPhone Developer", properties.CodeSignIdentity)
-			require.Equal(t, "", properties.ProvisioningProfile)
-			require.Equal(t, "", properties.ProvisioningProfileSpecifier)
+			require.Equal(t, "548cd560-c511-4540-8b6b-cbec4a22f49d", properties.ProvisioningProfile)
+			require.Equal(t, "BitriseBot-Wildcard", properties.ProvisioningProfileSpecifier)
 		}
 
 		{
 			properties, ok := mapping["share-extension"]
 			require.True(t, ok)
 			require.Equal(t, "com.bitrise.code-sign-test.share-extension", properties.BundleIdentifier)
-			require.Equal(t, "Automatic", properties.ProvisioningStyle)
+			require.Equal(t, "Manual", properties.ProvisioningStyle)
 			require.Equal(t, "iPhone Developer", properties.CodeSignIdentity)
-			require.Equal(t, "", properties.ProvisioningProfile)
-			require.Equal(t, "", properties.ProvisioningProfileSpecifier)
+			require.Equal(t, "548cd560-c511-4540-8b6b-cbec4a22f49d", properties.ProvisioningProfile)
+			require.Equal(t, "BitriseBot-Wildcard", properties.ProvisioningProfileSpecifier)
 		}
 
 		{
 			properties, ok := mapping["watchkit-app"]
 			require.True(t, ok)
 			require.Equal(t, "com.bitrise.code-sign-test.watchkitapp", properties.BundleIdentifier)
-			require.Equal(t, "Automatic", properties.ProvisioningStyle)
+			require.Equal(t, "Manual", properties.ProvisioningStyle)
 			require.Equal(t, "iPhone Developer", properties.CodeSignIdentity)
-			require.Equal(t, "", properties.ProvisioningProfile)
-			require.Equal(t, "", properties.ProvisioningProfileSpecifier)
+			require.Equal(t, "548cd560-c511-4540-8b6b-cbec4a22f49d", properties.ProvisioningProfile)
+			require.Equal(t, "BitriseBot-Wildcard", properties.ProvisioningProfileSpecifier)
 		}
 	}
 
