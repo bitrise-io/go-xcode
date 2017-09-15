@@ -3,15 +3,13 @@ package xcodeproj
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/errorutil"
-
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/command/rubyscript"
+	"github.com/bitrise-tools/go-xcode/plistutil"
 )
 
 // CodeSignInfo ...
@@ -123,18 +121,13 @@ func getBuildSettingsWithXcodebuild(projectPth, target, configuration string) (m
 }
 
 func getBundleIDWithPlistbuddy(infoPlistPth string) (string, error) {
-	cmd := command.New("/usr/libexec/PlistBuddy", "-c", "Print:CFBundleIdentifier", infoPlistPth)
-	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	plistData, err := plistutil.NewPlistDataFromFile(infoPlistPth)
 	if err != nil {
-		errorMessage := cmd.PrintableCommandArgs() + " failed"
-		if errorutil.IsExitStatusError(err) {
-			errorMessage = fmt.Sprintf("%s, output: %s", errorMessage, out)
-		} else if out != "" {
-			errorMessage = fmt.Sprintf("%s, error: %s", errorMessage, err)
-		}
-		return "", errors.New(errorMessage)
+		return "", err
 	}
-	return out, nil
+
+	bundleID, _ := plistData.GetString("CFBundleIdentifier")
+	return bundleID, nil
 }
 
 func firstNonEmpty(values ...string) string {
@@ -163,6 +156,7 @@ func ResolveCodeSignInfo(projectPth, scheme, configuration, user string) (map[st
 		}
 
 		// resolve bundle id
+		// best case if it presents in the buildSettings, since it is expanded
 		bundleID := buildSettings["PRODUCT_BUNDLE_IDENTIFIER"]
 		if bundleID == "" && codeSignInfo.BundleIdentifier != "" && !strings.Contains(codeSignInfo.BundleIdentifier, "$") {
 			// bundle id not presents in -showBuildSettings output

@@ -124,6 +124,7 @@ def read_code_sign_infos(project_or_workspace_pth, scheme_name, user_name, build
     provisioning_profile_specifier = build_configuration.resolve_build_setting('PROVISIONING_PROFILE_SPECIFIER') || ''
     provisioning_profile = build_configuration.resolve_build_setting('PROVISIONING_PROFILE') || ''
     info_plist_file = build_configuration.resolve_build_setting('INFOPLIST_FILE') || ''
+    info_plist_file = File.join(File.dirname(project_or_workspace_pth), info_plist_file) unless info_plist_file.empty?
 
     code_sign_info = {
       info_plist_file: info_plist_file,
