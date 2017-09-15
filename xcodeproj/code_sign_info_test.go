@@ -1,6 +1,7 @@
 package xcodeproj
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -19,16 +20,18 @@ func cloneSampleProject(t *testing.T, url, projectPth string) string {
 	return filepath.Join(tmpDir, projectPth)
 }
 
-func TestTargetCodeSignMapping(t *testing.T) {
+func TestResolveCodeSignInfo(t *testing.T) {
+	user := os.Getenv("USER")
+
 	{
 		projectPth := cloneSampleProject(t, "https://github.com/bitrise-samples/sample-apps-ios-multi-target.git", "code-sign-test.xcodeproj")
 
-		mapping, err := TargetCodeSignMapping(projectPth)
+		targetCodeSignInfoMap, err := ResolveCodeSignInfo(projectPth, "code-sign-test", "", user)
 		require.NoError(t, err)
-		require.Equal(t, 4, len(mapping))
+		require.Equal(t, 4, len(targetCodeSignInfoMap))
 
 		{
-			properties, ok := mapping["watchkit-app Extension"]
+			properties, ok := targetCodeSignInfoMap["watchkit-app Extension"]
 			require.True(t, ok)
 			require.Equal(t, "com.bitrise.code-sign-test.watchkitapp.watchkitextension", properties.BundleIdentifier)
 			require.Equal(t, "Manual", properties.ProvisioningStyle)
@@ -38,7 +41,7 @@ func TestTargetCodeSignMapping(t *testing.T) {
 		}
 
 		{
-			properties, ok := mapping["code-sign-test"]
+			properties, ok := targetCodeSignInfoMap["code-sign-test"]
 			require.True(t, ok)
 			require.Equal(t, "com.bitrise.code-sign-test", properties.BundleIdentifier)
 			require.Equal(t, "Manual", properties.ProvisioningStyle)
@@ -48,7 +51,7 @@ func TestTargetCodeSignMapping(t *testing.T) {
 		}
 
 		{
-			properties, ok := mapping["share-extension"]
+			properties, ok := targetCodeSignInfoMap["share-extension"]
 			require.True(t, ok)
 			require.Equal(t, "com.bitrise.code-sign-test.share-extension", properties.BundleIdentifier)
 			require.Equal(t, "Manual", properties.ProvisioningStyle)
@@ -58,7 +61,7 @@ func TestTargetCodeSignMapping(t *testing.T) {
 		}
 
 		{
-			properties, ok := mapping["watchkit-app"]
+			properties, ok := targetCodeSignInfoMap["watchkit-app"]
 			require.True(t, ok)
 			require.Equal(t, "com.bitrise.code-sign-test.watchkitapp", properties.BundleIdentifier)
 			require.Equal(t, "Manual", properties.ProvisioningStyle)
@@ -71,12 +74,12 @@ func TestTargetCodeSignMapping(t *testing.T) {
 	{
 		projectPth := cloneSampleProject(t, "https://github.com/bitrise-samples/sample-apps-ios-simple-objc.git", "ios-simple-objc/ios-simple-objc.xcodeproj")
 
-		mapping, err := TargetCodeSignMapping(projectPth)
+		targetCodeSignInfoMap, err := ResolveCodeSignInfo(projectPth, "ios-simple-objc", "", user)
 		require.NoError(t, err)
-		require.Equal(t, 1, len(mapping))
+		require.Equal(t, 1, len(targetCodeSignInfoMap))
 
 		{
-			properties, ok := mapping["ios-simple-objc"]
+			properties, ok := targetCodeSignInfoMap["ios-simple-objc"]
 			require.True(t, ok)
 			require.Equal(t, "Bitrise.ios-simple-objc", properties.BundleIdentifier)
 			require.Equal(t, "Manual", properties.ProvisioningStyle)
