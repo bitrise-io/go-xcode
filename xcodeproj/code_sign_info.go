@@ -128,9 +128,9 @@ func getBundleIDWithPlistbuddy(infoPlistPth string) (string, error) {
 	if err != nil {
 		errorMessage := cmd.PrintableCommandArgs() + " failed"
 		if errorutil.IsExitStatusError(err) {
-			errorMessage = fmt.Sprintf("%s, error: %s", errorMessage, err)
-		} else if out != "" {
 			errorMessage = fmt.Sprintf("%s, output: %s", errorMessage, out)
+		} else if out != "" {
+			errorMessage = fmt.Sprintf("%s, error: %s", errorMessage, err)
 		}
 		return "", errors.New(errorMessage)
 	}
