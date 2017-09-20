@@ -3,6 +3,7 @@ package xcodeproj
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/command"
@@ -33,6 +34,11 @@ func TestResolveCodeSignInfo(t *testing.T) {
 		{
 			properties, ok := targetCodeSignInfoMap["watchkit-app Extension"]
 			require.True(t, ok)
+
+			require.Equal(t, true, strings.HasSuffix(properties.ProjectPth, "/code-sign-test.xcodeproj"), properties.ProjectPth)
+			require.Equal(t, true, strings.HasSuffix(properties.InfoPlistPth, "/watchkit-app Extension/Info.plist"), properties.InfoPlistPth)
+			require.Equal(t, "Release", properties.Configuration)
+
 			require.Equal(t, "com.bitrise.code-sign-test.watchkitapp.watchkitextension", properties.BundleIdentifier)
 			require.Equal(t, "Manual", properties.ProvisioningStyle)
 			require.Equal(t, "iPhone Developer", properties.CodeSignIdentity)
@@ -43,6 +49,11 @@ func TestResolveCodeSignInfo(t *testing.T) {
 		{
 			properties, ok := targetCodeSignInfoMap["code-sign-test"]
 			require.True(t, ok)
+
+			require.Equal(t, true, strings.HasSuffix(properties.ProjectPth, "/code-sign-test.xcodeproj"), properties.ProjectPth)
+			require.Equal(t, true, strings.HasSuffix(properties.InfoPlistPth, "/code-sign-test/Info.plist"), properties.InfoPlistPth)
+			require.Equal(t, "Release", properties.Configuration)
+
 			require.Equal(t, "com.bitrise.code-sign-test", properties.BundleIdentifier)
 			require.Equal(t, "Manual", properties.ProvisioningStyle)
 			require.Equal(t, "iPhone Developer", properties.CodeSignIdentity)
@@ -53,6 +64,11 @@ func TestResolveCodeSignInfo(t *testing.T) {
 		{
 			properties, ok := targetCodeSignInfoMap["share-extension"]
 			require.True(t, ok)
+
+			require.Equal(t, true, strings.HasSuffix(properties.ProjectPth, "/code-sign-test.xcodeproj"), properties.ProjectPth)
+			require.Equal(t, true, strings.HasSuffix(properties.InfoPlistPth, "/share-extension/Info.plist"), properties.InfoPlistPth)
+			require.Equal(t, "Release", properties.Configuration)
+
 			require.Equal(t, "com.bitrise.code-sign-test.share-extension", properties.BundleIdentifier)
 			require.Equal(t, "Manual", properties.ProvisioningStyle)
 			require.Equal(t, "iPhone Developer", properties.CodeSignIdentity)
@@ -63,6 +79,11 @@ func TestResolveCodeSignInfo(t *testing.T) {
 		{
 			properties, ok := targetCodeSignInfoMap["watchkit-app"]
 			require.True(t, ok)
+
+			require.Equal(t, true, strings.HasSuffix(properties.ProjectPth, "/code-sign-test.xcodeproj"), properties.ProjectPth)
+			require.Equal(t, true, strings.HasSuffix(properties.InfoPlistPth, "/watchkit-app/Info.plist"), properties.InfoPlistPth)
+			require.Equal(t, "Release", properties.Configuration)
+
 			require.Equal(t, "com.bitrise.code-sign-test.watchkitapp", properties.BundleIdentifier)
 			require.Equal(t, "Manual", properties.ProvisioningStyle)
 			require.Equal(t, "iPhone Developer", properties.CodeSignIdentity)
@@ -81,6 +102,11 @@ func TestResolveCodeSignInfo(t *testing.T) {
 		{
 			properties, ok := targetCodeSignInfoMap["ios-simple-objc"]
 			require.True(t, ok)
+
+			require.Equal(t, true, strings.HasSuffix(properties.ProjectPth, "/ios-simple-objc.xcodeproj"), properties.ProjectPth)
+			require.Equal(t, true, strings.HasSuffix(properties.InfoPlistPth, "/ios-simple-objc/Info.plist"), properties.InfoPlistPth)
+			require.Equal(t, "Release", properties.Configuration)
+
 			require.Equal(t, "Bitrise.ios-simple-objc", properties.BundleIdentifier)
 			require.Equal(t, "Manual", properties.ProvisioningStyle)
 			require.Equal(t, "iPhone Developer", properties.CodeSignIdentity)

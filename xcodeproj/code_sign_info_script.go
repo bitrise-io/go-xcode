@@ -83,6 +83,7 @@ def collect_dependent_targets(target, dependent_targets)
 
   dependencies.each do |dependency|
     dependent_target = dependency.target
+    next unless dependent_target
     collect_dependent_targets(dependent_target, dependent_targets)
   end
 
@@ -127,10 +128,9 @@ def read_code_sign_infos(project_or_workspace_pth, scheme_name, user_name, build
     info_plist_file = File.join(File.dirname(project_or_workspace_pth), info_plist_file) unless info_plist_file.empty?
 
     code_sign_info = {
+      project: project.path,
       info_plist_file: info_plist_file,
-
       configuration: build_configuration.name,
-
       provisioning_style: provisioning_style,
       bundle_id: bundle_id,
       code_sign_identity: code_sign_identity,
@@ -147,8 +147,12 @@ end
 begin
   project_path = ENV['project']
   scheme_name = ENV['scheme']
-  configuration = ENV['configuration']
   user_name = ENV['user']
+  configuration = ENV['configuration']
+
+  raise 'missing project_path' if project_path.to_s.empty?
+  raise 'missing scheme_name' if scheme_name.to_s.empty?
+  raise 'missing user_name' if user_name.to_s.empty?
 
   mapping = read_code_sign_infos(project_path, scheme_name, user_name, configuration)
   result = {
