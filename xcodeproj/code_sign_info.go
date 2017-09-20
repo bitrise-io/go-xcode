@@ -225,7 +225,7 @@ func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, configuration, user stri
 		resolvedCodeSignInfo := CodeSignInfo{
 			InfoPlistPth:                 infoPlistPth,
 			ProjectPth:                   projectPth,
-			Configuration:                codeSignInfo.Configuration,
+			Configuration:                configuration,
 			BundleIdentifier:             bundleID,
 			ProvisioningStyle:            provisioningStyle,
 			CodeSignIdentity:             codeSignIdentity,
