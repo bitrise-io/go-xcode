@@ -76,7 +76,6 @@ func (profile Profile) GetApplicationIdentifier() string {
 func (profile Profile) GetBundleIdentifier() string {
 	applicationID := profile.GetApplicationIdentifier()
 	teamID := profile.GetTeamID()
-	fmt.Printf("applicationID: %s - teamID: %s\n", applicationID, teamID)
 	return strings.TrimPrefix(applicationID, teamID+".")
 }
 
