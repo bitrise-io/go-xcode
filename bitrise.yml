@@ -90,3 +90,4 @@ workflows:
             go get -u -v github.com/bitrise-io/go-utils/command
             go get -u -v github.com/hashicorp/go-version
             go get -u -v howett.net/plist
+            go get -u -v github.com/pkg/errors

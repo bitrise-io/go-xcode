@@ -9,15 +9,16 @@ import (
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/command/rubyscript"
+	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-tools/go-xcode/plistutil"
+	"github.com/pkg/errors"
 )
 
 // CodeSignInfo ...
 type CodeSignInfo struct {
-	InfoPlistPth string `json:"info_plist_file"`
-
-	Configuration string `json:"configuration"`
-
+	ProjectPth                   string `json:"project"`
+	InfoPlistPth                 string `json:"info_plist_file"`
+	Configuration                string `json:"configuration"`
 	BundleIdentifier             string `json:"bundle_id"`
 	ProvisioningStyle            string `json:"provisioning_style"`
 	CodeSignIdentity             string `json:"code_sign_identity"`
@@ -40,11 +41,15 @@ func getCodeSignInfoWithXcodeprojGem(projectPth, scheme, configuration, user str
 	if err != nil {
 		return nil, fmt.Errorf("failed to create script runner command, error: %s", err)
 	}
-	runCmd.SetEnvs(append(runCmd.GetCmd().Env,
-		"project="+projectPth,
-		"scheme="+scheme,
-		"configuration="+configuration,
-		"user="+user)...)
+
+	envsToAppend := []string{
+		"project=" + projectPth,
+		"scheme=" + scheme,
+		"configuration=" + configuration,
+		"user=" + user}
+	envs := append(runCmd.GetCmd().Env, envsToAppend...)
+
+	runCmd.SetEnvs(envs...)
 
 	out, err := runCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -94,17 +99,14 @@ func parseBuildSettingsOut(out string) (map[string]string, error) {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return map[string]string{}, err
+		return map[string]string{}, errors.Wrap(err, "Failed to scan build settings")
 	}
 
 	return buildSettings, nil
 }
 
 func getBuildSettingsWithXcodebuild(projectPth, target, configuration string) (map[string]string, error) {
-	args := []string{"-showBuildSettings"}
-	if target != "" {
-		args = append(args, "-target", target)
-	}
+	args := []string{"-showBuildSettings", "-project", projectPth, "-target", target}
 	if configuration != "" {
 		args = append(args, "-configuration", configuration)
 	}
@@ -114,7 +116,10 @@ func getBuildSettingsWithXcodebuild(projectPth, target, configuration string) (m
 
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		return map[string]string{}, err
+		if errorutil.IsExitStatusError(err) {
+			return map[string]string{}, errors.Wrapf(err, "%s failed with output: %s", cmd.PrintableCommandArgs(), out)
+		}
+		return map[string]string{}, errors.Wrapf(err, "%s failed", cmd.PrintableCommandArgs())
 	}
 
 	return parseBuildSettingsOut(out)
@@ -140,20 +145,45 @@ func firstNonEmpty(values ...string) string {
 }
 
 // ResolveCodeSignInfo ...
-func ResolveCodeSignInfo(projectPth, scheme, configuration, user string) (map[string]CodeSignInfo, error) {
-	targetCodeSignInfoMap, err := getCodeSignInfoWithXcodeprojGem(projectPth, scheme, configuration, user)
+func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, configuration, user string) (map[string]CodeSignInfo, error) {
+	targetCodeSignInfoMap, err := getCodeSignInfoWithXcodeprojGem(projectOrWorkspacePth, scheme, configuration, user)
 	if err != nil {
 		return nil, err
+	}
+
+	{
+		mapping, err := json.MarshalIndent(targetCodeSignInfoMap, "", "\t")
+		if err == nil {
+			fmt.Printf("target code sign info mapping based on the project:\n%s\n", mapping)
+		}
 	}
 
 	resolvedCodeSignInfoMap := map[string]CodeSignInfo{}
 	for target, codeSignInfo := range targetCodeSignInfoMap {
 		configuration = codeSignInfo.Configuration
 
-		buildSettings, err := getBuildSettingsWithXcodebuild(projectPth, target, configuration)
+		buildSettings, err := getBuildSettingsWithXcodebuild(codeSignInfo.ProjectPth, target, configuration)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read project build settings, error: %s", err)
 		}
+
+		{
+			settings, err := json.MarshalIndent(buildSettings, "", "\t")
+			if err == nil {
+				fmt.Printf("target (%s) build settings:\n%s\n", target, settings)
+			}
+		}
+
+		// resolve Info.plist path
+		infoPlistPth := buildSettings["INFOPLIST_FILE"]
+		if infoPlistPth != "" {
+			projectDir := filepath.Dir(codeSignInfo.ProjectPth)
+			infoPlistPth = filepath.Join(projectDir, infoPlistPth)
+		}
+		if infoPlistPth == "" && codeSignInfo.InfoPlistPth != "" && !strings.Contains(codeSignInfo.InfoPlistPth, "$") {
+			infoPlistPth = codeSignInfo.InfoPlistPth
+		}
+		// ---
 
 		// resolve bundle id
 		// best case if it presents in the buildSettings, since it is expanded
@@ -163,9 +193,9 @@ func ResolveCodeSignInfo(projectPth, scheme, configuration, user string) (map[st
 			// use the bundle id parsed from the project file, unless it contains env var
 			bundleID = codeSignInfo.BundleIdentifier
 		}
-		if bundleID == "" && codeSignInfo.InfoPlistPth != "" {
+		if bundleID == "" && infoPlistPth != "" {
 			// try to find the bundle id in the Info.plist file, unless it contains env var
-			id, err := getBundleIDWithPlistbuddy(codeSignInfo.InfoPlistPth)
+			id, err := getBundleIDWithPlistbuddy(infoPlistPth)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve bundle id, error: %s", err)
 			}
@@ -184,6 +214,9 @@ func ResolveCodeSignInfo(projectPth, scheme, configuration, user string) (map[st
 		provisioningProfile := firstNonEmpty(buildSettings["PROVISIONING_PROFILE"], codeSignInfo.ProvisioningProfile)
 
 		resolvedCodeSignInfo := CodeSignInfo{
+			InfoPlistPth:                 infoPlistPth,
+			ProjectPth:                   codeSignInfo.ProjectPth,
+			Configuration:                codeSignInfo.Configuration,
 			BundleIdentifier:             bundleID,
 			ProvisioningStyle:            provisioningStyle,
 			CodeSignIdentity:             codeSignIdentity,
