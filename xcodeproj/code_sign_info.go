@@ -151,13 +151,6 @@ func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, configuration, user stri
 		return nil, err
 	}
 
-	{
-		mapping, err := json.MarshalIndent(targetCodeSignInfoMap, "", "\t")
-		if err == nil {
-			fmt.Printf("target code sign info mapping based on the project:\n%s\n", mapping)
-		}
-	}
-
 	resolvedCodeSignInfoMap := map[string]CodeSignInfo{}
 	for target, codeSignInfo := range targetCodeSignInfoMap {
 		if target == "" {
@@ -174,13 +167,6 @@ func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, configuration, user stri
 		buildSettings, err := getTargetBuildSettingsWithXcodebuild(projectPth, target, configuration)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read project build settings, error: %s", err)
-		}
-
-		{
-			settings, err := json.MarshalIndent(buildSettings, "", "\t")
-			if err == nil {
-				fmt.Printf("target (%s) build settings:\n%s\n", target, settings)
-			}
 		}
 
 		// resolve Info.plist path
