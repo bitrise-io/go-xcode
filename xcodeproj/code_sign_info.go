@@ -105,7 +105,7 @@ func parseBuildSettingsOut(out string) (map[string]string, error) {
 	return buildSettings, nil
 }
 
-func getBuildSettingsWithXcodebuild(projectPth, target, configuration string) (map[string]string, error) {
+func getTargetBuildSettingsWithXcodebuild(projectPth, target, configuration string) (map[string]string, error) {
 	args := []string{"-showBuildSettings", "-project", projectPth, "-target", target}
 	if configuration != "" {
 		args = append(args, "-configuration", configuration)
@@ -160,9 +160,18 @@ func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, configuration, user stri
 
 	resolvedCodeSignInfoMap := map[string]CodeSignInfo{}
 	for target, codeSignInfo := range targetCodeSignInfoMap {
+		if target == "" {
+			return nil, errors.New("target name is empty")
+		}
+
+		projectPth := codeSignInfo.ProjectPth
+		if projectPth == "" {
+			return nil, fmt.Errorf("failed to resolve which project contains target: %s", target)
+		}
+
 		configuration = codeSignInfo.Configuration
 
-		buildSettings, err := getBuildSettingsWithXcodebuild(codeSignInfo.ProjectPth, target, configuration)
+		buildSettings, err := getTargetBuildSettingsWithXcodebuild(projectPth, target, configuration)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read project build settings, error: %s", err)
 		}
@@ -177,7 +186,7 @@ func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, configuration, user stri
 		// resolve Info.plist path
 		infoPlistPth := buildSettings["INFOPLIST_FILE"]
 		if infoPlistPth != "" {
-			projectDir := filepath.Dir(codeSignInfo.ProjectPth)
+			projectDir := filepath.Dir(projectPth)
 			infoPlistPth = filepath.Join(projectDir, infoPlistPth)
 		}
 		if infoPlistPth == "" && codeSignInfo.InfoPlistPth != "" && !strings.Contains(codeSignInfo.InfoPlistPth, "$") {
@@ -215,7 +224,7 @@ func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, configuration, user stri
 
 		resolvedCodeSignInfo := CodeSignInfo{
 			InfoPlistPth:                 infoPlistPth,
-			ProjectPth:                   codeSignInfo.ProjectPth,
+			ProjectPth:                   projectPth,
 			Configuration:                codeSignInfo.Configuration,
 			BundleIdentifier:             bundleID,
 			ProvisioningStyle:            provisioningStyle,
