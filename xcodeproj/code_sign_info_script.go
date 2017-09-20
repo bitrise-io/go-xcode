@@ -84,6 +84,17 @@ def collect_dependent_targets(target, dependent_targets)
   dependencies.each do |dependency|
     dependent_target = dependency.target
     next unless dependent_target
+
+    product_type = dependent_target.product_type
+    next unless product_type
+
+    parsed_product_type = Xcodeproj::Constants::PRODUCT_TYPE_UTI.key(product_type)
+    next unless parsed_product_type
+
+    extension = Xcodeproj::Constants::PRODUCT_UTI_EXTENSIONS[parsed_product_type]
+    next unless extension
+    next unless (extension == "app" || extension == "appex")
+
     collect_dependent_targets(dependent_target, dependent_targets)
   end
 
