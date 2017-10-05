@@ -20,6 +20,8 @@ func TestProfile(t *testing.T) {
 		require.Equal(t, exportoptions.MethodDevelopment, Profile(profile).GetExportMethod())
 		require.Equal(t, "9NS44DLTN7", Profile(profile).GetTeamID())
 		require.Equal(t, "2017-09-22T11:28:46Z", Profile(profile).GetExpirationDate().Format("2006-01-02T15:04:05Z"))
+		require.Equal(t, []string{"b13813075ad9b298cb9a9f28555c49573d8bc322"}, Profile(profile).GetProvisionedDevices())
+		require.Equal(t, [][]uint8{[]uint8{}}, Profile(profile).GetDeveloperCertificates())
 	}
 
 	t.Log("app store profile specifies app-store export method")
@@ -33,6 +35,8 @@ func TestProfile(t *testing.T) {
 		require.Equal(t, exportoptions.MethodAppStore, Profile(profile).GetExportMethod())
 		require.Equal(t, "9NS44DLTN7", Profile(profile).GetTeamID())
 		require.Equal(t, "2017-09-21T13:20:06Z", Profile(profile).GetExpirationDate().Format("2006-01-02T15:04:05Z"))
+		require.Equal(t, []string(nil), Profile(profile).GetProvisionedDevices())
+		require.Equal(t, [][]uint8{[]uint8{}}, Profile(profile).GetDeveloperCertificates())
 	}
 
 	t.Log("ad hoc profile specifies ad-hoc export method")
@@ -46,6 +50,8 @@ func TestProfile(t *testing.T) {
 		require.Equal(t, exportoptions.MethodAdHoc, Profile(profile).GetExportMethod())
 		require.Equal(t, "9NS44DLTN7", Profile(profile).GetTeamID())
 		require.Equal(t, "2017-09-21T13:20:06Z", Profile(profile).GetExpirationDate().Format("2006-01-02T15:04:05Z"))
+		require.Equal(t, []string{"b13813075ad9b298cb9a9f28555c49573d8bc322"}, Profile(profile).GetProvisionedDevices())
+		require.Equal(t, [][]uint8{[]uint8{}}, Profile(profile).GetDeveloperCertificates())
 	}
 
 	t.Log("it creates model from enterprise profile content")
@@ -59,5 +65,7 @@ func TestProfile(t *testing.T) {
 		require.Equal(t, exportoptions.MethodEnterprise, Profile(profile).GetExportMethod())
 		require.Equal(t, "9NS44DLTN7", Profile(profile).GetTeamID())
 		require.Equal(t, "2016-10-04T13:32:46Z", Profile(profile).GetExpirationDate().Format("2006-01-02T15:04:05Z"))
+		require.Equal(t, []string(nil), Profile(profile).GetProvisionedDevices())
+		require.Equal(t, [][]uint8{[]uint8{}}, Profile(profile).GetDeveloperCertificates())
 	}
 }
