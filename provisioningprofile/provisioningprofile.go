@@ -118,3 +118,17 @@ func (profile Profile) GetExpirationDate() time.Time {
 	expiry, _ := data.GetTime("ExpirationDate")
 	return expiry
 }
+
+// GetProvisionedDevices ...
+func (profile Profile) GetProvisionedDevices() []string {
+	data := plistutil.PlistData(profile)
+	devices, _ := data.GetStringArray("ProvisionedDevices")
+	return devices
+}
+
+// GetDeveloperCertificates ...
+func (profile Profile) GetDeveloperCertificates() [][]byte {
+	data := plistutil.PlistData(profile)
+	developerCertificates, _ := data.GetByteArrayArray("DeveloperCertificates")
+	return developerCertificates
+}
