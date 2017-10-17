@@ -7,7 +7,7 @@ def workspace_contained_projects(workspace_pth)
   project_paths = []
   workspace.file_references.each do |ref|
     pth = ref.path
-    next unless File.extname(pth) == ".xcodeproj"
+    next unless File.extname(pth) == '.xcodeproj'
     next if pth.end_with?('Pods/Pods.xcodeproj')
 
     project_path = File.expand_path(pth, workspace_dir)
@@ -148,7 +148,7 @@ def read_scheme_target_mapping(project_or_workspace_pth, scheme_name, user_name)
   end
   raise 'failed to collect buildable targets' if project_targets.empty?
 
-  return {
+  {
     configuration: configuration,
     project_targets: project_targets
   }
