@@ -146,7 +146,7 @@ def read_scheme_target_mapping(project_or_workspace_pth, scheme_name, user_name)
       project_targets[project_pth] = dependent_targets.collect(&:name)
     end
   end
-  raise 'failed to collect runnable targets' if project_targets.empty?
+  raise 'failed to collect buildable targets' if project_targets.empty?
 
   return {
     configuration: configuration,
