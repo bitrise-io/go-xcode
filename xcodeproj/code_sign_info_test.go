@@ -1,6 +1,7 @@
 package xcodeproj
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,9 +27,9 @@ func TestResolveCodeSignInfo(t *testing.T) {
 	{
 		projectPth := cloneSampleProject(t, "https://github.com/bitrise-samples/sample-apps-ios-multi-target.git", "code-sign-test.xcodeproj")
 
-		targetCodeSignInfoMap, err := ResolveCodeSignInfo(projectPth, "code-sign-test", "", user)
+		targetCodeSignInfoMap, err := ResolveCodeSignInfo(projectPth, "code-sign-test", user)
 		require.NoError(t, err)
-		require.Equal(t, 4, len(targetCodeSignInfoMap))
+		require.Equal(t, 4, len(targetCodeSignInfoMap), fmt.Sprintf("%s", targetCodeSignInfoMap))
 
 		{
 			properties, ok := targetCodeSignInfoMap["watchkit-app Extension"]
@@ -78,9 +79,9 @@ func TestResolveCodeSignInfo(t *testing.T) {
 	{
 		projectPth := cloneSampleProject(t, "https://github.com/bitrise-samples/sample-apps-ios-simple-objc.git", "ios-simple-objc/ios-simple-objc.xcodeproj")
 
-		targetCodeSignInfoMap, err := ResolveCodeSignInfo(projectPth, "ios-simple-objc", "", user)
+		targetCodeSignInfoMap, err := ResolveCodeSignInfo(projectPth, "ios-simple-objc", user)
 		require.NoError(t, err)
-		require.Equal(t, 1, len(targetCodeSignInfoMap))
+		require.Equal(t, 1, len(targetCodeSignInfoMap), fmt.Sprintf("%s", targetCodeSignInfoMap))
 
 		{
 			properties, ok := targetCodeSignInfoMap["ios-simple-objc"]
