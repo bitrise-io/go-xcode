@@ -1,4 +1,4 @@
-package provisioningprofile
+package profileutil
 
 import (
 	"github.com/bitrise-tools/go-xcode/plistutil"
