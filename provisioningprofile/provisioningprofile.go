@@ -1,13 +1,13 @@
 package provisioningprofile
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
-	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/steps-certificate-and-profile-installer/profileutil"
 	"github.com/bitrise-tools/go-xcode/exportoptions"
 	"github.com/bitrise-tools/go-xcode/plistutil"
+	"howett.net/plist"
 )
 
 const (
@@ -19,27 +19,16 @@ type Profile plistutil.PlistData
 
 // NewProfileFromFile ...
 func NewProfileFromFile(provisioningProfilePth string) (Profile, error) {
-	cmd := command.New("security", "cms", "-D", "-i", provisioningProfilePth)
-
-	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("command failed, error: %s", err)
-	}
-
-	// fix: security: SecPolicySetValue: One or more parameters passed to a function were not valid.
-	outSplit := strings.Split(out, "\n")
-	if len(outSplit) > 0 {
-		if strings.Contains(outSplit[0], notValidParameterErrorMessage) {
-			fixedOutSplit := outSplit[1:len(outSplit)]
-			out = strings.Join(fixedOutSplit, "\n")
-		}
-	}
-	// ---
-
-	plistData, err := plistutil.NewPlistDataFromContent(out)
+	pkcs7, err := profileutil.ProvisioningProfileFromFile(provisioningProfilePth)
 	if err != nil {
 		return Profile{}, err
 	}
+
+	var plistData plistutil.PlistData
+	if _, err := plist.Unmarshal(pkcs7.Content, &plistData); err != nil {
+		return Profile{}, err
+	}
+
 	return Profile(plistData), nil
 }
 
@@ -108,6 +97,13 @@ func (profile Profile) GetExportMethod() exportoptions.Method {
 	}
 
 	return exportoptions.MethodDefault
+}
+
+// GetEntitlements ...
+func (profile Profile) GetEntitlements() plistutil.PlistData {
+	data := plistutil.PlistData(profile)
+	entitlements, _ := data.GetMapStringInterface("Entitlements")
+	return entitlements
 }
 
 // GetTeamID ...

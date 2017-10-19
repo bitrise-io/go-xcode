@@ -58,7 +58,6 @@ func readSchemeTargetMapping(projectPth, scheme, user string) (TargetMapping, er
 		return TargetMapping{}, fmt.Errorf("failed to run ruby script, output: %s, error: %s", out, err)
 	}
 
-	// OutputModel ...
 	type OutputModel struct {
 		Data  TargetMapping `json:"data"`
 		Error string        `json:"error"`
