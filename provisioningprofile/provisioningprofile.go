@@ -14,40 +14,40 @@ const (
 	notValidParameterErrorMessage = "security: SecPolicySetValue: One or more parameters passed to a function were not valid."
 )
 
-// Profile ...
-type Profile plistutil.PlistData
+// PlistData ...
+type PlistData plistutil.PlistData
 
-// NewProfileFromFile ...
-func NewProfileFromFile(provisioningProfilePth string) (Profile, error) {
-	pkcs7, err := profileutil.ProvisioningProfileFromFile(provisioningProfilePth)
+// NewPlistDataFromFile ...
+func NewPlistDataFromFile(provisioningProfilePth string) (PlistData, error) {
+	provisioningProfilePKCS7, err := profileutil.ProvisioningProfileFromFile(provisioningProfilePth)
 	if err != nil {
-		return Profile{}, err
+		return PlistData{}, err
 	}
 
 	var plistData plistutil.PlistData
-	if _, err := plist.Unmarshal(pkcs7.Content, &plistData); err != nil {
-		return Profile{}, err
+	if _, err := plist.Unmarshal(provisioningProfilePKCS7.Content, &plistData); err != nil {
+		return PlistData{}, err
 	}
 
-	return Profile(plistData), nil
+	return PlistData(plistData), nil
 }
 
 // GetUUID ...
-func (profile Profile) GetUUID() string {
+func (profile PlistData) GetUUID() string {
 	data := plistutil.PlistData(profile)
 	uuid, _ := data.GetString("UUID")
 	return uuid
 }
 
 // GetName ...
-func (profile Profile) GetName() string {
+func (profile PlistData) GetName() string {
 	data := plistutil.PlistData(profile)
 	uuid, _ := data.GetString("Name")
 	return uuid
 }
 
 // GetApplicationIdentifier ...
-func (profile Profile) GetApplicationIdentifier() string {
+func (profile PlistData) GetApplicationIdentifier() string {
 	data := plistutil.PlistData(profile)
 	entitlements, ok := data.GetMapStringInterface("Entitlements")
 	if !ok {
@@ -62,7 +62,7 @@ func (profile Profile) GetApplicationIdentifier() string {
 }
 
 // GetBundleIdentifier ...
-func (profile Profile) GetBundleIdentifier() string {
+func (profile PlistData) GetBundleIdentifier() string {
 	applicationID := profile.GetApplicationIdentifier()
 
 	plistData := plistutil.PlistData(profile)
@@ -78,7 +78,7 @@ func (profile Profile) GetBundleIdentifier() string {
 }
 
 // GetExportMethod ...
-func (profile Profile) GetExportMethod() exportoptions.Method {
+func (profile PlistData) GetExportMethod() exportoptions.Method {
 	data := plistutil.PlistData(profile)
 	_, ok := data.GetStringArray("ProvisionedDevices")
 	if !ok {
@@ -100,14 +100,14 @@ func (profile Profile) GetExportMethod() exportoptions.Method {
 }
 
 // GetEntitlements ...
-func (profile Profile) GetEntitlements() plistutil.PlistData {
+func (profile PlistData) GetEntitlements() plistutil.PlistData {
 	data := plistutil.PlistData(profile)
 	entitlements, _ := data.GetMapStringInterface("Entitlements")
 	return entitlements
 }
 
 // GetTeamID ...
-func (profile Profile) GetTeamID() string {
+func (profile PlistData) GetTeamID() string {
 	data := plistutil.PlistData(profile)
 	entitlements, ok := data.GetMapStringInterface("Entitlements")
 	if ok {
@@ -118,21 +118,21 @@ func (profile Profile) GetTeamID() string {
 }
 
 // GetExpirationDate ...
-func (profile Profile) GetExpirationDate() time.Time {
+func (profile PlistData) GetExpirationDate() time.Time {
 	data := plistutil.PlistData(profile)
 	expiry, _ := data.GetTime("ExpirationDate")
 	return expiry
 }
 
 // GetProvisionedDevices ...
-func (profile Profile) GetProvisionedDevices() []string {
+func (profile PlistData) GetProvisionedDevices() []string {
 	data := plistutil.PlistData(profile)
 	devices, _ := data.GetStringArray("ProvisionedDevices")
 	return devices
 }
 
 // GetDeveloperCertificates ...
-func (profile Profile) GetDeveloperCertificates() [][]byte {
+func (profile PlistData) GetDeveloperCertificates() [][]byte {
 	data := plistutil.PlistData(profile)
 	developerCertificates, _ := data.GetByteArrayArray("DeveloperCertificates")
 	return developerCertificates

@@ -16,8 +16,8 @@ func MatchTargetAndProfileEntitlements(targetEntitlements plistutil.PlistData, p
 	return missingEntitlements
 }
 
-// TargetProfileCapabilityMapping ...
-var TargetProfileCapabilityMapping = map[string]interface{}{
+// KnownTargetCapabilityProfileCapabilityMapping ...
+var KnownTargetCapabilityProfileCapabilityMapping = map[string]interface{}{
 	"com.apple.ApplePay":                         "com.apple.developer.in-app-payments",
 	"com.apple.ApplicationGroups.iOS":            "com.apple.security.application-groups",
 	"com.apple.BackgroundModes":                  "",

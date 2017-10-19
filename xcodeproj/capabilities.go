@@ -40,7 +40,7 @@ func ReadProjectTargetCapabilitiesMapping(projectPth string) (map[string]Capabil
 
 	out, err := runCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("failed to run ruby script, output: %s, error: %s", out, err)
+		return nil, fmt.Errorf("failed to run capabilities analyzer script, output: %s, error: %s", out, err)
 	}
 
 	type OutputModel struct {
@@ -81,12 +81,6 @@ func ReadProjectTargetCapabilitiesMapping(projectPth string) (map[string]Capabil
 			Entitlements: entitlements,
 		}
 	}
-
-	b, err := json.MarshalIndent(targetCapabilitiesInfo, "", "\t")
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("%s\n", string(b))
 
 	return targetCapabilitiesInfo, nil
 }

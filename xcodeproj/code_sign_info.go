@@ -55,7 +55,7 @@ func readSchemeTargetMapping(projectPth, scheme, user string) (TargetMapping, er
 
 	out, err := runCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		return TargetMapping{}, fmt.Errorf("failed to run ruby script, output: %s, error: %s", out, err)
+		return TargetMapping{}, fmt.Errorf("failed to run code signing analyzer script, output: %s, error: %s", out, err)
 	}
 
 	type OutputModel struct {
