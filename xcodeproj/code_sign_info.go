@@ -16,11 +16,12 @@ import (
 
 // CodeSignInfo ...
 type CodeSignInfo struct {
-	BundleIdentifier             string `json:"bundle_id"`
-	CodeSignIdentity             string `json:"code_sign_identity"`
-	ProvisioningProfileSpecifier string `json:"provisioning_profile_specifier"`
-	ProvisioningProfile          string `json:"provisioning_profile"`
-	DevelopmentTeam              string `json:"development_team"`
+	ProjectPath                  string
+	BundleIdentifier             string
+	CodeSignIdentity             string
+	ProvisioningProfileSpecifier string
+	ProvisioningProfile          string
+	DevelopmentTeam              string
 }
 
 // TargetMapping ...
@@ -198,6 +199,7 @@ func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, user string) (map[string
 			developmentTeam := buildSettings["DEVELOPMENT_TEAM"]
 
 			resolvedCodeSignInfo := CodeSignInfo{
+				ProjectPath:                  projectPth,
 				BundleIdentifier:             bundleID,
 				CodeSignIdentity:             codeSignIdentity,
 				ProvisioningProfileSpecifier: provisioningProfileSpecifier,

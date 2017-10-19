@@ -16,8 +16,7 @@ type CapabilitiesInfo struct {
 	Entitlements plistutil.PlistData
 }
 
-// ReadProjectTargetCapabilitiesMapping ...
-func ReadProjectTargetCapabilitiesMapping(projectPth string) (map[string]CapabilitiesInfo, error) {
+func readProjectTargetCapabilitiesMapping(projectPth string) (map[string]CapabilitiesInfo, error) {
 	runner := rubyscript.New(capabilitiesScriptContent)
 	bundleInstallCmd, err := runner.BundleInstallCommand(gemfileContent, "")
 	if err != nil {
@@ -83,4 +82,26 @@ func ReadProjectTargetCapabilitiesMapping(projectPth string) (map[string]Capabil
 	}
 
 	return targetCapabilitiesInfo, nil
+}
+
+// ReadProjectTargetCapabilitiesMapping ...
+func ReadProjectTargetCapabilitiesMapping(projectTargetsMap map[string][]string) (map[string]CapabilitiesInfo, error) {
+	filteredTargetCapabilitiesMap := map[string]CapabilitiesInfo{}
+
+	for projectPth, targets := range projectTargetsMap {
+		targetCapabilitiesMap, err := readProjectTargetCapabilitiesMapping(projectPth)
+		if err != nil {
+			return nil, err
+		}
+
+		for target, capabilities := range targetCapabilitiesMap {
+			for _, targetToCare := range targets {
+				if target == targetToCare {
+					filteredTargetCapabilitiesMap[target] = capabilities
+				}
+			}
+		}
+	}
+
+	return filteredTargetCapabilitiesMap, nil
 }
