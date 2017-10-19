@@ -1,10 +1,9 @@
-package provisioningprofile
+package profileutil
 
 import (
 	"strings"
 	"time"
 
-	"github.com/bitrise-io/steps-certificate-and-profile-installer/profileutil"
 	"github.com/bitrise-tools/go-xcode/exportoptions"
 	"github.com/bitrise-tools/go-xcode/plistutil"
 	"howett.net/plist"
@@ -19,7 +18,7 @@ type PlistData plistutil.PlistData
 
 // NewPlistDataFromFile ...
 func NewPlistDataFromFile(provisioningProfilePth string) (PlistData, error) {
-	provisioningProfilePKCS7, err := profileutil.ProvisioningProfileFromFile(provisioningProfilePth)
+	provisioningProfilePKCS7, err := ProvisioningProfileFromFile(provisioningProfilePth)
 	if err != nil {
 		return PlistData{}, err
 	}
