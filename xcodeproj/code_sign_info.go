@@ -16,7 +16,7 @@ import (
 
 // CodeSignInfo ...
 type CodeSignInfo struct {
-	ProjectPath                  string
+	CodeSignEntitlementsPath     string
 	BundleIdentifier             string
 	CodeSignIdentity             string
 	ProvisioningProfileSpecifier string
@@ -193,13 +193,14 @@ func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, user string) (map[string
 			}
 			// ---
 
+			codeSignEntitlementsPth := buildSettings["CODE_SIGN_ENTITLEMENTS"]
 			codeSignIdentity := buildSettings["CODE_SIGN_IDENTITY"]
 			provisioningProfileSpecifier := buildSettings["PROVISIONING_PROFILE_SPECIFIER"]
 			provisioningProfile := buildSettings["PROVISIONING_PROFILE"]
 			developmentTeam := buildSettings["DEVELOPMENT_TEAM"]
 
 			resolvedCodeSignInfo := CodeSignInfo{
-				ProjectPath:                  projectPth,
+				CodeSignEntitlementsPath:     codeSignEntitlementsPth,
 				BundleIdentifier:             bundleID,
 				CodeSignIdentity:             codeSignIdentity,
 				ProvisioningProfileSpecifier: provisioningProfileSpecifier,
