@@ -24,6 +24,7 @@ type ProvisioningProfileInfoModel struct {
 	ProvisionedDevices    []string
 	DeveloperCertificates []certificateutil.CertificateInfoModel
 	ExpirationDate        time.Time
+	Entitlements          plistutil.PlistData
 }
 
 // IsXcodeManaged ...
@@ -93,6 +94,8 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningPr
 		}
 		info.DeveloperCertificates = certificateutil.CertificateInfos(certificates)
 	}
+
+	info.Entitlements = profile.GetEntitlements()
 
 	return info, nil
 }
