@@ -112,9 +112,9 @@ func NewProvisioningProfileInfoFromFile(pth string) (ProvisioningProfileInfoMode
 	return ProvisioningProfileInfoModel{}, errors.New("failed to parse provisioning profile infos")
 }
 
-// InstalledIosProvisioningProfileInfos ...
-func InstalledIosProvisioningProfileInfos() ([]ProvisioningProfileInfoModel, error) {
-	provisioningProfiles, err := InstalledIosProvisioningProfiles()
+// InstalledProvisioningProfileInfos ...
+func InstalledProvisioningProfileInfos(profileType ProfileType) ([]ProvisioningProfileInfoModel, error) {
+	provisioningProfiles, err := InstalledProvisioningProfiles(profileType)
 	if err != nil {
 		return nil, err
 	}

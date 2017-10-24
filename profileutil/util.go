@@ -22,14 +22,30 @@ func ProvisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {
 	return ProvisioningProfileFromContent(content)
 }
 
-// InstalledIosProvisioningProfiles ...
-func InstalledIosProvisioningProfiles() ([]*pkcs7.PKCS7, error) {
+// ProfileType ...
+type ProfileType string
+
+// ProfileTypeIos ...
+const ProfileTypeIos ProfileType = "ios"
+
+// ProfileTypeMacOs ...
+const ProfileTypeMacOs ProfileType = "macOs"
+
+// InstalledProvisioningProfiles ...
+func InstalledProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, error) {
+	ext := ".mobileprovision"
+	if profileType == ProfileTypeMacOs {
+		ext = ".provisionprofile"
+	}
+
 	provProfileSystemDirPath := "~/Library/MobileDevice/Provisioning Profiles"
 	absProvProfileDirPath, err := pathutil.AbsPath(provProfileSystemDirPath)
 	if err != nil {
 		return nil, err
 	}
-	pths, err := filepath.Glob(absProvProfileDirPath + "/*.mobileprovision")
+
+	pattern := filepath.Join(absProvProfileDirPath, "*"+ext)
+	pths, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, err
 	}
