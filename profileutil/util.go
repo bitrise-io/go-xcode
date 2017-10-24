@@ -8,6 +8,18 @@ import (
 	"github.com/fullsailor/pkcs7"
 )
 
+// ProfileType ...
+type ProfileType string
+
+// ProfileTypeIos ...
+const ProfileTypeIos ProfileType = "ios"
+
+// ProfileTypeMacOs ...
+const ProfileTypeMacOs ProfileType = "macOs"
+
+// ProvProfileSystemDirPath ...
+const ProvProfileSystemDirPath = "~/Library/MobileDevice/Provisioning Profiles"
+
 // ProvisioningProfileFromContent ...
 func ProvisioningProfileFromContent(content []byte) (*pkcs7.PKCS7, error) {
 	return pkcs7.Parse(content)
@@ -22,15 +34,6 @@ func ProvisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {
 	return ProvisioningProfileFromContent(content)
 }
 
-// ProfileType ...
-type ProfileType string
-
-// ProfileTypeIos ...
-const ProfileTypeIos ProfileType = "ios"
-
-// ProfileTypeMacOs ...
-const ProfileTypeMacOs ProfileType = "macOs"
-
 // InstalledProvisioningProfiles ...
 func InstalledProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, error) {
 	ext := ".mobileprovision"
@@ -38,8 +41,7 @@ func InstalledProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, err
 		ext = ".provisionprofile"
 	}
 
-	provProfileSystemDirPath := "~/Library/MobileDevice/Provisioning Profiles"
-	absProvProfileDirPath, err := pathutil.AbsPath(provProfileSystemDirPath)
+	absProvProfileDirPath, err := pathutil.AbsPath(ProvProfileSystemDirPath)
 	if err != nil {
 		return nil, err
 	}
