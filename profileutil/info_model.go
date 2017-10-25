@@ -3,6 +3,7 @@ package profileutil
 import (
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -37,13 +38,13 @@ func (info ProvisioningProfileInfoModel) IsXcodeManaged() bool {
 	return IsXcodeManaged(info.Name)
 }
 
-// IsExpired ...
-func (info ProvisioningProfileInfoModel) IsExpired() bool {
-	if info.ExpirationDate.IsZero() {
-		return false
+// CheckValidity ...
+func (info ProvisioningProfileInfoModel) CheckValidity() error {
+	timeNow := time.Now()
+	if !timeNow.Before(info.ExpirationDate) {
+		return fmt.Errorf("Provisioning Profile is not valid anymore - validity ended at: %s", info.ExpirationDate)
 	}
-
-	return info.ExpirationDate.Before(time.Now())
+	return nil
 }
 
 // HasInstalledCertificate ...
