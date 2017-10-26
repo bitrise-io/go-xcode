@@ -30,7 +30,36 @@ type TargetMapping struct {
 	ProjectTargets map[string][]string `json:"project_targets"`
 }
 
-func readSchemeTargetMapping(projectPth, scheme, user string) (TargetMapping, error) {
+func clearRubyScriptOutput(out string) string {
+	reader := strings.NewReader(out)
+	scanner := bufio.NewScanner(reader)
+
+	jsonLines := []string{}
+	jsonResponseStart := false
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		trimmed := strings.TrimSpace(line)
+
+		if !jsonResponseStart && trimmed == "{" {
+			jsonResponseStart = true
+		}
+		if !jsonResponseStart {
+			continue
+		}
+
+		jsonLines = append(jsonLines, line)
+	}
+
+	if len(jsonLines) == 0 {
+		return out
+	}
+
+	return strings.Join(jsonLines, "\n")
+}
+
+// ReadSchemeTargetMapping ...
+func ReadSchemeTargetMapping(projectPth, scheme, user string) (TargetMapping, error) {
 	runner := rubyscript.New(codeSignInfoScriptContent)
 	bundleInstallCmd, err := runner.BundleInstallCommand(gemfileContent, "")
 	if err != nil {
@@ -65,7 +94,10 @@ func readSchemeTargetMapping(projectPth, scheme, user string) (TargetMapping, er
 	}
 	var output OutputModel
 	if err := json.Unmarshal([]byte(out), &output); err != nil {
-		return TargetMapping{}, fmt.Errorf("failed to unmarshal output: %s", out)
+		out = clearRubyScriptOutput(out)
+		if err := json.Unmarshal([]byte(out), &output); err != nil {
+			return TargetMapping{}, fmt.Errorf("failed to unmarshal output: %s", out)
+		}
 	}
 
 	if output.Error != "" {
@@ -148,7 +180,7 @@ func firstNonEmpty(values ...string) string {
 
 // ResolveCodeSignInfo ...
 func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, user string) (map[string]CodeSignInfo, error) {
-	projectTargetsMapping, err := readSchemeTargetMapping(projectOrWorkspacePth, scheme, user)
+	projectTargetsMapping, err := ReadSchemeTargetMapping(projectOrWorkspacePth, scheme, user)
 	if err != nil {
 		return nil, err
 	}
