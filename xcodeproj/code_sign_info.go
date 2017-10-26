@@ -58,8 +58,7 @@ func clearRubyScriptOutput(out string) string {
 	return strings.Join(jsonLines, "\n")
 }
 
-// ReadSchemeTargetMapping ...
-func ReadSchemeTargetMapping(projectPth, scheme, user string) (TargetMapping, error) {
+func readSchemeTargetMapping(projectPth, scheme, user string) (TargetMapping, error) {
 	runner := rubyscript.New(codeSignInfoScriptContent)
 	bundleInstallCmd, err := runner.BundleInstallCommand(gemfileContent, "")
 	if err != nil {
@@ -180,7 +179,7 @@ func firstNonEmpty(values ...string) string {
 
 // ResolveCodeSignInfo ...
 func ResolveCodeSignInfo(projectOrWorkspacePth, scheme, user string) (map[string]CodeSignInfo, error) {
-	projectTargetsMapping, err := ReadSchemeTargetMapping(projectOrWorkspacePth, scheme, user)
+	projectTargetsMapping, err := readSchemeTargetMapping(projectOrWorkspacePth, scheme, user)
 	if err != nil {
 		return nil, err
 	}
