@@ -2,6 +2,7 @@ package export
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-tools/go-xcode/certificateutil"
@@ -11,71 +12,91 @@ import (
 	"github.com/ryanuber/go-glob"
 )
 
-// CodeSignGroupItem ...
-type CodeSignGroupItem struct {
-	Certificate        certificateutil.CertificateInfoModel
-	BundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel
-}
-
 func isCertificateInstalled(installedCertificates []certificateutil.CertificateInfoModel, certificate certificateutil.CertificateInfoModel) bool {
-	installed := false
-	for _, installedCertificate := range installedCertificates {
-		if certificate.Serial == installedCertificate.Serial {
-			installed = true
-			break
-		}
+	installedMap := map[string]bool{}
+	for _, certificate := range installedCertificates {
+		installedMap[certificate.Serial] = true
 	}
-
-	if installed {
-		log.Printf("certificate: %s [%s] is installed", certificate.CommonName, certificate.Serial)
-	}
-
-	return installed
+	return installedMap[certificate.Serial]
 }
 
-func createCertificateProfilesMapping(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel) map[string][]profileutil.ProvisioningProfileInfoModel {
-	createCertificateProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
+// CertificateProfilesGroup ...
+type CertificateProfilesGroup struct {
+	Certificate certificateutil.CertificateInfoModel
+	Profiles    []profileutil.ProvisioningProfileInfoModel
+}
+
+// PrintCertificateProfilesGroup ...
+func PrintCertificateProfilesGroup(group CertificateProfilesGroup) {
+	log.Printf(group.Certificate.CommonName)
+	for _, profile := range group.Profiles {
+		log.Printf("- %s:", profile.Name)
+	}
+}
+
+func createCertificateProfilesGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel) []CertificateProfilesGroup {
+	serialProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
+	serialCertificateMap := map[string]certificateutil.CertificateInfoModel{}
 	for _, profile := range profiles {
-		for _, embeddedCert := range profile.DeveloperCertificates {
-			if !isCertificateInstalled(certificates, embeddedCert) {
+		for _, certificate := range profile.DeveloperCertificates {
+			if !isCertificateInstalled(certificates, certificate) {
 				continue
 			}
 
-			if _, ok := createCertificateProfilesMap[embeddedCert.Serial]; !ok {
-				createCertificateProfilesMap[embeddedCert.Serial] = []profileutil.ProvisioningProfileInfoModel{}
+			certificateProfiles := serialProfilesMap[certificate.Serial]
+			if certificateProfiles == nil {
+				certificateProfiles = []profileutil.ProvisioningProfileInfoModel{}
 			}
-			createCertificateProfilesMap[embeddedCert.Serial] = append(createCertificateProfilesMap[embeddedCert.Serial], profile)
+			certificateProfiles = append(certificateProfiles, profile)
+			serialProfilesMap[certificate.Serial] = certificateProfiles
+			serialCertificateMap[certificate.Serial] = certificate
 		}
 	}
 
-	fmt.Println()
+	groups := []CertificateProfilesGroup{}
+	for serial, profiles := range serialProfilesMap {
+		certificate := serialCertificateMap[serial]
+		group := CertificateProfilesGroup{
+			Certificate: certificate,
+			Profiles:    profiles,
+		}
+		PrintCertificateProfilesGroup(group)
+		groups = append(groups, group)
+	}
 
-	for subject, profiles := range createCertificateProfilesMap {
-		log.Printf("certificate: %s included in profiles:", subject)
+	return groups
+}
+
+// SelectableCodeSignGroup ..
+type SelectableCodeSignGroup struct {
+	Certificate         certificateutil.CertificateInfoModel
+	BundleIDProfilesMap map[string][]profileutil.ProvisioningProfileInfoModel
+}
+
+// PrintSelectableCodeSignGroup ...
+func PrintSelectableCodeSignGroup(group SelectableCodeSignGroup) {
+	log.Printf(group.Certificate.CommonName)
+	for bundleID, profiles := range group.BundleIDProfilesMap {
+		log.Printf("%s:", bundleID)
 		for _, profile := range profiles {
 			log.Printf("- %s", profile.Name)
 		}
-		fmt.Println()
-	}
-
-	return createCertificateProfilesMap
-}
-
-func printCertificateProfilesGroup(serial string, profiles []profileutil.ProvisioningProfileInfoModel) {
-	log.Printf("%s:", serial)
-	for _, profile := range profiles {
-		log.Printf("- %s", profile.Name)
 	}
 }
 
-func filterCertificateProfilesMapping(mapping map[string][]profileutil.ProvisioningProfileInfoModel, bundleIDCapabilitiesMap map[string]plistutil.PlistData, exportMethod exportoptions.Method) map[string][]profileutil.ProvisioningProfileInfoModel {
-	createCertificateProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
+func createSelectableCodeSignGroups(certificateProfilesGroups []CertificateProfilesGroup, bundleIDCapabilitiesMap map[string]plistutil.PlistData, exportMethod exportoptions.Method) []SelectableCodeSignGroup {
+	groups := []SelectableCodeSignGroup{}
 
-	for serial, profiles := range mapping {
-		log.Printf("Checking certificate - profiles group: %s", serial)
+	for _, certificateProfilesGroup := range certificateProfilesGroups {
+		certificate := certificateProfilesGroup.Certificate
+		profiles := certificateProfilesGroup.Profiles
+
+		log.Printf("Checking certificate - profiles group: %s", certificate.CommonName)
 
 		bundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 		for bundleID, capabilities := range bundleIDCapabilitiesMap {
+
+			matchingProfiles := []profileutil.ProvisioningProfileInfoModel{}
 			for _, profile := range profiles {
 				if profile.ExportType != exportMethod {
 					log.Printf("Profile (%s) export type (%s) does not match: %s", profile.Name, profile.ExportType, exportMethod)
@@ -94,60 +115,77 @@ func filterCertificateProfilesMapping(mapping map[string][]profileutil.Provision
 
 				log.Printf("Profile (%s) matches", profile.Name)
 
-				matchingProfiles := bundleIDProfilesMap[bundleID]
-				if matchingProfiles == nil {
-					matchingProfiles = []profileutil.ProvisioningProfileInfoModel{}
-				}
 				matchingProfiles = append(matchingProfiles, profile)
+			}
+
+			if len(matchingProfiles) > 0 {
+				sort.Sort(ByBundleIDLength(matchingProfiles))
 				bundleIDProfilesMap[bundleID] = matchingProfiles
 			}
 		}
+
 		if len(bundleIDProfilesMap) == len(bundleIDCapabilitiesMap) {
-			matchingProfiles := []profileutil.ProvisioningProfileInfoModel{}
-			for _, profiles := range bundleIDProfilesMap {
-				matchingProfiles = append(matchingProfiles, profiles...)
+			group := SelectableCodeSignGroup{
+				Certificate:         certificate,
+				BundleIDProfilesMap: bundleIDProfilesMap,
 			}
-			createCertificateProfilesMap[serial] = matchingProfiles
+			groups = append(groups, group)
 
-			log.Printf("Valid certificate - profiles group:")
-			printCertificateProfilesGroup(serial, matchingProfiles)
+			log.Printf("Valid code sign group:")
+			PrintSelectableCodeSignGroup(group)
+
 		} else {
-			log.Printf("Removing certificate - profiles group: %s", serial)
-		}
-
-		fmt.Println()
-	}
-
-	fmt.Println()
-	return createCertificateProfilesMap
-}
-
-func findCertificate(certificates []certificateutil.CertificateInfoModel, serial string) *certificateutil.CertificateInfoModel {
-	for _, certificate := range certificates {
-		if certificate.Serial == serial {
-			return &certificate
+			log.Printf("Removing certificate - profiles group: %s", certificate.CommonName)
 		}
 	}
-	return nil
+
+	return groups
 }
 
-func printGroup(group CodeSignGroupItem) {
-	log.Printf("Signing with certificate: %s", group.Certificate.CommonName)
+// ResolveSelectableCodeSignGroups ...
+func ResolveSelectableCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDCapabilities map[string]plistutil.PlistData, exportMethod exportoptions.Method) []SelectableCodeSignGroup {
+	log.Printf("Creating certificate profiles groups...")
+	certificateProfilesGroups := createCertificateProfilesGroups(certificates, profiles)
+
+	log.Printf("Creating selectable code sign groups...")
+	return createSelectableCodeSignGroups(certificateProfilesGroups, bundleIDCapabilities, exportMethod)
+}
+
+// CodeSignGroup ...
+type CodeSignGroup struct {
+	Certificate        certificateutil.CertificateInfoModel
+	BundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel
+}
+
+// PrintCodeSignGroup ...
+func PrintCodeSignGroup(group CodeSignGroup) {
+	log.Printf(group.Certificate.CommonName)
 	for bundleID, profile := range group.BundleIDProfileMap {
-		log.Printf("signing %s with: %s", bundleID, profile.Name)
+		log.Printf("%s:", bundleID)
+		log.Printf("- %s", profile.Name)
 	}
 }
 
-func createGroups(mapping map[string][]profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []CodeSignGroupItem {
+func createCodeSignGroups(selectableGroups []SelectableCodeSignGroup) []CodeSignGroup {
 	alreadyUsedProfileUUIDMap := map[string]bool{}
 
-	singleWildcardGroups := []CodeSignGroupItem{}
-	xcodeManagedGroups := []CodeSignGroupItem{}
-	notXcodeManagedGroups := []CodeSignGroupItem{}
-	remainingGroups := []CodeSignGroupItem{}
+	singleWildcardGroups := []CodeSignGroup{}
+	xcodeManagedGroups := []CodeSignGroup{}
+	notXcodeManagedGroups := []CodeSignGroup{}
+	remainingGroups := []CodeSignGroup{}
 
-	for serial, profiles := range mapping {
-		log.Printf("Checking certificate - profiles group: %s", serial)
+	for _, selectableGroup := range selectableGroups {
+		certificate := selectableGroup.Certificate
+		bundleIDProfilesMap := selectableGroup.BundleIDProfilesMap
+
+		bundleIDs := []string{}
+		profiles := []profileutil.ProvisioningProfileInfoModel{}
+		for bundleID, matchingProfiles := range bundleIDProfilesMap {
+			bundleIDs = append(bundleIDs, bundleID)
+			profiles = append(profiles, matchingProfiles...)
+		}
+
+		log.Printf("Checking certificate - profiles group: %s", certificate.CommonName)
 
 		//
 		// create groups with single wildcard profiles
@@ -166,21 +204,21 @@ func createGroups(mapping map[string][]profileutil.ProvisioningProfileInfoModel,
 					}
 				}
 				if matchesForAllBundleID {
-					certificate := findCertificate(profile.DeveloperCertificates, serial)
-					if certificate != nil {
-						bundleIDProfileMap := map[string]profileutil.ProvisioningProfileInfoModel{}
-						for _, bundleID := range bundleIDs {
-							bundleIDProfileMap[bundleID] = profile
-						}
-						codeSignGroup := CodeSignGroupItem{
-							Certificate:        *certificate,
-							BundleIDProfileMap: bundleIDProfileMap,
-						}
-						singleWildcardGroups = append(singleWildcardGroups, codeSignGroup)
-						alreadyUsedProfileUUIDMap[profile.UUID] = true
-						log.Printf("Group with single wildcard profile found:")
-						printGroup(codeSignGroup)
+					bundleIDProfileMap := map[string]profileutil.ProvisioningProfileInfoModel{}
+					for _, bundleID := range bundleIDs {
+						bundleIDProfileMap[bundleID] = profile
 					}
+
+					group := CodeSignGroup{
+						Certificate:        certificate,
+						BundleIDProfileMap: bundleIDProfileMap,
+					}
+					singleWildcardGroups = append(singleWildcardGroups, group)
+
+					alreadyUsedProfileUUIDMap[profile.UUID] = true
+
+					log.Printf("Group with single wildcard profile found:")
+					PrintCodeSignGroup(group)
 				}
 			}
 		}
@@ -193,11 +231,7 @@ func createGroups(mapping map[string][]profileutil.ProvisioningProfileInfoModel,
 			// collect xcode managed profiles
 			xcodeManagedProfiles := []profileutil.ProvisioningProfileInfoModel{}
 			for _, profile := range profiles {
-				if alreadyUsedProfileUUIDMap[profile.UUID] {
-					continue
-				}
-
-				if profile.IsXcodeManaged() {
+				if !alreadyUsedProfileUUIDMap[profile.UUID] && profile.IsXcodeManaged() {
 					xcodeManagedProfiles = append(xcodeManagedProfiles, profile)
 				}
 			}
@@ -248,22 +282,14 @@ func createGroups(mapping map[string][]profileutil.ProvisioningProfileInfoModel,
 
 				// create code sign group
 				if len(bundleIDMannagedProfileMap) == len(bundleIDs) {
-					lastProfile := profileutil.ProvisioningProfileInfoModel{}
-					for _, profile := range bundleIDMannagedProfileMap {
-						lastProfile = profile
-						alreadyUsedProfileUUIDMap[profile.UUID] = true
+					group := CodeSignGroup{
+						Certificate:        certificate,
+						BundleIDProfileMap: bundleIDMannagedProfileMap,
 					}
+					xcodeManagedGroups = append(xcodeManagedGroups, group)
 
-					certificate := findCertificate(lastProfile.DeveloperCertificates, serial)
-					if certificate != nil {
-						codeSignGroup := CodeSignGroupItem{
-							Certificate:        *certificate,
-							BundleIDProfileMap: bundleIDMannagedProfileMap,
-						}
-						xcodeManagedGroups = append(xcodeManagedGroups, codeSignGroup)
-						log.Printf("Group with xcode managed profiles found:")
-						printGroup(codeSignGroup)
-					}
+					log.Printf("Group with xcode managed profiles found:")
+					PrintCodeSignGroup(group)
 				}
 			}
 		}
@@ -276,11 +302,7 @@ func createGroups(mapping map[string][]profileutil.ProvisioningProfileInfoModel,
 			// collect xcode managed profiles
 			notXcodeManagedProfiles := []profileutil.ProvisioningProfileInfoModel{}
 			for _, profile := range profiles {
-				if alreadyUsedProfileUUIDMap[profile.UUID] {
-					continue
-				}
-
-				if !profile.IsXcodeManaged() {
+				if !alreadyUsedProfileUUIDMap[profile.UUID] && !profile.IsXcodeManaged() {
 					notXcodeManagedProfiles = append(notXcodeManagedProfiles, profile)
 				}
 			}
@@ -331,22 +353,14 @@ func createGroups(mapping map[string][]profileutil.ProvisioningProfileInfoModel,
 
 				// create code sign group
 				if len(bundleIDMannagedProfileMap) == len(bundleIDs) {
-					lastProfile := profileutil.ProvisioningProfileInfoModel{}
-					for _, profile := range bundleIDMannagedProfileMap {
-						lastProfile = profile
-						alreadyUsedProfileUUIDMap[profile.UUID] = true
+					codeSignGroup := CodeSignGroup{
+						Certificate:        certificate,
+						BundleIDProfileMap: bundleIDMannagedProfileMap,
 					}
+					notXcodeManagedGroups = append(notXcodeManagedGroups, codeSignGroup)
 
-					certificate := findCertificate(lastProfile.DeveloperCertificates, serial)
-					if certificate != nil {
-						codeSignGroup := CodeSignGroupItem{
-							Certificate:        *certificate,
-							BundleIDProfileMap: bundleIDMannagedProfileMap,
-						}
-						notXcodeManagedGroups = append(notXcodeManagedGroups, codeSignGroup)
-						log.Printf("Group with NOT xcode managed profiles found:")
-						printGroup(codeSignGroup)
-					}
+					log.Printf("Group with NOT xcode managed profiles found:")
+					PrintCodeSignGroup(codeSignGroup)
 				}
 			}
 		}
@@ -374,22 +388,14 @@ func createGroups(mapping map[string][]profileutil.ProvisioningProfileInfoModel,
 				}
 
 				if len(bundleIDProfileMap) == len(bundleIDs) {
-					firstProfile := profileutil.ProvisioningProfileInfoModel{}
-					for _, profile := range bundleIDProfileMap {
-						firstProfile = profile
-						break
+					group := CodeSignGroup{
+						Certificate:        certificate,
+						BundleIDProfileMap: bundleIDProfileMap,
 					}
+					remainingGroups = append(remainingGroups, group)
 
-					certificate := findCertificate(firstProfile.DeveloperCertificates, serial)
-					if certificate != nil {
-						codeSignGroup := CodeSignGroupItem{
-							Certificate:        *certificate,
-							BundleIDProfileMap: bundleIDProfileMap,
-						}
-						remainingGroups = append(remainingGroups, codeSignGroup)
-						log.Printf("Group with first matching profiles:")
-						printGroup(codeSignGroup)
-					}
+					log.Printf("Group with first matching profiles:")
+					PrintCodeSignGroup(group)
 				}
 			}
 		}
@@ -397,7 +403,7 @@ func createGroups(mapping map[string][]profileutil.ProvisioningProfileInfoModel,
 		fmt.Println()
 	}
 
-	codeSignGroups := []CodeSignGroupItem{}
+	codeSignGroups := []CodeSignGroup{}
 	codeSignGroups = append(codeSignGroups, notXcodeManagedGroups...)
 	codeSignGroups = append(codeSignGroups, xcodeManagedGroups...)
 	codeSignGroups = append(codeSignGroups, singleWildcardGroups...)
@@ -407,18 +413,9 @@ func createGroups(mapping map[string][]profileutil.ProvisioningProfileInfoModel,
 }
 
 // ResolveCodeSignGroups ...
-func ResolveCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDCapabilities map[string]plistutil.PlistData, exportMethod exportoptions.Method) []CodeSignGroupItem {
-	log.Printf("Creating certificate profiles mapping...")
-	certificateProfilesMapping := createCertificateProfilesMapping(certificates, profiles)
+func ResolveCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDCapabilities map[string]plistutil.PlistData, exportMethod exportoptions.Method) []CodeSignGroup {
+	selectableCodeSignGroups := ResolveSelectableCodeSignGroups(certificates, profiles, bundleIDCapabilities, exportMethod)
 
-	log.Printf("Filtering certificate profiles mapping...")
-	certificateProfilesMapping = filterCertificateProfilesMapping(certificateProfilesMapping, bundleIDCapabilities, exportMethod)
-
-	bundleIDs := []string{}
-	for bundleID := range bundleIDCapabilities {
-		bundleIDs = append(bundleIDs, bundleID)
-	}
-
-	log.Printf("Creating code sign groups")
-	return createGroups(certificateProfilesMapping, bundleIDs)
+	log.Printf("Creating code sign groups...")
+	return createCodeSignGroups(selectableCodeSignGroups)
 }
