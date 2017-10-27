@@ -1,9 +1,7 @@
 package export
 
 import (
-	"fmt"
-
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-tools/go-xcode/exportoptions"
 	"github.com/bitrise-tools/go-xcode/profileutil"
 )
 
@@ -13,9 +11,31 @@ func FilterSelectableCodeSignGroupsForTeam(codeSignGroups []SelectableCodeSignGr
 	for _, group := range codeSignGroups {
 		if group.Certificate.TeamID == teamID {
 			filteredGroups = append(filteredGroups, group)
-		} else {
-			log.Warnf("removing CodeSignGroup: %s", group.Certificate.CommonName)
-			fmt.Println()
+		}
+	}
+	return filteredGroups
+}
+
+// FilterSelectableCodeSignGroupsForExportMethod ...
+func FilterSelectableCodeSignGroupsForExportMethod(codeSignGroups []SelectableCodeSignGroup, exportMethod exportoptions.Method) []SelectableCodeSignGroup {
+	filteredGroups := []SelectableCodeSignGroup{}
+	for _, group := range codeSignGroups {
+
+		bundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
+		for bundleID, profiles := range group.BundleIDProfilesMap {
+			matchingProfiles := []profileutil.ProvisioningProfileInfoModel{}
+			for _, profile := range profiles {
+				if profile.ExportType == exportMethod {
+					matchingProfiles = append(matchingProfiles, profile)
+				}
+			}
+			if len(matchingProfiles) > 0 {
+				bundleIDProfilesMap[bundleID] = profiles
+			}
+		}
+
+		if len(bundleIDProfilesMap) == len(group.BundleIDProfilesMap) {
+			filteredGroups = append(filteredGroups, group)
 		}
 	}
 	return filteredGroups
@@ -41,8 +61,6 @@ func FilterSelectableCodeSignGroupsForNotXcodeManagedProfiles(codeSignGroups []S
 
 		if len(bundleIDNotManagedProfilesMap) == len(group.BundleIDProfilesMap) {
 			filteredGroups = append(filteredGroups, group)
-		} else {
-			log.Warnf("removing CodeSignGroup: %s", group.Certificate.CommonName)
 		}
 	}
 	return filteredGroups
@@ -54,9 +72,24 @@ func FilterCodeSignGroupsForTeam(codeSignGroups []CodeSignGroup, teamID string) 
 	for _, group := range codeSignGroups {
 		if group.Certificate.TeamID == teamID {
 			filteredGroups = append(filteredGroups, group)
-		} else {
-			log.Warnf("removing CodeSignGroup: %s", group.Certificate.CommonName)
-			fmt.Println()
+		}
+	}
+	return filteredGroups
+}
+
+// FilterCodeSignGroupsForExportMethod ...
+func FilterCodeSignGroupsForExportMethod(codeSignGroups []CodeSignGroup, exportMethod exportoptions.Method) []CodeSignGroup {
+	filteredGroups := []CodeSignGroup{}
+	for _, group := range codeSignGroups {
+		matchingGroup := true
+		for _, profile := range group.BundleIDProfileMap {
+			if profile.ExportType != exportMethod {
+				matchingGroup = false
+				break
+			}
+		}
+		if matchingGroup {
+			filteredGroups = append(filteredGroups, group)
 		}
 	}
 	return filteredGroups
@@ -75,8 +108,6 @@ func FilterCodeSignGroupsForNotXcodeManagedProfiles(codeSignGroups []CodeSignGro
 		}
 		if !xcodeManagedGroup {
 			filteredGroups = append(filteredGroups, group)
-		} else {
-			log.Warnf("removing CodeSignGroup: %s", group.Certificate.CommonName)
 		}
 	}
 	return filteredGroups
