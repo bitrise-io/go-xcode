@@ -235,8 +235,9 @@ func createCodeSignGroups(selectableGroups []SelectableCodeSignGroup) []CodeSign
 					xcodeManagedProfiles = append(xcodeManagedProfiles, profile)
 				}
 			}
+			sort.Sort(ByBundleIDLength(xcodeManagedProfiles))
 
-			// map profiles to bundle ids
+			// map profiles to bundle ids + remove the already used profiles
 			bundleIDMannagedProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 			for _, bundleID := range bundleIDs {
 				for _, profile := range xcodeManagedProfiles {
@@ -254,7 +255,7 @@ func createCodeSignGroups(selectableGroups []SelectableCodeSignGroup) []CodeSign
 			}
 
 			if len(bundleIDMannagedProfilesMap) == len(bundleIDs) {
-				// if only one profile can sign a bundle id, remove it from other bundle id - profiles map
+				// if only one profile can sign a bundle id, remove it from bundleIDMannagedProfilesMap
 				alreadyUsedManagedProfileMap := map[string]bool{}
 				for _, profiles := range bundleIDMannagedProfilesMap {
 					if len(profiles) == 1 {
@@ -306,8 +307,9 @@ func createCodeSignGroups(selectableGroups []SelectableCodeSignGroup) []CodeSign
 					notXcodeManagedProfiles = append(notXcodeManagedProfiles, profile)
 				}
 			}
+			sort.Sort(ByBundleIDLength(notXcodeManagedProfiles))
 
-			// map profiles to bundle ids
+			// map profiles to bundle ids + remove the already used profiles
 			bundleIDNotMannagedProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 			for _, bundleID := range bundleIDs {
 				for _, profile := range notXcodeManagedProfiles {
@@ -325,7 +327,7 @@ func createCodeSignGroups(selectableGroups []SelectableCodeSignGroup) []CodeSign
 			}
 
 			if len(bundleIDNotMannagedProfilesMap) == len(bundleIDs) {
-				// if only one profile can sign a bundle id, remove it from other bundle id - profiles map
+				// if only one profile can sign a bundle id, remove it from bundleIDNotMannagedProfilesMap
 				alreadyUsedManagedProfileMap := map[string]bool{}
 				for _, profiles := range bundleIDNotMannagedProfilesMap {
 					if len(profiles) == 1 {
