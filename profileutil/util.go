@@ -1,7 +1,6 @@
 package profileutil
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/bitrise-io/go-utils/fileutil"
@@ -73,17 +72,10 @@ func FindProvisioningProfile(uuid string) (*pkcs7.PKCS7, string, error) {
 			return nil, "", err
 		}
 
-		pattern := filepath.Join(absProvProfileDirPath, uuid+iosProvisioningProfileExt)
-		pths, err := filepath.Glob(pattern)
-		if err != nil {
+		pth := filepath.Join(absProvProfileDirPath, uuid+iosProvisioningProfileExt)
+		if exist, err := pathutil.IsPathExists(pth); err != nil {
 			return nil, "", err
-		}
-
-		if len(pths) > 1 {
-			return nil, "", fmt.Errorf("multiple provisioning profiles found with uuid: %s", uuid)
-		}
-		if len(pths) == 1 {
-			pth := pths[0]
+		} else if exist {
 			profile, err := ProvisioningProfileFromFile(pth)
 			if err != nil {
 				return nil, "", err
@@ -99,17 +91,10 @@ func FindProvisioningProfile(uuid string) (*pkcs7.PKCS7, string, error) {
 			return nil, "", err
 		}
 
-		pattern := filepath.Join(absProvProfileDirPath, uuid+macOsProvisioningProfileExt)
-		pths, err := filepath.Glob(pattern)
-		if err != nil {
+		pth := filepath.Join(absProvProfileDirPath, uuid+macOsProvisioningProfileExt)
+		if exist, err := pathutil.IsPathExists(pth); err != nil {
 			return nil, "", err
-		}
-
-		if len(pths) > 1 {
-			return nil, "", fmt.Errorf("multiple provisioning profiles found with uuid: %s", uuid)
-		}
-		if len(pths) == 1 {
-			pth := pths[0]
+		} else if exist {
 			profile, err := ProvisioningProfileFromFile(pth)
 			if err != nil {
 				return nil, "", err
