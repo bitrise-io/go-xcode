@@ -224,6 +224,10 @@ func createCodeSignGroups(selectableGroups []SelectableCodeSignGroup) []CodeSign
 
 				// create code sign group
 				if len(bundleIDMannagedProfileMap) == len(bundleIDs) {
+					for _, profile := range bundleIDMannagedProfileMap {
+						alreadyUsedProfileUUIDMap[profile.UUID] = true
+					}
+
 					group := CodeSignGroup{
 						Certificate:        certificate,
 						BundleIDProfileMap: bundleIDMannagedProfileMap,
@@ -264,36 +268,40 @@ func createCodeSignGroups(selectableGroups []SelectableCodeSignGroup) []CodeSign
 
 			if len(bundleIDNotMannagedProfilesMap) == len(bundleIDs) {
 				// if only one profile can sign a bundle id, remove it from bundleIDNotMannagedProfilesMap
-				alreadyUsedManagedProfileMap := map[string]bool{}
+				alreadyUsedNotManagedProfileMap := map[string]bool{}
 				for _, profiles := range bundleIDNotMannagedProfilesMap {
 					if len(profiles) == 1 {
 						profile := profiles[0]
-						alreadyUsedManagedProfileMap[profile.UUID] = true
+						alreadyUsedNotManagedProfileMap[profile.UUID] = true
 					}
 				}
 
-				bundleIDMannagedProfileMap := map[string]profileutil.ProvisioningProfileInfoModel{}
+				bundleIDNotMannagedProfileMap := map[string]profileutil.ProvisioningProfileInfoModel{}
 				for bundleID, profiles := range bundleIDNotMannagedProfilesMap {
 					if len(profiles) == 1 {
-						bundleIDMannagedProfileMap[bundleID] = profiles[0]
+						bundleIDNotMannagedProfileMap[bundleID] = profiles[0]
 					} else {
 						remainingProfiles := []profileutil.ProvisioningProfileInfoModel{}
 						for _, profile := range profiles {
-							if !alreadyUsedManagedProfileMap[profile.UUID] {
+							if !alreadyUsedNotManagedProfileMap[profile.UUID] {
 								remainingProfiles = append(remainingProfiles, profile)
 							}
 						}
 						if len(remainingProfiles) == 1 {
-							bundleIDMannagedProfileMap[bundleID] = remainingProfiles[0]
+							bundleIDNotMannagedProfileMap[bundleID] = remainingProfiles[0]
 						}
 					}
 				}
 
 				// create code sign group
-				if len(bundleIDMannagedProfileMap) == len(bundleIDs) {
+				if len(bundleIDNotMannagedProfileMap) == len(bundleIDs) {
+					for _, profile := range bundleIDNotMannagedProfileMap {
+						alreadyUsedProfileUUIDMap[profile.UUID] = true
+					}
+
 					codeSignGroup := CodeSignGroup{
 						Certificate:        certificate,
-						BundleIDProfileMap: bundleIDMannagedProfileMap,
+						BundleIDProfileMap: bundleIDNotMannagedProfileMap,
 					}
 					notXcodeManagedGroups = append(notXcodeManagedGroups, codeSignGroup)
 				}
