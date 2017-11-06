@@ -109,13 +109,14 @@ func normalizeFindCertificateOut(out string) ([]string, error) {
 
 // InstalledCodesigningCertificates finds the most recently installed certificate
 // for each certificate name.
-func InstalledCodesigningCertificates() ([]*x509.Certificate, error) {
+func InstalledCodesigningCertificates() (map[string][]*x509.Certificate, error) {
+	certificatesByName := make(map[string][]*x509.Certificate)
+
 	certificateNames, err := InstalledCodesigningCertificateNames()
 	if err != nil {
 		return nil, err
 	}
 
-	certificates := []*x509.Certificate{}
 	for _, name := range certificateNames {
 		cmd := command.New("security", "find-certificate", "-c", name, "-p", "-a")
 		out, err := cmd.RunAndReturnTrimmedCombinedOutput()
@@ -128,27 +129,17 @@ func InstalledCodesigningCertificates() ([]*x509.Certificate, error) {
 			return nil, err
 		}
 
-		certificate, err := activeCertificate(normalizedOuts)
-		if err != nil {
-			return nil, err
+		certificates := []*x509.Certificate{}
+		for _, rawCertificate := range normalizedOuts {
+			certificate, err := CeritifcateFromPemContent([]byte(rawCertificate))
+			if err != nil {
+				return nil, err
+			}
+			certificates = append(certificates, certificate)
 		}
 
-		certificates = append(certificates, certificate)
+		certificatesByName[name] = certificates
 	}
 
-	return certificates, nil
-}
-
-func activeCertificate(rawCertificates []string) (*x509.Certificate, error) {
-	newestCertificate := new(x509.Certificate)
-	for _, rawCertificate := range rawCertificates {
-		certificate, err := CeritifcateFromPemContent([]byte(rawCertificate))
-		if err != nil {
-			return nil, err
-		}
-		if NewCertificateInfo(*certificate).CheckValidity() == nil && certificate.NotAfter.After(newestCertificate.NotAfter) {
-			newestCertificate = certificate
-		}
-	}
-	return newestCertificate, nil
+	return certificatesByName, nil
 }
