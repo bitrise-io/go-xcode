@@ -67,11 +67,28 @@ func NewCertificateInfosFromPKCS12(pkcs12Pth, password string) ([]CertificateInf
 	return CertificateInfos(certificates), nil
 }
 
-// InstalledCodesigningCertificateInfos ...
-func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
-	certificates, err := InstalledCodesigningCertificates()
+// InstalledValidCodesigningCertificateInfos ...
+func InstalledValidCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
+	validCertificates := []CertificateInfoModel{}
+
+	certificatesByName, err := InstalledCodesigningCertificates()
 	if err != nil {
 		return nil, err
 	}
-	return CertificateInfos(certificates), nil
+
+	for _, certificates := range certificatesByName {
+		certificateInfos := CertificateInfos(certificates)
+
+		newestCertificate := new(CertificateInfoModel)
+		for _, certificateInfo := range certificateInfos {
+			if certificateInfo.CheckValidity() == nil && (newestCertificate == nil || certificateInfo.EndDate.After((*newestCertificate).EndDate)) {
+				newestCertificate = &certificateInfo
+			}
+		}
+		if newestCertificate != nil {
+			validCertificates = append(validCertificates, *newestCertificate)
+		}
+	}
+
+	return validCertificates, nil
 }
