@@ -86,27 +86,29 @@ func InstalledCodesigningCertificateNames() ([]string, error) {
 	return installedCodesigningCertificateNamesFromOutput(out)
 }
 
-func normalizeFindCertificateOut(out string) (string, error) {
+func normalizeFindCertificateOut(out string) ([]string, error) {
+	certificateContents := []string{}
 	pattern := `(?s)(-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----)`
 	matches := regexp.MustCompile(pattern).FindAllString(out, -1)
 	if len(matches) == 0 {
-		return "", fmt.Errorf("no certificates found in: %s", out)
-	}
-	if len(matches) > 1 {
-		return "", fmt.Errorf("multiple certificates found in: %s", out)
+		return []string{""}, fmt.Errorf("no certificates found in: %s", out)
 	}
 
-	certificateContent := matches[0]
-	if !strings.HasPrefix(certificateContent, "\n") {
-		certificateContent = "\n" + certificateContent
+	for _, certificateContent := range matches {
+		if !strings.HasPrefix(certificateContent, "\n") {
+			certificateContent = "\n" + certificateContent
+		}
+		if !strings.HasSuffix(certificateContent, "\n") {
+			certificateContent = certificateContent + "\n"
+		}
+		certificateContents = append(certificateContents, certificateContent)
 	}
-	if !strings.HasSuffix(certificateContent, "\n") {
-		certificateContent = certificateContent + "\n"
-	}
-	return certificateContent, nil
+
+	return certificateContents, nil
 }
 
-// InstalledCodesigningCertificates ...
+// InstalledCodesigningCertificates finds the most recently installed certificate
+// for each certificate name.
 func InstalledCodesigningCertificates() ([]*x509.Certificate, error) {
 	certificateNames, err := InstalledCodesigningCertificateNames()
 	if err != nil {
@@ -115,18 +117,18 @@ func InstalledCodesigningCertificates() ([]*x509.Certificate, error) {
 
 	certificates := []*x509.Certificate{}
 	for _, name := range certificateNames {
-		cmd := command.New("security", "find-certificate", "-c", name, "-p")
+		cmd := command.New("security", "find-certificate", "-c", name, "-p", "-a")
 		out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 		if err != nil {
 			return nil, commandError(cmd.PrintableCommandArgs(), out, err)
 		}
 
-		normalizedOut, err := normalizeFindCertificateOut(out)
+		normalizedOuts, err := normalizeFindCertificateOut(out)
 		if err != nil {
 			return nil, err
 		}
 
-		certificate, err := CeritifcateFromPemContent([]byte(normalizedOut))
+		certificate, err := activeCertificate(normalizedOuts)
 		if err != nil {
 			return nil, err
 		}
@@ -135,4 +137,18 @@ func InstalledCodesigningCertificates() ([]*x509.Certificate, error) {
 	}
 
 	return certificates, nil
+}
+
+func activeCertificate(rawCertificates []string) (*x509.Certificate, error) {
+	newestCertificate := new(x509.Certificate)
+	for _, rawCertificate := range rawCertificates {
+		certificate, err := CeritifcateFromPemContent([]byte(rawCertificate))
+		if err != nil {
+			return nil, err
+		}
+		if certificate.NotAfter.After(newestCertificate.NotAfter) {
+			newestCertificate = certificate
+		}
+	}
+	return newestCertificate, nil
 }
