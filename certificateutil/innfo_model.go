@@ -79,13 +79,15 @@ func InstalledValidCodesigningCertificateInfos() ([]CertificateInfoModel, error)
 	for _, certificates := range certificatesByName {
 		certificateInfos := CertificateInfos(certificates)
 
-		newestCertificate := CertificateInfoModel{}
+		newestCertificate := new(CertificateInfoModel)
 		for _, certificateInfo := range certificateInfos {
-			if certificateInfo.CheckValidity() == nil && certificateInfo.EndDate.After(newestCertificate.EndDate) {
-				newestCertificate = certificateInfo
+			if certificateInfo.CheckValidity() == nil && (newestCertificate == nil || certificateInfo.EndDate.After((*newestCertificate).EndDate)) {
+				newestCertificate = &certificateInfo
 			}
 		}
-		validCertificates = append(validCertificates, newestCertificate)
+		if newestCertificate != nil {
+			validCertificates = append(validCertificates, *newestCertificate)
+		}
 	}
 
 	return validCertificates, nil

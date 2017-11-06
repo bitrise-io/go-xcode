@@ -107,10 +107,9 @@ func normalizeFindCertificateOut(out string) ([]string, error) {
 	return certificateContents, nil
 }
 
-// InstalledCodesigningCertificates finds the most recently installed certificate
-// for each certificate name.
+// InstalledCodesigningCertificates ...
 func InstalledCodesigningCertificates() (map[string][]*x509.Certificate, error) {
-	certificatesByName := make(map[string][]*x509.Certificate)
+	certificatesByName := map[string][]*x509.Certificate{}
 
 	certificateNames, err := InstalledCodesigningCertificateNames()
 	if err != nil {
