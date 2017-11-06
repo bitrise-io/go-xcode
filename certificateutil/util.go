@@ -91,7 +91,7 @@ func normalizeFindCertificateOut(out string) ([]string, error) {
 	pattern := `(?s)(-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----)`
 	matches := regexp.MustCompile(pattern).FindAllString(out, -1)
 	if len(matches) == 0 {
-		return []string{""}, fmt.Errorf("no certificates found in: %s", out)
+		return nil, fmt.Errorf("no certificates found in: %s", out)
 	}
 
 	for _, certificateContent := range matches {
@@ -146,7 +146,7 @@ func activeCertificate(rawCertificates []string) (*x509.Certificate, error) {
 		if err != nil {
 			return nil, err
 		}
-		if certificate.NotAfter.After(newestCertificate.NotAfter) {
+		if NewCertificateInfo(*certificate).CheckValidity() == nil && certificate.NotAfter.After(newestCertificate.NotAfter) {
 			newestCertificate = certificate
 		}
 	}
