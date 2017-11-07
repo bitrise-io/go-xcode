@@ -67,7 +67,7 @@ func NewCertificateInfosFromPKCS12(pkcs12Pth, password string) ([]CertificateInf
 	return CertificateInfos(certificates), nil
 }
 
-// InstalledValidCodesigningCertificateInfos ...
+// InstalledCodesigningCertificateInfos ...
 func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
 	certificates, err := InstalledCodesigningCertificates()
 	if err != nil {
@@ -76,6 +76,7 @@ func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
 	return CertificateInfos(certificates), nil
 }
 
+// FilterValidCertificateInfos ...
 func FilterValidCertificateInfos(certificateInfos []CertificateInfoModel) []CertificateInfoModel {
 	certificateInfosByName := map[string]CertificateInfoModel{}
 
