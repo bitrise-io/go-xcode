@@ -108,14 +108,13 @@ func normalizeFindCertificateOut(out string) ([]string, error) {
 }
 
 // InstalledCodesigningCertificates ...
-func InstalledCodesigningCertificates() (map[string][]*x509.Certificate, error) {
-	certificatesByName := map[string][]*x509.Certificate{}
-
+func InstalledCodesigningCertificates() ([]*x509.Certificate, error) {
 	certificateNames, err := InstalledCodesigningCertificateNames()
 	if err != nil {
 		return nil, err
 	}
 
+	certificates := []*x509.Certificate{}
 	for _, name := range certificateNames {
 		cmd := command.New("security", "find-certificate", "-c", name, "-p", "-a")
 		out, err := cmd.RunAndReturnTrimmedCombinedOutput()
@@ -128,17 +127,15 @@ func InstalledCodesigningCertificates() (map[string][]*x509.Certificate, error) 
 			return nil, err
 		}
 
-		certificates := []*x509.Certificate{}
-		for _, rawCertificate := range normalizedOuts {
-			certificate, err := CeritifcateFromPemContent([]byte(rawCertificate))
+		for _, normalizedOut := range normalizedOuts {
+			certificate, err := CeritifcateFromPemContent([]byte(normalizedOut))
 			if err != nil {
 				return nil, err
 			}
+
 			certificates = append(certificates, certificate)
 		}
-
-		certificatesByName[name] = certificates
 	}
 
-	return certificatesByName, nil
+	return certificates, nil
 }
