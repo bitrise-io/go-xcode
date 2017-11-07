@@ -197,6 +197,11 @@ type XCArchive struct {
 	InfoPlist    plistutil.PlistData
 }
 
+// IsXcodeManaged ...
+func (archive XCArchive) IsXcodeManaged() bool {
+	return archive.Applications.MainApplication.ProvisioningProfile.IsXcodeManaged()
+}
+
 // SigningIdentity ...
 func (archive XCArchive) SigningIdentity() string {
 	properties, found := archive.InfoPlist.GetMapStringInterface("ApplicationProperties")
