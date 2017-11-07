@@ -68,27 +68,29 @@ func NewCertificateInfosFromPKCS12(pkcs12Pth, password string) ([]CertificateInf
 }
 
 // InstalledValidCodesigningCertificateInfos ...
-func InstalledValidCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
-	validCertificates := []CertificateInfoModel{}
-
-	certificatesByName, err := InstalledCodesigningCertificates()
+func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
+	certificates, err := InstalledCodesigningCertificates()
 	if err != nil {
 		return nil, err
 	}
+	return CertificateInfos(certificates), nil
+}
 
-	for _, certificates := range certificatesByName {
-		certificateInfos := CertificateInfos(certificates)
+func FilterValidCertificateInfos(certificateInfos []CertificateInfoModel) []CertificateInfoModel {
+	certificateInfosByName := map[string]CertificateInfoModel{}
 
-		newestCertificate := new(CertificateInfoModel)
-		for _, certificateInfo := range certificateInfos {
-			if certificateInfo.CheckValidity() == nil && (newestCertificate == nil || certificateInfo.EndDate.After((*newestCertificate).EndDate)) {
-				newestCertificate = &certificateInfo
+	for _, certificateInfo := range certificateInfos {
+		if certificateInfo.CheckValidity() == nil {
+			activeCertificate, ok := certificateInfosByName[certificateInfo.CommonName]
+			if !ok || certificateInfo.EndDate.After(activeCertificate.EndDate) {
+				certificateInfosByName[certificateInfo.CommonName] = certificateInfo
 			}
-		}
-		if newestCertificate != nil {
-			validCertificates = append(validCertificates, *newestCertificate)
 		}
 	}
 
-	return validCertificates, nil
+	validCertificates := []CertificateInfoModel{}
+	for _, validCertificate := range certificateInfosByName {
+		validCertificates = append(validCertificates, validCertificate)
+	}
+	return validCertificates
 }
