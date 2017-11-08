@@ -3,11 +3,13 @@ package xcarchive
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-tools/go-xcode/plistutil"
 	"github.com/bitrise-tools/go-xcode/profileutil"
+	"github.com/bitrise-tools/go-xcode/utility"
 )
 
 // Application ...
@@ -193,6 +195,7 @@ func NewApplications(applicationsDir string) (Applications, error) {
 
 // XCArchive ...
 type XCArchive struct {
+	Path         string
 	Applications Applications
 	InfoPlist    plistutil.PlistData
 }
@@ -266,6 +269,30 @@ func (archive XCArchive) BundleIDProfileInfoMap() map[string]profileutil.Provisi
 	return bundleIDProfileMap
 }
 
+// FindDSYMs ...
+func (archive XCArchive) FindDSYMs() (string, []string, error) {
+	dsymsDirPth := filepath.Join(archive.Path, "dSYMs")
+	dsyms, err := utility.ListEntries(dsymsDirPth, utility.ExtensionFilter(".dsym", true))
+	if err != nil {
+		return "", []string{}, err
+	}
+
+	appDSYM := ""
+	frameworkDSYMs := []string{}
+	for _, dsym := range dsyms {
+		if strings.HasSuffix(dsym, ".app.dSYM") {
+			appDSYM = dsym
+		} else {
+			frameworkDSYMs = append(frameworkDSYMs, dsym)
+		}
+	}
+	if appDSYM == "" && len(frameworkDSYMs) == 0 {
+		return "", []string{}, fmt.Errorf("no dsym found")
+	}
+
+	return appDSYM, frameworkDSYMs, nil
+}
+
 // NewXCArchive ...
 func NewXCArchive(xcarchivePth string) (XCArchive, error) {
 	applications := Applications{}
@@ -301,6 +328,7 @@ func NewXCArchive(xcarchivePth string) (XCArchive, error) {
 	}
 
 	return XCArchive{
+		Path:         xcarchivePth,
 		Applications: applications,
 		InfoPlist:    infoPlist,
 	}, nil
