@@ -55,7 +55,10 @@ func (profile PlistData) GetApplicationIdentifier() string {
 
 	applicationID, ok := entitlements.GetString("application-identifier")
 	if !ok {
-		return ""
+		applicationID, ok = entitlements.GetString("com.apple.application-identifier")
+		if !ok {
+			return ""
+		}
 	}
 	return applicationID
 }
@@ -93,6 +96,25 @@ func (profile PlistData) GetExportMethod() exportoptions.Method {
 			return exportoptions.MethodDevelopment
 		}
 		return exportoptions.MethodAdHoc
+	}
+
+	return exportoptions.MethodDefault
+}
+
+// GetExportMethodMac ...
+func (profile PlistData) GetExportMethodMac() exportoptions.Method {
+	data := plistutil.PlistData(profile)
+	_, ok := data.GetStringArray("ProvisionedDevices")
+	if !ok {
+		if allDevices, ok := data.GetBool("ProvisionsAllDevices"); ok && allDevices {
+			return exportoptions.MethodDeveloperID
+		}
+		return exportoptions.MethodAppStore
+	}
+
+	_, ok = data.GetMapStringInterface("Entitlements")
+	if ok {
+		return exportoptions.MethodDevelopment
 	}
 
 	return exportoptions.MethodDefault

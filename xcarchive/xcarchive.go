@@ -19,6 +19,8 @@ type Application struct {
 	Entitlements        plistutil.PlistData
 	ProvisioningProfile profileutil.ProvisioningProfileInfoModel
 	Plugins             []Application
+	WatchApplication    *Application
+	IsMacOS             bool
 }
 
 // BundleIdentifier ...
@@ -28,78 +30,19 @@ func (app Application) BundleIdentifier() string {
 }
 
 // NewApplication ...
-func NewApplication(appOrAppexPth string) (Application, error) {
-	application := Application{
-		Path: appOrAppexPth,
-	}
-
-	{
-		infoPlistPth := filepath.Join(appOrAppexPth, "Info.plist")
-		exist, err := pathutil.IsPathExists(infoPlistPth)
-		if err != nil {
-			return Application{}, err
-		} else if !exist {
-			return Application{}, fmt.Errorf("Info.plist does not exist at: %s", infoPlistPth)
-		}
-		infoPlist, err := plistutil.NewPlistDataFromFile(infoPlistPth)
-		if err != nil {
-			return Application{}, err
-		}
-		application.InfoPlist = infoPlist
-	}
-
-	{
-		provisioningProfilePth := filepath.Join(appOrAppexPth, "embedded.mobileprovision")
-		exist, err := pathutil.IsPathExists(provisioningProfilePth)
-		if err != nil {
-			return Application{}, err
-		} else if !exist {
-			return Application{}, fmt.Errorf("embedded.mobileprovision does not exist at: %s", provisioningProfilePth)
-		}
-		profile, err := profileutil.NewProvisioningProfileInfoFromFile(provisioningProfilePth)
-		if err != nil {
-			return Application{}, err
-		}
-		application.ProvisioningProfile = profile
-	}
-
-	{
-		entitlementsPth := filepath.Join(appOrAppexPth, "archived-expanded-entitlements.xcent")
-		exist, err := pathutil.IsPathExists(entitlementsPth)
-		if err != nil {
-			return Application{}, err
-		} else if exist {
-			entitlements, err := plistutil.NewPlistDataFromFile(entitlementsPth)
-			if err != nil {
-				return Application{}, err
-			}
-
-			application.Entitlements = entitlements
-		}
-	}
-
-	return application, nil
-}
-
-// Applications ...
-type Applications struct {
-	MainApplication  Application
-	WatchApplication *Application
-}
-
-// NewApplications ...
-func NewApplications(applicationsDir string) (Applications, error) {
+func NewApplication(applicationsDir string) (Application, error) {
 	mainApplication := Application{}
 	mainApplicationPth := ""
+	applicationContentPth := ""
 	{
 		pattern := filepath.Join(applicationsDir, "*.app")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
-			return Applications{}, err
+			return Application{}, err
 		}
 
 		if len(pths) == 0 {
-			return Applications{}, fmt.Errorf("Failed to find main application using pattern: %s", pattern)
+			return Application{}, fmt.Errorf("Failed to find main application using pattern: %s", pattern)
 		} else if len(pths) > 1 {
 			log.Warnf("Multiple main applications found")
 			for _, pth := range pths {
@@ -112,23 +55,92 @@ func NewApplications(applicationsDir string) (Applications, error) {
 			mainApplicationPth = pths[0]
 		}
 
-		mainApplication, err = NewApplication(mainApplicationPth)
-		if err != nil {
-			return Applications{}, err
+		application := Application{
+			Path: mainApplicationPth,
 		}
+
+		{
+			applicationContentPth = filepath.Join(mainApplicationPth, "Contents")
+			exists, err := pathutil.IsPathExists(applicationContentPth)
+			if err != nil {
+				return Application{}, err
+			}
+			if exists {
+				application.IsMacOS = true
+			} else {
+				application.IsMacOS = false
+				applicationContentPth = mainApplicationPth
+			}
+		}
+
+		{
+			infoPlistPth := filepath.Join(applicationContentPth, "Info.plist")
+			infoPlistExist, err := pathutil.IsPathExists(infoPlistPth)
+			if err != nil {
+				return Application{}, err
+			}
+			if !infoPlistExist {
+				if !infoPlistExist {
+					return Application{}, fmt.Errorf("Info.plist does not exist at: (%s)", infoPlistPth)
+				}
+			}
+			infoPlist, err := plistutil.NewPlistDataFromFile(infoPlistPth)
+			if err != nil {
+				return Application{}, err
+			}
+			application.InfoPlist = infoPlist
+		}
+
+		{
+			provisioningProfilePth := filepath.Join(applicationContentPth, "embedded.mobileprovision")
+			exist, err := pathutil.IsPathExists(provisioningProfilePth)
+			if err != nil {
+				return Application{}, err
+			} else if !exist && !application.IsMacOS {
+				return Application{}, fmt.Errorf("embedded.mobileprovision does not exist at: %s", provisioningProfilePth)
+			}
+			if exist {
+				profile, err := profileutil.NewProvisioningProfileInfoFromFile(provisioningProfilePth)
+				if err != nil {
+					return Application{}, err
+				}
+				application.ProvisioningProfile = profile
+			}
+		}
+
+		{
+			entitlementsBasePth := applicationContentPth
+			if application.IsMacOS {
+				entitlementsBasePth = filepath.Join(entitlementsBasePth, "Resources")
+			}
+
+			entitlementsPth := filepath.Join(entitlementsBasePth, "archived-expanded-entitlements.xcent")
+			exist, err := pathutil.IsPathExists(entitlementsPth)
+			if err != nil {
+				return Application{}, err
+			} else if exist {
+				entitlements, err := plistutil.NewPlistDataFromFile(entitlementsPth)
+				if err != nil {
+					return Application{}, err
+				}
+
+				application.Entitlements = entitlements
+			}
+		}
+		mainApplication = application
 	}
 
 	plugins := []Application{}
 	{
-		pattern := filepath.Join(mainApplicationPth, "PlugIns/*.appex")
+		pattern := filepath.Join(applicationContentPth, "PlugIns/*.appex")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
-			return Applications{}, err
+			return Application{}, err
 		}
 		for _, pth := range pths {
 			plugin, err := NewApplication(pth)
 			if err != nil {
-				return Applications{}, err
+				return Application{}, err
 			}
 
 			plugins = append(plugins, plugin)
@@ -139,10 +151,10 @@ func NewApplications(applicationsDir string) (Applications, error) {
 	var watchApplicationPtr *Application
 	watchApplicationPth := ""
 	{
-		pattern := filepath.Join(mainApplicationPth, "Watch/*.app")
+		pattern := filepath.Join(applicationContentPth, "Watch/*.app")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
-			return Applications{}, err
+			return Application{}, err
 		}
 
 		if len(pths) > 1 {
@@ -160,7 +172,7 @@ func NewApplications(applicationsDir string) (Applications, error) {
 		if watchApplicationPth != "" {
 			watchApplication, err := NewApplication(watchApplicationPth)
 			if err != nil {
-				return Applications{}, err
+				return Application{}, err
 			}
 
 			watchApplicationPtr = &watchApplication
@@ -173,12 +185,12 @@ func NewApplications(applicationsDir string) (Applications, error) {
 			pattern := filepath.Join(watchApplicationPth, "PlugIns/*.appex")
 			pths, err := filepath.Glob(pattern)
 			if err != nil {
-				return Applications{}, err
+				return Application{}, err
 			}
 			for _, pth := range pths {
 				plugin, err := NewApplication(pth)
 				if err != nil {
-					return Applications{}, err
+					return Application{}, err
 				}
 
 				watchPlugins = append(watchPlugins, plugin)
@@ -187,22 +199,19 @@ func NewApplications(applicationsDir string) (Applications, error) {
 		}
 	}
 
-	return Applications{
-		MainApplication:  mainApplication,
-		WatchApplication: watchApplicationPtr,
-	}, nil
+	return mainApplication, nil
 }
 
 // XCArchive ...
 type XCArchive struct {
-	Path         string
-	Applications Applications
-	InfoPlist    plistutil.PlistData
+	Path        string
+	Application Application
+	InfoPlist   plistutil.PlistData
 }
 
 // IsXcodeManaged ...
 func (archive XCArchive) IsXcodeManaged() bool {
-	return archive.Applications.MainApplication.ProvisioningProfile.IsXcodeManaged()
+	return archive.Application.ProvisioningProfile.IsXcodeManaged()
 }
 
 // SigningIdentity ...
@@ -219,16 +228,16 @@ func (archive XCArchive) SigningIdentity() string {
 func (archive XCArchive) BundleIDEntitlementsMap() map[string]plistutil.PlistData {
 	bundleIDEntitlementsMap := map[string]plistutil.PlistData{}
 
-	bundleID := archive.Applications.MainApplication.BundleIdentifier()
-	bundleIDEntitlementsMap[bundleID] = archive.Applications.MainApplication.Entitlements
+	bundleID := archive.Application.BundleIdentifier()
+	bundleIDEntitlementsMap[bundleID] = archive.Application.Entitlements
 
-	for _, plugin := range archive.Applications.MainApplication.Plugins {
+	for _, plugin := range archive.Application.Plugins {
 		bundleID := plugin.BundleIdentifier()
 		bundleIDEntitlementsMap[bundleID] = plugin.Entitlements
 	}
 
-	if archive.Applications.WatchApplication != nil {
-		watchApplication := *archive.Applications.WatchApplication
+	if archive.Application.WatchApplication != nil {
+		watchApplication := *archive.Application.WatchApplication
 
 		bundleID := watchApplication.BundleIdentifier()
 		bundleIDEntitlementsMap[bundleID] = watchApplication.Entitlements
@@ -246,16 +255,16 @@ func (archive XCArchive) BundleIDEntitlementsMap() map[string]plistutil.PlistDat
 func (archive XCArchive) BundleIDProfileInfoMap() map[string]profileutil.ProvisioningProfileInfoModel {
 	bundleIDProfileMap := map[string]profileutil.ProvisioningProfileInfoModel{}
 
-	bundleID := archive.Applications.MainApplication.BundleIdentifier()
-	bundleIDProfileMap[bundleID] = archive.Applications.MainApplication.ProvisioningProfile
+	bundleID := archive.Application.BundleIdentifier()
+	bundleIDProfileMap[bundleID] = archive.Application.ProvisioningProfile
 
-	for _, plugin := range archive.Applications.MainApplication.Plugins {
+	for _, plugin := range archive.Application.Plugins {
 		bundleID := plugin.BundleIdentifier()
 		bundleIDProfileMap[bundleID] = plugin.ProvisioningProfile
 	}
 
-	if archive.Applications.WatchApplication != nil {
-		watchApplication := *archive.Applications.WatchApplication
+	if archive.Application.WatchApplication != nil {
+		watchApplication := *archive.Application.WatchApplication
 
 		bundleID := watchApplication.BundleIdentifier()
 		bundleIDProfileMap[bundleID] = watchApplication.ProvisioningProfile
@@ -295,7 +304,7 @@ func (archive XCArchive) FindDSYMs() (string, []string, error) {
 
 // NewXCArchive ...
 func NewXCArchive(xcarchivePth string) (XCArchive, error) {
-	applications := Applications{}
+	application := Application{}
 	{
 		applicationsDir := filepath.Join(xcarchivePth, "Products/Applications")
 		exist, err := pathutil.IsDirExists(applicationsDir)
@@ -305,7 +314,7 @@ func NewXCArchive(xcarchivePth string) (XCArchive, error) {
 			return XCArchive{}, fmt.Errorf("Applications dir does not exist at: %s", applicationsDir)
 		}
 
-		applications, err = NewApplications(applicationsDir)
+		application, err = NewApplication(applicationsDir)
 		if err != nil {
 			return XCArchive{}, err
 		}
@@ -328,8 +337,8 @@ func NewXCArchive(xcarchivePth string) (XCArchive, error) {
 	}
 
 	return XCArchive{
-		Path:         xcarchivePth,
-		Applications: applications,
-		InfoPlist:    infoPlist,
+		Path:        xcarchivePth,
+		Application: application,
+		InfoPlist:   infoPlist,
 	}, nil
 }

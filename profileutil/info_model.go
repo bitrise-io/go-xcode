@@ -62,10 +62,16 @@ func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertif
 }
 
 // NewProvisioningProfileInfo ...
-func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningProfileInfoModel, error) {
+func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7, profileType ...ProfileType) (ProvisioningProfileInfoModel, error) {
 	var data plistutil.PlistData
 	if _, err := plist.Unmarshal(provisioningProfile.Content, &data); err != nil {
 		return ProvisioningProfileInfoModel{}, err
+	}
+
+	isMacOS := false
+
+	if len(profileType) > 0 {
+		isMacOS = profileType[0] == ProfileTypeMacOs
 	}
 
 	teamName, _ := data.GetString("TeamName")
@@ -76,8 +82,13 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningPr
 		TeamName:       teamName,
 		TeamID:         profile.GetTeamID(),
 		BundleID:       profile.GetBundleIdentifier(),
-		ExportType:     profile.GetExportMethod(),
 		ExpirationDate: profile.GetExpirationDate(),
+	}
+
+	if !isMacOS {
+		info.ExportType = profile.GetExportMethod()
+	} else {
+		info.ExportType = profile.GetExportMethodMac()
 	}
 
 	if devicesList := profile.GetProvisionedDevices(); devicesList != nil {
@@ -123,7 +134,7 @@ func InstalledProvisioningProfileInfos(profileType ProfileType) ([]ProvisioningP
 	infos := []ProvisioningProfileInfoModel{}
 	for _, provisioningProfile := range provisioningProfiles {
 		if provisioningProfile != nil {
-			info, err := NewProvisioningProfileInfo(*provisioningProfile)
+			info, err := NewProvisioningProfileInfo(*provisioningProfile, profileType)
 			if err != nil {
 				return nil, err
 			}
