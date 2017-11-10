@@ -80,8 +80,22 @@ func (profile PlistData) GetBundleIdentifier() string {
 }
 
 // GetExportMethod ...
-func (profile PlistData) GetExportMethod() exportoptions.Method {
+func (profile PlistData) GetExportMethod(profileType ...ProfileType) exportoptions.Method {
 	data := plistutil.PlistData(profile)
+
+	if len(profileType) > 0 {
+		if profileType[0] == ProfileTypeMacOs {
+			_, ok := data.GetStringArray("ProvisionedDevices")
+			if !ok {
+				if allDevices, ok := data.GetBool("ProvisionsAllDevices"); ok && allDevices {
+					return exportoptions.MethodDeveloperID
+				}
+				return exportoptions.MethodAppStore
+			}
+			return exportoptions.MethodDevelopment
+		}
+	}
+
 	_, ok := data.GetStringArray("ProvisionedDevices")
 	if !ok {
 		if allDevices, ok := data.GetBool("ProvisionsAllDevices"); ok && allDevices {
@@ -96,25 +110,6 @@ func (profile PlistData) GetExportMethod() exportoptions.Method {
 			return exportoptions.MethodDevelopment
 		}
 		return exportoptions.MethodAdHoc
-	}
-
-	return exportoptions.MethodDefault
-}
-
-// GetExportMethodMac ...
-func (profile PlistData) GetExportMethodMac() exportoptions.Method {
-	data := plistutil.PlistData(profile)
-	_, ok := data.GetStringArray("ProvisionedDevices")
-	if !ok {
-		if allDevices, ok := data.GetBool("ProvisionsAllDevices"); ok && allDevices {
-			return exportoptions.MethodDeveloperID
-		}
-		return exportoptions.MethodAppStore
-	}
-
-	_, ok = data.GetMapStringInterface("Entitlements")
-	if ok {
-		return exportoptions.MethodDevelopment
 	}
 
 	return exportoptions.MethodDefault

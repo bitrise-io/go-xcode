@@ -68,12 +68,6 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7, profileType ...
 		return ProvisioningProfileInfoModel{}, err
 	}
 
-	isMacOS := false
-
-	if len(profileType) > 0 {
-		isMacOS = profileType[0] == ProfileTypeMacOs
-	}
-
 	teamName, _ := data.GetString("TeamName")
 	profile := PlistData(data)
 	info := ProvisioningProfileInfoModel{
@@ -85,11 +79,7 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7, profileType ...
 		ExpirationDate: profile.GetExpirationDate(),
 	}
 
-	if !isMacOS {
-		info.ExportType = profile.GetExportMethod()
-	} else {
-		info.ExportType = profile.GetExportMethodMac()
-	}
+	info.ExportType = profile.GetExportMethod(profileType...)
 
 	if devicesList := profile.GetProvisionedDevices(); devicesList != nil {
 		info.ProvisionedDevices = devicesList
