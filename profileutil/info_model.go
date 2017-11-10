@@ -62,7 +62,7 @@ func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertif
 }
 
 // NewProvisioningProfileInfo ...
-func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningProfileInfoModel, error) {
+func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7, profileType ...ProfileType) (ProvisioningProfileInfoModel, error) {
 	var data plistutil.PlistData
 	if _, err := plist.Unmarshal(provisioningProfile.Content, &data); err != nil {
 		return ProvisioningProfileInfoModel{}, err
@@ -76,9 +76,10 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningPr
 		TeamName:       teamName,
 		TeamID:         profile.GetTeamID(),
 		BundleID:       profile.GetBundleIdentifier(),
-		ExportType:     profile.GetExportMethod(),
 		ExpirationDate: profile.GetExpirationDate(),
 	}
+
+	info.ExportType = profile.GetExportMethod(profileType...)
 
 	if devicesList := profile.GetProvisionedDevices(); devicesList != nil {
 		info.ProvisionedDevices = devicesList
@@ -123,7 +124,7 @@ func InstalledProvisioningProfileInfos(profileType ProfileType) ([]ProvisioningP
 	infos := []ProvisioningProfileInfoModel{}
 	for _, provisioningProfile := range provisioningProfiles {
 		if provisioningProfile != nil {
-			info, err := NewProvisioningProfileInfo(*provisioningProfile)
+			info, err := NewProvisioningProfileInfo(*provisioningProfile, profileType)
 			if err != nil {
 				return nil, err
 			}
