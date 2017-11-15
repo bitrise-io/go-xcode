@@ -23,15 +23,20 @@ type CertificateInfoModel struct {
 }
 
 // CheckValidity ...
-func (info CertificateInfoModel) CheckValidity() error {
+func CheckValidity(certificate x509.Certificate) error {
 	timeNow := time.Now()
-	if !timeNow.After(info.StartDate) {
-		return fmt.Errorf("Certificate is not yet valid - validity starts at: %s", info.StartDate)
+	if !timeNow.After(certificate.NotBefore) {
+		return fmt.Errorf("Certificate is not yet valid - validity starts at: %s", certificate.NotBefore)
 	}
-	if !timeNow.Before(info.EndDate) {
-		return fmt.Errorf("Certificate is not valid anymore - validity ended at: %s", info.EndDate)
+	if !timeNow.Before(certificate.NotAfter) {
+		return fmt.Errorf("Certificate is not valid anymore - validity ended at: %s", certificate.NotAfter)
 	}
 	return nil
+}
+
+// CheckValidity ...
+func (info CertificateInfoModel) CheckValidity() error {
+	return CheckValidity(info.certificate)
 }
 
 // NewCertificateInfo ...
