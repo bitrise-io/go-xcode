@@ -153,3 +153,24 @@ func (profile PlistData) GetDeveloperCertificates() [][]byte {
 	developerCertificates, _ := data.GetByteArrayArray("DeveloperCertificates")
 	return developerCertificates
 }
+
+// GetTeamName ...
+func (profile PlistData) GetTeamName() string {
+	data := plistutil.PlistData(profile)
+	teamName, _ := data.GetString("TeamName")
+	return teamName
+}
+
+// GetCreationDate ...
+func (profile PlistData) GetCreationDate() time.Time {
+	data := plistutil.PlistData(profile)
+	creationDate, _ := data.GetTime("CreationDate")
+	return creationDate
+}
+
+// GetProvisionsAllDevices ...
+func (profile PlistData) GetProvisionsAllDevices() bool {
+	data := plistutil.PlistData(profile)
+	provisionsAlldevices, _ := data.GetBool("ProvisionsAllDevices")
+	return provisionsAlldevices
+}
