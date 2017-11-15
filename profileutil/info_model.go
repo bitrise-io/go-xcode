@@ -121,13 +121,13 @@ func NewProvisioningProfileInfoFromFile(pth string) (ProvisioningProfileInfoMode
 		return ProvisioningProfileInfoModel{}, err
 	}
 	if provisioningProfile != nil {
-		profileType := []ProfileType{}
+		profileType := ProfileTypeIos
 
 		if strings.HasSuffix(pth, ".provisionprofile") {
-			profileType = append(profileType, ProfileTypeMacOs)
+			profileType = ProfileTypeMacOs
 		}
 
-		return NewProvisioningProfileInfo(*provisioningProfile, profileType...)
+		return NewProvisioningProfileInfo(*provisioningProfile, profileType)
 	}
 	return ProvisioningProfileInfoModel{}, errors.New("failed to parse provisioning profile infos")
 }
