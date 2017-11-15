@@ -24,8 +24,10 @@ type ProvisioningProfileInfoModel struct {
 	ExportType            exportoptions.Method
 	ProvisionedDevices    []string
 	DeveloperCertificates []certificateutil.CertificateInfoModel
+	CreationDate          time.Time
 	ExpirationDate        time.Time
 	Entitlements          plistutil.PlistData
+	ProvisionsAllDevices  bool
 }
 
 // IsXcodeManaged ...
@@ -68,15 +70,16 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7, profileType ...
 		return ProvisioningProfileInfoModel{}, err
 	}
 
-	teamName, _ := data.GetString("TeamName")
 	profile := PlistData(data)
 	info := ProvisioningProfileInfoModel{
-		UUID:           profile.GetUUID(),
-		Name:           profile.GetName(),
-		TeamName:       teamName,
-		TeamID:         profile.GetTeamID(),
-		BundleID:       profile.GetBundleIdentifier(),
-		ExpirationDate: profile.GetExpirationDate(),
+		UUID:                 profile.GetUUID(),
+		Name:                 profile.GetName(),
+		TeamName:             profile.GetTeamName(),
+		TeamID:               profile.GetTeamID(),
+		BundleID:             profile.GetBundleIdentifier(),
+		CreationDate:         profile.GetCreationDate(),
+		ExpirationDate:       profile.GetExpirationDate(),
+		ProvisionsAllDevices: profile.GetProvisionsAllDevices(),
 	}
 
 	info.ExportType = profile.GetExportMethod(profileType...)
