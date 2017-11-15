@@ -92,12 +92,18 @@ func NewApplication(applicationsDir string) (Application, error) {
 		}
 
 		{
-			provisioningProfilePth := filepath.Join(applicationContentPth, "embedded.mobileprovision")
+			profileName := "embedded.mobileprovision"
+
+			if application.IsMacOS {
+				profileName = "embedded.provisionprofile"
+			}
+
+			provisioningProfilePth := filepath.Join(applicationContentPth, profileName)
 			exist, err := pathutil.IsPathExists(provisioningProfilePth)
 			if err != nil {
 				return Application{}, err
 			} else if !exist && !application.IsMacOS {
-				return Application{}, fmt.Errorf("embedded.mobileprovision does not exist at: %s", provisioningProfilePth)
+				return Application{}, fmt.Errorf("%s does not exist at: %s", profileName, provisioningProfilePth)
 			}
 			if exist {
 				profile, err := profileutil.NewProvisioningProfileInfoFromFile(provisioningProfilePth)

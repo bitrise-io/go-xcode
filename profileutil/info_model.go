@@ -32,7 +32,16 @@ type ProvisioningProfileInfoModel struct {
 
 // IsXcodeManaged ...
 func IsXcodeManaged(profileName string) bool {
-	return strings.HasPrefix(profileName, "XC") || (strings.HasPrefix(profileName, "iOS Team") && strings.Contains(profileName, "Provisioning Profile"))
+	if strings.HasPrefix(profileName, "XC") {
+		return true
+	}
+	if strings.HasPrefix(profileName, "iOS Team") && strings.Contains(profileName, "Provisioning Profile") {
+		return true
+	}
+	if strings.HasPrefix(profileName, "Mac Team") && strings.Contains(profileName, "Provisioning Profile") {
+		return true
+	}
+	return false
 }
 
 // IsXcodeManaged ...
@@ -112,7 +121,13 @@ func NewProvisioningProfileInfoFromFile(pth string) (ProvisioningProfileInfoMode
 		return ProvisioningProfileInfoModel{}, err
 	}
 	if provisioningProfile != nil {
-		return NewProvisioningProfileInfo(*provisioningProfile)
+		profileType := []ProfileType{}
+
+		if strings.HasSuffix(pth, ".provisionprofile") {
+			profileType = append(profileType, ProfileTypeMacOs)
+		}
+
+		return NewProvisioningProfileInfo(*provisioningProfile, profileType...)
 	}
 	return ProvisioningProfileInfoModel{}, errors.New("failed to parse provisioning profile infos")
 }
