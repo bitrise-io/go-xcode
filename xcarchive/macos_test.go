@@ -20,21 +20,16 @@ func TestNewMacosArchive(t *testing.T) {
 	macosArchivePth := filepath.Join(tmpDir, "archives/macos.xcarchive")
 	archive, err := NewMacosArchive(macosArchivePth)
 	require.NoError(t, err)
-	require.Equal(t, macosArchivePth, archive.Path)
-	require.Equal(t, filepath.Join(macosArchivePth, "Info.plist"), archive.InfoPlistPath)
+	require.Equal(t, 5, len(archive.InfoPlist))
 
 	app := archive.Application
-	appPth := filepath.Join(macosArchivePth, "Products/Applications/Test.app")
-	require.Equal(t, appPth, app.Path)
-	require.Equal(t, filepath.Join(appPth, "Contents/Info.plist"), app.InfoPlistPath)
-	require.Equal(t, "", app.ProvisioningProfilePath)
-	require.Equal(t, filepath.Join(appPth, "Contents/Resources/archived-expanded-entitlements.xcent"), app.EntitlementsPath)
+	require.Equal(t, 21, len(app.InfoPlist))
+	require.Equal(t, 2, len(app.Entitlements))
+	require.Nil(t, app.ProvisioningProfile)
 
 	require.Equal(t, 1, len(app.Extensions))
 	extension := app.Extensions[0]
-	extensionPth := filepath.Join(appPth, "Contents/PlugIns/ActionExtension.appex")
-	require.Equal(t, extensionPth, extension.Path)
-	require.Equal(t, filepath.Join(extensionPth, "Contents/Info.plist"), extension.InfoPlistPath)
-	require.Equal(t, "", extension.ProvisioningProfilePath)
-	require.Equal(t, filepath.Join(extensionPth, "Contents/Resources/archived-expanded-entitlements.xcent"), extension.EntitlementsPath)
+	require.Equal(t, 22, len(extension.InfoPlist))
+	require.Equal(t, 2, len(extension.Entitlements))
+	require.Nil(t, extension.ProvisioningProfile)
 }
