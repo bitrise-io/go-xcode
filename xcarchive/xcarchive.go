@@ -42,7 +42,7 @@ func NewApplication(applicationsDir string) (Application, error) {
 		}
 
 		if len(pths) == 0 {
-			return Application{}, fmt.Errorf("Failed to find main application using pattern: %s", pattern)
+			return Application{}, fmt.Errorf("failed to find application using pattern: %s", pattern)
 		} else if len(pths) > 1 {
 			log.Warnf("Multiple main applications found")
 			for _, pth := range pths {
