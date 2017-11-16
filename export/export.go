@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/bitrise-tools/go-xcode/certificateutil"
-	"github.com/bitrise-tools/go-xcode/plistutil"
 	"github.com/bitrise-tools/go-xcode/profileutil"
 	"github.com/ryanuber/go-glob"
 )
@@ -62,7 +61,7 @@ type SelectableCodeSignGroup struct {
 	BundleIDProfilesMap map[string][]profileutil.ProvisioningProfileInfoModel
 }
 
-func createSelectableCodeSignGroups(certificateProfilesGroups []CertificateProfilesGroup, bundleIDCapabilitiesMap map[string]plistutil.PlistData) []SelectableCodeSignGroup {
+func createSelectableCodeSignGroups(certificateProfilesGroups []CertificateProfilesGroup, bundleIDs []string) []SelectableCodeSignGroup {
 	groups := []SelectableCodeSignGroup{}
 
 	for _, certificateProfilesGroup := range certificateProfilesGroups {
@@ -70,15 +69,11 @@ func createSelectableCodeSignGroups(certificateProfilesGroups []CertificateProfi
 		profiles := certificateProfilesGroup.Profiles
 
 		bundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
-		for bundleID, capabilities := range bundleIDCapabilitiesMap {
+		for _, bundleID := range bundleIDs {
 
 			matchingProfiles := []profileutil.ProvisioningProfileInfoModel{}
 			for _, profile := range profiles {
 				if !glob.Glob(profile.BundleID, bundleID) {
-					continue
-				}
-
-				if missingCapabilities := profileutil.MatchTargetAndProfileEntitlements(capabilities, profile.Entitlements, profile.Type); len(missingCapabilities) > 0 {
 					continue
 				}
 
@@ -91,7 +86,7 @@ func createSelectableCodeSignGroups(certificateProfilesGroups []CertificateProfi
 			}
 		}
 
-		if len(bundleIDProfilesMap) == len(bundleIDCapabilitiesMap) {
+		if len(bundleIDProfilesMap) == len(bundleIDs) {
 			group := SelectableCodeSignGroup{
 				Certificate:         certificate,
 				BundleIDProfilesMap: bundleIDProfilesMap,
@@ -104,9 +99,9 @@ func createSelectableCodeSignGroups(certificateProfilesGroups []CertificateProfi
 }
 
 // ResolveSelectableCodeSignGroups ...
-func ResolveSelectableCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDCapabilities map[string]plistutil.PlistData) []SelectableCodeSignGroup {
+func ResolveSelectableCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
 	certificateProfilesGroups := createCertificateProfilesGroups(certificates, profiles)
-	return createSelectableCodeSignGroups(certificateProfilesGroups, bundleIDCapabilities)
+	return createSelectableCodeSignGroups(certificateProfilesGroups, bundleIDs)
 }
 
 // CodeSignGroup ...
@@ -351,7 +346,7 @@ func createCodeSignGroups(selectableGroups []SelectableCodeSignGroup) []CodeSign
 }
 
 // ResolveCodeSignGroups ...
-func ResolveCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDCapabilities map[string]plistutil.PlistData) []CodeSignGroup {
-	selectableCodeSignGroups := ResolveSelectableCodeSignGroups(certificates, profiles, bundleIDCapabilities)
+func ResolveCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []CodeSignGroup {
+	selectableCodeSignGroups := ResolveSelectableCodeSignGroups(certificates, profiles, bundleIDs)
 	return createCodeSignGroups(selectableCodeSignGroups)
 }
