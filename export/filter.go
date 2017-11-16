@@ -129,3 +129,32 @@ func CreateNotXcodeManagedSelectableCodeSignGroupFilter(group SelectableCodeSign
 	}
 	return nil
 }
+
+// CreateExcludeProfileNameSelectableCodeSignGroupFilter ...
+func CreateExcludeProfileNameSelectableCodeSignGroupFilter(group SelectableCodeSignGroup, name string) *SelectableCodeSignGroup {
+	filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
+
+	for bundleID, profiles := range group.BundleIDProfilesMap {
+		filteredProfiles := []profileutil.ProvisioningProfileInfoModel{}
+
+		for _, profile := range profiles {
+			if profile.Name != name {
+				filteredProfiles = append(filteredProfiles, profile)
+			}
+		}
+
+		if len(filteredProfiles) == 0 {
+			break
+		}
+
+		filteredBundleIDProfilesMap[bundleID] = filteredProfiles
+	}
+
+	if len(filteredBundleIDProfilesMap) == len(group.BundleIDProfilesMap) {
+		return &SelectableCodeSignGroup{
+			Certificate:         group.Certificate,
+			BundleIDProfilesMap: filteredBundleIDProfilesMap,
+		}
+	}
+	return nil
+}
