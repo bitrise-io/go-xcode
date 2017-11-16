@@ -86,3 +86,12 @@ func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
 	}
 	return CertificateInfos(certificates), nil
 }
+
+// InstalledMacAppStoreCertificateInfos ...
+func InstalledMacAppStoreCertificateInfos() ([]CertificateInfoModel, error) {
+	certificates, err := InstalledMacAppStoreCertificates()
+	if err != nil {
+		return nil, err
+	}
+	return CertificateInfos(certificates), nil
+}
