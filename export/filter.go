@@ -2,6 +2,7 @@ package export
 
 import (
 	"github.com/bitrise-tools/go-xcode/exportoptions"
+	"github.com/bitrise-tools/go-xcode/plistutil"
 	"github.com/bitrise-tools/go-xcode/profileutil"
 )
 
@@ -71,6 +72,25 @@ func FilterCodeSignGroupsForTeam(codeSignGroups []CodeSignGroup, teamID string) 
 	filteredGroups := []CodeSignGroup{}
 	for _, group := range codeSignGroups {
 		if group.Certificate.TeamID == teamID {
+			filteredGroups = append(filteredGroups, group)
+		}
+	}
+	return filteredGroups
+}
+
+// FilterCodeSignGroupsForEntitlements ...
+func FilterCodeSignGroupsForEntitlements(codeSignGroups []CodeSignGroup, bundleIDEntitlementsMap map[string]plistutil.PlistData) []CodeSignGroup {
+	filteredGroups := []CodeSignGroup{}
+	for _, group := range codeSignGroups {
+		matched := true
+		for bundleID, profile := range group.BundleIDProfileMap {
+			missingEntitlements := profileutil.MatchTargetAndProfileEntitlements(bundleIDEntitlementsMap[bundleID], profile.Entitlements, profile.Type)
+			if len(missingEntitlements) > 0 {
+				matched = false
+				break
+			}
+		}
+		if matched {
 			filteredGroups = append(filteredGroups, group)
 		}
 	}

@@ -80,20 +80,18 @@ func (profile PlistData) GetBundleIdentifier() string {
 }
 
 // GetExportMethod ...
-func (profile PlistData) GetExportMethod(profileType ...ProfileType) exportoptions.Method {
+func (profile PlistData) GetExportMethod(profileType ProfileType) exportoptions.Method {
 	data := plistutil.PlistData(profile)
 
-	if len(profileType) > 0 {
-		if profileType[0] == ProfileTypeMacOs {
-			_, ok := data.GetStringArray("ProvisionedDevices")
-			if !ok {
-				if allDevices, ok := data.GetBool("ProvisionsAllDevices"); ok && allDevices {
-					return exportoptions.MethodDeveloperID
-				}
-				return exportoptions.MethodAppStore
+	if profileType == ProfileTypeMacOs {
+		_, ok := data.GetStringArray("ProvisionedDevices")
+		if !ok {
+			if allDevices, ok := data.GetBool("ProvisionsAllDevices"); ok && allDevices {
+				return exportoptions.MethodDeveloperID
 			}
-			return exportoptions.MethodDevelopment
+			return exportoptions.MethodAppStore
 		}
+		return exportoptions.MethodDevelopment
 	}
 
 	_, ok := data.GetStringArray("ProvisionedDevices")
