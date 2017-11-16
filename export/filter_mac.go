@@ -7,17 +7,18 @@ func FilterCodeSignGroupsForInstallerCertificate(codeSignGroups []CodeSignGroup,
 	filteredGroups := []CodeSignGroupMac{}
 
 	for _, group := range codeSignGroups {
+		certs := []certificateutil.CertificateInfoModel{}
 		for _, installerCertificate := range installedInstallerCertificates {
-			matchedMacGroups := []CodeSignGroupMac{}
 			if installerCertificate.TeamID == group.Certificate.TeamID {
-				matchedMacGroups = append(matchedMacGroups, CodeSignGroupMac{
-					CodeSignGroup:        group,
-					InstallerCertificate: installerCertificate,
-				})
+				certs = append(certs, installerCertificate)
 			}
-			if len(matchedMacGroups) > 0 {
-				filteredGroups = append(filteredGroups, matchedMacGroups[0])
-			}
+		}
+
+		if len(certs) > 0 {
+			filteredGroups = append(filteredGroups, CodeSignGroupMac{
+				CodeSignGroup:        group,
+				InstallerCertificate: certs[0],
+			})
 		}
 	}
 	return filteredGroups
