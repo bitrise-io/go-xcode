@@ -78,7 +78,7 @@ func createSelectableCodeSignGroups(certificateProfilesGroups []CertificateProfi
 					continue
 				}
 
-				if missingCapabilities := profileutil.MatchTargetAndProfileEntitlements(capabilities, profile.Entitlements); len(missingCapabilities) > 0 {
+				if missingCapabilities := profileutil.MatchTargetAndProfileEntitlements(capabilities, profile.Entitlements, profile.Type); len(missingCapabilities) > 0 {
 					continue
 				}
 

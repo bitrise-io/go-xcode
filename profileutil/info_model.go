@@ -28,6 +28,7 @@ type ProvisioningProfileInfoModel struct {
 	ExpirationDate        time.Time
 	Entitlements          plistutil.PlistData
 	ProvisionsAllDevices  bool
+	Type                  ProfileType
 }
 
 // IsXcodeManaged ...
@@ -73,7 +74,7 @@ func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertif
 }
 
 // NewProvisioningProfileInfo ...
-func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7, profileType ...ProfileType) (ProvisioningProfileInfoModel, error) {
+func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7, profileType ProfileType) (ProvisioningProfileInfoModel, error) {
 	var data plistutil.PlistData
 	if _, err := plist.Unmarshal(provisioningProfile.Content, &data); err != nil {
 		return ProvisioningProfileInfoModel{}, err
@@ -89,9 +90,10 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7, profileType ...
 		CreationDate:         profile.GetCreationDate(),
 		ExpirationDate:       profile.GetExpirationDate(),
 		ProvisionsAllDevices: profile.GetProvisionsAllDevices(),
+		Type:                 profileType,
 	}
 
-	info.ExportType = profile.GetExportMethod(profileType...)
+	info.ExportType = profile.GetExportMethod(profileType)
 
 	if devicesList := profile.GetProvisionedDevices(); devicesList != nil {
 		info.ProvisionedDevices = devicesList
@@ -162,7 +164,13 @@ func FindProvisioningProfileInfo(uuid string) (ProvisioningProfileInfoModel, str
 		return ProvisioningProfileInfoModel{}, "", nil
 	}
 
-	info, err := NewProvisioningProfileInfo(*profile)
+	profileType := ProfileTypeIos
+
+	if strings.HasSuffix(pth, ".provisionprofile") {
+		profileType = ProfileTypeMacOs
+	}
+
+	info, err := NewProvisioningProfileInfo(*profile, profileType)
 	if err != nil {
 		return ProvisioningProfileInfoModel{}, "", err
 	}
