@@ -84,7 +84,8 @@ func FilterCodeSignGroupsForEntitlements(codeSignGroups []CodeSignGroup, bundleI
 	for _, group := range codeSignGroups {
 		matched := true
 		for bundleID, profile := range group.BundleIDProfileMap {
-			if len(profileutil.MatchTargetAndProfileEntitlements(bundleIDEntitlementsMap[bundleID], profile.Entitlements, profile.Type)) > 0 {
+			missingEntitlements := profileutil.MatchTargetAndProfileEntitlements(bundleIDEntitlementsMap[bundleID], profile.Entitlements, profile.Type)
+			if len(missingEntitlements) > 0 {
 				matched = false
 				break
 			}
