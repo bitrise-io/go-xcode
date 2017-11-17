@@ -11,7 +11,7 @@ import (
 	"github.com/ryanuber/go-glob"
 )
 
-// SelectableCodeSignGroup ..
+// SelectableCodeSignGroup ...
 type SelectableCodeSignGroup struct {
 	Certificate         certificateutil.CertificateInfoModel
 	BundleIDProfilesMap map[string][]profileutil.ProvisioningProfileInfoModel
@@ -42,11 +42,12 @@ func printableSelectableCodeSignGroup(group SelectableCodeSignGroup) string {
 }
 
 func isCertificateInstalled(installedCertificates []certificateutil.CertificateInfoModel, certificate certificateutil.CertificateInfoModel) bool {
-	installedMap := map[string]bool{}
-	for _, certificate := range installedCertificates {
-		installedMap[certificate.Serial] = true
+	for _, cert := range installedCertificates {
+		if cert.Serial == certificate.Serial {
+			return true
+		}
 	}
-	return installedMap[certificate.Serial]
+	return false
 }
 
 // CreateSelectableCodeSignGroups ...
@@ -64,8 +65,8 @@ func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateIn
 				continue
 			}
 
-			certificateProfiles := serialProfilesMap[certificate.Serial]
-			if certificateProfiles == nil {
+			certificateProfiles, ok := serialProfilesMap[certificate.Serial]
+			if !ok {
 				certificateProfiles = []profileutil.ProvisioningProfileInfoModel{}
 			}
 			certificateProfiles = append(certificateProfiles, profile)
