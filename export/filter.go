@@ -113,8 +113,8 @@ func CreateExportMethodSelectableCodeSignGroupFilter(exportMethod exportoptions.
 	}
 }
 
-// CreatTeamSelectableCodeSignGroupFilter ...
-func CreatTeamSelectableCodeSignGroupFilter(teamID string) SelectableCodeSignGroupFilter {
+// CreateTeamSelectableCodeSignGroupFilter ...
+func CreateTeamSelectableCodeSignGroupFilter(teamID string) SelectableCodeSignGroupFilter {
 	return func(group SelectableCodeSignGroup) *SelectableCodeSignGroup {
 		log.Debugf("Development Team filter - restrict group if team is not: %s", teamID)
 
