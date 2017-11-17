@@ -1,8 +1,11 @@
 package export
 
 import (
+	"encoding/json"
+	"fmt"
 	"sort"
 
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-tools/go-xcode/certificateutil"
 	"github.com/bitrise-tools/go-xcode/profileutil"
 	"github.com/ryanuber/go-glob"
@@ -12,6 +15,30 @@ import (
 type SelectableCodeSignGroup struct {
 	Certificate         certificateutil.CertificateInfoModel
 	BundleIDProfilesMap map[string][]profileutil.ProvisioningProfileInfoModel
+}
+
+func printableSelectableCodeSignGroup(group SelectableCodeSignGroup) string {
+	printable := map[string]interface{}{}
+	printable["team"] = fmt.Sprintf("%s (%s)", group.Certificate.TeamName, group.Certificate.TeamID)
+	printable["certificate"] = fmt.Sprintf("%s (%s)", group.Certificate.CommonName, group.Certificate.Serial)
+
+	bundleIDProfiles := map[string][]string{}
+	for bundleID, profileInfos := range group.BundleIDProfilesMap {
+		printableProfiles := []string{}
+		for _, profileInfo := range profileInfos {
+			printableProfiles = append(printableProfiles, fmt.Sprintf("%s (%s)", profileInfo.Name, profileInfo.UUID))
+		}
+		bundleIDProfiles[bundleID] = printableProfiles
+	}
+	printable["bundle_id_profiles"] = bundleIDProfiles
+
+	data, err := json.MarshalIndent(printable, "", "\t")
+	if err != nil {
+		log.Errorf("Failed to marshal: %v, error: %s", printable, err)
+		return ""
+	}
+
+	return string(data)
 }
 
 func isCertificateInstalled(installedCertificates []certificateutil.CertificateInfoModel, certificate certificateutil.CertificateInfoModel) bool {
@@ -24,6 +51,9 @@ func isCertificateInstalled(installedCertificates []certificateutil.CertificateI
 
 // CreateSelectableCodeSignGroups ...
 func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
+	log.Debugf("\n")
+	log.Debugf("Creating Codesign Groups...")
+
 	groups := []SelectableCodeSignGroup{}
 
 	serialProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
@@ -72,6 +102,14 @@ func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateIn
 			}
 			groups = append(groups, group)
 		}
+	}
+
+	if len(groups) == 0 {
+		log.Debugf("Can not create any Codesign Groups for the bundle ids using the installed code sign files")
+	}
+
+	for _, group := range groups {
+		log.Debugf(printableSelectableCodeSignGroup(group))
 	}
 
 	return groups
