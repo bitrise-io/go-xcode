@@ -8,7 +8,7 @@ import (
 )
 
 // SelectableCodeSignGroupFilter ...
-type SelectableCodeSignGroupFilter = func(group SelectableCodeSignGroup) *SelectableCodeSignGroup
+type SelectableCodeSignGroupFilter func(group SelectableCodeSignGroup) *SelectableCodeSignGroup
 
 // FilterSelectableCodeSignGroups ...
 func FilterSelectableCodeSignGroups(groups []SelectableCodeSignGroup, filterFuncs ...SelectableCodeSignGroupFilter) []SelectableCodeSignGroup {
