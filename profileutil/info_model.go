@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-tools/go-xcode/certificateutil"
 	"github.com/bitrise-tools/go-xcode/exportoptions"
 	"github.com/bitrise-tools/go-xcode/plistutil"
 	"github.com/fullsailor/pkcs7"
-	"github.com/kdobmayer/step/log"
 	"howett.net/plist"
 )
 

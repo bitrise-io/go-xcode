@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kdobmayer/step/log"
+	"github.com/bitrise-io/go-utils/log"
 )
 
 // CertificateInfoModel ...
