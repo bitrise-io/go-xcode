@@ -112,11 +112,7 @@ func CreateTeamSelectableCodeSignGroupFilter(teamID string) SelectableCodeSignGr
 	return func(group *SelectableCodeSignGroup) bool {
 		log.Debugf("Development Team filter - restrict group if team is not: %s", teamID)
 
-		if group.Certificate.TeamID == teamID {
-			return true
-		}
-
-		return false
+		return group.Certificate.TeamID == teamID
 	}
 }
 
