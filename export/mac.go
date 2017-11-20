@@ -39,9 +39,8 @@ func CreateMacCodeSignGroup(selectableGroups []SelectableCodeSignGroup, installe
 			}
 		} else {
 			macosCodeSignGroups = append(macosCodeSignGroups, MacCodeSignGroup{
-				Certificate:          group.Certificate,
-				InstallerCertificate: nil,
-				BundleIDProfileMap:   group.BundleIDProfileMap,
+				Certificate:        group.Certificate,
+				BundleIDProfileMap: group.BundleIDProfileMap,
 			})
 		}
 	}
