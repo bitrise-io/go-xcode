@@ -53,9 +53,6 @@ func isCertificateInstalled(installedCertificates []certificateutil.CertificateI
 
 // CreateSelectableCodeSignGroups ...
 func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
-	log.Debugf("\n")
-	log.Debugf("Creating Codesign Groups...")
-
 	groups := []SelectableCodeSignGroup{}
 
 	serialProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
@@ -104,14 +101,6 @@ func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateIn
 			}
 			groups = append(groups, group)
 		}
-	}
-
-	if len(groups) == 0 {
-		log.Debugf("Can not create any Codesign Groups for the bundle ids using the installed code sign files")
-	}
-
-	for _, group := range groups {
-		log.Debugf(group.String())
 	}
 
 	return groups
