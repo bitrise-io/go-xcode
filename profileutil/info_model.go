@@ -33,7 +33,7 @@ type ProvisioningProfileInfoModel struct {
 	Type                  ProfileType
 }
 
-// String ...
+// PrintableProvisioningProfileInfo ...
 func (info ProvisioningProfileInfoModel) PrintableProvisioningProfileInfo(installedCertificates []certificateutil.CertificateInfoModel) string {
 	printable := map[string]interface{}{}
 	printable["name"] = fmt.Sprintf("%s (%s)", info.Name, info.UUID)
