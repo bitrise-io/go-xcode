@@ -12,8 +12,7 @@ type SelectableCodeSignGroupFilter func(group *SelectableCodeSignGroup) bool
 
 // FilterSelectableCodeSignGroups ...
 func FilterSelectableCodeSignGroups(groups []SelectableCodeSignGroup, filterFuncs ...SelectableCodeSignGroupFilter) []SelectableCodeSignGroup {
-	log.Debugf("\n")
-	log.Debugf("Filtering Codesign Groups...")
+	log.Debugf("\nFiltering Codesign Groups...")
 
 	filteredGroups := []SelectableCodeSignGroup{}
 
