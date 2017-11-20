@@ -2,6 +2,7 @@ package profileutil
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -11,6 +12,7 @@ import (
 	"github.com/bitrise-tools/go-xcode/exportoptions"
 	"github.com/bitrise-tools/go-xcode/plistutil"
 	"github.com/fullsailor/pkcs7"
+	"github.com/kdobmayer/step/log"
 	"howett.net/plist"
 )
 
@@ -29,6 +31,49 @@ type ProvisioningProfileInfoModel struct {
 	Entitlements          plistutil.PlistData
 	ProvisionsAllDevices  bool
 	Type                  ProfileType
+}
+
+// String ...
+func (info ProvisioningProfileInfoModel) PrintableProvisioningProfileInfo(installedCertificates []certificateutil.CertificateInfoModel) string {
+	printable := map[string]interface{}{}
+	printable["name"] = fmt.Sprintf("%s (%s)", info.Name, info.UUID)
+	printable["export_type"] = string(info.ExportType)
+	printable["team"] = fmt.Sprintf("%s (%s)", info.TeamName, info.TeamID)
+	printable["bundle_id"] = info.BundleID
+	printable["expire"] = info.ExpirationDate.String()
+	printable["is_xcode_managed"] = info.IsXcodeManaged()
+	if info.ProvisionedDevices != nil {
+		printable["devices"] = info.ProvisionedDevices
+	}
+
+	certificates := []map[string]interface{}{}
+	for _, certificateInfo := range info.DeveloperCertificates {
+		certificate := map[string]interface{}{}
+		certificate["name"] = certificateInfo.CommonName
+		certificate["serial"] = certificateInfo.Serial
+		certificate["team_id"] = certificateInfo.TeamID
+		certificates = append(certificates, certificate)
+	}
+	printable["certificates"] = certificates
+
+	errors := []string{}
+	if !info.HasInstalledCertificate(installedCertificates) {
+		errors = append(errors, "none of the profile's certificates are installed")
+	}
+	if err := info.CheckValidity(); err != nil {
+		errors = append(errors, err.Error())
+	}
+	if len(errors) > 0 {
+		printable["errors"] = errors
+	}
+
+	data, err := json.MarshalIndent(printable, "", "\t")
+	if err != nil {
+		log.Errorf("Failed to marshal: %v, error: %s", printable, err)
+		return ""
+	}
+
+	return string(data)
 }
 
 // IsXcodeManaged ...
