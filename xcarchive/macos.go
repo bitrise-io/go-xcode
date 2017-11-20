@@ -13,6 +13,7 @@ import (
 )
 
 type macosBaseApplication struct {
+	Path                string
 	InfoPlist           plistutil.PlistData
 	Entitlements        plistutil.PlistData
 	ProvisioningProfile *profileutil.ProvisioningProfileInfoModel
@@ -71,6 +72,7 @@ func newMacosBaseApplication(path string) (macosBaseApplication, error) {
 	}
 
 	return macosBaseApplication{
+		Path:                path,
 		InfoPlist:           infoPlist,
 		Entitlements:        entitlements,
 		ProvisioningProfile: provisioningProfile,
