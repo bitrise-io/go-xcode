@@ -37,13 +37,13 @@ func FilterSelectableCodeSignGroups(groups []SelectableCodeSignGroup, filterFunc
 	}
 
 	for _, group := range filteredGroups {
-		log.Debugf(printableSelectableCodeSignGroup(group))
+		log.Debugf(group.String())
 	}
 
 	return filteredGroups
 }
 
-// CreateEntitlementsSelectableCodeSignGroupFilter ..
+// CreateEntitlementsSelectableCodeSignGroupFilter ...
 func CreateEntitlementsSelectableCodeSignGroupFilter(bundleIDEntitlementsMap map[string]plistutil.PlistData) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
 		log.Debugf("Entitlements filter - removes profile if has missing capabilities")

@@ -17,7 +17,8 @@ type SelectableCodeSignGroup struct {
 	BundleIDProfilesMap map[string][]profileutil.ProvisioningProfileInfoModel
 }
 
-func printableSelectableCodeSignGroup(group SelectableCodeSignGroup) string {
+// String ...
+func (group SelectableCodeSignGroup) String() string {
 	printable := map[string]interface{}{}
 	printable["team"] = fmt.Sprintf("%s (%s)", group.Certificate.TeamName, group.Certificate.TeamID)
 	printable["certificate"] = fmt.Sprintf("%s (%s)", group.Certificate.CommonName, group.Certificate.Serial)
@@ -110,7 +111,7 @@ func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateIn
 	}
 
 	for _, group := range groups {
-		log.Debugf(printableSelectableCodeSignGroup(group))
+		log.Debugf(group.String())
 	}
 
 	return groups
