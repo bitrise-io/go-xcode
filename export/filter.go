@@ -12,8 +12,6 @@ type SelectableCodeSignGroupFilter func(group *SelectableCodeSignGroup) bool
 
 // FilterSelectableCodeSignGroups ...
 func FilterSelectableCodeSignGroups(groups []SelectableCodeSignGroup, filterFuncs ...SelectableCodeSignGroupFilter) []SelectableCodeSignGroup {
-	log.Debugf("\nFiltering Codesign Groups...")
-
 	filteredGroups := []SelectableCodeSignGroup{}
 
 	for _, group := range groups {
@@ -29,14 +27,6 @@ func FilterSelectableCodeSignGroups(groups []SelectableCodeSignGroup, filterFunc
 		if allowed {
 			filteredGroups = append(filteredGroups, group)
 		}
-	}
-
-	if len(filteredGroups) == 0 {
-		log.Debugf("Every Codesign Groups removed by the filters")
-	}
-
-	for _, group := range filteredGroups {
-		log.Debugf(group.String())
 	}
 
 	return filteredGroups
