@@ -33,6 +33,14 @@ func (info CertificateInfoModel) String() string {
 	printable["team"] = fmt.Sprintf("%s (%s)", info.TeamName, info.TeamID)
 	printable["expire"] = info.EndDate.String()
 
+	errors := []string{}
+	if err := info.CheckValidity(); err != nil {
+		errors = append(errors, err.Error())
+	}
+	if len(errors) > 0 {
+		printable["errors"] = errors
+	}
+
 	data, err := json.MarshalIndent(printable, "", "\t")
 	if err != nil {
 		log.Errorf("Failed to marshal: %v, error: %s", printable, err)

@@ -34,7 +34,7 @@ type ProvisioningProfileInfoModel struct {
 }
 
 // PrintableProvisioningProfileInfo ...
-func (info ProvisioningProfileInfoModel) PrintableProvisioningProfileInfo(installedCertificates []certificateutil.CertificateInfoModel) string {
+func (info ProvisioningProfileInfoModel) String(installedCertificates ...certificateutil.CertificateInfoModel) string {
 	printable := map[string]interface{}{}
 	printable["name"] = fmt.Sprintf("%s (%s)", info.Name, info.UUID)
 	printable["export_type"] = string(info.ExportType)
@@ -57,7 +57,7 @@ func (info ProvisioningProfileInfoModel) PrintableProvisioningProfileInfo(instal
 	printable["certificates"] = certificates
 
 	errors := []string{}
-	if !info.HasInstalledCertificate(installedCertificates) {
+	if installedCertificates != nil && !info.HasInstalledCertificate(installedCertificates) {
 		errors = append(errors, "none of the profile's certificates are installed")
 	}
 	if err := info.CheckValidity(); err != nil {
