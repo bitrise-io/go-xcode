@@ -10,23 +10,23 @@ import (
 
 // IosCodeSignGroup ...
 type IosCodeSignGroup struct {
-	Certificate        certificateutil.CertificateInfoModel
-	BundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel
+	certificate        certificateutil.CertificateInfoModel
+	bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel
 }
 
-// GetCertificate ...
-func (signGroup *IosCodeSignGroup) GetCertificate() certificateutil.CertificateInfoModel {
-	return signGroup.Certificate
+// Certificate ...
+func (signGroup *IosCodeSignGroup) Certificate() certificateutil.CertificateInfoModel {
+	return signGroup.certificate
 }
 
-// GetInstallerCertificate ...
-func (signGroup *IosCodeSignGroup) GetInstallerCertificate() *certificateutil.CertificateInfoModel {
+// InstallerCertificate ...
+func (signGroup *IosCodeSignGroup) InstallerCertificate() *certificateutil.CertificateInfoModel {
 	return nil
 }
 
-// GetBundleIDProfileMap ...
-func (signGroup *IosCodeSignGroup) GetBundleIDProfileMap() map[string]profileutil.ProvisioningProfileInfoModel {
-	return signGroup.BundleIDProfileMap
+// BundleIDProfileMap ...
+func (signGroup *IosCodeSignGroup) BundleIDProfileMap() map[string]profileutil.ProvisioningProfileInfoModel {
+	return signGroup.bundleIDProfileMap
 }
 
 func createSingleWildcardGroups(group SelectableCodeSignGroup, alreadyUsedProfileUUIDMap map[string]bool) []IosCodeSignGroup {
@@ -61,8 +61,8 @@ func createSingleWildcardGroups(group SelectableCodeSignGroup, alreadyUsedProfil
 			}
 
 			group := IosCodeSignGroup{
-				Certificate:        certificate,
-				BundleIDProfileMap: bundleIDProfileMap,
+				certificate:        certificate,
+				bundleIDProfileMap: bundleIDProfileMap,
 			}
 			groups = append(groups, group)
 
@@ -145,8 +145,8 @@ func createXcodeManagedGroups(group SelectableCodeSignGroup, alreadyUsedProfileU
 			}
 
 			group := IosCodeSignGroup{
-				Certificate:        certificate,
-				BundleIDProfileMap: bundleIDMannagedProfileMap,
+				certificate:        certificate,
+				bundleIDProfileMap: bundleIDMannagedProfileMap,
 			}
 			groups = append(groups, group)
 		}
@@ -228,8 +228,8 @@ func createNotXcodeManagedGroups(group SelectableCodeSignGroup, alreadyUsedProfi
 			}
 
 			codeSignGroup := IosCodeSignGroup{
-				Certificate:        certificate,
-				BundleIDProfileMap: bundleIDNotMannagedProfileMap,
+				certificate:        certificate,
+				bundleIDProfileMap: bundleIDNotMannagedProfileMap,
 			}
 			groups = append(groups, codeSignGroup)
 		}
@@ -270,8 +270,8 @@ func createRemainingGroups(group SelectableCodeSignGroup, alreadyUsedProfileUUID
 
 		if len(bundleIDProfileMap) == len(bundleIDs) {
 			group := IosCodeSignGroup{
-				Certificate:        certificate,
-				BundleIDProfileMap: bundleIDProfileMap,
+				certificate:        certificate,
+				bundleIDProfileMap: bundleIDProfileMap,
 			}
 			groups = append(groups, group)
 		}
