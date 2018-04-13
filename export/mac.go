@@ -28,6 +28,15 @@ func (signGroup *MacCodeSignGroup) BundleIDProfileMap() map[string]profileutil.P
 	return signGroup.bundleIDProfileMap
 }
 
+// NewMacGroup ...
+func NewMacGroup(certificate certificateutil.CertificateInfoModel, installerCertificate *certificateutil.CertificateInfoModel, bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel) *MacCodeSignGroup {
+	return &MacCodeSignGroup{
+		certificate:          certificate,
+		installerCertificate: installerCertificate,
+		bundleIDProfileMap:   bundleIDProfileMap,
+	}
+}
+
 // CreateMacCodeSignGroup ...
 func CreateMacCodeSignGroup(selectableGroups []SelectableCodeSignGroup, installedInstallerCertificates []certificateutil.CertificateInfoModel, exportMethod exportoptions.Method) []MacCodeSignGroup {
 	macosCodeSignGroups := []MacCodeSignGroup{}

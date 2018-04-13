@@ -29,6 +29,14 @@ func (signGroup *IosCodeSignGroup) BundleIDProfileMap() map[string]profileutil.P
 	return signGroup.bundleIDProfileMap
 }
 
+// NewIOSGroup ...
+func NewIOSGroup(certificate certificateutil.CertificateInfoModel, bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel) *IosCodeSignGroup {
+	return &IosCodeSignGroup{
+		certificate:        certificate,
+		bundleIDProfileMap: bundleIDProfileMap,
+	}
+}
+
 func createSingleWildcardGroups(group SelectableCodeSignGroup, alreadyUsedProfileUUIDMap map[string]bool) []IosCodeSignGroup {
 	groups := []IosCodeSignGroup{}
 
