@@ -7,7 +7,7 @@ import (
 
 // CodeSignGroup ...
 type CodeSignGroup interface {
-	Certificate() certificateutil.CertificateInfoModel
-	InstallerCertificate() *certificateutil.CertificateInfoModel
-	BundleIDProfileMap() map[string]profileutil.ProvisioningProfileInfoModel
+	GetCertificate() certificateutil.CertificateInfoModel
+	GetInstallerCertificate() *certificateutil.CertificateInfoModel
+	GetBundleIDProfileMap() map[string]profileutil.ProvisioningProfileInfoModel
 }
