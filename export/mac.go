@@ -45,10 +45,10 @@ func CreateMacCodeSignGroup(selectableGroups []SelectableCodeSignGroup, installe
 			}
 
 			if len(installerCertificates) > 0 {
-				installerCert := installerCertificates[0]
+				installerCertificate := installerCertificates[0]
 				macosCodeSignGroups = append(macosCodeSignGroups, MacCodeSignGroup{
 					Certificate:          group.Certificate,
-					InstallerCertificate: &installerCert,
+					InstallerCertificate: &installerCertificate,
 					BundleIDProfileMap:   group.BundleIDProfileMap,
 				})
 			}
