@@ -8,20 +8,29 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 )
 
+// XcodeProject ...
+type XcodeProject interface {
+	Path() string
+	SharedSchemes() []SchemeModel
+	Targets() []TargetModel
+}
+
 // ProjectModel ...
 type ProjectModel struct {
-	Pth           string
-	Name          string
-	SDKs          []string
-	SharedSchemes []SchemeModel
-	Targets       []TargetModel
+	pth  string
+	name string
+
+	sharedSchemes []SchemeModel
+	targets       []TargetModel
+
+	SDKs []string
 }
 
 // NewProject ...
 func NewProject(xcodeprojPth string) (ProjectModel, error) {
 	project := ProjectModel{
-		Pth:  xcodeprojPth,
-		Name: strings.TrimSuffix(filepath.Base(xcodeprojPth), filepath.Ext(xcodeprojPth)),
+		pth:  xcodeprojPth,
+		name: strings.TrimSuffix(filepath.Base(xcodeprojPth), filepath.Ext(xcodeprojPth)),
 	}
 
 	// SDK
@@ -46,7 +55,7 @@ func NewProject(xcodeprojPth string) (ProjectModel, error) {
 		return ProjectModel{}, err
 	}
 
-	project.SharedSchemes = schemes
+	project.sharedSchemes = schemes
 
 	// Targets
 	targets, err := ProjectTargets(xcodeprojPth)
@@ -54,9 +63,24 @@ func NewProject(xcodeprojPth string) (ProjectModel, error) {
 		return ProjectModel{}, err
 	}
 
-	project.Targets = targets
+	project.targets = targets
 
 	return project, nil
+}
+
+// Path ...
+func (p ProjectModel) Path() string {
+	return p.pth
+}
+
+// SharedSchemes ...
+func (p ProjectModel) SharedSchemes() []SchemeModel {
+	return p.sharedSchemes
+}
+
+// Targets ...
+func (p ProjectModel) Targets() []TargetModel {
+	return p.targets
 }
 
 // ContainsSDK ...

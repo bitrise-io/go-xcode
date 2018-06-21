@@ -1,250 +1,122 @@
 package xcodeproj
 
-import (
-	"bufio"
-	"fmt"
-	"os"
-	"path"
-	"path/filepath"
-	"regexp"
-	"sort"
-	"strings"
-
-	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/pathutil"
-)
+import "github.com/bitrise-tools/go-xcode/xcodeproj/ruby"
 
 // SchemeModel ...
 type SchemeModel struct {
-	Name      string
-	HasXCTest bool
+	Name         string
+	IsTestable   bool
+	IsArchivable bool
 }
 
-func filterSharedSchemeFilePaths(paths []string) []string {
-	isSharedSchemeFilePath := func(pth string) bool {
-		regexpPattern := filepath.Join(".*[/]?xcshareddata", "xcschemes", ".+[.]xcscheme")
-		regexp := regexp.MustCompile(regexpPattern)
-		return (regexp.FindString(pth) != "")
+// ProjectSharedSchemes ...
+func ProjectSharedSchemes(projectPth string) ([]SchemeModel, error) {
+	// return sharedSchemes(projectPth)
+	runner := ruby.NewRunner(schemesRubyScript, map[string]string{"project": projectPth})
+	if err := runner.BundleInstall(map[string]string{"xcodeproj": "", "json": ""}); err != nil {
+		return nil, err
 	}
 
-	filteredPaths := []string{}
-	for _, pth := range paths {
-		if isSharedSchemeFilePath(pth) {
-			filteredPaths = append(filteredPaths, pth)
-		}
+	type output struct {
+		ArchivableSchemes []string
+		TestableSchemes   []string
+	}
+	var out output
+	if err := runner.Execute(&out); err != nil {
+		return nil, err
 	}
 
-	sort.Strings(filteredPaths)
-
-	return filteredPaths
-}
-
-func sharedSchemeFilePaths(projectOrWorkspacePth string) ([]string, error) {
-	filesInDir := func(dir string) ([]string, error) {
-		files := []string{}
-		if err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
-			files = append(files, path)
-			return nil
-		}); err != nil {
-			return []string{}, err
+	schemesByName := map[string]SchemeModel{}
+	for _, schemeName := range out.ArchivableSchemes {
+		scheme, ok := schemesByName[schemeName]
+		if !ok {
+			scheme = SchemeModel{Name: schemeName}
 		}
-		return files, nil
+		scheme.IsArchivable = true
+		schemesByName[schemeName] = scheme
+	}
+	for _, schemeName := range out.TestableSchemes {
+		scheme, ok := schemesByName[schemeName]
+		if !ok {
+			scheme = SchemeModel{Name: schemeName}
+		}
+		scheme.IsTestable = true
+		schemesByName[schemeName] = scheme
 	}
 
-	paths, err := filesInDir(projectOrWorkspacePth)
-	if err != nil {
-		return []string{}, err
-	}
-	return filterSharedSchemeFilePaths(paths), nil
-}
-
-// SchemeNameFromPath ...
-func SchemeNameFromPath(schemePth string) string {
-	basename := filepath.Base(schemePth)
-	ext := filepath.Ext(schemePth)
-	if ext != XCSchemeExt {
-		return ""
-	}
-	return strings.TrimSuffix(basename, ext)
-}
-
-func schemeFileContentContainsXCTestBuildAction(schemeFileContent string) (bool, error) {
-	testActionStartPattern := "<TestAction"
-	testActionEndPattern := "</TestAction>"
-	isTestableAction := false
-
-	testableReferenceStartPattern := "<TestableReference"
-	testableReferenceSkippedRegexp := regexp.MustCompile(`skipped = "(?P<skipped>.+)"`)
-	testableReferenceEndPattern := "</TestableReference>"
-	isTestableReference := false
-
-	xctestBuildableReferenceNameRegexp := regexp.MustCompile(`BuildableName = ".+.xctest"`)
-
-	scanner := bufio.NewScanner(strings.NewReader(schemeFileContent))
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if strings.TrimSpace(line) == testActionEndPattern {
-			break
-		}
-
-		if strings.TrimSpace(line) == testActionStartPattern {
-			isTestableAction = true
-			continue
-		}
-
-		if !isTestableAction {
-			continue
-		}
-
-		// TestAction
-
-		if strings.TrimSpace(line) == testableReferenceEndPattern {
-			isTestableReference = false
-			continue
-		}
-
-		if strings.TrimSpace(line) == testableReferenceStartPattern {
-			isTestableReference = true
-			continue
-		}
-
-		if !isTestableReference {
-			continue
-		}
-
-		// TestableReference
-
-		if matches := testableReferenceSkippedRegexp.FindStringSubmatch(line); len(matches) > 1 {
-			skipped := matches[1]
-			if skipped != "NO" {
-				break
-			}
-		}
-
-		if match := xctestBuildableReferenceNameRegexp.FindString(line); match != "" {
-			return true, nil
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return false, err
-	}
-
-	return false, nil
-}
-
-// SchemeFileContainsXCTestBuildAction ...
-func SchemeFileContainsXCTestBuildAction(schemeFilePth string) (bool, error) {
-	content, err := fileutil.ReadStringFromFile(schemeFilePth)
-	if err != nil {
-		return false, err
-	}
-
-	return schemeFileContentContainsXCTestBuildAction(content)
-}
-
-func sharedSchemes(projectOrWorkspacePth string) ([]SchemeModel, error) {
-	schemePaths, err := sharedSchemeFilePaths(projectOrWorkspacePth)
-	if err != nil {
-		return []SchemeModel{}, err
-	}
-
-	schemes := []SchemeModel{}
-	for _, schemePth := range schemePaths {
-		schemeName := SchemeNameFromPath(schemePth)
-
-		hasXCTest, err := SchemeFileContainsXCTestBuildAction(schemePth)
-		if err != nil {
-			return []SchemeModel{}, err
-		}
-
-		schemes = append(schemes, SchemeModel{
-			Name:      schemeName,
-			HasXCTest: hasXCTest,
-		})
+	var schemes []SchemeModel
+	for _, scheme := range schemesByName {
+		schemes = append(schemes, scheme)
 	}
 
 	return schemes, nil
 }
 
-// ProjectSharedSchemes ...
-func ProjectSharedSchemes(projectPth string) ([]SchemeModel, error) {
-	return sharedSchemes(projectPth)
-}
+const schemesRubyScript = `require 'xcodeproj'
+require 'json'
 
-// WorkspaceProjectReferences ...
-func WorkspaceProjectReferences(workspace string) ([]string, error) {
-	projects := []string{}
+def archivable_scheme?(scheme)
+  action = scheme.build_action
+  return false unless action
 
-	workspaceDir := filepath.Dir(workspace)
+  entries = action.entries || []
+  return false if entries.empty?
 
-	xcworkspacedataPth := path.Join(workspace, "contents.xcworkspacedata")
-	if exist, err := pathutil.IsPathExists(xcworkspacedataPth); err != nil {
-		return []string{}, err
-	} else if !exist {
-		return []string{}, fmt.Errorf("contents.xcworkspacedata does not exist at: %s", xcworkspacedataPth)
-	}
+  entries = entries.select(&:build_for_archiving?) || []
+  !entries.empty?
+end
 
-	xcworkspacedataStr, err := fileutil.ReadStringFromFile(xcworkspacedataPth)
-	if err != nil {
-		return []string{}, err
-	}
+def testable_scheme?(scheme)
+  action = scheme.test_action
+  return false unless action
 
-	xcworkspacedataLines := strings.Split(xcworkspacedataStr, "\n")
-	fileRefStart := false
-	regexp := regexp.MustCompile(`location = "(.+):(.+).xcodeproj"`)
+  testables = action.testables || []
+  return false if testables.empty?
 
-	for _, line := range xcworkspacedataLines {
-		if strings.Contains(line, "<FileRef") {
-			fileRefStart = true
-			continue
-		}
+  testables = testables.select { |ref| !ref.skipped? }
+  !testables.empty?
+end
 
-		if fileRefStart {
-			fileRefStart = false
-			matches := regexp.FindStringSubmatch(line)
-			if len(matches) == 3 {
-				projectName := matches[2]
-				project := filepath.Join(workspaceDir, projectName+".xcodeproj")
-				projects = append(projects, project)
-			}
-		}
-	}
+def shared_schemes_by_project(project_path)
+  archivable_schemes = []
+  testable_schemes = []
 
-	sort.Strings(projects)
+  Dir.glob(File.join(project_path, 'xcshareddata', 'xcschemes', '*.xcscheme')).each do |scheme_path|
+    scheme = Xcodeproj::XCScheme.new(scheme_path)
 
-	return projects, nil
-}
+    if archivable_scheme?(scheme)
+      archivable_schemes << File.basename(scheme_path, '.xcscheme')
+    end
 
-// WorkspaceSharedSchemes ...
-func WorkspaceSharedSchemes(workspacePth string) ([]SchemeModel, error) {
-	workspaceSharedSchemes, err := sharedSchemes(workspacePth)
-	if err != nil {
-		return []SchemeModel{}, err
-	}
+    if testable_scheme?(scheme)
+      testable_schemes << File.basename(scheme_path, '.xcscheme')
+    end
+  end
 
-	projects, err := WorkspaceProjectReferences(workspacePth)
-	if err != nil {
-		return nil, err
-	}
+  [archivable_schemes, testable_schemes]
+end
 
-	for _, project := range projects {
-		projectSharedSchemes, err := sharedSchemes(project)
-		if err != nil {
-			return []SchemeModel{}, err
-		}
+begin
+  project_path = ENV['project']
 
-		for _, projectSharedScheme := range projectSharedSchemes {
-			for _, workspaceSharedScheme := range workspaceSharedSchemes {
-				if workspaceSharedScheme.Name == projectSharedScheme.Name {
-					continue
-				}
-			}
+  raise 'missing project_path' if project_path.to_s.empty?
 
-			workspaceSharedSchemes = append(workspaceSharedSchemes, projectSharedScheme)
-		}
-	}
-
-	return workspaceSharedSchemes, nil
-}
+  archivable_schemes, testable_schemes = shared_schemes_by_project(project_path)
+  result = {
+    data: {
+      archivable_schemes: archivable_schemes,
+      testable_schemes: testable_schemes,
+    }
+  }
+  result_json = JSON.pretty_generate(result).to_s
+  puts result_json
+rescue => e
+  error_message = e.to_s + "\n" + e.backtrace.join("\n")
+  result = {
+    error: error_message
+  }
+  result_json = result.to_json.to_s
+  puts result_json
+  exit(1)
+end
+`

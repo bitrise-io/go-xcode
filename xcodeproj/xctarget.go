@@ -346,23 +346,3 @@ func ProjectTargets(projectPth string) ([]TargetModel, error) {
 
 	return pbxprojContentTartgets(content)
 }
-
-// WorkspaceTargets ...
-func WorkspaceTargets(workspacePth string) ([]TargetModel, error) {
-	projects, err := WorkspaceProjectReferences(workspacePth)
-	if err != nil {
-		return []TargetModel{}, err
-	}
-
-	targets := []TargetModel{}
-	for _, project := range projects {
-		projectTargets, err := ProjectTargets(project)
-		if err != nil {
-			return []TargetModel{}, err
-		}
-
-		targets = append(targets, projectTargets...)
-	}
-
-	return targets, nil
-}
