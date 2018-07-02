@@ -36,7 +36,7 @@ const (
 	Analyze BuildCommand = "analyze"
 )
 
-// BuildCommand can bee {archive, build, analyze}
+// BuildCommand can be {archive, build, analyze}
 type BuildCommand string
 
 // BuildCommandModel ...
