@@ -29,6 +29,16 @@ xcodebuild -workspace <workspacename> \
 	[<buildaction>]...
 */
 
+// const ...
+const (
+	Archive BuildCommand = "archive"
+	Build   BuildCommand = "build"
+	Analyze BuildCommand = "analyze"
+)
+
+// BuildCommand can bee {archive, build, analyze}
+type BuildCommand string
+
 // BuildCommandModel ...
 type BuildCommandModel struct {
 	projectPath   string
@@ -51,7 +61,7 @@ type BuildCommandModel struct {
 	sdk           string
 
 	// Archive
-	isArchive bool
+	buildCommand BuildCommand
 }
 
 // NewBuildCommand ...
@@ -155,12 +165,17 @@ func (c *BuildCommandModel) cmdSlice() []string {
 
 	slice = append(slice, c.customBuildActions...)
 
-	if c.isArchive {
+	switch c.buildCommand {
+	case Archive:
 		slice = append(slice, "archive")
 
 		if c.archivePath != "" {
 			slice = append(slice, "-archivePath", c.archivePath)
 		}
+	case Build:
+		slice = append(slice, "build")
+	case Analyze:
+		slice = append(slice, "analyze")
 	}
 
 	if c.sdk != "" {
