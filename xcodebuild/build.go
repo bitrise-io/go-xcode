@@ -51,6 +51,7 @@ type BuildCommandModel struct {
 	forceProvisioningProfileSpecifier string
 	forceProvisioningProfile          string
 	forceCodeSignIdentity             string
+	disableCodesign                   bool
 
 	// buildaction
 	customBuildActions []string
@@ -65,10 +66,11 @@ type BuildCommandModel struct {
 }
 
 // NewBuildCommand ...
-func NewBuildCommand(projectPath string, isWorkspace bool) *BuildCommandModel {
+func NewBuildCommand(projectPath string, buildCommand BuildCommand, isWorkspace bool) *BuildCommandModel {
 	return &BuildCommandModel{
-		projectPath: projectPath,
-		isWorkspace: isWorkspace,
+		projectPath:  projectPath,
+		isWorkspace:  isWorkspace,
+		buildCommand: buildCommand,
 	}
 }
 
@@ -132,6 +134,12 @@ func (c *BuildCommandModel) SetSDK(sdk string) *BuildCommandModel {
 	return c
 }
 
+// SetDisableCodesign ...
+func (c *BuildCommandModel) SetDisableCodesign(disable bool) *BuildCommandModel {
+	c.disableCodesign = disable
+	return c
+}
+
 func (c *BuildCommandModel) cmdSlice() []string {
 	slice := []string{toolName}
 
@@ -161,6 +169,9 @@ func (c *BuildCommandModel) cmdSlice() []string {
 	}
 	if c.forceCodeSignIdentity != "" {
 		slice = append(slice, fmt.Sprintf("CODE_SIGN_IDENTITY=%s", c.forceCodeSignIdentity))
+	} else if c.disableCodesign {
+		slice = append(slice, "CODE_SIGN_IDENTITY=")
+		slice = append(slice, "CODE_SIGNING_REQUIRED=NO")
 	}
 
 	slice = append(slice, c.customBuildActions...)
