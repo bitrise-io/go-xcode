@@ -31,16 +31,16 @@ xcodebuild -workspace <workspacename> \
 
 // const ...
 const (
-	Archive BuildCommand = "archive"
-	Build   BuildCommand = "build"
-	Analyze BuildCommand = "analyze"
+	ArchiveAction Action = "archiveAction"
+	BuildAction   Action = "buildAction"
+	AnalyzeAction Action = "analyzeAction"
 )
 
-// BuildCommand can be {archive, build, analyze}
-type BuildCommand string
+// Action ...
+type Action string
 
-// BuildCommandModel ...
-type BuildCommandModel struct {
+// Command ...
+type Command struct {
 	projectPath   string
 	isWorkspace   bool
 	scheme        string
@@ -62,85 +62,85 @@ type BuildCommandModel struct {
 	sdk           string
 
 	// Archive
-	buildCommand BuildCommand
+	action Action
 }
 
-// NewBuildCommand ...
-func NewBuildCommand(projectPath string, buildCommand BuildCommand, isWorkspace bool) *BuildCommandModel {
-	return &BuildCommandModel{
-		projectPath:  projectPath,
-		isWorkspace:  isWorkspace,
-		buildCommand: buildCommand,
+// NewCommand ...
+func NewCommand(projectPath string, isWorkspace bool, action Action) *Command {
+	return &Command{
+		projectPath: projectPath,
+		isWorkspace: isWorkspace,
+		action:      action,
 	}
 }
 
 // SetScheme ...
-func (c *BuildCommandModel) SetScheme(scheme string) *BuildCommandModel {
+func (c *Command) SetScheme(scheme string) *Command {
 	c.scheme = scheme
 	return c
 }
 
 // SetConfiguration ...
-func (c *BuildCommandModel) SetConfiguration(configuration string) *BuildCommandModel {
+func (c *Command) SetConfiguration(configuration string) *Command {
 	c.configuration = configuration
 	return c
 }
 
 // SetForceDevelopmentTeam ...
-func (c *BuildCommandModel) SetForceDevelopmentTeam(forceDevelopmentTeam string) *BuildCommandModel {
+func (c *Command) SetForceDevelopmentTeam(forceDevelopmentTeam string) *Command {
 	c.forceDevelopmentTeam = forceDevelopmentTeam
 	return c
 }
 
 // SetForceProvisioningProfileSpecifier ...
-func (c *BuildCommandModel) SetForceProvisioningProfileSpecifier(forceProvisioningProfileSpecifier string) *BuildCommandModel {
+func (c *Command) SetForceProvisioningProfileSpecifier(forceProvisioningProfileSpecifier string) *Command {
 	c.forceProvisioningProfileSpecifier = forceProvisioningProfileSpecifier
 	return c
 }
 
 // SetForceProvisioningProfile ...
-func (c *BuildCommandModel) SetForceProvisioningProfile(forceProvisioningProfile string) *BuildCommandModel {
+func (c *Command) SetForceProvisioningProfile(forceProvisioningProfile string) *Command {
 	c.forceProvisioningProfile = forceProvisioningProfile
 	return c
 }
 
 // SetForceCodeSignIdentity ...
-func (c *BuildCommandModel) SetForceCodeSignIdentity(forceCodeSignIdentity string) *BuildCommandModel {
+func (c *Command) SetForceCodeSignIdentity(forceCodeSignIdentity string) *Command {
 	c.forceCodeSignIdentity = forceCodeSignIdentity
 	return c
 }
 
 // SetCustomBuildAction ...
-func (c *BuildCommandModel) SetCustomBuildAction(buildAction ...string) *BuildCommandModel {
+func (c *Command) SetCustomBuildAction(buildAction ...string) *Command {
 	c.customBuildActions = buildAction
 	return c
 }
 
 // SetArchivePath ...
-func (c *BuildCommandModel) SetArchivePath(archivePath string) *BuildCommandModel {
+func (c *Command) SetArchivePath(archivePath string) *Command {
 	c.archivePath = archivePath
 	return c
 }
 
 // SetCustomOptions ...
-func (c *BuildCommandModel) SetCustomOptions(customOptions []string) *BuildCommandModel {
+func (c *Command) SetCustomOptions(customOptions []string) *Command {
 	c.customOptions = customOptions
 	return c
 }
 
 // SetSDK ...
-func (c *BuildCommandModel) SetSDK(sdk string) *BuildCommandModel {
+func (c *Command) SetSDK(sdk string) *Command {
 	c.sdk = sdk
 	return c
 }
 
 // SetDisableCodesign ...
-func (c *BuildCommandModel) SetDisableCodesign(disable bool) *BuildCommandModel {
+func (c *Command) SetDisableCodesign(disable bool) *Command {
 	c.disableCodesign = disable
 	return c
 }
 
-func (c *BuildCommandModel) cmdSlice() []string {
+func (c *Command) cmdSlice() []string {
 	slice := []string{toolName}
 
 	if c.projectPath != "" {
@@ -176,16 +176,16 @@ func (c *BuildCommandModel) cmdSlice() []string {
 
 	slice = append(slice, c.customBuildActions...)
 
-	switch c.buildCommand {
-	case Archive:
+	switch c.action {
+	case ArchiveAction:
 		slice = append(slice, "archive")
 
 		if c.archivePath != "" {
 			slice = append(slice, "-archivePath", c.archivePath)
 		}
-	case Build:
+	case BuildAction:
 		slice = append(slice, "build")
-	case Analyze:
+	case AnalyzeAction:
 		slice = append(slice, "analyze")
 	}
 
@@ -199,26 +199,26 @@ func (c *BuildCommandModel) cmdSlice() []string {
 }
 
 // PrintableCmd ...
-func (c BuildCommandModel) PrintableCmd() string {
+func (c Command) PrintableCmd() string {
 	cmdSlice := c.cmdSlice()
 	return command.PrintableCommandArgs(false, cmdSlice)
 }
 
-// Command ...
-func (c BuildCommandModel) Command() *command.Model {
+// ExecCommand ...
+func (c Command) ExecCommand() *command.Model {
 	cmdSlice := c.cmdSlice()
 	return command.New(cmdSlice[0], cmdSlice[1:]...)
 }
 
 // Cmd ...
-func (c BuildCommandModel) Cmd() *exec.Cmd {
-	command := c.Command()
+func (c Command) Cmd() *exec.Cmd {
+	command := c.ExecCommand()
 	return command.GetCmd()
 }
 
 // Run ...
-func (c BuildCommandModel) Run() error {
-	command := c.Command()
+func (c Command) Run() error {
+	command := c.ExecCommand()
 
 	command.SetStdout(os.Stdout)
 	command.SetStderr(os.Stderr)
