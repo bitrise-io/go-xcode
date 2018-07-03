@@ -39,8 +39,8 @@ const (
 // Action ...
 type Action string
 
-// Command ...
-type Command struct {
+// CommandBuilder ...
+type CommandBuilder struct {
 	projectPath   string
 	isWorkspace   bool
 	scheme        string
@@ -66,8 +66,8 @@ type Command struct {
 }
 
 // NewCommand ...
-func NewCommand(projectPath string, isWorkspace bool, action Action) *Command {
-	return &Command{
+func NewCommand(projectPath string, isWorkspace bool, action Action) *CommandBuilder {
+	return &CommandBuilder{
 		projectPath: projectPath,
 		isWorkspace: isWorkspace,
 		action:      action,
@@ -75,72 +75,72 @@ func NewCommand(projectPath string, isWorkspace bool, action Action) *Command {
 }
 
 // SetScheme ...
-func (c *Command) SetScheme(scheme string) *Command {
+func (c *CommandBuilder) SetScheme(scheme string) *CommandBuilder {
 	c.scheme = scheme
 	return c
 }
 
 // SetConfiguration ...
-func (c *Command) SetConfiguration(configuration string) *Command {
+func (c *CommandBuilder) SetConfiguration(configuration string) *CommandBuilder {
 	c.configuration = configuration
 	return c
 }
 
 // SetForceDevelopmentTeam ...
-func (c *Command) SetForceDevelopmentTeam(forceDevelopmentTeam string) *Command {
+func (c *CommandBuilder) SetForceDevelopmentTeam(forceDevelopmentTeam string) *CommandBuilder {
 	c.forceDevelopmentTeam = forceDevelopmentTeam
 	return c
 }
 
 // SetForceProvisioningProfileSpecifier ...
-func (c *Command) SetForceProvisioningProfileSpecifier(forceProvisioningProfileSpecifier string) *Command {
+func (c *CommandBuilder) SetForceProvisioningProfileSpecifier(forceProvisioningProfileSpecifier string) *CommandBuilder {
 	c.forceProvisioningProfileSpecifier = forceProvisioningProfileSpecifier
 	return c
 }
 
 // SetForceProvisioningProfile ...
-func (c *Command) SetForceProvisioningProfile(forceProvisioningProfile string) *Command {
+func (c *CommandBuilder) SetForceProvisioningProfile(forceProvisioningProfile string) *CommandBuilder {
 	c.forceProvisioningProfile = forceProvisioningProfile
 	return c
 }
 
 // SetForceCodeSignIdentity ...
-func (c *Command) SetForceCodeSignIdentity(forceCodeSignIdentity string) *Command {
+func (c *CommandBuilder) SetForceCodeSignIdentity(forceCodeSignIdentity string) *CommandBuilder {
 	c.forceCodeSignIdentity = forceCodeSignIdentity
 	return c
 }
 
 // SetCustomBuildAction ...
-func (c *Command) SetCustomBuildAction(buildAction ...string) *Command {
+func (c *CommandBuilder) SetCustomBuildAction(buildAction ...string) *CommandBuilder {
 	c.customBuildActions = buildAction
 	return c
 }
 
 // SetArchivePath ...
-func (c *Command) SetArchivePath(archivePath string) *Command {
+func (c *CommandBuilder) SetArchivePath(archivePath string) *CommandBuilder {
 	c.archivePath = archivePath
 	return c
 }
 
 // SetCustomOptions ...
-func (c *Command) SetCustomOptions(customOptions []string) *Command {
+func (c *CommandBuilder) SetCustomOptions(customOptions []string) *CommandBuilder {
 	c.customOptions = customOptions
 	return c
 }
 
 // SetSDK ...
-func (c *Command) SetSDK(sdk string) *Command {
+func (c *CommandBuilder) SetSDK(sdk string) *CommandBuilder {
 	c.sdk = sdk
 	return c
 }
 
 // SetDisableCodesign ...
-func (c *Command) SetDisableCodesign(disable bool) *Command {
+func (c *CommandBuilder) SetDisableCodesign(disable bool) *CommandBuilder {
 	c.disableCodesign = disable
 	return c
 }
 
-func (c *Command) cmdSlice() []string {
+func (c *CommandBuilder) cmdSlice() []string {
 	slice := []string{toolName}
 
 	if c.projectPath != "" {
@@ -199,26 +199,26 @@ func (c *Command) cmdSlice() []string {
 }
 
 // PrintableCmd ...
-func (c Command) PrintableCmd() string {
+func (c CommandBuilder) PrintableCmd() string {
 	cmdSlice := c.cmdSlice()
 	return command.PrintableCommandArgs(false, cmdSlice)
 }
 
-// ExecCommand ...
-func (c Command) ExecCommand() *command.Model {
+// Command ...
+func (c CommandBuilder) Command() *command.Model {
 	cmdSlice := c.cmdSlice()
 	return command.New(cmdSlice[0], cmdSlice[1:]...)
 }
 
-// Cmd ...
-func (c Command) Cmd() *exec.Cmd {
-	command := c.ExecCommand()
+// ExecCommand ...
+func (c CommandBuilder) ExecCommand() *exec.Cmd {
+	command := c.Command()
 	return command.GetCmd()
 }
 
 // Run ...
-func (c Command) Run() error {
-	command := c.ExecCommand()
+func (c CommandBuilder) Run() error {
+	command := c.Command()
 
 	command.SetStdout(os.Stdout)
 	command.SetStderr(os.Stderr)
