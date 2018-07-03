@@ -65,8 +65,8 @@ type CommandBuilder struct {
 	action Action
 }
 
-// NewCommand ...
-func NewCommand(projectPath string, isWorkspace bool, action Action) *CommandBuilder {
+// NewCommandBuilder ...
+func NewCommandBuilder(projectPath string, isWorkspace bool, action Action) *CommandBuilder {
 	return &CommandBuilder{
 		projectPath: projectPath,
 		isWorkspace: isWorkspace,
