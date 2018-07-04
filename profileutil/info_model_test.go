@@ -6,13 +6,18 @@ import "github.com/stretchr/testify/require"
 func TestIsXcodeManaged(t *testing.T) {
 	xcodeManagedNames := []string{
 		"XC iOS: custom.bundle.id",
+		"XC tvOS: custom.bundle.id",
 		"iOS Team Provisioning Profile: another.custom.bundle.id",
+		"tvOS Team Provisioning Profile: another.custom.bundle.id",
 		"iOS Team Store Provisioning Profile: my.bundle.id",
+		"tvOS Team Store Provisioning Profile: my.bundle.id",
 	}
 	nonXcodeManagedNames := []string{
 		"Test Profile Name",
 		"iOS Distribution Profile: test.bundle.id",
 		"iOS Dev",
+		"tvOS Distribution Profile: test.bundle.id",
+		"tvOS Dev",
 	}
 
 	for _, profileName := range xcodeManagedNames {
