@@ -107,13 +107,13 @@ func (c CommandModel) Run() (string, error) {
 	return outBuffer.String(), nil
 }
 
-// IsXcprettyInstalled ...
-func IsXcprettyInstalled() (bool, error) {
+// IsInstalled ...
+func IsInstalled() (bool, error) {
 	return rubycommand.IsGemInstalled("xcpretty", "")
 }
 
-// InstallXcpretty ...
-func InstallXcpretty() error {
+// Install ...
+func Install() error {
 	cmds, err := rubycommand.GemInstall("xcpretty", "")
 	if err != nil {
 		return fmt.Errorf("failed to create command model, error: %s", err)
@@ -130,10 +130,6 @@ func InstallXcpretty() error {
 	return nil
 }
 
-func parseXcprettyVersionOut(versionOut string) (*version.Version, error) {
-	return version.NewVersion(versionOut)
-}
-
 // Version ...
 func Version() (*version.Version, error) {
 	cmd := command.New("xcpretty", "--version")
@@ -142,5 +138,9 @@ func Version() (*version.Version, error) {
 		return nil, err
 	}
 
-	return parseXcprettyVersionOut(versionOut)
+	return parseVersionOut(versionOut)
+}
+
+func parseVersionOut(versionOut string) (*version.Version, error) {
+	return version.NewVersion(versionOut)
 }
