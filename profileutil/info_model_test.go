@@ -11,6 +11,8 @@ func TestIsXcodeManaged(t *testing.T) {
 		"tvOS Team Provisioning Profile: another.custom.bundle.id",
 		"iOS Team Store Provisioning Profile: my.bundle.id",
 		"tvOS Team Store Provisioning Profile: my.bundle.id",
+		"Mac Team Provisioning Profile: my.bundle.id",
+		"Mac Team Store Provisioning Profile: my.bundle.id",
 	}
 	nonXcodeManagedNames := []string{
 		"Test Profile Name",
@@ -18,6 +20,8 @@ func TestIsXcodeManaged(t *testing.T) {
 		"iOS Dev",
 		"tvOS Distribution Profile: test.bundle.id",
 		"tvOS Dev",
+		"Mac Distribution Profile: test.bundle.id",
+		"Mac Dev",
 	}
 
 	for _, profileName := range xcodeManagedNames {
