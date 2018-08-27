@@ -48,12 +48,11 @@ type CommandBuilder struct {
 	destination   string
 
 	// buildsetting
-	forceDevelopmentTeam                string
-	forceProvisioningProfileSpecifier   string
-	forceProvisioningProfile            string
-	forceCodeSignIdentity               string
-	disableCodesign                     bool
-	disableProvisioningProfileSpecifier bool
+	forceDevelopmentTeam              string
+	forceProvisioningProfileSpecifier string
+	forceProvisioningProfile          string
+	forceCodeSignIdentity             string
+	disableCodesign                   bool
 
 	// buildaction
 	customBuildActions []string
@@ -148,12 +147,6 @@ func (c *CommandBuilder) SetDisableCodesign(disable bool) *CommandBuilder {
 	return c
 }
 
-// SetDisableProvisioningProfileSpecifier ...
-func (c *CommandBuilder) SetDisableProvisioningProfileSpecifier(disable bool) *CommandBuilder {
-	c.disableProvisioningProfileSpecifier = disable
-	return c
-}
-
 func (c *CommandBuilder) cmdSlice() []string {
 	slice := []string{toolName}
 
@@ -173,25 +166,28 @@ func (c *CommandBuilder) cmdSlice() []string {
 		slice = append(slice, "-configuration", c.configuration)
 	}
 
-	if c.forceDevelopmentTeam != "" {
-		slice = append(slice, fmt.Sprintf("DEVELOPMENT_TEAM=%s", c.forceDevelopmentTeam))
-	}
-
-	if c.forceProvisioningProfileSpecifier != "" {
-		slice = append(slice, fmt.Sprintf("PROVISIONING_PROFILE_SPECIFIER=%s", c.forceProvisioningProfileSpecifier))
-	} else if c.disableProvisioningProfileSpecifier {
-		slice = append(slice, fmt.Sprintf("PROVISIONING_PROFILE_SPECIFIER="))
-	}
-
-	if c.forceProvisioningProfile != "" {
-		slice = append(slice, fmt.Sprintf("PROVISIONING_PROFILE=%s", c.forceProvisioningProfile))
-	}
-
-	if c.forceCodeSignIdentity != "" {
-		slice = append(slice, fmt.Sprintf("CODE_SIGN_IDENTITY=%s", c.forceCodeSignIdentity))
-	} else if c.disableCodesign {
+	if c.disableCodesign {
 		slice = append(slice, "CODE_SIGN_IDENTITY=")
 		slice = append(slice, "CODE_SIGNING_REQUIRED=NO")
+		slice = append(slice, "PROVISIONING_PROFILE_SPECIFIER=")
+		slice = append(slice, "PROVISIONING_PROFILE=")
+		slice = append(slice, "DEVELOPMENT_TEAM=")
+	} else {
+		if c.forceDevelopmentTeam != "" {
+			slice = append(slice, fmt.Sprintf("DEVELOPMENT_TEAM=%s", c.forceDevelopmentTeam))
+		}
+
+		if c.forceProvisioningProfileSpecifier != "" {
+			slice = append(slice, fmt.Sprintf("PROVISIONING_PROFILE_SPECIFIER=%s", c.forceProvisioningProfileSpecifier))
+		}
+
+		if c.forceProvisioningProfile != "" {
+			slice = append(slice, fmt.Sprintf("PROVISIONING_PROFILE=%s", c.forceProvisioningProfile))
+		}
+
+		if c.forceCodeSignIdentity != "" {
+			slice = append(slice, fmt.Sprintf("CODE_SIGN_IDENTITY=%s", c.forceCodeSignIdentity))
+		}
 	}
 
 	if c.destination != "" {
