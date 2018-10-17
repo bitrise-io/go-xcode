@@ -129,11 +129,10 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningPr
 	}
 
 	platform, _ := data.GetStringArray("Platform")
-	profileType := ProfileTypeIos
+	profileType := ProfileTypeMacOs
 	if len(platform) != 0 {
-		switch platform[0] {
-		case "OSX":
-			profileType = ProfileTypeMacOs
+		if strings.ToLower(platform[0]) == string(ProfileTypeIos) {
+			profileType = ProfileTypeIos
 		}
 	}
 
