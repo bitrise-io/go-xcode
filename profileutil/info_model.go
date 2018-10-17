@@ -122,10 +122,19 @@ func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertif
 }
 
 // NewProvisioningProfileInfo ...
-func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7, profileType ProfileType) (ProvisioningProfileInfoModel, error) {
+func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningProfileInfoModel, error) {
 	var data plistutil.PlistData
 	if _, err := plist.Unmarshal(provisioningProfile.Content, &data); err != nil {
 		return ProvisioningProfileInfoModel{}, err
+	}
+
+	platform, _ := data.GetStringArray("Platform")
+	profileType := ProfileTypeIos
+	if len(platform) != 0 {
+		switch platform[0] {
+		case "OSX":
+			profileType = ProfileTypeMacOs
+		}
 	}
 
 	profile := PlistData(data)
@@ -171,13 +180,7 @@ func NewProvisioningProfileInfoFromFile(pth string) (ProvisioningProfileInfoMode
 		return ProvisioningProfileInfoModel{}, err
 	}
 	if provisioningProfile != nil {
-		profileType := ProfileTypeIos
-
-		if strings.HasSuffix(pth, ".provisionprofile") {
-			profileType = ProfileTypeMacOs
-		}
-
-		return NewProvisioningProfileInfo(*provisioningProfile, profileType)
+		return NewProvisioningProfileInfo(*provisioningProfile)
 	}
 	return ProvisioningProfileInfoModel{}, errors.New("failed to parse provisioning profile infos")
 }
@@ -192,7 +195,7 @@ func InstalledProvisioningProfileInfos(profileType ProfileType) ([]ProvisioningP
 	infos := []ProvisioningProfileInfoModel{}
 	for _, provisioningProfile := range provisioningProfiles {
 		if provisioningProfile != nil {
-			info, err := NewProvisioningProfileInfo(*provisioningProfile, profileType)
+			info, err := NewProvisioningProfileInfo(*provisioningProfile)
 			if err != nil {
 				return nil, err
 			}
@@ -212,13 +215,7 @@ func FindProvisioningProfileInfo(uuid string) (ProvisioningProfileInfoModel, str
 		return ProvisioningProfileInfoModel{}, "", nil
 	}
 
-	profileType := ProfileTypeIos
-
-	if strings.HasSuffix(pth, ".provisionprofile") {
-		profileType = ProfileTypeMacOs
-	}
-
-	info, err := NewProvisioningProfileInfo(*profile, profileType)
+	info, err := NewProvisioningProfileInfo(*profile)
 	if err != nil {
 		return ProvisioningProfileInfoModel{}, "", err
 	}
