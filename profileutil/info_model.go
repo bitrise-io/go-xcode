@@ -141,7 +141,7 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7, profileType Pro
 		Type:                 profileType,
 	}
 
-	info.ExportType = profile.GetExportMethod(profileType)
+	info.ExportType = profile.GetExportMethod()
 
 	if devicesList := profile.GetProvisionedDevices(); devicesList != nil {
 		info.ProvisionedDevices = devicesList
