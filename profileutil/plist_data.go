@@ -86,8 +86,8 @@ func (profile PlistData) GetExportMethod() exportoptions.Method {
 	platform, _ := data.GetStringArray("Platform")
 
 	if len(platform) != 0 {
-		switch platform[0] {
-		case "OSX":
+		switch strings.ToLower(platform[0]) {
+		case "osx":
 			_, ok := data.GetStringArray("ProvisionedDevices")
 			if !ok {
 				if allDevices, ok := data.GetBool("ProvisionsAllDevices"); ok && allDevices {
@@ -96,7 +96,7 @@ func (profile PlistData) GetExportMethod() exportoptions.Method {
 				return exportoptions.MethodAppStore
 			}
 			return exportoptions.MethodDevelopment
-		case "iOS":
+		case "ios":
 			_, ok := data.GetStringArray("ProvisionedDevices")
 			if !ok {
 				if allDevices, ok := data.GetBool("ProvisionsAllDevices"); ok && allDevices {
