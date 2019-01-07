@@ -204,13 +204,12 @@ func castToMapStringInterfaceArray(obj interface{}) ([]PlistData, error) {
 		return nil, errors.New("failed to cast to []interface{}")
 	}
 
-	casted := []PlistData{}
+	var casted []PlistData
 	for _, item := range array {
 		mapStringInterface, ok := item.(map[string]interface{})
 		if !ok {
 			return nil, errors.New("failed to cast to map[string]interface{}")
 		}
-
 		casted = append(casted, mapStringInterface)
 	}
 
