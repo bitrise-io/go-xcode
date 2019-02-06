@@ -7,7 +7,6 @@ app:
 workflows:
   ci:
     before_run:
-    - _install_test_tools
     - test
     
   test:
@@ -31,22 +30,3 @@ workflows:
             set -ex
 
             go test -v ./_tests/integration/...
-
-  _install_test_tools:
-    steps:
-    - script:
-        title: Install required testing tools
-        inputs:
-        - content: |-
-            #!/bin/bash
-            set -ex
-
-            go get -u -v github.com/stretchr/testify/require
-            go get -u -v github.com/bitrise-io/go-utils/fileutil
-            go get -u -v github.com/bitrise-io/go-utils/pathutil
-            go get -u -v github.com/bitrise-io/go-utils/command
-            go get -u -v github.com/hashicorp/go-version
-            go get -u -v howett.net/plist
-            go get -u -v github.com/pkg/errors
-            go get -u -v github.com/fullsailor/pkcs7
-            go get -u -v github.com/ryanuber/go-glob

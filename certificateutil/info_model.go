@@ -22,7 +22,8 @@ type CertificateInfoModel struct {
 	Serial          string
 	SHA1Fingerprint string
 
-	certificate x509.Certificate
+	Certificate x509.Certificate
+	PrivateKey  interface{}
 }
 
 // String ...
@@ -64,11 +65,11 @@ func CheckValidity(certificate x509.Certificate) error {
 
 // CheckValidity ...
 func (info CertificateInfoModel) CheckValidity() error {
-	return CheckValidity(info.certificate)
+	return CheckValidity(info.Certificate)
 }
 
 // NewCertificateInfo ...
-func NewCertificateInfo(certificate x509.Certificate) CertificateInfoModel {
+func NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) CertificateInfoModel {
 	fingerprint := sha1.Sum(certificate.Raw)
 	fingerprintStr := fmt.Sprintf("%x", fingerprint)
 
@@ -80,16 +81,18 @@ func NewCertificateInfo(certificate x509.Certificate) CertificateInfoModel {
 		StartDate:       certificate.NotBefore,
 		Serial:          certificate.SerialNumber.String(),
 		SHA1Fingerprint: fingerprintStr,
-		certificate:     certificate,
+
+		Certificate: certificate,
+		PrivateKey:  privateKey,
 	}
 }
 
 // CertificateInfos ...
-func CertificateInfos(certificates []*x509.Certificate) []CertificateInfoModel {
+func CertificateInfos(certificates []*x509.Certificate, privateKey interface{}) []CertificateInfoModel {
 	infos := []CertificateInfoModel{}
 	for _, certificate := range certificates {
 		if certificate != nil {
-			info := NewCertificateInfo(*certificate)
+			info := NewCertificateInfo(*certificate, privateKey)
 			infos = append(infos, info)
 		}
 	}
@@ -99,11 +102,11 @@ func CertificateInfos(certificates []*x509.Certificate) []CertificateInfoModel {
 
 // NewCertificateInfosFromPKCS12 ...
 func NewCertificateInfosFromPKCS12(pkcs12Pth, password string) ([]CertificateInfoModel, error) {
-	certificates, err := CertificatesFromPKCS12File(pkcs12Pth, password)
+	certificates, privateKey, err := CertificatesFromPKCS12File(pkcs12Pth, password)
 	if err != nil {
 		return nil, err
 	}
-	return CertificateInfos(certificates), nil
+	return CertificateInfos(certificates, privateKey), nil
 }
 
 // InstalledCodesigningCertificateInfos ...
@@ -112,7 +115,7 @@ func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	return CertificateInfos(certificates), nil
+	return CertificateInfos(certificates, nil), nil
 }
 
 // InstalledInstallerCertificateInfos ...
@@ -122,7 +125,7 @@ func InstalledInstallerCertificateInfos() ([]CertificateInfoModel, error) {
 		return nil, err
 	}
 
-	installerCertificates := FilterCertificateInfoModelsByFilterFunc(CertificateInfos(certificates), func(cert CertificateInfoModel) bool {
+	installerCertificates := FilterCertificateInfoModelsByFilterFunc(CertificateInfos(certificates, nil), func(cert CertificateInfoModel) bool {
 		return strings.Contains(cert.CommonName, "Installer")
 	})
 
