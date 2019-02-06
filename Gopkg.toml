@@ -1,0 +1,31 @@
+[[constraint]]
+  branch = "pkcs12"
+  name = "github.com/bitrise-io/go-utils"
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/fullsailor/pkcs7"
+
+[[constraint]]
+  name = "github.com/hashicorp/go-version"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/pkg/errors"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/ryanuber/go-glob"
+  branch = "master"
+
+[[constraint]]
+  name = "github.com/stretchr/testify"
+  branch = "master"
+
+[[constraint]]
+  branch = "master"
+  name = "howett.net/plist"
+
+[prune]
+  go-tests = true
+  unused-packages = true
