@@ -3,6 +3,7 @@ package xcarchive
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -210,17 +211,19 @@ func NewIosArchive(path string) (IosArchive, error) {
 
 	application := IosApplication{}
 	{
-		pattern := filepath.Join(path, "Products/Applications/*.app")
-		pths, err := filepath.Glob(pattern)
-		if err != nil {
-			return IosArchive{}, err
-		}
-
 		appPath := ""
-		if len(pths) > 0 {
-			appPath = pths[0]
+		if appRelativePathToProducts, found := applicationFromPlist(infoPlist); false && found {
+			appPath = filepath.Join(path, "Products", appRelativePathToProducts)
 		} else {
-			return IosArchive{}, fmt.Errorf("failed to find main app, using pattern: %s", pattern)
+			var err error
+			if appPath, err = applicationFromArchive(path); err != nil {
+				return IosArchive{}, err
+			}
+		}
+		if exist, err := pathutil.IsPathExists(appPath); err != nil {
+			return IosArchive{}, fmt.Errorf("failed to check if app exists, path: %s, error: %s", appPath, err)
+		} else if !exist {
+			return IosArchive{}, fmt.Errorf("application not found on path: %s, error: %s", appPath, err)
 		}
 
 		app, err := NewIosApplication(appPath)
@@ -235,6 +238,26 @@ func NewIosArchive(path string) (IosArchive, error) {
 		InfoPlist:   infoPlist,
 		Application: application,
 	}, nil
+}
+
+func applicationFromPlist(InfoPlist plistutil.PlistData) (string, bool) {
+	properties, found := InfoPlist.GetMapStringInterface("ApplicationProperties")
+	if found {
+		return properties.GetString("ApplicationPath")
+	}
+	return "", false
+}
+
+func applicationFromArchive(path string) (string, error) {
+	pattern := filepath.Join(regexp.QuoteMeta(path), "Products/Applications/*.app")
+	pths, err := filepath.Glob(pattern)
+	if err != nil {
+		return "", err
+	}
+	if len(pths) == 0 {
+		return "", fmt.Errorf("failed to find main app, using pattern: %s", pattern)
+	}
+	return pths[0], nil
 }
 
 // IsXcodeManaged ...
