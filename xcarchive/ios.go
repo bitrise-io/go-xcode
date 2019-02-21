@@ -110,7 +110,7 @@ func NewIosWatchApplication(path string) (IosWatchApplication, error) {
 	}
 
 	extensions := []IosExtension{}
-	pattern := filepath.Join(path, "PlugIns/*.appex")
+	pattern := filepath.Join(regexp.QuoteMeta(path), "PlugIns/*.appex")
 	pths, err := filepath.Glob(pattern)
 	if err != nil {
 		return IosWatchApplication{}, fmt.Errorf("failed to search for watch application's extensions using pattern: %s, error: %s", pattern, err)
@@ -146,7 +146,7 @@ func NewIosApplication(path string) (IosApplication, error) {
 
 	var watchApp *IosWatchApplication
 	{
-		pattern := filepath.Join(path, "Watch/*.app")
+		pattern := filepath.Join(regexp.QuoteMeta(path), "Watch/*.app")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
 			return IosApplication{}, err
@@ -163,7 +163,7 @@ func NewIosApplication(path string) (IosApplication, error) {
 
 	extensions := []IosExtension{}
 	{
-		pattern := filepath.Join(path, "PlugIns/*.appex")
+		pattern := filepath.Join(regexp.QuoteMeta(path), "PlugIns/*.appex")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
 			return IosApplication{}, fmt.Errorf("failed to search for watch application's extensions using pattern: %s, error: %s", pattern, err)

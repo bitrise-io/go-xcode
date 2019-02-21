@@ -124,7 +124,7 @@ func Test_applicationFromArchive(t *testing.T) {
 	if err != nil {
 		t.Errorf("setup: failed to create temp dir")
 	}
-	archivePath := filepath.Join(tempDir, "GlobControlChars:[]?*", "test.xcarchive")
+	archivePath := filepath.Join(tempDir, "{}GlobControlChars:a-b[ab]?*", "test.xcarchive")
 	appDir := filepath.Join(archivePath, "Products", "Applications")
 	appPath := filepath.Join(appDir, "test.app")
 	t.Logf("Test app path: %s", appPath)
