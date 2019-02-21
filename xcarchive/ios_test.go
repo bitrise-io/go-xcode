@@ -8,6 +8,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-tools/go-xcode/plistutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -135,7 +136,9 @@ func Test_applicationFromArchive(t *testing.T) {
 	if err != nil {
 		t.Errorf("setup: failed to create test archive: %s, error: %s", appPath, err)
 	}
-	file.Close()
+	if err := file.Close(); err != nil {
+		t.Errorf("setup: failed to close file, error: %s", err)
+	}
 
 	type args struct {
 		path string
@@ -164,6 +167,44 @@ func Test_applicationFromArchive(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("applicationFromArchive() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_applicationFromPlist(t *testing.T) {
+	infoPlist, err := plistutil.NewPlistDataFromFile(filepath.Join(sampleRepoPath(t), "archives/ios.xcarchive/Info.plist"))
+	const appRelativePathToProduct = "Applications/code-sign-test.app"
+	if err != nil {
+		t.Errorf("setup: could not read plist, error: %s", infoPlist)
+	}
+
+	type args struct {
+		InfoPlist plistutil.PlistData
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  string
+		want1 bool
+	}{
+		{
+			name: "normal case",
+			args: args{
+				infoPlist,
+			},
+			want:  appRelativePathToProduct,
+			want1: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := applicationFromPlist(tt.args.InfoPlist)
+			if got != tt.want {
+				t.Errorf("applicationFromPlist() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("applicationFromPlist() got1 = %v, want %v", got1, tt.want1)
 			}
 		})
 	}
