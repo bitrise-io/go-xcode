@@ -212,7 +212,7 @@ func NewIosArchive(path string) (IosArchive, error) {
 	application := IosApplication{}
 	{
 		appPath := ""
-		if appRelativePathToProducts, found := applicationFromPlist(infoPlist); false && found {
+		if appRelativePathToProducts, found := applicationFromPlist(infoPlist); found {
 			appPath = filepath.Join(path, "Products", appRelativePathToProducts)
 		} else {
 			var err error
