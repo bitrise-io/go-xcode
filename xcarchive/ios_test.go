@@ -2,11 +2,13 @@ package xcarchive
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-tools/go-xcode/plistutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -114,4 +116,96 @@ func TestFindDSYMs(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, appDsym)
 	require.Equal(t, 2, len(otherDsyms))
+}
+
+func Test_applicationFromArchive(t *testing.T) {
+	var err error
+	tempDir, err := pathutil.NormalizedOSTempDirPath(t.Name())
+	if err != nil {
+		t.Errorf("setup: failed to create temp dir")
+	}
+	archivePath := filepath.Join(tempDir, "{}GlobControlChars:a-b[ab]?*", "test.xcarchive")
+	appDir := filepath.Join(archivePath, "Products", "Applications")
+	appPath := filepath.Join(appDir, "test.app")
+	t.Logf("Test app path: %s", appPath)
+	err = os.MkdirAll(appDir, os.ModePerm)
+	if err != nil {
+		t.Errorf("setup: failed to create directory: %s, error: %s", appDir, err)
+	}
+	file, err := os.Create(appPath)
+	if err != nil {
+		t.Errorf("setup: failed to create test archive: %s, error: %s", appPath, err)
+	}
+	if err := file.Close(); err != nil {
+		t.Errorf("setup: failed to close file, error: %s", err)
+	}
+
+	type args struct {
+		path string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "[] glob control characters in path",
+			args: args{
+				path: archivePath,
+			},
+			want:    appPath,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := applicationFromArchive(tt.args.path)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("applicationFromArchive() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("applicationFromArchive() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_applicationFromPlist(t *testing.T) {
+	infoPlist, err := plistutil.NewPlistDataFromFile(filepath.Join(sampleRepoPath(t), "archives/ios.xcarchive/Info.plist"))
+	const appRelativePathToProduct = "Applications/code-sign-test.app"
+	if err != nil {
+		t.Errorf("setup: could not read plist, error: %s", infoPlist)
+	}
+
+	type args struct {
+		InfoPlist plistutil.PlistData
+	}
+	tests := []struct {
+		name  string
+		args  args
+		want  string
+		want1 bool
+	}{
+		{
+			name: "normal case",
+			args: args{
+				infoPlist,
+			},
+			want:  appRelativePathToProduct,
+			want1: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, got1 := applicationFromPlist(tt.args.InfoPlist)
+			if got != tt.want {
+				t.Errorf("applicationFromPlist() got = %v, want %v", got, tt.want)
+			}
+			if got1 != tt.want1 {
+				t.Errorf("applicationFromPlist() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
 }
