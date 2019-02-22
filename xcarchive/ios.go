@@ -241,8 +241,7 @@ func NewIosArchive(path string) (IosArchive, error) {
 }
 
 func applicationFromPlist(InfoPlist plistutil.PlistData) (string, bool) {
-	properties, found := InfoPlist.GetMapStringInterface("ApplicationProperties")
-	if found {
+	if properties, found := InfoPlist.GetMapStringInterface("ApplicationProperties"); found {
 		return properties.GetString("ApplicationPath")
 	}
 	return "", false
@@ -267,8 +266,7 @@ func (archive IosArchive) IsXcodeManaged() bool {
 
 // SigningIdentity ...
 func (archive IosArchive) SigningIdentity() string {
-	properties, found := archive.InfoPlist.GetMapStringInterface("ApplicationProperties")
-	if found {
+	if properties, found := archive.InfoPlist.GetMapStringInterface("ApplicationProperties"); found {
 		identity, _ := properties.GetString("SigningIdentity")
 		return identity
 	}
