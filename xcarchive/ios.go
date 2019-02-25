@@ -3,6 +3,7 @@ package xcarchive
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/pathutil"
