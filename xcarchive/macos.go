@@ -3,7 +3,6 @@ package xcarchive
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/bitrise-tools/go-xcode/plistutil"
@@ -110,7 +109,7 @@ func NewMacosApplication(path string) (MacosApplication, error) {
 
 	extensions := []MacosExtension{}
 	{
-		pattern := filepath.Join(regexp.QuoteMeta(path), "Contents/PlugIns/*.appex")
+		pattern := filepath.Join(escapeGlobPath(path), "Contents/PlugIns/*.appex")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
 			return MacosApplication{}, fmt.Errorf("failed to search for watch application's extensions using pattern: %s, error: %s", pattern, err)
@@ -157,7 +156,7 @@ func NewMacosArchive(path string) (MacosArchive, error) {
 
 	application := MacosApplication{}
 	{
-		pattern := filepath.Join(regexp.QuoteMeta(path), "Products/Applications/*.app")
+		pattern := filepath.Join(escapeGlobPath(path), "Products/Applications/*.app")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
 			return MacosArchive{}, err

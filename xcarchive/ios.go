@@ -3,7 +3,6 @@ package xcarchive
 import (
 	"fmt"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -110,7 +109,7 @@ func NewIosWatchApplication(path string) (IosWatchApplication, error) {
 	}
 
 	extensions := []IosExtension{}
-	pattern := filepath.Join(regexp.QuoteMeta(path), "PlugIns/*.appex")
+	pattern := filepath.Join(escapeGlobPath(path), "PlugIns/*.appex")
 	pths, err := filepath.Glob(pattern)
 	if err != nil {
 		return IosWatchApplication{}, fmt.Errorf("failed to search for watch application's extensions using pattern: %s, error: %s", pattern, err)
@@ -146,7 +145,7 @@ func NewIosApplication(path string) (IosApplication, error) {
 
 	var watchApp *IosWatchApplication
 	{
-		pattern := filepath.Join(regexp.QuoteMeta(path), "Watch/*.app")
+		pattern := filepath.Join(escapeGlobPath(path), "Watch/*.app")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
 			return IosApplication{}, err
@@ -163,7 +162,7 @@ func NewIosApplication(path string) (IosApplication, error) {
 
 	extensions := []IosExtension{}
 	{
-		pattern := filepath.Join(regexp.QuoteMeta(path), "PlugIns/*.appex")
+		pattern := filepath.Join(escapeGlobPath(path), "PlugIns/*.appex")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
 			return IosApplication{}, fmt.Errorf("failed to search for watch application's extensions using pattern: %s, error: %s", pattern, err)
@@ -248,7 +247,7 @@ func applicationFromPlist(InfoPlist plistutil.PlistData) (string, bool) {
 }
 
 func applicationFromArchive(path string) (string, error) {
-	pattern := filepath.Join(regexp.QuoteMeta(path), "Products/Applications/*.app")
+	pattern := filepath.Join(escapeGlobPath(path), "Products/Applications/*.app")
 	pths, err := filepath.Glob(pattern)
 	if err != nil {
 		return "", err
