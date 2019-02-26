@@ -13,8 +13,8 @@ func Test_globEscapePath(t *testing.T) {
 	}{
 		{
 			name: "Escaping test",
-			args: args{path: "[?*"},
-			want: "\\[\\?\\*",
+			args: args{path: "[]-?*"},
+			want: "\\[\\]\\-\\?\\*",
 		},
 		// filepath.Glob(1) does not match for `test\.xcodeproj` if go version 1.8.3
 		{
