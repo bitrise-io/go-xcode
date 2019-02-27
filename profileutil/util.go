@@ -2,7 +2,6 @@ package profileutil
 
 import (
 	"path/filepath"
-	"regexp"
 
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -47,7 +46,7 @@ func InstalledProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, err
 		return nil, err
 	}
 
-	pattern := filepath.Join(regexp.QuoteMeta(absProvProfileDirPath), "*"+ext)
+	pattern := filepath.Join(escapeGlobPath(absProvProfileDirPath), "*"+ext)
 	pths, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, err

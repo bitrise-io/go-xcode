@@ -1,4 +1,4 @@
-package xcarchive
+package utility
 
 func escapeGlobPath(path string) string {
 	var escaped string
