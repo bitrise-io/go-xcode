@@ -1,6 +1,7 @@
-package xcarchive
+package utility
 
-func escapeGlobPath(path string) string {
+// EscapeGlobPath escapes a partial path, determined at runtime, used as a parameter for filepath.Glob
+func EscapeGlobPath(path string) string {
 	var escaped string
 	for _, ch := range path {
 		if ch == '[' || ch == ']' || ch == '-' || ch == '*' || ch == '?' || ch == '\\' {
