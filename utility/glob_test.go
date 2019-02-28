@@ -35,7 +35,7 @@ func Test_globEscapePath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := escapeGlobPath(tt.args.path); got != tt.want {
+			if got := EscapeGlobPath(tt.args.path); got != tt.want {
 				t.Errorf("globEscapePath() = %v, want %v", got, tt.want)
 			}
 		})
