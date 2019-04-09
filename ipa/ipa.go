@@ -7,7 +7,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/ziputil"
-	"github.com/bitrise-io/go-xcode/utility"
+	"github.com/bitrise-tools/go-xcode/utility"
 )
 
 func findFileInPayloadAppDir(payloadPth, preferedAppName, fileName string) (string, error) {

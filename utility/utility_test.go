@@ -3,7 +3,7 @@ package utility
 import (
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/models"
+	"github.com/bitrise-tools/go-xcode/models"
 	"github.com/stretchr/testify/require"
 )
 

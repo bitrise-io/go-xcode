@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-xcode/models"
+	"github.com/bitrise-tools/go-xcode/models"
 	version "github.com/hashicorp/go-version"
 )
 

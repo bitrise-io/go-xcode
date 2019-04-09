@@ -7,7 +7,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/ipa"
+	"github.com/bitrise-tools/go-xcode/ipa"
 	"github.com/stretchr/testify/require"
 )
 

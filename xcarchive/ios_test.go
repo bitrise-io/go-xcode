@@ -8,7 +8,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-tools/go-xcode/plistutil"
 	"github.com/stretchr/testify/require"
 )
 
