@@ -10,7 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/command/rubyscript"
 	"github.com/bitrise-io/go-utils/errorutil"
-	"github.com/bitrise-tools/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/pkg/errors"
 )
 
