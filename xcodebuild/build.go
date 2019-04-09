@@ -53,7 +53,7 @@ type CommandBuilder struct {
 	forceProvisioningProfile          string
 	forceCodeSignIdentity             string
 	disableCodesign                   bool
-	indexWhileBuilding                bool
+	disableIndexWhileBuilding         bool
 
 	// buildaction
 	customBuildActions []string
@@ -148,9 +148,9 @@ func (c *CommandBuilder) SetDisableCodesign(disable bool) *CommandBuilder {
 	return c
 }
 
-// SetIndexWhileBuilding ...
-func (c *CommandBuilder) SetIndexWhileBuilding(enable bool) *CommandBuilder {
-	c.indexWhileBuilding = enable
+// SetDisableIndexWhileBuilding ...
+func (c *CommandBuilder) SetDisableIndexWhileBuilding(disable bool) *CommandBuilder {
+	c.disableIndexWhileBuilding = disable
 	return c
 }
 
@@ -203,7 +203,7 @@ func (c *CommandBuilder) cmdSlice() []string {
 		slice = append(slice, c.destination)
 	}
 
-	if !c.indexWhileBuilding {
+	if c.disableIndexWhileBuilding {
 		slice = append(slice, "COMPILER_INDEX_STORE_ENABLE=NO")
 	}
 
