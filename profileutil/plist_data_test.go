@@ -3,8 +3,8 @@ package profileutil
 import (
 	"testing"
 
-	"github.com/bitrise-tools/go-xcode/exportoptions"
-	"github.com/bitrise-tools/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/exportoptions"
+	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/stretchr/testify/require"
 )
 
