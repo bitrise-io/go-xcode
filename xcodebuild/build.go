@@ -53,6 +53,7 @@ type CommandBuilder struct {
 	forceProvisioningProfile          string
 	forceCodeSignIdentity             string
 	disableCodesign                   bool
+	indexWhileBuilding                bool
 
 	// buildaction
 	customBuildActions []string
@@ -147,6 +148,12 @@ func (c *CommandBuilder) SetDisableCodesign(disable bool) *CommandBuilder {
 	return c
 }
 
+// SetIndexWhileBuilding ...
+func (c *CommandBuilder) SetIndexWhileBuilding(enable bool) *CommandBuilder {
+	c.indexWhileBuilding = enable
+	return c
+}
+
 func (c *CommandBuilder) cmdSlice() []string {
 	slice := []string{toolName}
 
@@ -194,6 +201,10 @@ func (c *CommandBuilder) cmdSlice() []string {
 		// "-destination" "id=07933176-D03B-48D3-A853-0800707579E6" => (need the plus `"` marks between the `destination` and the `id`)
 		slice = append(slice, "-destination")
 		slice = append(slice, c.destination)
+	}
+
+	if !c.indexWhileBuilding {
+		slice = append(slice, "COMPILER_INDEX_STORE_ENABLE=NO")
 	}
 
 	slice = append(slice, c.customBuildActions...)

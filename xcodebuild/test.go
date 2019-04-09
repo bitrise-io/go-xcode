@@ -38,6 +38,7 @@ type TestCommandModel struct {
 
 	// buildsetting
 	generateCodeCoverage bool
+	indexWhileBuilding   bool
 
 	// buildaction
 	customBuildActions []string // clean, build
@@ -84,6 +85,12 @@ func (c *TestCommandModel) SetCustomOptions(customOptions []string) *TestCommand
 	return c
 }
 
+// SetIndexWhileBuilding ...
+func (c *TestCommandModel) SetIndexWhileBuilding(enable bool) *TestCommandModel {
+	c.indexWhileBuilding = enable
+	return c
+}
+
 func (c *TestCommandModel) cmdSlice() []string {
 	slice := []string{toolName}
 
@@ -108,6 +115,11 @@ func (c *TestCommandModel) cmdSlice() []string {
 	if c.destination != "" {
 		slice = append(slice, "-destination", c.destination)
 	}
+
+	if !c.indexWhileBuilding {
+		slice = append(slice, "COMPILER_INDEX_STORE_ENABLE=NO")
+	}
+
 	slice = append(slice, c.customOptions...)
 
 	return slice
