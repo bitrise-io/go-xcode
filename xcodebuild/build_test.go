@@ -393,11 +393,7 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			action:                            BuildAction,
 			want: []string{
 				"xcodebuild",
-				"CODE_SIGN_IDENTITY=",
-				"CODE_SIGNING_REQUIRED=NO",
-				"PROVISIONING_PROFILE_SPECIFIER=",
-				"PROVISIONING_PROFILE=",
-				"DEVELOPMENT_TEAM=",
+				"CODE_SIGNING_ALLOWED=NO",
 				"",
 				"build",
 				"",
