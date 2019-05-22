@@ -1,10 +1,12 @@
 package profileutil
 
 import (
+	"bytes"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -31,6 +33,8 @@ type ProvisioningProfileInfoModel struct {
 	Entitlements          plistutil.PlistData
 	ProvisionsAllDevices  bool
 	Type                  ProfileType
+
+	pkcs7 *pkcs7.PKCS7
 }
 
 // PrintableProvisioningProfileInfo ...
@@ -121,6 +125,11 @@ func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertif
 	return has
 }
 
+// Content returns profile content as an io.Reader
+func (info ProvisioningProfileInfoModel) Content() io.Reader {
+	return bytes.NewReader(info.pkcs7.Content)
+}
+
 // NewProvisioningProfileInfo ...
 func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningProfileInfoModel, error) {
 	var data plistutil.PlistData
@@ -147,6 +156,7 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningPr
 		ExpirationDate:       profile.GetExpirationDate(),
 		ProvisionsAllDevices: profile.GetProvisionsAllDevices(),
 		Type:                 profileType,
+		pkcs7:                &provisioningProfile,
 	}
 
 	info.ExportType = profile.GetExportMethod()
