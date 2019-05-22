@@ -1,12 +1,10 @@
 package profileutil
 
 import (
-	"bytes"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 	"time"
 
@@ -126,8 +124,8 @@ func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertif
 }
 
 // Content returns profile content as an io.Reader
-func (info ProvisioningProfileInfoModel) Content() io.Reader {
-	return bytes.NewReader(info.pkcs7.Content)
+func (info ProvisioningProfileInfoModel) Content() []byte {
+	return info.pkcs7.Content
 }
 
 // NewProvisioningProfileInfo ...
