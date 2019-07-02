@@ -19,24 +19,15 @@ func commandError(printableCmd string, cmdOut string, cmdErr error) error {
 }
 
 // CertificatesFromPKCS12Content ...
-func CertificatesFromPKCS12Content(content []byte, password string) ([]*x509.Certificate, interface{}, error) {
-	certificates, err := pkcs12.DecodeAllCerts(content, password)
-	if err != nil {
-		return nil, nil, err
-	}
-	privateKey, err := pkcs12.DecodePrivateKey(content, password)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return certificates, privateKey, nil
+func CertificatesFromPKCS12Content(content []byte, password string) ([]pkcs12.SigningIdentity, error) {
+	return pkcs12.DecodeCodesignCertificates(content, password)
 }
 
 // CertificatesFromPKCS12File ...
-func CertificatesFromPKCS12File(pkcs12Pth, password string) ([]*x509.Certificate, interface{}, error) {
+func CertificatesFromPKCS12File(pkcs12Pth, password string) ([]pkcs12.SigningIdentity, error) {
 	content, err := fileutil.ReadBytesFromFile(pkcs12Pth)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	return CertificatesFromPKCS12Content(content, password)

@@ -1,6 +1,7 @@
 package certificateutil
 
 import (
+	"crypto/rand"
 	"crypto/sha1"
 	"crypto/x509"
 	"encoding/json"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/pkcs12"
 )
 
 // CertificateInfoModel ...
@@ -68,6 +70,11 @@ func (info CertificateInfoModel) CheckValidity() error {
 	return CheckValidity(info.Certificate)
 }
 
+// EncodeToP12 encodes a CertificateInfoModel in pkcs12 (.p12) format.
+func (info CertificateInfoModel) EncodeToP12() ([]byte, error) {
+	return pkcs12.Encode(rand.Reader, info.PrivateKey, &info.Certificate, nil, "test")
+}
+
 // NewCertificateInfo ...
 func NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) CertificateInfoModel {
 	fingerprint := sha1.Sum(certificate.Raw)
@@ -87,26 +94,21 @@ func NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) Ce
 	}
 }
 
-// CertificateInfos ...
-func CertificateInfos(certificates []*x509.Certificate, privateKey interface{}) []CertificateInfoModel {
-	infos := []CertificateInfoModel{}
-	for _, certificate := range certificates {
-		if certificate != nil {
-			info := NewCertificateInfo(*certificate, privateKey)
-			infos = append(infos, info)
-		}
-	}
-
-	return infos
-}
-
 // NewCertificateInfosFromPKCS12 ...
 func NewCertificateInfosFromPKCS12(pkcs12Pth, password string) ([]CertificateInfoModel, error) {
-	certificates, privateKey, err := CertificatesFromPKCS12File(pkcs12Pth, password)
+	identities, err := CertificatesFromPKCS12File(pkcs12Pth, password)
 	if err != nil {
 		return nil, err
 	}
-	return CertificateInfos(certificates, privateKey), nil
+
+	infos := []CertificateInfoModel{}
+	for _, identity := range identities {
+		if identity.Certificate != nil {
+			infos = append(infos, NewCertificateInfo(*identity.Certificate, identity.PrivateKey))
+		}
+	}
+
+	return infos, nil
 }
 
 // InstalledCodesigningCertificateInfos ...
@@ -115,7 +117,15 @@ func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	return CertificateInfos(certificates, nil), nil
+
+	infos := []CertificateInfoModel{}
+	for _, certificate := range certificates {
+		if certificate != nil {
+			infos = append(infos, NewCertificateInfo(*certificate, nil))
+		}
+	}
+
+	return infos, nil
 }
 
 // InstalledInstallerCertificateInfos ...
@@ -125,7 +135,14 @@ func InstalledInstallerCertificateInfos() ([]CertificateInfoModel, error) {
 		return nil, err
 	}
 
-	installerCertificates := FilterCertificateInfoModelsByFilterFunc(CertificateInfos(certificates, nil), func(cert CertificateInfoModel) bool {
+	infos := []CertificateInfoModel{}
+	for _, certificate := range certificates {
+		if certificate != nil {
+			infos = append(infos, NewCertificateInfo(*certificate, nil))
+		}
+	}
+
+	installerCertificates := FilterCertificateInfoModelsByFilterFunc(infos, func(cert CertificateInfoModel) bool {
 		return strings.Contains(cert.CommonName, "Installer")
 	})
 
