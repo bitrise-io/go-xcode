@@ -3,7 +3,7 @@
 
 [[projects]]
   branch = "pkcs12"
-  digest = "1:3692827bd4241c03e3dd9d2345efe877815f4b295fd0d829b7710dbe734cbadb"
+  digest = "1:426600526345d30b7b57890ad640ae376d7be3bbda9fc915c7209a2fceb299da"
   name = "github.com/bitrise-io/go-utils"
   packages = [
     "builtinutil",
@@ -21,7 +21,7 @@
     "ziputil",
   ]
   pruneopts = "UT"
-  revision = "1f937721c37ed21e15d1ec761a9020e662c35f87"
+  revision = "4db7528331a37b77e5158a655205ae628187bd0b"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -33,27 +33,27 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:095c5b12709e45a61ff2820c2bf81c7de7a030629cb728fc7a2abec35b5cbadb"
+  digest = "1:0bd05495dbd0567480e48eac9e6602d87875a8747b13c3c0fcb7c83c7c921776"
   name = "github.com/fullsailor/pkcs7"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8306686428a5fe132eac8cb7c4848af725098bd4"
+  revision = "d7302db945fa6ea264fb79d8e13e931ea514a602"
 
 [[projects]]
   branch = "master"
-  digest = "1:950caca7dfcf796419232ba996c9c3539d09f26af27ba848c4508e604c13efbb"
+  digest = "1:14f3dc47ce9fec6a2696a28cf21ffd5aef579584897acfdeb0190bc8cf7b1132"
   name = "github.com/hashicorp/go-version"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d40cf49b3a77bba84a7afdbd7f1dc295d114efb1"
+  revision = "192140e6f3e645d971b134d4e35b5191adb9dfd3"
 
 [[projects]]
   branch = "master"
-  digest = "1:9729648bfd610b93e5636062a4925798e76399b121c0f9403d2b2ad4112545eb"
+  digest = "1:deff41c4160cc5b487a1d1a69a58925f2d3ac11befa0692b50e76940594e20f5"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ffb6e22f01932bf7ac35e0bad9be11f01d1c8685"
+  revision = "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7"
 
 [[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
@@ -73,14 +73,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:eeb0a54ba70c22815143c2c3f104cb4f9ebe2060ba49780bd4895a0179b7aee9"
+  digest = "1:45511ffd176fe0c5ab6cb08cdd141f3217df8e115124b176e894ab103925d53c"
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
     "require",
   ]
   pruneopts = "UT"
-  revision = "363ebb24d041ccea8068222281c2e963e997b9dc"
+  revision = "34c6fa2dc70986bccbbffcc6130f6920a924b075"
 
 [[projects]]
   branch = "master"
