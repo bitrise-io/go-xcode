@@ -15,9 +15,9 @@ func FilterCertificateInfoModelsByFilterFunc(certificates []CertificateInfoModel
 
 // ValidCertificateInfo contains the certificate infos filtered as valid, invalid and duplicated common name certificates
 type ValidCertificateInfo struct {
-	validCertificates,
-	invalidCertificates,
-	duplicatedCertificates []CertificateInfoModel
+	ValidCertificates,
+	InvalidCertificates,
+	DuplicatedCertificates []CertificateInfoModel
 }
 
 // FilterValidCertificateInfos filters out invalid and duplicated common name certificaates
