@@ -71,8 +71,8 @@ func (info CertificateInfoModel) CheckValidity() error {
 }
 
 // EncodeToP12 encodes a CertificateInfoModel in pkcs12 (.p12) format.
-func (info CertificateInfoModel) EncodeToP12() ([]byte, error) {
-	return pkcs12.Encode(rand.Reader, info.PrivateKey, &info.Certificate, nil, "test")
+func (info CertificateInfoModel) EncodeToP12(passphrase string) ([]byte, error) {
+	return pkcs12.Encode(rand.Reader, info.PrivateKey, &info.Certificate, nil, passphrase)
 }
 
 // NewCertificateInfo ...
