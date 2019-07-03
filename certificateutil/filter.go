@@ -45,8 +45,8 @@ func FilterValidCertificateInfos(certificateInfos []CertificateInfoModel) ValidC
 	}
 
 	return ValidCertificateInfo{
-		validCertificates:      validCertificates,
-		invalidCertificates:    invalidCertificates,
-		duplicatedCertificates: duplicatedCertificates,
+		ValidCertificates:      validCertificates,
+		InvalidCertificates:    invalidCertificates,
+		DuplicatedCertificates: duplicatedCertificates,
 	}
 }
