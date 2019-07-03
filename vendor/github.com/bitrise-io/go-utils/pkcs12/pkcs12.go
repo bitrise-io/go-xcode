@@ -347,6 +347,7 @@ func DecodeAllCerts(pfxData []byte, password string) (certificates []*x509.Certi
 }
 
 // DecodeCodesignCertificates returns an array of certificate and private keys
+// Used to parse p12 file containing multiple codesign identities (exported from macOS Keychain)
 func DecodeCodesignCertificates(pfxData []byte, password string) (identities []SigningIdentity, err error) {
 	encodedPassword, err := bmpString(password)
 	if err != nil {
@@ -358,7 +359,8 @@ func DecodeCodesignCertificates(pfxData []byte, password string) (identities []S
 		return nil, err
 	}
 
-	var certificate *x509.Certificate
+	var certificates []*x509.Certificate
+	var privateKeys []interface{}
 	for _, bag := range bags {
 		switch {
 		case bag.Id.Equal(oidCertBag):
@@ -374,7 +376,7 @@ func DecodeCodesignCertificates(pfxData []byte, password string) (identities []S
 				err = errors.New("pkcs12: expected exactly one certificate in the certBag")
 				return nil, err
 			}
-			certificate = certs[0]
+			certificates = append(certificates, certs[0])
 
 		case bag.Id.Equal(oidPKCS8ShroundedKeyBag):
 			privateKey, err := decodePkcs8ShroudedKeyBag(bag.Value.Bytes, encodedPassword)
@@ -382,11 +384,19 @@ func DecodeCodesignCertificates(pfxData []byte, password string) (identities []S
 				return nil, err
 			}
 
-			identities = append(identities, SigningIdentity{
-				Certificate: certificate,
-				PrivateKey:  privateKey,
-			})
+			privateKeys = append(privateKeys, privateKey)
 		}
+	}
+
+	if len(certificates) != len(privateKeys) {
+		return nil, errors.New("pkcs12: different number of certificates and private keys found")
+	}
+
+	for i, privateKey := range privateKeys {
+		identities = append(identities, SigningIdentity{
+			Certificate: certificates[i],
+			PrivateKey:  privateKey,
+		})
 	}
 
 	if len(identities) == 0 {

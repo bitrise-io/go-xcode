@@ -3,7 +3,7 @@
 
 [[projects]]
   branch = "pkcs12"
-  digest = "1:426600526345d30b7b57890ad640ae376d7be3bbda9fc915c7209a2fceb299da"
+  digest = "1:8b4bec3179c9f80dc57ee7352e5a72e869f73caec19a31d5f9d738b38e33f26f"
   name = "github.com/bitrise-io/go-utils"
   packages = [
     "builtinutil",
@@ -21,7 +21,7 @@
     "ziputil",
   ]
   pruneopts = "UT"
-  revision = "4db7528331a37b77e5158a655205ae628187bd0b"
+  revision = "779fdb817886fbb25a938641dd9be8451915efd9"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
