@@ -33,10 +33,10 @@ func (info CertificateInfoModel) String() string {
 
 	err := info.CheckValidity()
 	if err != nil {
-		certInfo = certInfo + fmt.Sprintf(", Error: %s", err)
+		certInfo = certInfo + fmt.Sprintf(", error: %s", err)
 	}
 
-	return certInfo
+	return certInfo + "\n"
 }
 
 // CheckValidity ...
