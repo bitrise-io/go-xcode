@@ -36,7 +36,7 @@ func (info CertificateInfoModel) String() string {
 		certInfo = certInfo + fmt.Sprintf(", error: %s", err)
 	}
 
-	return certInfo + "\n"
+	return certInfo
 }
 
 // CheckValidity ...
