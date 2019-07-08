@@ -4,12 +4,10 @@ import (
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/x509"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pkcs12"
 )
 
@@ -30,27 +28,15 @@ type CertificateInfoModel struct {
 
 // String ...
 func (info CertificateInfoModel) String() string {
-	printable := map[string]interface{}{}
-	printable["name"] = info.CommonName
-	printable["serial"] = info.Serial
-	printable["team"] = fmt.Sprintf("%s (%s)", info.TeamName, info.TeamID)
-	printable["expire"] = info.EndDate.String()
+	team := fmt.Sprintf("%s (%s)", info.TeamName, info.TeamID)
+	certInfo := fmt.Sprintf("Serial: %s, Name: %s, Team: %s, Expiry: %s", info.Serial, info.CommonName, team, info.EndDate)
 
-	errors := []string{}
-	if err := info.CheckValidity(); err != nil {
-		errors = append(errors, err.Error())
-	}
-	if len(errors) > 0 {
-		printable["errors"] = errors
-	}
-
-	data, err := json.MarshalIndent(printable, "", "\t")
+	err := info.CheckValidity()
 	if err != nil {
-		log.Errorf("Failed to marshal: %v, error: %s", printable, err)
-		return ""
+		certInfo = certInfo + fmt.Sprintf(", Error: %s", err)
 	}
 
-	return string(data)
+	return certInfo
 }
 
 // CheckValidity ...
