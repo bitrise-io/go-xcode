@@ -8,6 +8,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
+	pthUtil "github.com/bitrise-io/go-xcode/utility"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,7 +25,7 @@ func TestFindFileInPayloadDir(t *testing.T) {
 		infoPlistPth := filepath.Join(appDir, "Info.plist")
 		require.NoError(t, fileutil.WriteStringToFile(infoPlistPth, ""))
 
-		pth, err := findFileInPayloadAppDir(payloadDir, "test", "Info.plist")
+		pth, err := pthUtil.FindFileInAppDir(payloadDir, "test", "Info.plist")
 		require.NoError(t, err)
 		require.Equal(t, infoPlistPth, pth)
 	}
@@ -41,7 +42,7 @@ func TestFindFileInPayloadDir(t *testing.T) {
 		infoPlistPth := filepath.Join(appDir, "Info.plist")
 		require.NoError(t, fileutil.WriteStringToFile(infoPlistPth, ""))
 
-		pth, err := findFileInPayloadAppDir(payloadDir, "not_test", "Info.plist")
+		pth, err := pthUtil.FindFileInAppDir(payloadDir, "not_test", "Info.plist")
 		require.NoError(t, err)
 		require.Equal(t, infoPlistPth, pth)
 	}
@@ -58,7 +59,7 @@ func TestFindFileInPayloadDir(t *testing.T) {
 		infoPlistPth := filepath.Join(appDir, "Info.plist")
 		require.NoError(t, fileutil.WriteStringToFile(infoPlistPth, ""))
 
-		pth, err := findFileInPayloadAppDir(payloadDir, "test", "Info.plist")
+		pth, err := pthUtil.FindFileInAppDir(payloadDir, "test", "Info.plist")
 		require.EqualError(t, err, "failed to find Info.plist")
 		require.Equal(t, "", pth)
 	}
