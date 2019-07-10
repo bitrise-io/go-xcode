@@ -14,17 +14,45 @@ import (
 	"github.com/pkg/errors"
 )
 
+// CertificatePrivateKeyBundle is a certificate with a matching private key
+type CertificatePrivateKeyBundle struct {
+	Certificate *x509.Certificate
+	PrivateKey  interface{}
+}
+
 func commandError(printableCmd string, cmdOut string, cmdErr error) error {
 	return errors.Wrapf(cmdErr, "%s failed, out: %s", printableCmd, cmdOut)
 }
 
-// CertificatesFromPKCS12Content ...
-func CertificatesFromPKCS12Content(content []byte, password string) ([]pkcs12.SigningIdentity, error) {
-	return pkcs12.DecodeCodesignCertificates(content, password)
+// CertificatesFromPKCS12Content returns an array of certificate and private keys
+// Used to parse p12 file containing multiple codesign identities (exported from macOS Keychain)
+func CertificatesFromPKCS12Content(content []byte, password string) ([]CertificatePrivateKeyBundle, error) {
+	certificates, privateKeys, err := pkcs12.DecodeAll(content, password)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(certificates) != len(privateKeys) {
+		return nil, errors.New("pkcs12: different number of certificates and private keys found")
+	}
+
+	if len(certificates) == 0 {
+		return nil, errors.New("pkcs12: no certificate and private key pair found")
+	}
+
+	var bundles []CertificatePrivateKeyBundle
+	for i, privateKey := range privateKeys {
+		bundles = append(bundles, CertificatePrivateKeyBundle{
+			Certificate: certificates[i],
+			PrivateKey:  privateKey,
+		})
+	}
+
+	return bundles, nil
 }
 
 // CertificatesFromPKCS12File ...
-func CertificatesFromPKCS12File(pkcs12Pth, password string) ([]pkcs12.SigningIdentity, error) {
+func CertificatesFromPKCS12File(pkcs12Pth, password string) ([]CertificatePrivateKeyBundle, error) {
 	content, err := fileutil.ReadBytesFromFile(pkcs12Pth)
 	if err != nil {
 		return nil, err
