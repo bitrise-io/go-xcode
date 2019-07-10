@@ -6,7 +6,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/ziputil"
-	pth "github.com/bitrise-io/go-xcode/utility"
+	"github.com/bitrise-io/go-xcode/utility"
 )
 
 func unwrapFileEmbeddedInPayloadAppDir(ipaPth, fileName string) (string, error) {
@@ -22,7 +22,7 @@ func unwrapFileEmbeddedInPayloadAppDir(ipaPth, fileName string) (string, error) 
 	payloadPth := filepath.Join(tmpDir, "Payload")
 	ipaName := strings.TrimSuffix(filepath.Base(ipaPth), filepath.Ext(ipaPth))
 
-	return pth.FindFileInAppDir(payloadPth, ipaName, fileName)
+	return utility.FindFileInAppDir(payloadPth, ipaName, fileName)
 }
 
 // UnwrapEmbeddedMobileProvision ...

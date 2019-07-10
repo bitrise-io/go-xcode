@@ -8,7 +8,7 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/ziputil"
 	"github.com/bitrise-io/go-xcode/plistutil"
-	pth "github.com/bitrise-io/go-xcode/utility"
+	"github.com/bitrise-io/go-xcode/utility"
 )
 
 // IsMacOS try to find the Contents dir under the .app/.
@@ -44,7 +44,6 @@ func IsMacOS(archPath string) (bool, error) {
 }
 
 func unwrapFileEmbeddedInXcarchiveDir(xcarchivePth, fileName string) (string, error) {
-	// example path: xcarhive.zip/xcarhive/Products/Applications/sample.app/Contents/Info.plist
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("__xcarhive__")
 	if err != nil {
 		return "", err
@@ -57,7 +56,7 @@ func unwrapFileEmbeddedInXcarchiveDir(xcarchivePth, fileName string) (string, er
 	applicationsPth := filepath.Join(tmpDir, filepath.Base(xcarchivePth), "Products", "Applications")
 	appName := strings.TrimSuffix(filepath.Base(xcarchivePth), filepath.Ext(xcarchivePth))
 
-	return pth.FindFileInAppDir(applicationsPth, appName, fileName)
+	return utility.FindFileInAppDir(applicationsPth, appName, fileName)
 }
 
 // UnwrapEmbeddedMobileProvision ...
@@ -73,13 +72,7 @@ func UnwrapEmbeddedInfoPlist(xcarchivePth string) (string, error) {
 // CheckForXcarchive checks if the given zip is an xcarhive or not
 func CheckForXcarchive(pth string) bool {
 	filename := filepath.Base(pth)
-	s := strings.Split(filename, ".")
-	length := len(s)
-	if length < 2 {
-		return false
-	}
-	xc := s[length-2]
-	if xc == "xcarchieve" {
+	if strings.HasSuffix(filename, ".xcarchive.zip") {
 		return true
 	}
 	return false
