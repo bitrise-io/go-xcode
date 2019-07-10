@@ -248,115 +248,42 @@ func Decode(pfxData []byte, password string) (privateKey interface{}, certificat
 // be the leaf certificate, and subsequent certificates, if any, are assumed to
 // comprise the CA certificate chain.
 func DecodeChain(pfxData []byte, password string) (privateKey interface{}, certificate *x509.Certificate, caCerts []*x509.Certificate, err error) {
-	encodedPassword, err := bmpString(password)
+	certificates, privateKeys, err := DecodeAll(pfxData, password)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	bags, encodedPassword, err := getSafeContents(pfxData, encodedPassword)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	for _, bag := range bags {
-		switch {
-		case bag.Id.Equal(oidCertBag):
-			certsData, err := decodeCertBag(bag.Value.Bytes)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-			certs, err := x509.ParseCertificates(certsData)
-			if err != nil {
-				return nil, nil, nil, err
-			}
-			if len(certs) != 1 {
-				err = errors.New("pkcs12: expected exactly one certificate in the certBag")
-				return nil, nil, nil, err
-			}
-			if certificate == nil {
-				certificate = certs[0]
-			} else {
-				caCerts = append(caCerts, certs[0])
-			}
-
-		case bag.Id.Equal(oidPKCS8ShroundedKeyBag):
-			if privateKey != nil {
-				err = errors.New("pkcs12: expected exactly one key bag")
-				return nil, nil, nil, err
-			}
-
-			if privateKey, err = decodePkcs8ShroudedKeyBag(bag.Value.Bytes, encodedPassword); err != nil {
-				return nil, nil, nil, err
-			}
-		}
-	}
-
-	if certificate == nil {
+	if len(certificates) == 0 {
 		return nil, nil, nil, errors.New("pkcs12: certificate missing")
 	}
-	if privateKey == nil {
+
+	certificate = certificates[0]
+	if len(certificates) > 1 {
+		caCerts = certificates[1:]
+	}
+
+	if len(privateKeys) == 0 {
 		return nil, nil, nil, errors.New("pkcs12: private key missing")
 	}
+	if len(privateKeys) > 1 {
+		return nil, nil, nil, errors.New("pkcs12: expected exactly one key bag")
+	}
+
+	privateKey = privateKeys[0]
 
 	return
 }
 
-// SigningIdentity is a certificate with a matching private key
-type SigningIdentity struct {
-	Certificate *x509.Certificate
-	PrivateKey  interface{}
-}
-
-// DecodeAllCerts extracts a certificates from pfxData.
-func DecodeAllCerts(pfxData []byte, password string) (certificates []*x509.Certificate, err error) {
+// DecodeAll extracts all certificates and private keys from pfxData.
+func DecodeAll(pfxData []byte, password string) ([]*x509.Certificate, []interface{}, error) {
 	encodedPassword, err := bmpString(password)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	bags, encodedPassword, err := getSafeContents(pfxData, encodedPassword)
 	if err != nil {
-		return nil, err
-	}
-
-	certificates = []*x509.Certificate{}
-	for _, bag := range bags {
-		switch {
-		case bag.Id.Equal(oidCertBag):
-			certsData, err := decodeCertBag(bag.Value.Bytes)
-			if err != nil {
-				return nil, err
-			}
-			certs, err := x509.ParseCertificates(certsData)
-			if err != nil {
-				return nil, err
-			}
-			if len(certs) != 1 {
-				err = errors.New("pkcs12: expected exactly one certificate in the certBag")
-				return nil, err
-			}
-			certificates = append(certificates, certs[0])
-		}
-	}
-
-	if certificates == nil || len(certificates) == 0 {
-		return nil, errors.New("pkcs12: certificate missing")
-	}
-
-	return
-}
-
-// DecodeCodesignCertificates returns an array of certificate and private keys
-// Used to parse p12 file containing multiple codesign identities (exported from macOS Keychain)
-func DecodeCodesignCertificates(pfxData []byte, password string) (identities []SigningIdentity, err error) {
-	encodedPassword, err := bmpString(password)
-	if err != nil {
-		return nil, err
-	}
-
-	bags, encodedPassword, err := getSafeContents(pfxData, encodedPassword)
-	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var certificates []*x509.Certificate
@@ -366,44 +293,28 @@ func DecodeCodesignCertificates(pfxData []byte, password string) (identities []S
 		case bag.Id.Equal(oidCertBag):
 			certsData, err := decodeCertBag(bag.Value.Bytes)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			certs, err := x509.ParseCertificates(certsData)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if len(certs) != 1 {
 				err = errors.New("pkcs12: expected exactly one certificate in the certBag")
-				return nil, err
+				return nil, nil, err
 			}
 			certificates = append(certificates, certs[0])
 
 		case bag.Id.Equal(oidPKCS8ShroundedKeyBag):
 			privateKey, err := decodePkcs8ShroudedKeyBag(bag.Value.Bytes, encodedPassword)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
-
 			privateKeys = append(privateKeys, privateKey)
 		}
 	}
 
-	if len(certificates) != len(privateKeys) {
-		return nil, errors.New("pkcs12: different number of certificates and private keys found")
-	}
-
-	for i, privateKey := range privateKeys {
-		identities = append(identities, SigningIdentity{
-			Certificate: certificates[i],
-			PrivateKey:  privateKey,
-		})
-	}
-
-	if len(identities) == 0 {
-		return nil, errors.New("pkcs12: no certificate and private key pair found")
-	}
-
-	return
+	return certificates, privateKeys, nil
 }
 
 func getSafeContents(p12Data, password []byte) (bags []safeBag, updatedPassword []byte, err error) {

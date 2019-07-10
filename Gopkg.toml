@@ -1,5 +1,5 @@
 [[constraint]]
-  branch = "pkcs12"
+  branch = "TOOL-574-update-pkcs12"
   name = "github.com/bitrise-io/go-utils"
 
 [[constraint]]
