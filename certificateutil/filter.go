@@ -22,26 +22,36 @@ type ValidCertificateInfo struct {
 
 // FilterValidCertificateInfos filters out invalid and duplicated common name certificaates
 func FilterValidCertificateInfos(certificateInfos []CertificateInfoModel) ValidCertificateInfo {
-	certificateInfosByName := map[string]CertificateInfoModel{}
-
-	var invalidCertificates, duplicatedCertificates []CertificateInfoModel
+	var invalidCertificates []CertificateInfoModel
+	nameToCerts := map[string][]CertificateInfoModel{}
 	for _, certificateInfo := range certificateInfos {
 		if certificateInfo.CheckValidity() != nil {
 			invalidCertificates = append(invalidCertificates, certificateInfo)
 			continue
 		}
-		activeCertificate, ok := certificateInfosByName[certificateInfo.CommonName]
-		if !ok {
-			certificateInfosByName[certificateInfo.CommonName] = certificateInfo
-		} else if certificateInfo.EndDate.After(activeCertificate.EndDate) {
-			duplicatedCertificates = append(duplicatedCertificates, activeCertificate)
-			certificateInfosByName[certificateInfo.CommonName] = certificateInfo
-		}
+
+		nameToCerts[certificateInfo.CommonName] = append(nameToCerts[certificateInfo.CommonName], certificateInfo)
 	}
 
-	validCertificates := []CertificateInfoModel{}
-	for _, validCertificate := range certificateInfosByName {
-		validCertificates = append(validCertificates, validCertificate)
+	var validCertificates, duplicatedCertificates []CertificateInfoModel
+	for _, certs := range nameToCerts {
+		if len(certs) == 0 {
+			continue
+		}
+
+		latestCert := certs[0]
+		latestCertIndex := 0
+		for i, cert := range certs {
+			if cert.EndDate.After(latestCert.EndDate) {
+				latestCert = cert
+				latestCertIndex = i
+			}
+		}
+
+		validCertificates = append(validCertificates, latestCert)
+		// Add all elements as duplicates, excluding latest certificate
+		certs[latestCertIndex] = certs[len(certs)-1]
+		duplicatedCertificates = append(duplicatedCertificates, certs[:len(certs)-1]...)
 	}
 
 	return ValidCertificateInfo{
