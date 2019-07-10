@@ -1,5 +1,7 @@
 package certificateutil
 
+import "sort"
+
 // FilterCertificateInfoModelsByFilterFunc ...
 func FilterCertificateInfoModelsByFilterFunc(certificates []CertificateInfoModel, filterFunc func(certificate CertificateInfoModel) bool) []CertificateInfoModel {
 	filteredCertificates := []CertificateInfoModel{}
@@ -39,19 +41,13 @@ func FilterValidCertificateInfos(certificateInfos []CertificateInfoModel) ValidC
 			continue
 		}
 
-		latestCert := certs[0]
-		latestCertIndex := 0
-		for i, cert := range certs {
-			if cert.EndDate.After(latestCert.EndDate) {
-				latestCert = cert
-				latestCertIndex = i
-			}
+		sort.Slice(certs, func(i, j int) bool {
+			return certs[i].EndDate.Before(certs[j].EndDate)
+		})
+		validCertificates = append(validCertificates, certs[0])
+		if len(certs) > 1 {
+			duplicatedCertificates = append(duplicatedCertificates, certs[1:]...)
 		}
-
-		validCertificates = append(validCertificates, latestCert)
-		// Add all elements as duplicates, excluding latest certificate
-		certs[latestCertIndex] = certs[len(certs)-1]
-		duplicatedCertificates = append(duplicatedCertificates, certs[:len(certs)-1]...)
 	}
 
 	return ValidCertificateInfo{
