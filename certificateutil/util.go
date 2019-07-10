@@ -14,19 +14,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-// CertificatePrivateKeyBundle is a certificate with a matching private key
-type CertificatePrivateKeyBundle struct {
-	Certificate *x509.Certificate
-	PrivateKey  interface{}
-}
-
 func commandError(printableCmd string, cmdOut string, cmdErr error) error {
 	return errors.Wrapf(cmdErr, "%s failed, out: %s", printableCmd, cmdOut)
 }
 
-// CertificatesFromPKCS12Content returns an array of certificate and private keys
+// CertificatesFromPKCS12Content returns an array of CertificateInfoModel
 // Used to parse p12 file containing multiple codesign identities (exported from macOS Keychain)
-func CertificatesFromPKCS12Content(content []byte, password string) ([]CertificatePrivateKeyBundle, error) {
+func CertificatesFromPKCS12Content(content []byte, password string) ([]CertificateInfoModel, error) {
 	certificates, privateKeys, err := pkcs12.DecodeAll(content, password)
 	if err != nil {
 		return nil, err
@@ -40,19 +34,18 @@ func CertificatesFromPKCS12Content(content []byte, password string) ([]Certifica
 		return nil, errors.New("pkcs12: no certificate and private key pair found")
 	}
 
-	var bundles []CertificatePrivateKeyBundle
-	for i, privateKey := range privateKeys {
-		bundles = append(bundles, CertificatePrivateKeyBundle{
-			Certificate: certificates[i],
-			PrivateKey:  privateKey,
-		})
+	infos := []CertificateInfoModel{}
+	for i, certificate := range certificates {
+		if certificate != nil {
+			infos = append(infos, NewCertificateInfo(*certificate, privateKeys[i]))
+		}
 	}
 
-	return bundles, nil
+	return infos, nil
 }
 
 // CertificatesFromPKCS12File ...
-func CertificatesFromPKCS12File(pkcs12Pth, password string) ([]CertificatePrivateKeyBundle, error) {
+func CertificatesFromPKCS12File(pkcs12Pth, password string) ([]CertificateInfoModel, error) {
 	content, err := fileutil.ReadBytesFromFile(pkcs12Pth)
 	if err != nil {
 		return nil, err

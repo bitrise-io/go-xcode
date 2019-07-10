@@ -80,23 +80,6 @@ func NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) Ce
 	}
 }
 
-// NewCertificateInfosFromPKCS12 ...
-func NewCertificateInfosFromPKCS12(pkcs12Pth, password string) ([]CertificateInfoModel, error) {
-	identities, err := CertificatesFromPKCS12File(pkcs12Pth, password)
-	if err != nil {
-		return nil, err
-	}
-
-	infos := []CertificateInfoModel{}
-	for _, identity := range identities {
-		if identity.Certificate != nil {
-			infos = append(infos, NewCertificateInfo(*identity.Certificate, identity.PrivateKey))
-		}
-	}
-
-	return infos, nil
-}
-
 // InstalledCodesigningCertificateInfos ...
 func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
 	certificates, err := InstalledCodesigningCertificates()
