@@ -72,10 +72,8 @@ func BaseFilter(base string, allowed bool) FilterFunc {
 }
 
 // FindFileInAppDir ...
-func FindFileInAppDir(basePth, preferedAppName, fileName string) (string, error) {
-	appDir := filepath.Join(basePth, preferedAppName+".app")
-
-	filePth := filepath.Join(appDir, fileName)
+func FindFileInAppDir(appDir, fileName string) (string, error) {
+	filePth := filepath.Join(appDir+".app", fileName)
 	if exist, err := pathutil.IsPathExists(filePth); err != nil {
 		return "", err
 	} else if exist {
@@ -84,6 +82,7 @@ func FindFileInAppDir(basePth, preferedAppName, fileName string) (string, error)
 	// ---
 
 	// It's somewhere else - let's find it!
+	basePth, _ := filepath.Split(appDir)
 	apps, err := ListEntries(basePth, ExtensionFilter(".app", true))
 	if err != nil {
 		return "", err

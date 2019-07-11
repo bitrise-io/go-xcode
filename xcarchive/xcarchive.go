@@ -2,7 +2,6 @@ package xcarchive
 
 import (
 	"path/filepath"
-	"strings"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -43,7 +42,8 @@ func IsMacOS(archPath string) (bool, error) {
 	return exist, nil
 }
 
-func unwrapFileEmbeddedInXcarchiveDir(xcarchivePth, fileName string) (string, error) {
+// UnzipXcarchive ...
+func UnzipXcarchive(xcarchivePth string) (string, error) {
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("__xcarhive__")
 	if err != nil {
 		return "", err
@@ -52,28 +52,19 @@ func unwrapFileEmbeddedInXcarchiveDir(xcarchivePth, fileName string) (string, er
 	if err := ziputil.UnZip(xcarchivePth, tmpDir); err != nil {
 		return "", err
 	}
-
-	applicationsPth := filepath.Join(tmpDir, filepath.Base(xcarchivePth), "Products", "Applications")
-	appName := strings.TrimSuffix(filepath.Base(xcarchivePth), filepath.Ext(xcarchivePth))
-
-	return utility.FindFileInAppDir(applicationsPth, appName, fileName)
+	return tmpDir, nil
 }
 
-// UnwrapEmbeddedMobileProvision ...
-func UnwrapEmbeddedMobileProvision(xcarchivePth string) (string, error) {
-	return unwrapFileEmbeddedInXcarchiveDir(xcarchivePth, "embedded.mobileprovision")
+// GetEmbeddedMobileProvisionPath ...
+func GetEmbeddedMobileProvisionPath(xcarchivePth string) (string, error) {
+	return utility.FindFileInAppDir(getAppSubfolder(xcarchivePth), "embedded.mobileprovision")
 }
 
-// UnwrapEmbeddedInfoPlist ...
-func UnwrapEmbeddedInfoPlist(xcarchivePth string) (string, error) {
-	return unwrapFileEmbeddedInXcarchiveDir(xcarchivePth, "Info.plist")
+// GetEmbeddedInfoPlistPath ...
+func GetEmbeddedInfoPlistPath(xcarchivePth string) (string, error) {
+	return utility.FindFileInAppDir(getAppSubfolder(xcarchivePth), "Info.plist")
 }
 
-// CheckForXcarchive checks if the given zip is an xcarhive or not
-func CheckForXcarchive(pth string) bool {
-	filename := filepath.Base(pth)
-	if strings.HasSuffix(filename, ".xcarchive.zip") {
-		return true
-	}
-	return false
+func getAppSubfolder(basepth string) string {
+	return filepath.Join(basepth, "Products", "Applications")
 }
