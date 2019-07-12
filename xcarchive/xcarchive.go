@@ -49,10 +49,7 @@ func UnzipXcarchive(xcarchivePth string) (string, error) {
 		return "", err
 	}
 
-	if err := ziputil.UnZip(xcarchivePth, tmpDir); err != nil {
-		return "", err
-	}
-	return tmpDir, nil
+	return tmpDir, ziputil.UnZip(xcarchivePth, tmpDir)
 }
 
 // GetEmbeddedMobileProvisionPath ...
