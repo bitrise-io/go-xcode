@@ -53,7 +53,7 @@ func TestFindFileInPayloadDir(t *testing.T) {
 		appDir := filepath.Join(tmpDir, "Payload", "test.app/invalidcomponent")
 		require.NoError(t, os.MkdirAll(appDir, 0777))
 
-		infoPlistPth := filepath.Join(appDir, "Info.plist")
+		infoPlistPth := filepath.Join(tmpDir, "Info.plist")
 		require.NoError(t, fileutil.WriteStringToFile(infoPlistPth, ""))
 
 		pth, err := utility.FindFileInAppDir(appDir, "Info.plist")

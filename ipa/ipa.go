@@ -19,7 +19,7 @@ func unwrapFileEmbeddedInPayloadAppDir(ipaPth, fileName string) (string, error) 
 		return "", err
 	}
 
-	appDir := filepath.Join(tmpDir, "Payload", strings.TrimSuffix(filepath.Base(ipaPth), filepath.Ext(ipaPth))+".app")
+	appDir := filepath.Join(tmpDir, "Payload", strings.TrimSuffix(filepath.Base(ipaPth), filepath.Ext(ipaPth)))
 
 	return utility.FindFileInAppDir(appDir, fileName)
 }
