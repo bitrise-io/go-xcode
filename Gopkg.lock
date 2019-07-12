@@ -2,8 +2,8 @@
 
 
 [[projects]]
-  branch = "TOOL-574-update-pkcs12"
-  digest = "1:0821d9dd8553c3628247fb90e70cf5add41349923acc08e7180effdcb17222ba"
+  branch = "master"
+  digest = "1:ce064a3150e5859284f8d4d16b9e1dcc89a4d7a1ca6d241a23b720d2f8c3c0a5"
   name = "github.com/bitrise-io/go-utils"
   packages = [
     "builtinutil",
@@ -21,7 +21,7 @@
     "ziputil",
   ]
   pruneopts = "UT"
-  revision = "71a954d6bd3b3de0cbad54f37e6bf93cc479c7e8"
+  revision = "5dfd5a5f1271cffb2bc0b1cf4c3815139da8175a"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -73,14 +73,22 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5e7ce4375d8e35de4f26e2fe6e34f1a479431c85ebf56d0ddbde136389ba46e8"
+  digest = "1:99d32780e5238c2621fff621123997c3e3cca96db8be13179013aea77dfab551"
   name = "github.com/stretchr/testify"
   packages = [
     "assert",
     "require",
   ]
   pruneopts = "UT"
-  revision = "d84e815d441de9c64a3a2f9336c32acf1e7349d1"
+  revision = "221dbe5ed46703ee255b1da0dec05086f5035f62"
+
+[[projects]]
+  digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
+  name = "gopkg.in/yaml.v2"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
+  version = "v2.2.2"
 
 [[projects]]
   branch = "master"
