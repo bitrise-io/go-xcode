@@ -2,7 +2,6 @@ package ipa
 
 import (
 	"path/filepath"
-	"strings"
 
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/ziputil"
@@ -19,7 +18,7 @@ func unwrapFileEmbeddedInPayloadAppDir(ipaPth, fileName string) (string, error) 
 		return "", err
 	}
 
-	appDir := filepath.Join(tmpDir, "Payload", strings.TrimSuffix(filepath.Base(ipaPth), filepath.Ext(ipaPth)))
+	appDir := filepath.Join(tmpDir, "Payload")
 
 	return utility.FindFileInAppDir(appDir, fileName)
 }
