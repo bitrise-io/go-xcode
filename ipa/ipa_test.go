@@ -8,6 +8,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-xcode/utility"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,14 +18,13 @@ func TestFindFileInPayloadDir(t *testing.T) {
 		tmpDir, err := pathutil.NormalizedOSTempDirPath("__ipa__")
 		require.NoError(t, err)
 
-		payloadDir := filepath.Join(tmpDir, "Payload")
-		appDir := filepath.Join(payloadDir, "test.app")
+		appDir := filepath.Join(tmpDir, "Payload", "test.app")
 		require.NoError(t, os.MkdirAll(appDir, 0777))
 
 		infoPlistPth := filepath.Join(appDir, "Info.plist")
 		require.NoError(t, fileutil.WriteStringToFile(infoPlistPth, ""))
 
-		pth, err := findFileInPayloadAppDir(payloadDir, "test", "Info.plist")
+		pth, err := utility.FindFileInAppDir(appDir, "Info.plist")
 		require.NoError(t, err)
 		require.Equal(t, infoPlistPth, pth)
 	}
@@ -34,14 +34,13 @@ func TestFindFileInPayloadDir(t *testing.T) {
 		tmpDir, err := pathutil.NormalizedOSTempDirPath("__ipa__")
 		require.NoError(t, err)
 
-		payloadDir := filepath.Join(tmpDir, "Payload")
-		appDir := filepath.Join(payloadDir, "test.app")
+		appDir := filepath.Join(tmpDir, "Payload", "test.app")
 		require.NoError(t, os.MkdirAll(appDir, 0777))
 
 		infoPlistPth := filepath.Join(appDir, "Info.plist")
 		require.NoError(t, fileutil.WriteStringToFile(infoPlistPth, ""))
 
-		pth, err := findFileInPayloadAppDir(payloadDir, "not_test", "Info.plist")
+		pth, err := utility.FindFileInAppDir(appDir, "Info.plist")
 		require.NoError(t, err)
 		require.Equal(t, infoPlistPth, pth)
 	}
@@ -51,14 +50,13 @@ func TestFindFileInPayloadDir(t *testing.T) {
 		tmpDir, err := pathutil.NormalizedOSTempDirPath("__ipa__")
 		require.NoError(t, err)
 
-		payloadDir := filepath.Join(tmpDir, "Payload")
-		appDir := filepath.Join(payloadDir, "test.app/invalidcomponent")
+		appDir := filepath.Join(tmpDir, "Payload", "test.app/invalidcomponent")
 		require.NoError(t, os.MkdirAll(appDir, 0777))
 
-		infoPlistPth := filepath.Join(appDir, "Info.plist")
+		infoPlistPth := filepath.Join(tmpDir, "Info.plist")
 		require.NoError(t, fileutil.WriteStringToFile(infoPlistPth, ""))
 
-		pth, err := findFileInPayloadAppDir(payloadDir, "test", "Info.plist")
+		pth, err := utility.FindFileInAppDir(appDir, "Info.plist")
 		require.EqualError(t, err, "failed to find Info.plist")
 		require.Equal(t, "", pth)
 	}
