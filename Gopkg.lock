@@ -3,7 +3,18 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ce064a3150e5859284f8d4d16b9e1dcc89a4d7a1ca6d241a23b720d2f8c3c0a5"
+  digest = "1:594d51ad1ed8d44086145528a32b5e403c43195c0b236a2f6e116e00baa2c0eb"
+  name = "github.com/bitrise-io/go-steputils"
+  packages = [
+    "cache",
+    "tools",
+  ]
+  pruneopts = "UT"
+  revision = "f540824d77dfd382ce84fd0ee0a9da2fba1cce0a"
+
+[[projects]]
+  branch = "master"
+  digest = "1:87f7f96d77e395081c7e146fe63c027a40ad11a26b960f92fe9219b4cb66e9cb"
   name = "github.com/bitrise-io/go-utils"
   packages = [
     "builtinutil",
@@ -21,7 +32,7 @@
     "ziputil",
   ]
   pruneopts = "UT"
-  revision = "5dfd5a5f1271cffb2bc0b1cf4c3815139da8175a"
+  revision = "ad86bf775472ce1934affb9d3cb7d5ea3dffd16f"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -40,20 +51,20 @@
   revision = "d7302db945fa6ea264fb79d8e13e931ea514a602"
 
 [[projects]]
-  branch = "master"
-  digest = "1:14f3dc47ce9fec6a2696a28cf21ffd5aef579584897acfdeb0190bc8cf7b1132"
+  digest = "1:88e0b0baeb9072f0a4afbcf12dda615fc8be001d1802357538591155998da21b"
   name = "github.com/hashicorp/go-version"
   packages = ["."]
   pruneopts = "UT"
-  revision = "192140e6f3e645d971b134d4e35b5191adb9dfd3"
+  revision = "ac23dc3fea5d1a983c43f6a0f6e2c13f0195d8bd"
+  version = "v1.2.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:deff41c4160cc5b487a1d1a69a58925f2d3ac11befa0692b50e76940594e20f5"
+  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
   name = "github.com/pkg/errors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
@@ -64,15 +75,14 @@
   version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
   digest = "1:6baa565fe16f8657cf93469b2b8a6c61a277827734400d27e44d589547297279"
   name = "github.com/ryanuber/go-glob"
   packages = ["."]
   pruneopts = "UT"
   revision = "51a8f68e6c24dc43f1e371749c89a267de4ebc53"
+  version = "v1.0.0"
 
 [[projects]]
-  branch = "master"
   digest = "1:99d32780e5238c2621fff621123997c3e3cca96db8be13179013aea77dfab551"
   name = "github.com/stretchr/testify"
   packages = [
@@ -81,6 +91,22 @@
   ]
   pruneopts = "UT"
   revision = "221dbe5ed46703ee255b1da0dec05086f5035f62"
+  version = "v1.4.0"
+
+[[projects]]
+  digest = "1:1093f2eb4b344996604f7d8b29a16c5b22ab9e1b25652140d3fede39f640d5cd"
+  name = "golang.org/x/text"
+  packages = [
+    "internal/gen",
+    "internal/triegen",
+    "internal/ucd",
+    "transform",
+    "unicode/cldr",
+    "unicode/norm",
+  ]
+  pruneopts = "UT"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
 
 [[projects]]
   digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
@@ -102,6 +128,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/bitrise-io/go-steputils/cache",
     "github.com/bitrise-io/go-utils/command",
     "github.com/bitrise-io/go-utils/command/rubycommand",
     "github.com/bitrise-io/go-utils/command/rubyscript",
@@ -117,6 +144,7 @@
     "github.com/pkg/errors",
     "github.com/ryanuber/go-glob",
     "github.com/stretchr/testify/require",
+    "golang.org/x/text/unicode/norm",
     "howett.net/plist",
   ]
   solver-name = "gps-cdcl"
