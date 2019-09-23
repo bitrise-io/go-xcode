@@ -20,7 +20,7 @@ func CollectPackagesCache(projectPath string) error {
 	cache := cache.New()
 	cache.IncludePath(projectSwiftPMDir)
 	// Excluding manifest.db will result in a stable cache, as this file is modified in every build.
-	cache.ExcludePath(path.Join(projectSwiftPMDir, "manifest.db"))
+	cache.ExcludePath("!" + path.Join(projectSwiftPMDir, "manifest.db"))
 	if err := cache.Commit(); err != nil {
 		return fmt.Errorf("failed to commit cache, error: %s", err)
 	}
