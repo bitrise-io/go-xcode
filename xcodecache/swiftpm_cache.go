@@ -12,15 +12,15 @@ import (
 func CollectPackagesCache(projectPath string) error {
 	projectDerivedData, err := xcodeProjectDerivedDataPath(projectPath)
 	if err != nil {
-		return fmt.Errorf("%s", err)
+		return err
 	}
 
-	projectSwiftPMDir := path.Join(projectDerivedData, "SourcePackages")
-
+	swiftPackagesDir := path.Join(projectDerivedData, "SourcePackages")
 	cache := cache.New()
-	cache.IncludePath(projectSwiftPMDir)
+	cache.IncludePath(fmt.Sprintf("%s -> %s", swiftPackagesDir, path.Join(swiftPackagesDir, "dependencies-state.json")))
 	// Excluding manifest.db will result in a stable cache, as this file is modified in every build.
-	cache.ExcludePath("!" + path.Join(projectSwiftPMDir, "manifest.db"))
+	cache.ExcludePath("!" + path.Join(swiftPackagesDir, "manifest.db"))
+
 	if err := cache.Commit(); err != nil {
 		return fmt.Errorf("failed to commit cache, error: %s", err)
 	}

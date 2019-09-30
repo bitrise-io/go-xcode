@@ -16,20 +16,20 @@ func Test_xcodeProjectHash(t *testing.T) {
 	}{
 		{
 			name:    "normal xcodeproj path",
-			path:    "/Users/lpusok/Develop/samples/sample-apps-ios-swiftpm/sample-swiftpm.xcodeproj",
-			want:    "atfutdtkzefhykgeccaarxqthpih",
+			path:    "/Users/bitrise/git/sample-swiftpm.xcodeproj",
+			want:    "dsvyrfhmubmjkdguolhekiuetuie",
 			wantErr: false,
 		},
 		{
 			name:    "normal xcworkspace path",
-			path:    "/Users/lpusok/Develop/samples/sample-apps-ios-swiftpm/sample-swiftpm.xcworkspace",
-			want:    "ffgdnmiynjdztkbwkockhhlizbxd",
+			path:    "/Users/bitrise/Develop/samples/sample-apps-ios-swiftpm/sample-swiftpm.xcworkspace",
+			want:    "domyjojidpnjraaljgmxofiwqhps",
 			wantErr: false,
 		},
 		{
 			name:    "Unicode composite character in path",
-			path:    "/Users/lpusok/Develop/samples/Gdańsk/sample-swiftpm.xcodeproj",
-			want:    "ehewgchenmpwjkgtcvczfaxgbjuv",
+			path:    "/Users/bitrise/Develop/samples/Gdańsk/sample-swiftpm.xcodeproj",
+			want:    "djfhdbzbhhqfklgywrqyqnyflvnl",
 			wantErr: false,
 		},
 	}
