@@ -7,8 +7,8 @@ import (
 	"github.com/bitrise-io/go-steputils/cache"
 )
 
-// CollectPackagesCache marks the Swift Package Manager packages to be added the cache
-// The directory cached is: $HOME/Library/Developer/Xcode/DerivedData/[PER_PROJECT_DERIVED_DATA]/SourcePackages
+// CollectPackagesCache marks the Swift Package Manager packages to be added the cache.
+// The directory cached is: $HOME/Library/Developer/Xcode/DerivedData/[PER_PROJECT_DERIVED_DATA]/SourcePackages.
 func CollectPackagesCache(projectPath string) error {
 	projectDerivedData, err := xcodeProjectDerivedDataPath(projectPath)
 	if err != nil {

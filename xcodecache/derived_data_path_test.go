@@ -56,8 +56,8 @@ func Test_xcodeProjectDerivedDataPath(t *testing.T) {
 	}{
 		{
 			name:        "normal xcodeproj path",
-			projectPath: "/Users/lpusok/Develop/samples/sample-apps-ios-swiftpm/sample-swiftpm.xcodeproj",
-			want:        filepath.Join(pathutil.UserHomeDir(), "Library/Developer/Xcode/DerivedData/sample-swiftpm-atfutdtkzefhykgeccaarxqthpih"),
+			projectPath: "/Users/bitrise/Develop/samples/sample-apps-ios-swiftpm/sample-swiftpm.xcodeproj",
+			want:        filepath.Join(pathutil.UserHomeDir(), "Library/Developer/Xcode/DerivedData/sample-swiftpm-asravewhgfsybjdvvequtqgqhbea"),
 			wantErr:     false,
 		},
 	}
