@@ -17,7 +17,7 @@ func CollectPackagesCache(projectPath string) error {
 
 	swiftPackagesDir := path.Join(projectDerivedData, "SourcePackages")
 	cache := cache.New()
-	cache.IncludePath(fmt.Sprintf("%s -> %s", swiftPackagesDir, path.Join(swiftPackagesDir, "dependencies-state.json")))
+	cache.IncludePath(swiftPackagesDir)
 	// Excluding manifest.db will result in a stable cache, as this file is modified in every build.
 	cache.ExcludePath("!" + path.Join(swiftPackagesDir, "manifest.db"))
 
