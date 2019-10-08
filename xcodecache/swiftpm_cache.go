@@ -3,19 +3,43 @@ package cache
 import (
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/bitrise-io/go-steputils/cache"
 )
 
-// CollectPackagesCache marks the Swift Package Manager packages to be added the cache.
+// This is the error message printed out if swift packages cache is invalid:
+// xcodebuild: error: Could not resolve package dependencies:
+//   The repository at [path] is invalid; try resetting package caches
+const SwiftPackagesStateInvalid = "Could not resolve package dependencies:"
+
+// SwiftPackagesPath returns the Swift packages cache dir path. The input must be an absolute path.
+// The directory is: $HOME/Library/Developer/Xcode/DerivedData/[PER_PROJECT_DERIVED_DATA]/SourcePackages.
+func SwiftPackagesPath(xcodeProjectPath string) (string, error) {
+	if !path.IsAbs(xcodeProjectPath) {
+		return "", fmt.Errorf("project path not an absolute path: %s", xcodeProjectPath)
+	}
+
+	if !strings.HasSuffix(xcodeProjectPath, ".xcodeproj") && !strings.HasSuffix(xcodeProjectPath, ".xcworkspace") {
+		return "", fmt.Errorf("invalid Xcode project path %s, no .xcodeproj or .xcworkspace suffix found", xcodeProjectPath)
+	}
+
+	projectDerivedData, err := xcodeProjectDerivedDataPath(xcodeProjectPath)
+	if err != nil {
+		return "", err
+	}
+
+	return path.Join(projectDerivedData, "SourcePackages"), nil
+}
+
+// CollectSwiftPackages marks the Swift Package Manager packages directory to be added the cache.
 // The directory cached is: $HOME/Library/Developer/Xcode/DerivedData/[PER_PROJECT_DERIVED_DATA]/SourcePackages.
-func CollectPackagesCache(projectPath string) error {
-	projectDerivedData, err := xcodeProjectDerivedDataPath(projectPath)
+func CollectSwiftPackages(xcodeProjectPath string) error {
+	swiftPackagesDir, err := SwiftPackagesPath(xcodeProjectPath)
 	if err != nil {
 		return err
 	}
 
-	swiftPackagesDir := path.Join(projectDerivedData, "SourcePackages")
 	cache := cache.New()
 	cache.IncludePath(swiftPackagesDir)
 	// Excluding manifest.db will result in a stable cache, as this file is modified in every build.
