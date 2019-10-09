@@ -37,7 +37,7 @@ func SwiftPackagesPath(xcodeProjectPath string) (string, error) {
 func CollectSwiftPackages(xcodeProjectPath string) error {
 	swiftPackagesDir, err := SwiftPackagesPath(xcodeProjectPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get Swift packages path, error %s", err)
 	}
 
 	cache := cache.New()
