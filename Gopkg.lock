@@ -14,12 +14,13 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:87f7f96d77e395081c7e146fe63c027a40ad11a26b960f92fe9219b4cb66e9cb"
+  digest = "1:c92dee71f18b415a899e60500c5fd40ab22cdaa8aa04e7c1ca7a567b2d23ae8c"
   name = "github.com/bitrise-io/go-utils"
   packages = [
     "builtinutil",
     "colorstring",
     "command",
+    "command/git",
     "command/rubycommand",
     "command/rubyscript",
     "errorutil",
@@ -109,12 +110,12 @@
   version = "v0.3.2"
 
 [[projects]]
-  digest = "1:4d2e5a73dc1500038e504a8d78b986630e3626dc027bc030ba5c75da257cdb96"
+  digest = "1:59f10c1537d2199d9115d946927fe31165959a95190849c82ff11e05803528b0"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "51d6538a90f86fe93ac480b35f37b2be17fef232"
-  version = "v2.2.2"
+  revision = "f221b8435cfb71e54062f6c6e99e9ade30b124d5"
+  version = "v2.2.4"
 
 [[projects]]
   branch = "master"
@@ -130,6 +131,7 @@
   input-imports = [
     "github.com/bitrise-io/go-steputils/cache",
     "github.com/bitrise-io/go-utils/command",
+    "github.com/bitrise-io/go-utils/command/git",
     "github.com/bitrise-io/go-utils/command/rubycommand",
     "github.com/bitrise-io/go-utils/command/rubyscript",
     "github.com/bitrise-io/go-utils/errorutil",
