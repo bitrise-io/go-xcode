@@ -8,7 +8,8 @@ import (
 	"github.com/bitrise-io/go-steputils/cache"
 )
 
-// This is the error message printed out if swift packages cache is invalid:
+// SwiftPackagesStateInvalid is the partial error message printed out if swift packages cache is invalid.
+// Can be used to detect invalid state and clear the path returned by SwiftPackagesPath.
 // xcodebuild: error: Could not resolve package dependencies:
 //   The repository at [path] is invalid; try resetting package caches
 const SwiftPackagesStateInvalid = "Could not resolve package dependencies:"
