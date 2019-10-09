@@ -48,6 +48,10 @@ func getXcodebuildCmd(xcodeProjectPath string) *command.Model {
 }
 
 func TestCollectSwiftPackages(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping integration test as -short flag is set.")
+	}
+
 	xcodeProjDir, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatalf("setup: failed to create temp dir, error: %s", err)
