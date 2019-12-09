@@ -117,7 +117,7 @@ func TestFindDSYMs(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, appDsym)
 	require.Equal(t, 2, len(otherDsyms))
-	
+
 	// no app dsym case: something has changed since the
 	// initial implementation of the function under test,
 	// and is causing dsyms with filenames to be generated
