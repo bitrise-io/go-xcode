@@ -108,6 +108,7 @@ func TestBundleIDProfileInfoMap(t *testing.T) {
 }
 
 func TestFindDSYMs(t *testing.T) {
+	// base case: dsyms for app and frameworks
 	iosArchivePth := filepath.Join(sampleRepoPath(t), "archives/ios.xcarchive")
 	archive, err := NewIosArchive(iosArchivePth)
 	require.NoError(t, err)
@@ -116,6 +117,21 @@ func TestFindDSYMs(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, appDsym)
 	require.Equal(t, 2, len(otherDsyms))
+
+	// no app dsym case: something has changed since the
+	// initial implementation of the function under test,
+	// and is causing dsyms with filenames to be generated
+	// even when dsym generation is turned off -- we don't care about
+	// other dsyms in this case, only whether the app dsym
+	// path is empty
+	noDSYMArchivePth := filepath.Join(sampleRepoPath(t), "archives/ios.ios-simple-objc.noappdsym.xcarchive")
+	archive, err = NewIosArchive(noDSYMArchivePth)
+	require.NoError(t, err)
+
+	appDsym, _, err = archive.FindDSYMs()
+	require.NoError(t, err)
+	require.Empty(t, appDsym)
+
 }
 
 func Test_applicationFromArchive(t *testing.T) {
