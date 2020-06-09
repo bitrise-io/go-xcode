@@ -44,12 +44,9 @@ workflows:
               #!/bin/bash
               set -ex
               rm -rf "$TMP_DIR"
-  
-              rm -rf /Users/lpusok/Library/Developer/Xcode/DerivedData2/*
-              cp -rf /Users/lpusok/Library/Developer/Xcode/DerivedData /Users/lpusok/Library/Developer/Xcode/DerivedData2/
-              rm -rf /Users/lpusok/Library/Developer/Xcode/DerivedData/*
-
               mkdir $TMP_DIR
+
+              rm -rf /Users/lpusok/Library/Developer/Xcode/DerivedData/*
       - cache-pull:
           run_if: true
           inputs:
@@ -65,6 +62,7 @@ workflows:
           inputs:
           - project_path: $TMP_DIR/sample-swiftpm2.xcodeproj
           - scheme: sample-swiftpm2
+          - cache_level: swift_packages
       - cache-push:
           title: Push cache
           run_if: true
@@ -73,49 +71,49 @@ workflows:
           - cache_api_url: $CACHE_API_PATH
           - is_debug_mode: true
 
-  swiftpm_step2:
+  _swiftpm_step2:
     envs:
     - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm2/
     after_run:
     - _swiftpm_step
 
-  swiftpm_step3:
+  _swiftpm_step3:
     envs:
     - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm3/
     after_run:
     - _swiftpm_step
 
-  swiftpm_step4:
+  _swiftpm_step4:
     envs:
     - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm4/
     after_run:
     - _swiftpm_step
 
-  swiftpm_step5:
+  _swiftpm_step5:
     envs:
     - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm5/
     after_run:
     - _swiftpm_step
   
-  swiftpm_step6:
+  _swiftpm_step6:
     envs:
     - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm6/
     after_run:
     - _swiftpm_step
 
-  swiftpm_step7:
+  _swiftpm_step7:
     envs:
     - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm7/
     after_run:
     - _swiftpm_step
 
-  swiftpm_step8:
+  _swiftpm_step8:
     envs:
     - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm8/
     after_run:
     - _swiftpm_step
 
-  swiftpm_step9:
+  _swiftpm_step9:
     envs:
     - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm9/
     after_run:
@@ -139,13 +137,13 @@ workflows:
 
             rm -rf $SAMPLES_DIR
             mkdir $SAMPLES_DIR
-            git clone https://github.com/bitrise-io/sample-apps-ios-swiftpm.git -b TOOL-1956-new-sampe-with-changes $SAMPLES_DIR
+            git clone https://github.com/bitrise-io/sample-apps-ios-swiftpm.git -b master $SAMPLES_DIR
     after_run:
-    - swiftpm_step2
-    - swiftpm_step3
-    - swiftpm_step4
-    - swiftpm_step5
-    - swiftpm_step6
-    - swiftpm_step7
-    - swiftpm_step8
-    - swiftpm_step9
+    - _swiftpm_step2
+    - _swiftpm_step3
+    - _swiftpm_step4
+    - _swiftpm_step5
+    - _swiftpm_step6
+    - _swiftpm_step7
+    - _swiftpm_step8
+    - _swiftpm_step9

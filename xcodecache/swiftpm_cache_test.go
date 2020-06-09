@@ -99,13 +99,14 @@ func TestCollectSwiftPackages(t *testing.T) {
 	}
 
 	// Build xcode project for the first time with no swift packages cache.
-	cleanTime, _ := resolveProject(t, actualProjectDir, cacheDir, path.Join(checkoutDir, "sample-swiftpm2"))
+	initialProject := path.Join(checkoutDir, "sample-swiftpm4")
+	cleanTime, _ := resolveProject(t, actualProjectDir, cacheDir, initialProject)
 
 	// Build xcode project for the second time with swift packages cached and compare build times.
-	cachedTime, packagesPath := resolveProject(t, actualProjectDir, cacheDir, path.Join(checkoutDir, "sample-swiftpm3"))
+	cachedTime, packagesPath := resolveProject(t, actualProjectDir, cacheDir, initialProject)
 
 	t.Logf("Clean cache: %s Build with cache: %s", cleanTime, cachedTime)
-	if cleanTime > cachedTime*7/10 {
+	if cleanTime*7/10 < cachedTime {
 		t.Fatalf("cached build is not much shorter than clean build")
 	}
 
@@ -152,6 +153,10 @@ func TestCollectSwiftPackages(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("%s", err)
 	}
+
+	// Change swift packages
+	changeTime, _ := resolveProject(t, actualProjectDir, cacheDir, path.Join(checkoutDir, "sample-swiftpm7"))
+	t.Logf("Change time; %s", changeTime)
 }
 
 func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir string) (resolveTime time.Duration, packagesPath string) {
