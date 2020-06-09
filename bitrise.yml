@@ -13,6 +13,7 @@ workflows:
   test:
     after_run:
     - integration-test
+    - swiftpm_cache
     steps:
     - go-list:
     - golint:
