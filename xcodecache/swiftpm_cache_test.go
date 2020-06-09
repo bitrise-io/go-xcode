@@ -38,12 +38,10 @@ func fileContentHash(pth string) (string, error) {
 }
 
 func getXcodebuildCmd(xcodeProjectPath string) *command.Model {
-	buildCmd := command.New("xcodebuild", "build",
+	buildCmd := command.New("xcodebuild",
 		"-project", xcodeProjectPath,
-		"-scheme", "sample swiftpm",
-		"-configuration", "Debug",
-		"-destination", "platform=iOS Simulator,name=iPhone 8,OS=latest",
-		`CODE_SIGNING_ALLOWED="NO"`)
+		"-scheme", "sample-swiftpm2",
+		"-resolvePackageDependencies")
 	return buildCmd.SetStdout(os.Stdout).SetStderr(os.Stderr)
 }
 
@@ -52,27 +50,47 @@ func TestCollectSwiftPackages(t *testing.T) {
 		t.Skip("Skipping integration test as -short flag is set.")
 	}
 
-	xcodeProjDir, err := ioutil.TempDir("", "")
+	tempDir, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatalf("setup: failed to create temp dir, error: %s", err)
 	}
 	defer func() {
-		if err := os.RemoveAll(xcodeProjDir); err != nil {
+		if err := os.RemoveAll(tempDir); err != nil {
 			log.Warnf("failed to remove temp dir, error: %s", err)
 		}
 	}()
 
-	cacheDir, err := ioutil.TempDir("", "")
+	actualProjectDir := path.Join(tempDir, "project")
+	if err := os.Mkdir(actualProjectDir, os.ModePerm); err != nil {
+		t.Fatalf("setup: failed to create cache dir: %s", err)
+	}
+
+	checkoutDir, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatalf("setup: failed to create temp dir, error: %s", err)
 	}
 	defer func() {
-		if err := os.RemoveAll(cacheDir); err != nil {
+		if err := os.RemoveAll(checkoutDir); err != nil {
 			log.Warnf("failed to remove temp dir, error: %s", err)
 		}
 	}()
 
-	gitCommand, err := git.New(xcodeProjDir)
+	cacheTempDir, err := ioutil.TempDir("", "")
+	if err != nil {
+		t.Fatalf("setup: failed to create temp dir, error: %s", err)
+	}
+	defer func() {
+		if err := os.RemoveAll(cacheTempDir); err != nil {
+			log.Warnf("failed to remove temp dir, error: %s", err)
+		}
+	}()
+
+	cacheDir := path.Join(cacheTempDir, "cache")
+	if err := os.Mkdir(cacheDir, os.ModePerm); err != nil {
+		t.Fatalf("setup: failed to create cache dir: %s", err)
+	}
+
+	gitCommand, err := git.New(checkoutDir)
 	if err != nil {
 		t.Fatalf("setup: failed to create git project, error: %s", err)
 	}
@@ -80,83 +98,19 @@ func TestCollectSwiftPackages(t *testing.T) {
 		t.Fatalf("setup: failed to clone sample project repo, error: %s", err)
 	}
 
-	xcodeProjPath := path.Join(xcodeProjDir, "sample-swiftpm.xcodeproj")
-	packagesPath, err := SwiftPackagesPath(xcodeProjPath)
-	if err != nil {
-		t.Fatalf("failed to get Swift packages path, err: %s", err)
-	}
-
-	if err := os.RemoveAll(packagesPath); err != nil {
-		t.Fatalf("setup: failed to remove cache dir, err: %s", err)
-	}
-
 	// Build xcode project for the first time with no swift packages cache.
-	cleanStartTime := time.Now()
-	exitCode, err := getXcodebuildCmd(xcodeProjPath).RunAndReturnExitCode()
-	if err != nil {
-		t.Fatalf("failed to run xcodebuild command, error: %s", err)
-	}
-	if exitCode != 0 {
-		t.Fatalf("xcodebuild exited with exit code: %d", exitCode)
-	}
-	cleanBuildTime := time.Since(cleanStartTime)
-
-	// Check that swift packages path exists.
-	if _, err := os.Stat(packagesPath); err != nil {
-		if os.IsNotExist(err) {
-			t.Fatalf("swift packages directory path does not exist, error: %s", err)
-		}
-		t.Fatalf("failed to get file info, error: %s", err)
-	}
-
-	// Removing manifest.db, as it changes after a rebuild, and it would invalidate cache  if included.
-	if err := os.Remove(path.Join(packagesPath, "manifest.db")); err != nil {
-		t.Fatalf("failed to remove file, error: %s", err)
-	}
-
-	// Simulating the cache-push step by saving packages cache content.
-	if err := command.CopyDir(packagesPath, cacheDir, true); err != nil {
-		t.Fatalf("failed to sync directory, error: %s", err)
-	}
-
-	// Remove DerivedData
-	projectDerivedData, err := xcodeProjectDerivedDataPath(xcodeProjPath)
-	if err != nil {
-		t.Fatalf("failed to get project DerivedData path, error: %s", err)
-	}
-	if err := os.RemoveAll(projectDerivedData); err != nil {
-		t.Fatalf("setup: failed to remove project DerivedData dir, err: %s", err)
-	}
-
-	// Simulate the cache-pull step by restoring cached folder
-	if err := os.MkdirAll(packagesPath, 0770); err != nil {
-		t.Fatalf("failed to create directory, error: %s", err)
-	}
-	if err := command.CopyDir(cacheDir, packagesPath, true); err != nil {
-		t.Fatalf("failed to sync directory, error: %s", err)
-	}
+	cleanTime, _ := resolveProject(t, actualProjectDir, cacheDir, path.Join(checkoutDir, "sample-swiftpm2"))
 
 	// Build xcode project for the second time with swift packages cached and compare build times.
-	cachedStartTime := time.Now()
-	exitCode, err = getXcodebuildCmd(xcodeProjPath).RunAndReturnExitCode()
-	if err != nil {
-		t.Fatalf("failed to run xcodebuild command, error: %s", err)
-	}
-	if exitCode != 0 {
-		t.Fatalf("xcodebuild exited with exit code: %d", exitCode)
-	}
-	cachedBuildTime := time.Since(cachedStartTime)
+	cachedTime, packagesPath := resolveProject(t, actualProjectDir, cacheDir, path.Join(checkoutDir, "sample-swiftpm3"))
 
-	t.Logf("Clean cache: %s Build with cache: %s", cleanBuildTime, cachedBuildTime)
-	if cachedBuildTime > cleanBuildTime*7/10 {
-		t.Errorf("cached build is not much shorter than clean build")
+	t.Logf("Clean cache: %s Build with cache: %s", cleanTime, cachedTime)
+	if cleanTime > cachedTime*7/10 {
+		t.Fatalf("cached build is not much shorter than clean build")
 	}
 
 	// Compare swift packages content to the cached one, check that no files changed on the second build.
 	// This ensures that no new cache is created on every build, even if the project did not change.
-	if err := os.Remove(path.Join(packagesPath, "manifest.db")); err != nil {
-		t.Fatalf("failed to remove file, error: %s", err)
-	}
 	if err := filepath.Walk(packagesPath, func(path string, fileInfo os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -198,4 +152,79 @@ func TestCollectSwiftPackages(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("%s", err)
 	}
+}
+
+func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir string) (resolveTime time.Duration, packagesPath string) {
+	// Remove and copy new Xcode project directory
+	if err := os.RemoveAll(projectPath); err != nil {
+		t.Fatalf("failed to remove temp dir, error: %s", err)
+	}
+	if err := os.Mkdir(projectPath, os.ModePerm); err != nil {
+		t.Fatalf("failed to create project dir: %s", err)
+	}
+	if err := command.CopyDir(projectPath, xcodeProjSourceDir, true); err != nil {
+		t.Fatalf("setup: failed to copy sample project: %s", err)
+	}
+
+	xcodeProjPath := path.Join(xcodeProjSourceDir, "sample-swiftpm2.xcodeproj")
+	packagesPath, err := SwiftPackagesPath(xcodeProjPath)
+	if err != nil {
+		t.Fatalf("failed to get Swift packages path, err: %s", err)
+	}
+
+	// Remove DerivedData
+	projectDerivedData, err := xcodeProjectDerivedDataPath(xcodeProjPath)
+	if err != nil {
+		t.Fatalf("failed to get project DerivedData path, error: %s", err)
+	}
+	if err := os.RemoveAll(projectDerivedData); err != nil {
+		t.Fatalf("setup: failed to remove project DerivedData dir, err: %s", err)
+	}
+
+	// Simulate the cache-pull step by restoring cached folder
+	if err := os.MkdirAll(packagesPath, 0770); err != nil {
+		t.Fatalf("failed to create directory, error: %s", err)
+	}
+	if err := command.CopyDir(cacheDir, packagesPath, true); err != nil {
+		t.Fatalf("failed to sync directory, error: %s", err)
+	}
+
+	// Resolve Xcode packages
+	resolveStart := time.Now()
+	log.Donef("$ %s", getXcodebuildCmd(xcodeProjPath).PrintableCommandArgs())
+	exitCode, err := getXcodebuildCmd(xcodeProjPath).RunAndReturnExitCode()
+	if err != nil {
+		t.Fatalf("failed to run xcodebuild command, error: %s", err)
+	}
+	if exitCode != 0 {
+		t.Fatalf("xcodebuild exited with exit code: %d", exitCode)
+	}
+	resolveTime = time.Since(resolveStart)
+
+	t.Logf("Resolution time: %s, source %s", resolveTime, xcodeProjSourceDir)
+
+	// Check that swift packages path exists.
+	if _, err := os.Stat(packagesPath); err != nil {
+		if os.IsNotExist(err) {
+			t.Fatalf("swift packages directory path does not exist, error: %s", err)
+		}
+		t.Fatalf("failed to get file info, error: %s", err)
+	}
+
+	// Simulating the cache-push step by saving packages cache content.
+	// Removing manifest.db, as it changes after a rebuild, and it would invalidate cache  if included.
+	if err := os.Remove(path.Join(packagesPath, "manifest.db")); err != nil {
+		t.Logf("failed to remove file, error: %s", err)
+	}
+	if err := os.RemoveAll(cacheDir); err != nil {
+		t.Fatalf("failed to remove cache directory: %s", err)
+	}
+	if err := os.Mkdir(cacheDir, os.ModePerm); err != nil {
+		t.Fatalf("failed to create cache dir: %s", err)
+	}
+	if err := command.CopyDir(packagesPath, cacheDir, true); err != nil {
+		t.Fatalf("failed to sync directory, error: %s", err)
+	}
+
+	return resolveTime, packagesPath
 }

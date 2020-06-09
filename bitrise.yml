@@ -3,6 +3,7 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 app:
   envs:
+  - ORIG_BITRISE_SOURCE_DIR: $BITRISE_SOURCE_DIR
 
 workflows:
   ci:
@@ -30,3 +31,120 @@ workflows:
             set -ex
 
             go test -v ./_tests/integration/...
+
+  _swiftpm_step:
+    envs:
+    - CURRENT_PROJECT_PATH: $CURRENT_PROJECT_PATH
+    steps:
+      - script:
+          title: Cleanup $TMP_DIR
+          inputs:
+          - content: |
+              #!/bin/bash
+              set -ex
+              rm -rf "$TMP_DIR"
+  
+              rm -rf /Users/lpusok/Library/Developer/Xcode/DerivedData2/*
+              cp -rf /Users/lpusok/Library/Developer/Xcode/DerivedData /Users/lpusok/Library/Developer/Xcode/DerivedData2/
+              rm -rf /Users/lpusok/Library/Developer/Xcode/DerivedData/*
+
+              mkdir $TMP_DIR
+      - cache-pull:
+          run_if: true
+          inputs:
+          - is_debug_mode: true 
+          - cache_api_url: $CACHE_API_PATH
+      - script:
+          inputs:
+          - content: |
+              #!/bin/bash
+              cp -r $CURRENT_PROJECT_PATH $TMP_DIR
+      - xcode-test:
+          title: Run xcodebuild
+          inputs:
+          - project_path: $TMP_DIR/sample-swiftpm2.xcodeproj
+          - scheme: sample-swiftpm2
+      - cache-push:
+          title: Push cache
+          run_if: true
+          is_skippable: false
+          inputs:
+          - cache_api_url: $CACHE_API_PATH
+          - is_debug_mode: true
+
+  swiftpm_step2:
+    envs:
+    - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm2/
+    after_run:
+    - _swiftpm_step
+
+  swiftpm_step3:
+    envs:
+    - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm3/
+    after_run:
+    - _swiftpm_step
+
+  swiftpm_step4:
+    envs:
+    - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm4/
+    after_run:
+    - _swiftpm_step
+
+  swiftpm_step5:
+    envs:
+    - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm5/
+    after_run:
+    - _swiftpm_step
+  
+  swiftpm_step6:
+    envs:
+    - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm6/
+    after_run:
+    - _swiftpm_step
+
+  swiftpm_step7:
+    envs:
+    - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm7/
+    after_run:
+    - _swiftpm_step
+
+  swiftpm_step8:
+    envs:
+    - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm8/
+    after_run:
+    - _swiftpm_step
+
+  swiftpm_step9:
+    envs:
+    - CURRENT_PROJECT_PATH: $SAMPLES_DIR/sample-swiftpm9/
+    after_run:
+    - _swiftpm_step
+
+  swiftpm_cache:
+    envs:
+    - SAMPLES_DIR: $ORIG_BITRISE_SOURCE_DIR/_checkout
+    - TMP_DIR: $ORIG_BITRISE_SOURCE_DIR/_tmp
+    - CACHE_DIR: $ORIG_BITRISE_SOURCE_DIR/_cache
+    - CACHE_API_PATH: "file://$CACHE_DIR/archive.tar.gz"
+    steps:
+    - script:
+        title: Cleanup $CACHE_DIR, checkout samples
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+            rm -rf "$CACHE_DIR"
+            mkdir $CACHE_DIR
+
+            rm -rf $SAMPLES_DIR
+            mkdir $SAMPLES_DIR
+            git clone https://github.com/bitrise-io/sample-apps-ios-swiftpm.git -b TOOL-1956-new-sampe-with-changes $SAMPLES_DIR
+    after_run:
+    - swiftpm_step2
+    - swiftpm_step3
+    - swiftpm_step4
+    - swiftpm_step5
+    - swiftpm_step6
+    - swiftpm_step7
+    - swiftpm_step8
+    - swiftpm_step9
