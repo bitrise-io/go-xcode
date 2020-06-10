@@ -36,12 +36,13 @@ workflows:
   _swiftpm_step:
     envs:
     - CURRENT_PROJECT_PATH: $CURRENT_PROJECT_PATH
+    - BITRISE_ACCESS_TOKEN: $BITRISE_ACCESS_TOKEN
     steps:
       - build-router-start:
           inputs:
           - workflows: swiftpm_run_xcodebuild
           - wait_for_builds: 'true'
-          - access_token: "$BITRISE_ACCESS_TOKEN"
+          - access_token: $BITRISE_ACCESS_TOKEN
           - environment_key_list: CURRENT_PROJECT_PATH
           - verbose: 'yes'
 
