@@ -9,11 +9,11 @@ workflows:
   ci:
     before_run:
     - test
+    - swiftpm_cache
     
   test:
     after_run:
     - integration-test
-    - swiftpm_cache
     steps:
     - go-list:
     - golint:
@@ -92,21 +92,9 @@ workflows:
     after_run:
     - _swiftpm_step
 
-  _swiftpm_step4:
-    envs:
-    - CURRENT_PROJECT_PATH: sample-swiftpm4
-    after_run:
-    - _swiftpm_step
-
   _swiftpm_step5:
     envs:
     - CURRENT_PROJECT_PATH: sample-swiftpm5
-    after_run:
-    - _swiftpm_step
-  
-  _swiftpm_step6:
-    envs:
-    - CURRENT_PROJECT_PATH: sample-swiftpm6
     after_run:
     - _swiftpm_step
 
@@ -116,25 +104,10 @@ workflows:
     after_run:
     - _swiftpm_step
 
-  _swiftpm_step8:
-    envs:
-    - CURRENT_PROJECT_PATH: sample-swiftpm8
-    after_run:
-    - _swiftpm_step
-
-  _swiftpm_step9:
-    envs:
-    - CURRENT_PROJECT_PATH: sample-swiftpm9
-    after_run:
-    - _swiftpm_step
-
   swiftpm_cache:
     after_run:
     - _swiftpm_step2
     - _swiftpm_step3
-    - _swiftpm_step4
     - _swiftpm_step5
-    - _swiftpm_step6
     - _swiftpm_step7
-    - _swiftpm_step8
-    - _swiftpm_step9
+
