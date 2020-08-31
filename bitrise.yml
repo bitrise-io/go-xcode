@@ -67,7 +67,7 @@ workflows:
           run_if: true
           inputs:
           - is_debug_mode: true
-      - xcode-archive:
+      - xcode-build-for-test:
           title: Run xcodebuild
           inputs:
           - project_path: $SAMPLES_DIR/$CURRENT_PROJECT_PATH/sample-swiftpm2.xcodeproj
