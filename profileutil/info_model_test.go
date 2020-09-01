@@ -1,7 +1,10 @@
 package profileutil
 
-import "testing"
-import "github.com/stretchr/testify/require"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 func TestIsXcodeManaged(t *testing.T) {
 	xcodeManagedNames := []string{
@@ -13,6 +16,7 @@ func TestIsXcodeManaged(t *testing.T) {
 		"tvOS Team Store Provisioning Profile: my.bundle.id",
 		"Mac Team Provisioning Profile: my.bundle.id",
 		"Mac Team Store Provisioning Profile: my.bundle.id",
+		"Mac Catalyst Team Provisioning Profile: my.bundle.id",
 	}
 	nonXcodeManagedNames := []string{
 		"Test Profile Name",
