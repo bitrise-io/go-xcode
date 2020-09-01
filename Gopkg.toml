@@ -9,11 +9,15 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/bitrise-io/go-xcode"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/fullsailor/pkcs7"
 
 [[constraint]]
   name = "github.com/hashicorp/go-version"
-  version = "1.2.0"
+  version = "1.2.1"
 
 [[constraint]]
   name = "github.com/pkg/errors"
@@ -25,11 +29,11 @@
 
 [[constraint]]
   name = "github.com/stretchr/testify"
-  version = "1.4.0"
+  version = "1.6.1"
 
 [[constraint]]
   name = "golang.org/x/text"
-  version = "0.3.2"
+  version = "0.3.3"
 
 [[constraint]]
   branch = "master"
