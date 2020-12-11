@@ -73,6 +73,6 @@ func TestMacosFindDSYMs(t *testing.T) {
 
 	appDsym, otherDsyms, err := archive.FindDSYMs()
 	require.NoError(t, err)
-	require.NotEmpty(t, appDsym)
+	require.Equal(t, 1, len(appDsym))
 	require.Equal(t, 1, len(otherDsyms))
 }

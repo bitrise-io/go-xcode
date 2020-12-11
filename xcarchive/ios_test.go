@@ -133,7 +133,7 @@ func TestBundleIDProfileInfoMap(t *testing.T) {
 
 func TestFindDSYMs(t *testing.T) {
 	// base case: dsyms for app and frameworks
-	iosArchivePth := filepath.Join(sampleRepoPath(t), "archives/ios.xcarchive")
+	iosArchivePth := filepath.Join(sampleRepoPath(t), "archives/Fruta.xcarchive")
 	archive, err := NewIosArchive(iosArchivePth)
 	require.NoError(t, err)
 
