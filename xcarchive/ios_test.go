@@ -132,14 +132,14 @@ func TestBundleIDProfileInfoMap(t *testing.T) {
 }
 
 func TestFindDSYMs(t *testing.T) {
-	// base case: dsyms for app and frameworks
+	// base case: dsyms for apps and frameworks
 	iosArchivePth := filepath.Join(sampleRepoPath(t), "archives/Fruta.xcarchive")
 	archive, err := NewIosArchive(iosArchivePth)
 	require.NoError(t, err)
 
 	appDsym, otherDsyms, err := archive.FindDSYMs()
 	require.NoError(t, err)
-	require.NotEmpty(t, appDsym)
+	require.Equal(t, 2, len(appDsym))
 	require.Equal(t, 2, len(otherDsyms))
 
 	// no app dsym case: something has changed since the
