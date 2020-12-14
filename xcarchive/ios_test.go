@@ -20,7 +20,7 @@ func sampleRepoPath(t *testing.T) string {
 		dir = tmpDir
 	} else {
 		var err error
-		dir, err = pathutil.NormalizedOSTempDirPath("__artifacts__")
+		dir, err = pathutil.NormalizedOSTempDirPath(tempDirName)
 		require.NoError(t, err)
 		sampleArtifactsGitURI := "https://github.com/bitrise-samples/sample-artifacts.git"
 		cmd := command.New("git", "clone", sampleArtifactsGitURI, dir)
@@ -155,7 +155,6 @@ func TestFindDSYMs(t *testing.T) {
 	appDsym, _, err = archive.FindDSYMs()
 	require.NoError(t, err)
 	require.Empty(t, appDsym)
-
 }
 
 func Test_applicationFromArchive(t *testing.T) {

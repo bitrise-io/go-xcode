@@ -1,7 +1,7 @@
 package xcarchive
 
 import (
-	"fmt"
+	"errors"
 	"path/filepath"
 	"strings"
 
@@ -10,6 +10,10 @@ import (
 	"github.com/bitrise-io/go-utils/ziputil"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/utility"
+)
+
+var (
+	errNoDsymFound = errors.New("no dsym found")
 )
 
 // IsMacOS try to find the Contents dir under the .app/.
@@ -85,7 +89,7 @@ func findDSYMs(archivePath string) ([]string, []string, error) {
 		}
 	}
 	if len(appDSYMs) == 0 && len(frameworkDSYMs) == 0 {
-		return []string{}, []string{}, fmt.Errorf("no dsym found")
+		return []string{}, []string{}, errNoDsymFound
 	}
 
 	return appDSYMs, frameworkDSYMs, nil
