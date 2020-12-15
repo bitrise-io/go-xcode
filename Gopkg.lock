@@ -14,7 +14,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3a8e7e073103153683eb9884cbe1ab60e2ca988f2afdb1de666cc4d16baa249c"
+  digest = "1:69690e290722cef6bbd9d5f7dd3004d7bee57d69dcde4eacbb8fc485d95acd14"
   name = "github.com/bitrise-io/go-utils"
   packages = [
     "builtinutil",
@@ -29,6 +29,7 @@
     "pathutil",
     "pkcs12",
     "pkcs12/internal/rc2",
+    "sliceutil",
     "testutil",
     "ziputil",
   ]
@@ -37,19 +38,19 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d225f49d4b093d15740c4f32c53b5717fddb8d78e007aaadedb2086188cf31b3"
-  name = "github.com/bitrise-io/go-xcode"
+  digest = "1:7eec4a847cfa305fbcf33fba28a2c76951f38727cfc972adf23941d421167e49"
+  name = "github.com/bitrise-io/xcode-project"
   packages = [
-    "certificateutil",
-    "exportoptions",
-    "models",
-    "plistutil",
-    "profileutil",
-    "utility",
+    ".",
+    "pretty",
+    "serialized",
     "xcodebuild",
+    "xcodeproj",
+    "xcscheme",
+    "xcworkspace",
   ]
   pruneopts = "UT"
-  revision = "daa88266b1647d462667866ffdd6fbece7157c0a"
+  revision = "7ad13a1dd0215b60eb4e930244d3e42049c37848"
 
 [[projects]]
   digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
@@ -157,17 +158,12 @@
     "github.com/bitrise-io/go-utils/pkcs12",
     "github.com/bitrise-io/go-utils/testutil",
     "github.com/bitrise-io/go-utils/ziputil",
-    "github.com/bitrise-io/go-xcode/certificateutil",
-    "github.com/bitrise-io/go-xcode/exportoptions",
-    "github.com/bitrise-io/go-xcode/models",
-    "github.com/bitrise-io/go-xcode/plistutil",
-    "github.com/bitrise-io/go-xcode/profileutil",
-    "github.com/bitrise-io/go-xcode/utility",
-    "github.com/bitrise-io/go-xcode/xcodebuild",
+    "github.com/bitrise-io/xcode-project",
     "github.com/fullsailor/pkcs7",
     "github.com/hashicorp/go-version",
     "github.com/pkg/errors",
     "github.com/ryanuber/go-glob",
+    "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "golang.org/x/text/unicode/norm",
     "howett.net/plist",
