@@ -1,11 +1,12 @@
 package xcodeproj
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/bitrise-io/go-utils/fileutil"
+	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,16 +15,18 @@ import (
 func Test_GivenOnlyApp_WhenProjectTargetCalled_ThenExpectSingleTarget(t *testing.T) {
 	// Given
 	expectedTarget := TargetModel{
-		Name:       "test",
-		ID:         "64E1835F2588FD3C00D666BF",
+		Name:       "MyApp",
+		ID:         "95B215AF326162D28887FCB1",
 		HasXCTest:  false,
 		HasAppClip: false,
 	}
 
-	projectPath := givenPBXProjWithContent(t, onlyApp)
+	// Given
+	templateDir := givenGeneratedProject(t, "onlyapp")
+	defer clearDir(t, templateDir)
 
 	// When
-	targets, err := ProjectTargets(projectPath)
+	targets, err := ProjectTargets(templateDir + "/MyApp.xcodeproj")
 
 	// Then
 	require.NoError(t, err)
@@ -35,23 +38,24 @@ func Test_GivenAppWithAppClip_WhenProjectTargetCalled_ThenExpectSingleTarget(t *
 	// Given
 	expectedTargets := []TargetModel{
 		{
-			Name:       "test",
-			ID:         "64E1835F2588FD3C00D666BF",
+			Name:       "MyApp",
+			ID:         "95B215AF326162D28887FCB1",
 			HasXCTest:  false,
 			HasAppClip: true,
 		},
 		{
-			Name:       "clip",
-			ID:         "64E1839B2588FD5E00D666BF",
+			Name:       "MyAppClip",
+			ID:         "6FAA6B396C7410901BE6FA94",
 			HasXCTest:  false,
 			HasAppClip: false,
 		},
 	}
 
-	projectPath := givenPBXProjWithContent(t, appWithAppClip)
+	templateDir := givenGeneratedProject(t, "appWithAppClip")
+	defer clearDir(t, templateDir)
 
 	// When
-	targets, err := ProjectTargets(projectPath)
+	targets, err := ProjectTargets(templateDir + "/MyApp.xcodeproj")
 
 	// Then
 	require.NoError(t, err)
@@ -65,17 +69,18 @@ func Test_GivenAppWithTest_WhenProjectTargetCalled_ThenExpectSingleTarget(t *tes
 	// Given
 	expectedTargets := []TargetModel{
 		{
-			Name:       "test",
-			ID:         "64E1835F2588FD3C00D666BF",
+			Name:       "MyApp",
+			ID:         "95B215AF326162D28887FCB1",
 			HasXCTest:  true,
 			HasAppClip: false,
 		},
 	}
 
-	projectPath := givenPBXProjWithContent(t, appWithTest)
+	templateDir := givenGeneratedProject(t, "appWithTest")
+	defer clearDir(t, templateDir)
 
 	// When
-	targets, err := ProjectTargets(projectPath)
+	targets, err := ProjectTargets(templateDir + "/MyApp.xcodeproj")
 
 	// Then
 	require.NoError(t, err)
@@ -89,29 +94,30 @@ func Test_GivenAppWithTestAndAppClipAndWidget_WhenProjectTargetCalled_ThenExpect
 	// Given
 	expectedTargets := []TargetModel{
 		{
-			Name:       "test",
-			ID:         "64E1835F2588FD3C00D666BF",
+			Name:       "MyApp",
+			ID:         "95B215AF326162D28887FCB1",
 			HasXCTest:  true,
 			HasAppClip: true,
 		},
 		{
-			Name:       "clip",
-			ID:         "64E1839B2588FD5E00D666BF",
+			Name:       "MyAppClip",
+			ID:         "6FAA6B396C7410901BE6FA94",
 			HasXCTest:  false,
 			HasAppClip: false,
 		},
 		{
-			Name:       "widgetExtension",
-			ID:         "64E183DC2588FD9D00D666BF",
+			Name:       "MyAppWidget",
+			ID:         "499A64C35FF149965A13A41C",
 			HasXCTest:  false,
 			HasAppClip: false,
 		},
 	}
 
-	projectPath := givenPBXProjWithContent(t, appWithTestAndAppClipAndWidget)
+	templateDir := givenGeneratedProject(t, "appWithAppClipAndTestAndWidget")
+	defer clearDir(t, templateDir)
 
 	// When
-	targets, err := ProjectTargets(projectPath)
+	targets, err := ProjectTargets(templateDir + "/MyApp.xcodeproj")
 
 	// Then
 	require.NoError(t, err)
@@ -121,19 +127,28 @@ func Test_GivenAppWithTestAndAppClipAndWidget_WhenProjectTargetCalled_ThenExpect
 	}
 }
 
-func givenPBXProjWithContent(t *testing.T, content string) string {
-	tempDir, err := pathutil.NormalizedOSTempDirPath("__bitrise_init__")
+func givenGeneratedProject(t *testing.T, template string) string {
+	templateDir, err := filepath.Abs("_test/template/" + template)
 	require.NoError(t, err)
 
-	// Create xcodeproj
-	xcodeproj := filepath.Join(tempDir, "test.xcodeproj")
-	err = os.MkdirAll(xcodeproj, os.ModePerm)
+	temporaryDir, err := pathutil.NormalizedOSTempDirPath("")
 	require.NoError(t, err)
 
-	// Create pbxproj
-	pbxProjPth := filepath.Join(xcodeproj, "project.pbxproj")
-	err = fileutil.WriteStringToFile(pbxProjPth, content)
+	err = command.CopyDir(templateDir, temporaryDir, false)
 	require.NoError(t, err)
 
-	return xcodeproj
+	destDir := filepath.Join(temporaryDir, template)
+
+	cmd := command.New("tuist", "generate", "--path", destDir, "--project-only")
+
+	output, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	fmt.Println(output)
+	require.NoError(t, err)
+
+	return destDir
+}
+
+func clearDir(t *testing.T, dir string) {
+	err := os.RemoveAll(dir)
+	require.NoError(t, err)
 }
