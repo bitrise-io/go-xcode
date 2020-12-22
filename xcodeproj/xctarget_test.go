@@ -90,6 +90,31 @@ func Test_GivenAppWithTest_WhenProjectTargetCalled_ThenExpectSingleTarget(t *tes
 	}
 }
 
+func Test_GivenAppWithUITest_WhenProjectTargetCalled_ThenExpectSingleTarget(t *testing.T) {
+	// Given
+	expectedTargets := []TargetModel{
+		{
+			Name:       "MyApp",
+			ID:         "95B215AF326162D28887FCB1",
+			HasXCTest:  true,
+			HasAppClip: false,
+		},
+	}
+
+	templateDir := givenGeneratedProject(t, "appWithUITest")
+	defer clearDir(t, templateDir)
+
+	// When
+	targets, err := ProjectTargets(templateDir + "/MyApp.xcodeproj")
+
+	// Then
+	require.NoError(t, err)
+	assert.Len(t, targets, 1)
+	for _, expectedTarget := range expectedTargets {
+		assert.Contains(t, targets, expectedTarget)
+	}
+}
+
 func Test_GivenAppWithTestAndAppClipAndWidget_WhenProjectTargetCalled_ThenExpectSingleTarget(t *testing.T) {
 	// Given
 	expectedTargets := []TargetModel{
