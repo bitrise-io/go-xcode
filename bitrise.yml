@@ -125,4 +125,5 @@ workflows:
                 set -ex
 
                 bash <(curl -Ls https://install.tuist.io)
+                tuist install 1.28.0
                 tuist version
