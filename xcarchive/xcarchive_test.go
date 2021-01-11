@@ -86,6 +86,11 @@ func Test_GivenArchiveWithMultipleAppAndFrameworkDSYMs_WhenFindDSYMsCalled_ThenE
 			numberOfAppDSYMs:       0,
 			numberOfFrameworkDSYMs: 1,
 		},
+		{
+			name:                   "7. Given archive without any dSYM when FindDSYMs called then expect no dSYM to be returned",
+			numberOfAppDSYMs:       0,
+			numberOfFrameworkDSYMs: 0,
+		},
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -102,14 +107,6 @@ func Test_GivenArchiveWithMultipleAppAndFrameworkDSYMs_WhenFindDSYMsCalled_ThenE
 			assert.Equal(t, testCase.numberOfFrameworkDSYMs, len(frameworkDSYMs))
 		})
 	}
-}
-
-func Test_GivenArchiveWithNoDSYMs_WhenFindDSYMsCalled_ThenExpectAnError(t *testing.T) {
-	archivePath, err := createArchiveWithAppAndFrameworkDSYMs("archives/ios.nodsyms.xcarchive", 0, 0)
-	assert.NoError(t, err)
-
-	_, _, err = findDSYMs(archivePath)
-	assert.Error(t, errNoDsymFound, err)
 }
 
 func createArchiveWithAppAndFrameworkDSYMs(archivePath string, numberOfAppDSYMs, numberOfFrameworkDSYMs int) (string, error) {
