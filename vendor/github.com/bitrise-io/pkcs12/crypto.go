@@ -13,7 +13,7 @@ import (
 	"encoding/asn1"
 	"errors"
 
-	"github.com/bitrise-io/go-utils/pkcs12/internal/rc2"
+	"github.com/bitrise-io/pkcs12/internal/rc2"
 )
 
 var (
