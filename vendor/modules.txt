@@ -1,15 +1,15 @@
-# github.com/bitrise-io/go-steputils v0.0.0-20200722085210-6d5afa53c7b8
+# github.com/bitrise-io/go-steputils v0.0.0-20210505101226-8536c460c5c1
 ## explicit
 github.com/bitrise-io/go-steputils/cache
+github.com/bitrise-io/go-steputils/command/rubycommand
+github.com/bitrise-io/go-steputils/command/rubyscript
 github.com/bitrise-io/go-steputils/tools
-# github.com/bitrise-io/go-utils v0.0.0-20201019131314-6cc2aa4d248a
+# github.com/bitrise-io/go-utils v0.0.0-20210505121718-07411d72e36e
 ## explicit
 github.com/bitrise-io/go-utils/builtinutil
 github.com/bitrise-io/go-utils/colorstring
 github.com/bitrise-io/go-utils/command
 github.com/bitrise-io/go-utils/command/git
-github.com/bitrise-io/go-utils/command/rubycommand
-github.com/bitrise-io/go-utils/command/rubyscript
 github.com/bitrise-io/go-utils/errorutil
 github.com/bitrise-io/go-utils/fileutil
 github.com/bitrise-io/go-utils/log
@@ -39,7 +39,7 @@ github.com/pmezard/go-difflib/difflib
 # github.com/ryanuber/go-glob v1.0.0
 ## explicit
 github.com/ryanuber/go-glob
-# github.com/stretchr/testify v1.6.1
+# github.com/stretchr/testify v1.7.0
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
@@ -47,8 +47,7 @@ github.com/stretchr/testify/require
 ## explicit
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
-# gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776
-## explicit
+# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 gopkg.in/yaml.v3
 # howett.net/plist v0.0.0-20201203080718-1454fab16a06
 ## explicit
