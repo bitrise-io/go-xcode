@@ -95,7 +95,7 @@ func (*ConnectionAppleIDSource) Fetch(conn *devportalservice.AppleDeveloperConne
 			Username:            conn.AppleIDConnection.AppleID,
 			Password:            conn.AppleIDConnection.Password,
 			Session:             "",
-			AppSpecificPassword: inputs.AppSpecificPassword,
+			AppSpecificPassword: appSpecificPasswordFavouringConnection(conn.AppleIDConnection, inputs.AppSpecificPassword),
 		},
 	}, nil
 }
@@ -149,7 +149,7 @@ func (*ConnectionAppleIDFastlaneSource) Fetch(conn *devportalservice.AppleDevelo
 			Username:            conn.AppleIDConnection.AppleID,
 			Password:            conn.AppleIDConnection.Password,
 			Session:             session,
-			AppSpecificPassword: inputs.AppSpecificPassword,
+			AppSpecificPassword: appSpecificPasswordFavouringConnection(conn.AppleIDConnection, inputs.AppSpecificPassword),
 		},
 	}, nil
 }
@@ -174,4 +174,15 @@ func (*InputAppleIDFastlaneSource) Fetch(conn *devportalservice.AppleDeveloperCo
 			AppSpecificPassword: inputs.AppSpecificPassword,
 		},
 	}, nil
+}
+
+func appSpecificPasswordFavouringConnection(conn *devportalservice.AppleIDConnection, passwordFromInput string) string {
+	appSpecificPassword := passwordFromInput
+
+	// AppSpecifcPassword from the connection overwrites the one from the input
+	if conn != nil && conn.AppSpecificPassword != "" {
+		appSpecificPassword = conn.AppSpecificPassword
+	}
+
+	return appSpecificPassword
 }

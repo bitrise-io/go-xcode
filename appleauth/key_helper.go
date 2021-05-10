@@ -1,14 +1,14 @@
 package appleauth
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"regexp"
 
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-steputils/input"
+	"github.com/bitrise-steplib/bitrise-step-export-universal-apk/filedownloader"
 )
 
 func fetchPrivateKey(privateKeyURL string) ([]byte, string, error) {
@@ -17,46 +17,19 @@ func fetchPrivateKey(privateKeyURL string) ([]byte, string, error) {
 		return nil, "", err
 	}
 
-	key, err := copyOrDownloadFile(fileURL)
+	// Download or load local file
+	filedownloader := filedownloader.New(http.DefaultClient)
+	fileProvider := input.NewFileProvider(filedownloader)
+	localFile, err := fileProvider.LocalPath(fileURL.String())
+	if err != nil {
+		return nil, "", err
+	}
+	key, err := ioutil.ReadFile(localFile)
 	if err != nil {
 		return nil, "", err
 	}
 
 	return key, getKeyID(fileURL), nil
-}
-
-func copyOrDownloadFile(u *url.URL) ([]byte, error) {
-	// if file -> copy
-	if u.Scheme == "file" {
-		b, err := ioutil.ReadFile(u.Path)
-		if err != nil {
-			return nil, err
-		}
-
-		return b, err
-	}
-
-	// otherwise download
-	resp, err := http.Get(u.String())
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			log.Errorf("Failed to close file: %s", err)
-		}
-	}()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
-	contentBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %s", err)
-	}
-
-	return contentBytes, nil
 }
 
 func getKeyID(u *url.URL) string {
