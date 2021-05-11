@@ -8,7 +8,7 @@ import (
 	"regexp"
 
 	"github.com/bitrise-io/go-steputils/input"
-	"github.com/bitrise-steplib/bitrise-step-export-universal-apk/filedownloader"
+	"github.com/bitrise-io/go-utils/filedownloader"
 )
 
 func fetchPrivateKey(privateKeyURL string) ([]byte, string, error) {
