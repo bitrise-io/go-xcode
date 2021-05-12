@@ -141,8 +141,10 @@ func (g *Git) Status(opts ...string) *command.Model {
 }
 
 // Config sets a git config setting for the repository.
-func (g *Git) Config(key string, value string) *command.Model {
-	return g.command("config", key, value)
+func (g *Git) Config(key string, value string, opts ...string) *command.Model {
+	args := []string{"config", key, value}
+	args = append(args, opts...)
+	return g.command(args...)
 }
 
 // SparseCheckoutInit initializes the sparse-checkout config file.

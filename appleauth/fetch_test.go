@@ -8,6 +8,47 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	argInput = Inputs{
+		Username: "input_username", Password: "input_password", AppSpecificPassword: "input_appspecificpassword",
+		APIIssuer: "", APIKeyPath: "",
+	}
+
+	argAppleIDConnection = devportalservice.AppleIDConnection{
+		AppleID: "connection_appleid", Password: "connection_password", AppSpecificPassword: "connection_appspecificpassword",
+	}
+
+	argAppleIDConnectionMissingPassword = devportalservice.AppleIDConnection{
+		AppleID: "connection_appleid", Password: "connection_password", AppSpecificPassword: "",
+	}
+
+	argAPIKeyConnection = devportalservice.APIKeyConnection{
+		KeyID: "keyconnection_keyID", IssuerID: "keyconnection_issuerID", PrivateKey: "keyconnection_PrivateKey",
+	}
+)
+
+var (
+	expectedAppleIDWithArgInput = AppleID{
+		Username:            argInput.Username,
+		Password:            argInput.Password,
+		AppSpecificPassword: argInput.AppSpecificPassword,
+		Session:             "",
+	}
+
+	expectedAppleIDWithArgConnection = AppleID{
+		Username:            argAppleIDConnection.AppleID,
+		Password:            argAppleIDConnection.Password,
+		AppSpecificPassword: argAppleIDConnection.AppSpecificPassword,
+		Session:             "",
+	}
+
+	expectedAppleIDWithAPIKeyConnection = devportalservice.APIKeyConnection{
+		KeyID:      argAPIKeyConnection.KeyID,
+		IssuerID:   argAPIKeyConnection.IssuerID,
+		PrivateKey: argAPIKeyConnection.PrivateKey,
+	}
+)
+
 func TestSelect(t *testing.T) {
 	type args struct {
 		devportalConnection *devportalservice.AppleDeveloperConnection
@@ -48,58 +89,114 @@ func TestSelect(t *testing.T) {
 			args: args{
 				devportalConnection: &devportalservice.AppleDeveloperConnection{},
 				authSources:         []Source{&ConnectionAPIKeySource{}, &ConnectionAppleIDSource{}, &InputAPIKeySource{}, &InputAppleIDSource{}},
-				inputs: Inputs{
-					Username: "a", Password: "b", AppSpecificPassword: "c",
-					APIIssuer: "", APIKeyPath: "",
+				inputs:              argInput,
+			},
+			want: Credentials{
+				AppleID: &expectedAppleIDWithArgInput,
+				APIKey:  nil,
+			},
+		},
+		{
+			name: "Connection active (Apple ID), inputs (Apple ID) with ConnectionAppleIDSource",
+			args: args{
+				devportalConnection: &devportalservice.AppleDeveloperConnection{
+					AppleIDConnection: &argAppleIDConnection,
 				},
+				authSources: []Source{&ConnectionAppleIDSource{}},
+				inputs:      argInput,
+			},
+			want: Credentials{
+				AppleID: &expectedAppleIDWithArgConnection,
+				APIKey:  nil,
+			},
+		},
+		{
+			name: "Connection active (Apple ID), inputs (Apple ID) with InputAppleIDSource",
+			args: args{
+				devportalConnection: &devportalservice.AppleDeveloperConnection{
+					AppleIDConnection: &argAppleIDConnection,
+				},
+				authSources: []Source{&InputAppleIDSource{}},
+				inputs:      argInput,
+			},
+			want: Credentials{
+				AppleID: &expectedAppleIDWithArgInput,
+				APIKey:  nil,
+			},
+		},
+		{
+			name: "Connection active (Apple ID), inputs (Apple ID) with ConnectionAppleIDFastlaneSource",
+			args: args{
+				devportalConnection: &devportalservice.AppleDeveloperConnection{
+					AppleIDConnection: &argAppleIDConnection,
+				},
+				authSources: []Source{&ConnectionAppleIDFastlaneSource{}},
+				inputs:      argInput,
+			},
+			want: Credentials{
+				AppleID: &expectedAppleIDWithArgConnection,
+				APIKey:  nil,
+			},
+		},
+		{
+			name: "Connection active but missing password (Apple ID), inputs (Apple ID) with ConnectionAppleIDFastlaneSource",
+			args: args{
+				devportalConnection: &devportalservice.AppleDeveloperConnection{
+					AppleIDConnection: &argAppleIDConnectionMissingPassword,
+				},
+				authSources: []Source{&ConnectionAppleIDFastlaneSource{}},
+				inputs:      argInput,
 			},
 			want: Credentials{
 				AppleID: &AppleID{
-					Username: "a", Password: "b", AppSpecificPassword: "c", Session: "",
+					Username:            argAppleIDConnection.AppleID,
+					Password:            argAppleIDConnection.Password,
+					AppSpecificPassword: argInput.AppSpecificPassword,
+					Session:             "",
 				},
 				APIKey: nil,
+			},
+		},
+		{
+			name: "Connection active (Apple ID), inputs (Apple ID) with InputAppleIDFastlaneSource",
+			args: args{
+				devportalConnection: &devportalservice.AppleDeveloperConnection{
+					AppleIDConnection: &argAppleIDConnection,
+				},
+				authSources: []Source{&InputAppleIDFastlaneSource{}},
+				inputs:      argInput,
+			},
+			want: Credentials{
+				AppleID: &expectedAppleIDWithArgInput,
+				APIKey:  nil,
 			},
 		},
 		{
 			name: "Connection active (API Key), inputs (Apple ID)",
 			args: args{
 				devportalConnection: &devportalservice.AppleDeveloperConnection{
-					APIKeyConnection: &devportalservice.APIKeyConnection{
-						KeyID: "x", IssuerID: "y", PrivateKey: "z",
-					},
+					APIKeyConnection: &argAPIKeyConnection,
 				},
 				authSources: []Source{&ConnectionAPIKeySource{}, &ConnectionAppleIDSource{}, &InputAPIKeySource{}, &InputAppleIDSource{}},
-				inputs: Inputs{
-					Username: "a", Password: "b", AppSpecificPassword: "c",
-					APIIssuer: "", APIKeyPath: "",
-				},
+				inputs:      argInput,
 			},
 			want: Credentials{
 				AppleID: nil,
-				APIKey: &devportalservice.APIKeyConnection{
-					KeyID: "x", IssuerID: "y", PrivateKey: "z",
-				},
+				APIKey:  &expectedAppleIDWithAPIKeyConnection,
 			},
 		},
 		{
 			name: "Connection active (API Key), inputs (Apple ID), connection not enabled",
 			args: args{
 				devportalConnection: &devportalservice.AppleDeveloperConnection{
-					APIKeyConnection: &devportalservice.APIKeyConnection{
-						KeyID: "x", IssuerID: "y", PrivateKey: "z",
-					},
+					APIKeyConnection: &argAPIKeyConnection,
 				},
 				authSources: []Source{&InputAPIKeySource{}, &InputAppleIDSource{}},
-				inputs: Inputs{
-					Username: "a", Password: "b", AppSpecificPassword: "c",
-					APIIssuer: "", APIKeyPath: "",
-				},
+				inputs:      argInput,
 			},
 			want: Credentials{
-				AppleID: &AppleID{
-					Username: "a", Password: "b", AppSpecificPassword: "c", Session: "",
-				},
-				APIKey: nil,
+				AppleID: &expectedAppleIDWithArgInput,
+				APIKey:  nil,
 			},
 		},
 	}
