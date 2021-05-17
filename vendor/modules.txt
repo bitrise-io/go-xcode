@@ -5,7 +5,7 @@ github.com/bitrise-io/go-steputils/command/rubycommand
 github.com/bitrise-io/go-steputils/command/rubyscript
 github.com/bitrise-io/go-steputils/input
 github.com/bitrise-io/go-steputils/tools
-# github.com/bitrise-io/go-utils v0.0.0-20210507100250-37de47dfa6ce
+# github.com/bitrise-io/go-utils v0.0.0-20210514083430-4d1fb0330dfe
 ## explicit
 github.com/bitrise-io/go-utils/builtinutil
 github.com/bitrise-io/go-utils/colorstring
