@@ -15,7 +15,7 @@ import (
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/xcodeproject/pretty"
+	"github.com/bitrise-io/go-utils/pretty"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodebuild"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
