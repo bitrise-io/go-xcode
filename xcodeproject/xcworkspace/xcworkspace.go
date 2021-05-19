@@ -15,6 +15,10 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+const (
+	XCWorkspaceExtension = ".xcworkspace"
+)
+
 // Workspace represents an Xcode workspace
 type Workspace struct {
 	FileRefs []FileRef `xml:"FileRef"`

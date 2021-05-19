@@ -22,6 +22,10 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+const (
+	XcodeProjExtension = ".xcodeproj"
+)
+
 // XcodeProj ...
 type XcodeProj struct {
 	Proj    Proj
@@ -385,7 +389,7 @@ func parsePBXProjContent(content []byte) (*XcodeProj, error) {
 
 // IsXcodeProj ...
 func IsXcodeProj(pth string) bool {
-	return filepath.Ext(pth) == ".xcodeproj"
+	return filepath.Ext(pth) == XcodeProjExtension
 }
 
 // ForceCodeSign modifies the project's code signing settings to use manual code signing.
