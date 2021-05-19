@@ -7,7 +7,6 @@ github.com/bitrise-io/go-steputils/input
 github.com/bitrise-io/go-steputils/tools
 # github.com/bitrise-io/go-utils v0.0.0-20210514083430-4d1fb0330dfe
 ## explicit
-github.com/bitrise-io/go-utils/builtinutil
 github.com/bitrise-io/go-utils/colorstring
 github.com/bitrise-io/go-utils/command
 github.com/bitrise-io/go-utils/command/git
@@ -16,7 +15,6 @@ github.com/bitrise-io/go-utils/filedownloader
 github.com/bitrise-io/go-utils/fileutil
 github.com/bitrise-io/go-utils/log
 github.com/bitrise-io/go-utils/pathutil
-github.com/bitrise-io/go-utils/testutil
 github.com/bitrise-io/go-utils/ziputil
 # github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630
 ## explicit
