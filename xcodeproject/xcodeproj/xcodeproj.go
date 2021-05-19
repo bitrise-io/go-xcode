@@ -23,6 +23,7 @@ import (
 )
 
 const (
+	// XcodeProjExtension ...
 	XcodeProjExtension = ".xcodeproj"
 )
 
