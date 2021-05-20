@@ -1,3 +1,4 @@
+github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10 h1:/2OyBFI7GjYKexBPcfTPvKFz8Ks7qYzkkz2SQ8aiJgc=
 github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10/go.mod h1:pARutiL3kEuRLV3JvswidvfCj+9Y3qMZtji2BDqLFsA=
 github.com/bitrise-io/go-steputils v0.0.0-20210514150206-5b6261447e77 h1:+wd+ADdtJCRL9JEghE1RMbR4ywXBYNvIBelAW/UkWr8=
 github.com/bitrise-io/go-steputils v0.0.0-20210514150206-5b6261447e77/go.mod h1:H0iZjgsAR5NA6pnlD/zKB6AbxEsskq55pwJ9klVmP8w=
@@ -6,13 +7,12 @@ github.com/bitrise-io/go-utils v0.0.0-20210520073355-367fa34178f5 h1:kclxBfygfNK
 github.com/bitrise-io/go-utils v0.0.0-20210520073355-367fa34178f5/go.mod h1:DRx7oFuAqk0dbKpAKCqWl0TgrowfJUb/MqYPRscxJOQ=
 github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630 h1:V+xoYqGSkN8aUxCc806zDKjGGpBVUtV0Vytf5OsB3gc=
 github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630/go.mod h1:UiXKNs0essbC14a2TvGlnUKo9isP9m4guPrp8KJHJpU=
-github.com/bitrise-io/xcode-project v0.0.0-20210518135038-e230d2aa9240 h1:ngmDxT8AB/I7ISyNxs+aMzwUIO4BGIL5fKW1o9CxRLk=
-github.com/bitrise-io/xcode-project v0.0.0-20210518135038-e230d2aa9240/go.mod h1:4x0wl0WHcr2BZ9KZzAjkdErVQSdFywPlRYOn34iz6lQ=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa h1:RDBNVkRviHZtvDvId8XSGPu3rmpmSe+wKRcEWNgsfWU=
 github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa/go.mod h1:KnogPXtdwXqoenmZCw6S+25EAm2MkxbG0deNDu4cbSA=
+github.com/google/go-cmp v0.5.5 h1:Khx7svrCpmxxtHBq5j2mp/xVjsi8hQMfNLvJFAlrGgU=
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/hashicorp/go-cleanhttp v0.5.1/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtngrth3wmdIIUrZ80=
 github.com/hashicorp/go-hclog v0.9.2/go.mod h1:5CU+agLiy3J7N7QjHK5d05KxGsuXiQLrjA0H7acj2lQ=
@@ -57,6 +57,7 @@ golang.org/x/text v0.3.3/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
 golang.org/x/text v0.3.6 h1:aRYxNxv6iGQlyVaZmk6ZgYEDa+Jg18DxebPSrd6bg1M=
 golang.org/x/text v0.3.6/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
 golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
+golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 h1:E7g+9GITq07hpfrRu66IVDexMakfv52eLZ2CXBWiKr4=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
