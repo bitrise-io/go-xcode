@@ -1,3 +1,5 @@
+// Package xcodeproj ...
+//
 // Deprecated: Use github.com/bitrise-io/go-xcode/xcodeproject package instead.
 package xcodeproj
 
