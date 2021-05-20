@@ -5,7 +5,7 @@ github.com/bitrise-io/go-steputils/command/rubycommand
 github.com/bitrise-io/go-steputils/command/rubyscript
 github.com/bitrise-io/go-steputils/input
 github.com/bitrise-io/go-steputils/tools
-# github.com/bitrise-io/go-utils v0.0.0-20210517140706-aa64fd88ca49
+# github.com/bitrise-io/go-utils v0.0.0-20210520073355-367fa34178f5
 ## explicit
 github.com/bitrise-io/go-utils/colorstring
 github.com/bitrise-io/go-utils/command
@@ -31,8 +31,6 @@ github.com/fullsailor/pkcs7
 # github.com/hashicorp/go-version v1.3.0
 ## explicit
 github.com/hashicorp/go-version
-# github.com/kisielk/errcheck v1.2.0
-## explicit
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
@@ -45,14 +43,10 @@ github.com/ryanuber/go-glob
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# golang.org/x/lint v0.0.0-20200130185559-910be7a94367
-## explicit
 # golang.org/x/text v0.3.6
 ## explicit
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
-# golang.org/x/tools v0.0.0-20200220224806-8a925fa4c0df
-## explicit
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 gopkg.in/yaml.v3
 # howett.net/plist v0.0.0-20201203080718-1454fab16a06
