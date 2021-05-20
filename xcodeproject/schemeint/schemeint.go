@@ -1,4 +1,4 @@
-package project
+package schemeint
 
 import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
