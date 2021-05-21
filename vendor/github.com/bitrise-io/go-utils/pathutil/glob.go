@@ -1,4 +1,4 @@
-package utility
+package pathutil
 
 // EscapeGlobPath escapes a partial path, determined at runtime, used as a parameter for filepath.Glob
 func EscapeGlobPath(path string) string {
