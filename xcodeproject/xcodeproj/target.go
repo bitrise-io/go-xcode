@@ -44,17 +44,17 @@ func (t Target) DependentTargets() []Target {
 }
 
 // DependentExecutableProductTargets ...
-func (t Target) DependentExecutableProductTargets(includeUITest bool) []Target {
+func (t Target) DependentExecutableProductTargets() []Target {
 	var targets []Target
 	for _, targetDependency := range t.Dependencies {
 		childTarget := targetDependency.Target
-		if !childTarget.IsExecutableProduct() && (!includeUITest || !childTarget.IsUITestProduct()) {
+		if !childTarget.IsExecutableProduct() {
 			continue
 		}
 
 		targets = append(targets, childTarget)
 
-		childDependentTargets := childTarget.DependentExecutableProductTargets(includeUITest)
+		childDependentTargets := childTarget.DependentExecutableProductTargets()
 		targets = append(targets, childDependentTargets...)
 	}
 
