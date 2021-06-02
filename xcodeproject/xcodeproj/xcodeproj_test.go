@@ -420,7 +420,7 @@ func TestTargets(t *testing.T) {
 	}
 
 	{
-		properties, err := project.TargetInformationPropertyList("SubProject", "Debug")
+		properties, _, err := project.ReadTargetInfoplist("SubProject", "Debug")
 		require.NoError(t, err)
 		require.Equal(t, serialized.Object{"CFBundlePackageType": "APPL",
 			"UISupportedInterfaceOrientations":      []interface{}{"UIInterfaceOrientationPortrait", "UIInterfaceOrientationLandscapeLeft", "UIInterfaceOrientationLandscapeRight"},

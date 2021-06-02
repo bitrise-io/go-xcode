@@ -43,6 +43,17 @@ func (t Target) DependentTargets() []Target {
 	return targets
 }
 
+// DependesOn ...
+func (t Target) DependesOn(targetID string) bool {
+	for _, targetDependency := range t.Dependencies {
+		childTarget := targetDependency.Target
+		if childTarget.ID == targetID {
+			return true
+		}
+	}
+	return false
+}
+
 // DependentExecutableProductTargets ...
 func (t Target) DependentExecutableProductTargets() []Target {
 	var targets []Target
