@@ -74,7 +74,7 @@ func TestTarget_DependentExecutableProductTargets(t *testing.T) {
 				ProductReference:       tt.fields.ProductReference,
 				ProductType:            tt.fields.ProductType,
 			}
-			if got := target.DependentExecutableProductTargets(false); !reflect.DeepEqual(got, tt.want) {
+			if got := target.DependentExecutableProductTargets(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Target.DependentExecutableProductTargets() = %v, want %v", got, tt.want)
 			}
 		})

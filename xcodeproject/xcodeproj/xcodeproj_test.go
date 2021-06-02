@@ -393,7 +393,7 @@ func TestTargets(t *testing.T) {
 		require.Equal(t, "WatchKitApp", dependentTargets[0].Name)
 		require.Equal(t, "WatchKitApp Extension", dependentTargets[1].Name)
 
-		dependentExecutableTarget := target.DependentExecutableProductTargets(false)
+		dependentExecutableTarget := target.DependentExecutableProductTargets()
 		require.Equal(t, 2, len(dependentExecutableTarget))
 		require.Equal(t, "WatchKitApp", dependentExecutableTarget[0].Name)
 		require.Equal(t, "WatchKitApp Extension", dependentExecutableTarget[1].Name)
@@ -420,7 +420,7 @@ func TestTargets(t *testing.T) {
 	}
 
 	{
-		properties, err := project.TargetInformationPropertyList("SubProject", "Debug")
+		properties, _, err := project.ReadTargetInfoplist("SubProject", "Debug")
 		require.NoError(t, err)
 		require.Equal(t, serialized.Object{"CFBundlePackageType": "APPL",
 			"UISupportedInterfaceOrientations":      []interface{}{"UIInterfaceOrientationPortrait", "UIInterfaceOrientationLandscapeLeft", "UIInterfaceOrientationLandscapeRight"},
