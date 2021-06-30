@@ -3,6 +3,7 @@ package xcscheme
 import (
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 
@@ -13,8 +14,8 @@ import (
 // BuildableReference ...
 type BuildableReference struct {
 	BlueprintIdentifier string `xml:"BlueprintIdentifier,attr"`
-	BlueprintName       string `xml:"BlueprintName,attr"`
 	BuildableName       string `xml:"BuildableName,attr"`
+	BlueprintName       string `xml:"BlueprintName,attr"`
 	ReferencedContainer string `xml:"ReferencedContainer,attr"`
 }
 
@@ -32,6 +33,7 @@ func (r BuildableReference) ReferencedContainerAbsPath(schemeContainerDir string
 
 	base := s[1]
 	absPth := filepath.Join(schemeContainerDir, base)
+
 	return pathutil.AbsPath(absPth)
 }
 
@@ -70,8 +72,8 @@ type Scheme struct {
 	ArchiveAction ArchiveAction
 	TestAction    TestAction
 
-	Name string
-	Path string
+	Name string `xml:"-"`
+	Path string `xml:"-"`
 }
 
 // Open ...
@@ -90,6 +92,59 @@ func Open(pth string) (Scheme, error) {
 	scheme.Path = pth
 
 	return scheme, nil
+}
+
+type XMLToken int
+
+const (
+	Invalid XMLToken = iota
+	XMLStart
+	XMLEnd
+	XMLAttribute
+)
+
+// Write ...
+func (s Scheme) Write(pth string) error {
+	contents, err := xml.Marshal(s)
+	if err != nil {
+		return fmt.Errorf("failed to marshal Scheme: %v", err)
+	}
+
+	contentsNewline := strings.ReplaceAll(string(contents), "><", ">\n<")
+	contentsNewline = strings.ReplaceAll(contentsNewline, " ", "\n")
+
+	var contentsIndented string
+
+	indent := 0
+	for _, line := range strings.Split(contentsNewline, "\n") {
+		currentLine := XMLAttribute
+		if strings.HasPrefix(line, "</") {
+			currentLine = XMLEnd
+		} else if strings.HasPrefix(line, "<") {
+			currentLine = XMLStart
+		}
+
+		if currentLine == XMLAttribute {
+			line = strings.Replace(line, "=", " = ", 1)
+		}
+
+		if currentLine == XMLEnd && indent != 0 {
+			indent--
+		}
+
+		contentsIndented += strings.Repeat("   ", indent)
+		contentsIndented += line + "\n"
+
+		if currentLine == XMLStart {
+			indent++
+		}
+	}
+
+	if err := ioutil.WriteFile(pth, []byte(xml.Header+contentsIndented), 0600); err != nil {
+		return fmt.Errorf("failed to write Scheme file (%s): %v", pth, err)
+	}
+
+	return nil
 }
 
 // AppBuildActionEntry ...
