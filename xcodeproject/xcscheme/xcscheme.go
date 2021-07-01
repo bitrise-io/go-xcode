@@ -13,6 +13,7 @@ import (
 
 // BuildableReference ...
 type BuildableReference struct {
+	BuildableIdentifier string `xml:"BuildableIdentifier,attr"`
 	BlueprintIdentifier string `xml:"BlueprintIdentifier,attr"`
 	BuildableName       string `xml:"BuildableName,attr"`
 	BlueprintName       string `xml:"BlueprintName,attr"`
@@ -39,14 +40,20 @@ func (r BuildableReference) ReferencedContainerAbsPath(schemeContainerDir string
 
 // BuildActionEntry ...
 type BuildActionEntry struct {
-	BuildForTesting    string `xml:"buildForTesting,attr"`
-	BuildForArchiving  string `xml:"buildForArchiving,attr"`
+	BuildForTesting   string `xml:"buildForTesting,attr"`
+	BuildForRunning   string `xml:"buildForRunning,attr"`
+	BuildForProfiling string `xml:"buildForProfiling,attr"`
+	BuildForArchiving string `xml:"buildForArchiving,attr"`
+	BuildForAnalyzing string `xml:"buildForAnalyzing,attr"`
+
 	BuildableReference BuildableReference
 }
 
 // BuildAction ...
 type BuildAction struct {
-	BuildActionEntries []BuildActionEntry `xml:"BuildActionEntries>BuildActionEntry"`
+	ParallelizeBuildables     string             `xml:"parallelizeBuildables,attr"`
+	BuildImplicitDependencies string             `xml:"buildImplicitDependencies,attr"`
+	BuildActionEntries        []BuildActionEntry `xml:"BuildActionEntries>BuildActionEntry"`
 }
 
 // TestableReference ...
@@ -55,22 +62,41 @@ type TestableReference struct {
 	BuildableReference BuildableReference
 }
 
+// MacroExpansion ...
+type MacroExpansion struct {
+	BuildableReference BuildableReference
+}
+
+// AdditionalOptions ...
+type AdditionalOptions struct {
+}
+
 // TestAction ...
 type TestAction struct {
-	Testables          []TestableReference `xml:"Testables>TestableReference"`
-	BuildConfiguration string              `xml:"buildConfiguration,attr"`
+	BuildConfiguration           string `xml:"buildConfiguration,attr"`
+	SelectedDebuggerIdentifier   string `xml:"selectedDebuggerIdentifier,attr"`
+	SelectedLauncherIdentifier   string `xml:"selectedLauncherIdentifier,attr"`
+	ShouldUseLaunchSchemeArgsEnv string `xml:"shouldUseLaunchSchemeArgsEnv,attr"`
+
+	Testables         []TestableReference `xml:"Testables>TestableReference"`
+	MacroExpansion    MacroExpansion
+	AdditionalOptions AdditionalOptions
 }
 
 // ArchiveAction ...
 type ArchiveAction struct {
-	BuildConfiguration string `xml:"buildConfiguration,attr"`
+	BuildConfiguration       string `xml:"buildConfiguration,attr"`
+	RevealArchiveInOrganizer string `xml:"revealArchiveInOrganizer,attr"`
 }
 
 // Scheme ...
 type Scheme struct {
+	LastUpgradeVersion string `xml:"LastUpgradeVersion,attr"`
+	Version            string `xml:"version,attr"`
+
 	BuildAction   BuildAction
-	ArchiveAction ArchiveAction
 	TestAction    TestAction
+	ArchiveAction ArchiveAction
 
 	Name string `xml:"-"`
 	Path string `xml:"-"`
@@ -111,6 +137,7 @@ func (s Scheme) Write(pth string) error {
 	}
 
 	contentsNewline := strings.ReplaceAll(string(contents), "><", ">\n<")
+	// Place XML Attributes on separate lines
 	contentsNewline = strings.ReplaceAll(contentsNewline, " ", "\n")
 
 	var contentsIndented string
