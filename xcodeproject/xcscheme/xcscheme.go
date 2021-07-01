@@ -98,8 +98,9 @@ type Scheme struct {
 	TestAction    TestAction
 	ArchiveAction ArchiveAction
 
-	Name string `xml:"-"`
-	Path string `xml:"-"`
+	Name     string `xml:"-"`
+	Path     string `xml:"-"`
+	IsShared bool   `xml:"-"`
 }
 
 // Open ...
