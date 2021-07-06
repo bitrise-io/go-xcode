@@ -4,11 +4,19 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
+)
+
+const (
+	yes         = "YES"
+	no          = "NO"
+	buildableID = "primary"
 )
 
 // BuildableReference ...
@@ -54,6 +62,29 @@ type BuildAction struct {
 	ParallelizeBuildables     string             `xml:"parallelizeBuildables,attr"`
 	BuildImplicitDependencies string             `xml:"buildImplicitDependencies,attr"`
 	BuildActionEntries        []BuildActionEntry `xml:"BuildActionEntries>BuildActionEntry"`
+}
+
+func newBuildAction(target xcodeproj.Target, projectName string) BuildAction {
+	return BuildAction{
+		ParallelizeBuildables:     yes,
+		BuildImplicitDependencies: yes,
+		BuildActionEntries: []BuildActionEntry{
+			{
+				BuildForTesting:   yes,
+				BuildForRunning:   yes,
+				BuildForProfiling: yes,
+				BuildForArchiving: yes,
+				BuildForAnalyzing: yes,
+				BuildableReference: BuildableReference{
+					BuildableIdentifier: buildableID,
+					BlueprintIdentifier: target.ID,
+					BuildableName:       path.Base(target.ProductReference.Path),
+					BlueprintName:       target.Name,
+					ReferencedContainer: fmt.Sprintf("container:%s", projectName),
+				},
+			},
+		},
+	}
 }
 
 // TestableReference ...
@@ -119,6 +150,14 @@ func Open(pth string) (Scheme, error) {
 	scheme.Path = pth
 
 	return scheme, nil
+}
+
+func NewScheme(buildTarget xcodeproj.Target, testTarget []xcodeproj.Target, projectname string) Scheme {
+	return Scheme{
+		LastUpgradeVersion: "1240",
+		Version:            "1.3",
+		BuildAction:        newBuildAction(buildTarget, projectname),
+	}
 }
 
 type XMLToken int
