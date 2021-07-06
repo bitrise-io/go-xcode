@@ -3,20 +3,11 @@ package xcscheme
 import (
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
-	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
-)
-
-const (
-	yes         = "YES"
-	no          = "NO"
-	buildableID = "primary"
 )
 
 // BuildableReference ...
@@ -62,29 +53,6 @@ type BuildAction struct {
 	ParallelizeBuildables     string             `xml:"parallelizeBuildables,attr"`
 	BuildImplicitDependencies string             `xml:"buildImplicitDependencies,attr"`
 	BuildActionEntries        []BuildActionEntry `xml:"BuildActionEntries>BuildActionEntry"`
-}
-
-func newBuildAction(target xcodeproj.Target, projectName string) BuildAction {
-	return BuildAction{
-		ParallelizeBuildables:     yes,
-		BuildImplicitDependencies: yes,
-		BuildActionEntries: []BuildActionEntry{
-			{
-				BuildForTesting:   yes,
-				BuildForRunning:   yes,
-				BuildForProfiling: yes,
-				BuildForArchiving: yes,
-				BuildForAnalyzing: yes,
-				BuildableReference: BuildableReference{
-					BuildableIdentifier: buildableID,
-					BlueprintIdentifier: target.ID,
-					BuildableName:       path.Base(target.ProductReference.Path),
-					BlueprintName:       target.Name,
-					ReferencedContainer: fmt.Sprintf("container:%s", projectName),
-				},
-			},
-		},
-	}
 }
 
 // TestableReference ...
@@ -152,28 +120,24 @@ func Open(pth string) (Scheme, error) {
 	return scheme, nil
 }
 
-func NewScheme(buildTarget xcodeproj.Target, testTarget []xcodeproj.Target, projectname string) Scheme {
-	return Scheme{
-		LastUpgradeVersion: "1240",
-		Version:            "1.3",
-		BuildAction:        newBuildAction(buildTarget, projectname),
-	}
-}
-
+// XMLToken ...
 type XMLToken int
 
 const (
-	Invalid XMLToken = iota
+	invalid XMLToken = iota
+	// XMLStart ...
 	XMLStart
+	// XMLEnd ...
 	XMLEnd
+	// XMLAttribute ...
 	XMLAttribute
 )
 
-// Write ...
-func (s Scheme) Write(pth string) error {
+// Marshal ...
+func (s Scheme) Marshal() ([]byte, error) {
 	contents, err := xml.Marshal(s)
 	if err != nil {
-		return fmt.Errorf("failed to marshal Scheme: %v", err)
+		return nil, fmt.Errorf("failed to marshal Scheme: %v", err)
 	}
 
 	contentsNewline := strings.ReplaceAll(string(contents), "><", ">\n<")
@@ -207,11 +171,7 @@ func (s Scheme) Write(pth string) error {
 		}
 	}
 
-	if err := ioutil.WriteFile(pth, []byte(xml.Header+contentsIndented), 0600); err != nil {
-		return fmt.Errorf("failed to write Scheme file (%s): %v", pth, err)
-	}
-
-	return nil
+	return []byte(xml.Header + contentsIndented), nil
 }
 
 // AppBuildActionEntry ...
