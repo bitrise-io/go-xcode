@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/fileutil"
@@ -141,8 +142,10 @@ func (s Scheme) Marshal() ([]byte, error) {
 	}
 
 	contentsNewline := strings.ReplaceAll(string(contents), "><", ">\n<")
+
 	// Place XML Attributes on separate lines
-	contentsNewline = strings.ReplaceAll(contentsNewline, " ", "\n")
+	re := regexp.MustCompile(`\s([^=<>/]*)\s?=\s?"([^=<>/]*)"`)
+	contentsNewline = re.ReplaceAllString(contentsNewline, "\n$1 = \"$2\"")
 
 	var contentsIndented string
 
@@ -153,10 +156,6 @@ func (s Scheme) Marshal() ([]byte, error) {
 			currentLine = XMLEnd
 		} else if strings.HasPrefix(line, "<") {
 			currentLine = XMLStart
-		}
-
-		if currentLine == XMLAttribute {
-			line = strings.Replace(line, "=", " = ", 1)
 		}
 
 		if currentLine == XMLEnd && indent != 0 {

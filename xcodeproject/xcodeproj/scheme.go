@@ -45,12 +45,12 @@ func (p XcodeProj) ReCreateSharedSchemes() error {
 
 		var uiTestTargets []Target
 		for _, target := range p.Proj.Targets {
-			if target.IsUITestProduct() && target.DependesOn(target.ID) {
+			if target.IsUITestProduct() || target.IsTestProduct() {
 				uiTestTargets = append(uiTestTargets, target)
 			}
 		}
 
-		scheme := newScheme(target, uiTestTargets, filepath.Base(p.Name))
+		scheme := newScheme(target, uiTestTargets, filepath.Base(p.Path))
 		if err := p.saveSharedScheme(scheme); err != nil {
 			return err
 		}
@@ -61,11 +61,23 @@ func (p XcodeProj) ReCreateSharedSchemes() error {
 
 func newScheme(buildTarget Target, testTargets []Target, projectname string) xcscheme.Scheme {
 	return xcscheme.Scheme{
+		Name: buildTarget.Name,
+		//
 		LastUpgradeVersion: "1240",
 		Version:            "1.3",
 		BuildAction:        newBuildAction(buildTarget, projectname),
-		Name:               buildTarget.Name,
-		// Path: ,
+		ArchiveAction:      newArchiveAction(buildTarget),
+		TestAction:         newTestAction(buildTarget, testTargets, projectname),
+	}
+}
+
+func newBuildableReference(target Target, projectName string) xcscheme.BuildableReference {
+	return xcscheme.BuildableReference{
+		BuildableIdentifier: buildableID,
+		BlueprintIdentifier: target.ID,
+		BuildableName:       path.Base(target.ProductReference.Path),
+		BlueprintName:       target.Name,
+		ReferencedContainer: fmt.Sprintf("container:%s", projectName),
 	}
 }
 
@@ -75,19 +87,53 @@ func newBuildAction(target Target, projectName string) xcscheme.BuildAction {
 		BuildImplicitDependencies: yes,
 		BuildActionEntries: []xcscheme.BuildActionEntry{
 			{
-				BuildForTesting:   yes,
-				BuildForRunning:   yes,
-				BuildForProfiling: yes,
-				BuildForArchiving: yes,
-				BuildForAnalyzing: yes,
-				BuildableReference: xcscheme.BuildableReference{
-					BuildableIdentifier: buildableID,
-					BlueprintIdentifier: target.ID,
-					BuildableName:       path.Base(target.ProductReference.Path),
-					BlueprintName:       target.Name,
-					ReferencedContainer: fmt.Sprintf("container:%s", projectName),
-				},
+				BuildForTesting:    yes,
+				BuildForRunning:    yes,
+				BuildForProfiling:  yes,
+				BuildForArchiving:  yes,
+				BuildForAnalyzing:  yes,
+				BuildableReference: newBuildableReference(target, projectName),
 			},
 		},
+	}
+}
+
+func newTestableReference(target Target, projectName string) xcscheme.TestableReference {
+	return xcscheme.TestableReference{
+		Skipped:            no,
+		BuildableReference: newBuildableReference(target, projectName),
+	}
+}
+
+func newTestAction(buildTarget Target, testTargets []Target, projectName string) xcscheme.TestAction {
+	if len(testTargets) == 0 {
+		return xcscheme.TestAction{}
+	}
+
+	testAction := xcscheme.TestAction{
+		BuildConfiguration:           testTargets[0].BuildConfigurationList.DefaultConfigurationName,
+		SelectedDebuggerIdentifier:   "Xcode.DebuggerFoundation.Debugger.LLDB",
+		SelectedLauncherIdentifier:   "Xcode.DebuggerFoundation.Launcher.LLDB",
+		ShouldUseLaunchSchemeArgsEnv: yes,
+		MacroExpansion: xcscheme.MacroExpansion{
+			BuildableReference: newBuildableReference(buildTarget, projectName),
+		},
+		Testables: []xcscheme.TestableReference{},
+	}
+
+	for _, testTarget := range testTargets {
+		testAction.Testables = append(
+			testAction.Testables,
+			newTestableReference(testTarget, projectName),
+		)
+	}
+
+	return testAction
+}
+
+func newArchiveAction(target Target) xcscheme.ArchiveAction {
+	return xcscheme.ArchiveAction{
+		BuildConfiguration:       target.BuildConfigurationList.DefaultConfigurationName,
+		RevealArchiveInOrganizer: yes,
 	}
 }
