@@ -20,6 +20,8 @@ const (
 	launcherID                  = "Xcode.DebuggerFoundation.Launcher.LLDB"
 )
 
+// SaveSharedScheme saves or overwrites a shared Scheme in the Project
+// The file name will be determined using the Name field of the Scheme
 func (p XcodeProj) SaveSharedScheme(scheme xcscheme.Scheme) error {
 	dir := filepath.Join(p.Path, "xcshareddata", "xcschemes")
 	path := filepath.Join(dir, fmt.Sprintf("%s.xcscheme", scheme.Name))
