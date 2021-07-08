@@ -20,7 +20,7 @@ const (
 	launcherID                  = "Xcode.DebuggerFoundation.Launcher.LLDB"
 )
 
-func (p XcodeProj) saveSharedScheme(scheme xcscheme.Scheme) error {
+func (p XcodeProj) SaveSharedScheme(scheme xcscheme.Scheme) error {
 	dir := filepath.Join(p.Path, "xcshareddata", "xcschemes")
 	path := filepath.Join(dir, fmt.Sprintf("%s.xcscheme", scheme.Name))
 
@@ -40,8 +40,9 @@ func (p XcodeProj) saveSharedScheme(scheme xcscheme.Scheme) error {
 	return nil
 }
 
-// ReCreateSharedSchemes creates new shared schemes based on Targets
-func (p XcodeProj) ReCreateSharedSchemes() error {
+// ReCreateSchemes creates new schemes based on the available Targets
+func (p XcodeProj) ReCreateSchemes() []xcscheme.Scheme {
+	var schemes []xcscheme.Scheme
 	for _, buildTarget := range p.Proj.Targets {
 		if buildTarget.Type != NativeTargetType || buildTarget.IsTest() {
 			continue
@@ -49,19 +50,15 @@ func (p XcodeProj) ReCreateSharedSchemes() error {
 
 		var testTargets []Target
 		for _, testTarget := range p.Proj.Targets {
-			if testTarget.DependesOn(buildTarget.ID) &&
-				testTarget.IsTest() {
+			if testTarget.IsTest() && testTarget.DependesOn(buildTarget.ID) {
 				testTargets = append(testTargets, testTarget)
 			}
 		}
 
-		scheme := newScheme(buildTarget, testTargets, filepath.Base(p.Path))
-		if err := p.saveSharedScheme(scheme); err != nil {
-			return err
-		}
+		schemes = append(schemes, newScheme(buildTarget, testTargets, filepath.Base(p.Path)))
 	}
 
-	return nil
+	return schemes
 }
 
 func newScheme(buildTarget Target, testTargets []Target, projectname string) xcscheme.Scheme {
