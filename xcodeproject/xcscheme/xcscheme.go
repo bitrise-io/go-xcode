@@ -127,8 +127,10 @@ type ArchiveAction struct {
 
 // Scheme ...
 type Scheme struct {
+	// The last known Xcode version.
 	LastUpgradeVersion string `xml:"LastUpgradeVersion,attr"`
-	Version            string `xml:"version,attr"`
+	// The version of `.xcscheme` files supported.
+	Version string `xml:"version,attr"`
 
 	BuildAction   BuildAction
 	TestAction    TestAction

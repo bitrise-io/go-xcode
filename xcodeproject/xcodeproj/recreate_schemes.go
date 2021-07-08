@@ -42,19 +42,20 @@ func (p XcodeProj) saveSharedScheme(scheme xcscheme.Scheme) error {
 
 // ReCreateSharedSchemes creates new shared schemes based on Targets
 func (p XcodeProj) ReCreateSharedSchemes() error {
-	for _, target := range p.Proj.Targets {
-		if !target.IsExecutableProduct() {
+	for _, buildTarget := range p.Proj.Targets {
+		if buildTarget.Type != NativeTargetType || buildTarget.IsTest() {
 			continue
 		}
 
-		var uiTestTargets []Target
-		for _, target := range p.Proj.Targets {
-			if target.IsUITestProduct() || target.IsTestProduct() {
-				uiTestTargets = append(uiTestTargets, target)
+		var testTargets []Target
+		for _, testTarget := range p.Proj.Targets {
+			if testTarget.DependesOn(buildTarget.ID) &&
+				testTarget.IsTest() {
+				testTargets = append(testTargets, testTarget)
 			}
 		}
 
-		scheme := newScheme(target, uiTestTargets, filepath.Base(p.Path))
+		scheme := newScheme(buildTarget, testTargets, filepath.Base(p.Path))
 		if err := p.saveSharedScheme(scheme); err != nil {
 			return err
 		}
@@ -65,8 +66,7 @@ func (p XcodeProj) ReCreateSharedSchemes() error {
 
 func newScheme(buildTarget Target, testTargets []Target, projectname string) xcscheme.Scheme {
 	return xcscheme.Scheme{
-		Name: buildTarget.Name,
-		//
+		Name:               buildTarget.Name,
 		LastUpgradeVersion: "1240",
 		Version:            "1.3",
 		BuildAction:        newBuildAction(buildTarget, projectname),
