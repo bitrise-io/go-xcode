@@ -11,9 +11,13 @@ import (
 )
 
 const (
-	yes         = "YES"
-	no          = "NO"
-	buildableID = "primary"
+	yes                         = "YES"
+	no                          = "NO"
+	buildableID                 = "primary"
+	defaultDebugConfiguration   = "Debug"
+	defaultReleaseConfiguration = "Release"
+	debuggerID                  = "Xcode.DebuggerFoundation.Debugger.LLDB"
+	launcherID                  = "Xcode.DebuggerFoundation.Launcher.LLDB"
 )
 
 func (p XcodeProj) saveSharedScheme(scheme xcscheme.Scheme) error {
@@ -66,8 +70,11 @@ func newScheme(buildTarget Target, testTargets []Target, projectname string) xcs
 		LastUpgradeVersion: "1240",
 		Version:            "1.3",
 		BuildAction:        newBuildAction(buildTarget, projectname),
-		ArchiveAction:      newArchiveAction(buildTarget),
 		TestAction:         newTestAction(buildTarget, testTargets, projectname),
+		LaunchAction:       newLaunchAction(buildTarget, projectname),
+		ProfileAction:      newProfileAction(buildTarget, projectname),
+		AnalyzeAction:      newAnalyzeAction(buildTarget),
+		ArchiveAction:      newArchiveAction(buildTarget),
 	}
 }
 
@@ -111,9 +118,9 @@ func newTestAction(buildTarget Target, testTargets []Target, projectName string)
 	}
 
 	testAction := xcscheme.TestAction{
-		BuildConfiguration:           testTargets[0].BuildConfigurationList.DefaultConfigurationName,
-		SelectedDebuggerIdentifier:   "Xcode.DebuggerFoundation.Debugger.LLDB",
-		SelectedLauncherIdentifier:   "Xcode.DebuggerFoundation.Launcher.LLDB",
+		BuildConfiguration:           debugConfigurationName(testTargets[0]),
+		SelectedDebuggerIdentifier:   debuggerID,
+		SelectedLauncherIdentifier:   launcherID,
 		ShouldUseLaunchSchemeArgsEnv: yes,
 		MacroExpansion: xcscheme.MacroExpansion{
 			BuildableReference: newBuildableReference(buildTarget, projectName),
@@ -131,9 +138,67 @@ func newTestAction(buildTarget Target, testTargets []Target, projectName string)
 	return testAction
 }
 
+func newBuildableProductRunnable(target Target, projectName string) xcscheme.BuildableProductRunnable {
+	return xcscheme.BuildableProductRunnable{
+		RunnableDebuggingMode: "0",
+		BuildableReference:    newBuildableReference(target, projectName),
+	}
+}
+
+func newLaunchAction(target Target, projectName string) xcscheme.LaunchAction {
+	return xcscheme.LaunchAction{
+		BuildConfiguration:             debugConfigurationName(target),
+		SelectedDebuggerIdentifier:     debuggerID,
+		SelectedLauncherIdentifier:     launcherID,
+		LaunchStyle:                    "0",
+		UseCustomWorkingDirectory:      no,
+		IgnoresPersistentStateOnLaunch: no,
+		DebugDocumentVersioning:        yes,
+		DebugServiceExtension:          "internal",
+		AllowLocationSimulation:        yes,
+		BuildableProductRunnable:       newBuildableProductRunnable(target, projectName),
+	}
+}
+
+func newProfileAction(target Target, projectName string) xcscheme.ProfileAction {
+	return xcscheme.ProfileAction{
+		BuildConfiguration:           releaseConfigurationName(target),
+		ShouldUseLaunchSchemeArgsEnv: yes,
+		UseCustomWorkingDirectory:    no,
+		DebugDocumentVersioning:      yes,
+		BuildableProductRunnable:     newBuildableProductRunnable(target, projectName),
+	}
+}
+
+func newAnalyzeAction(target Target) xcscheme.AnalyzeAction {
+	return xcscheme.AnalyzeAction{
+		BuildConfiguration: debugConfigurationName(target),
+	}
+}
+
 func newArchiveAction(target Target) xcscheme.ArchiveAction {
 	return xcscheme.ArchiveAction{
-		BuildConfiguration:       target.BuildConfigurationList.DefaultConfigurationName,
+		BuildConfiguration:       releaseConfigurationName(target),
 		RevealArchiveInOrganizer: yes,
 	}
+}
+
+func debugConfigurationName(target Target) string {
+	for _, buildConfig := range target.BuildConfigurationList.BuildConfigurations {
+		if buildConfig.Name == defaultDebugConfiguration {
+			return defaultDebugConfiguration
+		}
+	}
+
+	return target.BuildConfigurationList.DefaultConfigurationName
+}
+
+func releaseConfigurationName(target Target) string {
+	for _, buildConfig := range target.BuildConfigurationList.BuildConfigurations {
+		if buildConfig.Name == defaultReleaseConfiguration {
+			return defaultReleaseConfiguration
+		}
+	}
+
+	return target.BuildConfigurationList.DefaultConfigurationName
 }
