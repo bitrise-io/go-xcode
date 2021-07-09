@@ -87,6 +87,14 @@ func (t Target) IsExecutableProduct() bool {
 	return t.IsAppProduct() || t.IsAppExtensionProduct()
 }
 
+// IsTest identifies test targets
+// Based on https://github.com/CocoaPods/Xcodeproj/blob/907c81763a7660978fda93b2f38f05de0cbb51ad/lib/xcodeproj/project/object/native_target.rb#L470
+func (t Target) IsTest() bool {
+	return t.IsTestProduct() ||
+		t.IsUITestProduct() ||
+		t.ProductType == "com.apple.product-type.bundle" // OCTest bundle
+}
+
 // IsTestProduct ...
 func (t Target) IsTestProduct() bool {
 	return filepath.Ext(t.ProductType) == ".unit-test"
