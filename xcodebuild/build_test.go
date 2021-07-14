@@ -24,6 +24,7 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 		archivePath                       string
 		customOptions                     []string
 		sdk                               string
+		resultBundlePath                  string
 		action                            Action
 		want                              []string
 	}{
@@ -152,11 +153,14 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			archivePath:                       "",
 			customOptions:                     []string{""},
 			sdk:                               "",
+			resultBundlePath:                  "/tmp/Analyze.xcresult",
 			action:                            AnalyzeAction,
 			want: []string{
 				"xcodebuild",
 				"",
 				"analyze",
+				"-resultBundlePath",
+				"/tmp/Analyze.xcresult",
 				"",
 			},
 		},
@@ -418,6 +422,7 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 				archivePath:                       tt.archivePath,
 				customOptions:                     tt.customOptions,
 				sdk:                               tt.sdk,
+				resultBundlePath:                  tt.resultBundlePath,
 				action:                            tt.action,
 			}
 			if got := c.cmdSlice(); !reflect.DeepEqual(got, tt.want) {
