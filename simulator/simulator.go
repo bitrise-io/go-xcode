@@ -293,6 +293,17 @@ func BootSimulator(simulator InfoModel, xcodebuildVersion models.XcodebuildVersi
 	}
 	simulatorAppFullPath := filepath.Join(xcodeDevDirPth, "Applications", simulatorApp+".app")
 
+	// https://ss64.com/osx/lsregister.html
+	// reset launch services database to avoid Big Sur's sporadic failure to find the Simulator App
+	resetLaunchServicesDBCommand := command.New("/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister", "-f", simulatorAppFullPath)
+
+	log.Printf("$ %s", resetLaunchServicesDBCommand.PrintableCommandArgs())
+
+	outStr, err := resetLaunchServicesDBCommand.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		fmt.Errorf("failed to reset launch services database, output: %s, error: %s", outStr, err)
+	}
+
 	openCmd := command.New("open", simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulator.ID)
 
 	log.Printf("$ %s", openCmd.PrintableCommandArgs())
