@@ -3,13 +3,13 @@ package simulator
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/models"
 	version "github.com/hashicorp/go-version"
 )
@@ -293,20 +293,11 @@ func BootSimulator(simulator InfoModel, xcodebuildVersion models.XcodebuildVersi
 	}
 	simulatorAppFullPath := filepath.Join(xcodeDevDirPth, "Applications", simulatorApp+".app")
 
-	// https://ss64.com/osx/lsregister.html
-	// reset launch services database to avoid Big Sur's sporadic failure to find the Simulator App
-	resetLaunchServicesDBCommand := command.New("/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister", "-f", simulatorAppFullPath)
-
-	log.Printf("$ %s", resetLaunchServicesDBCommand.PrintableCommandArgs())
-
-	outStr, err := resetLaunchServicesDBCommand.RunAndReturnTrimmedCombinedOutput()
-	if err != nil {
-		fmt.Errorf("failed to reset launch services database, output: %s, error: %s", outStr, err)
-	}
+	simulatorBootWorkaround(simulatorAppFullPath)
 
 	openCmd := command.New("open", simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulator.ID)
 
-	log.Printf("$ %s", openCmd.PrintableCommandArgs())
+	log.Infof("$ %s", openCmd.PrintableCommandArgs())
 
 	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -314,4 +305,19 @@ func BootSimulator(simulator InfoModel, xcodebuildVersion models.XcodebuildVersi
 	}
 
 	return nil
+}
+
+// Reset launch services database to avoid Big Sur's sporadic failure to find the Simulator App
+// The following error is printed when this happens: "kLSNoExecutableErr: The executable is missing"
+// Details:
+// - https://stackoverflow.com/questions/2182040/the-application-cannot-be-opened-because-its-executable-is-missing/16546673#16546673
+// - https://ss64.com/osx/lsregister.html
+func simulatorBootWorkaround(simulatorAppPath string) {
+	cmdString := "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+	cmd := command.New(cmdString, "-f", simulatorAppPath)
+
+	outStr, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		log.Warnf("failed to reset launch services database, output: %s, error: %s", outStr, err)
+	}
 }
