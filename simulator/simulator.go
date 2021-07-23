@@ -313,11 +313,20 @@ func BootSimulator(simulator InfoModel, xcodebuildVersion models.XcodebuildVersi
 // - https://stackoverflow.com/questions/2182040/the-application-cannot-be-opened-because-its-executable-is-missing/16546673#16546673
 // - https://ss64.com/osx/lsregister.html
 func simulatorBootWorkaround(simulatorAppPath string) {
-	cmdString := "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-	cmd := command.New(cmdString, "-f", simulatorAppPath)
-
-	outStr, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	cmd := command.New("sw_vers", "-productVersion")
+	macOSVersion, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		log.Warnf("failed to reset launch services database, output: %s, error: %s", outStr, err)
+		log.Warnf("failed to determine macOS version, error: %s", err)
+	}
+
+	if strings.HasPrefix(macOSVersion, "11.") { // It's Big Sur
+		cmdString := "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+		cmd := command.New(cmdString, "-f", simulatorAppPath)
+
+		log.Debugf(cmdString)
+		outStr, err := cmd.RunAndReturnTrimmedCombinedOutput()
+		if err != nil {
+			log.Warnf("failed to reset launch services database, output: %s, error: %s", outStr, err)
+		}
 	}
 }
