@@ -69,6 +69,17 @@ func TestAppTestActionEntry(t *testing.T) {
 	require.False(t, scheme.TestAction.Testables[1].BuildableReference.IsAppReference())
 }
 
+func TestScheme_Marshal(t *testing.T) {
+	pth := testhelper.CreateTmpFile(t, "ios-simple-objc.xcscheme", schemeContent)
+	scheme, err := Open(pth)
+	require.NoError(t, err)
+
+	content, err := scheme.Marshal()
+	require.NoError(t, err)
+
+	require.Equal(t, schemeContent, string(content))
+}
+
 const schemeContent = `<?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "0800"

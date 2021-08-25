@@ -59,9 +59,10 @@ type CommandBuilder struct {
 	customBuildActions []string
 
 	// Options
-	archivePath   string
-	customOptions []string
-	sdk           string
+	archivePath      string
+	customOptions    []string
+	sdk              string
+	resultBundlePath string
 
 	// Archive
 	action Action
@@ -127,6 +128,12 @@ func (c *CommandBuilder) SetCustomBuildAction(buildAction ...string) *CommandBui
 // SetArchivePath ...
 func (c *CommandBuilder) SetArchivePath(archivePath string) *CommandBuilder {
 	c.archivePath = archivePath
+	return c
+}
+
+// SetResultBundlePath ...
+func (c *CommandBuilder) SetResultBundlePath(resultBundlePath string) *CommandBuilder {
+	c.resultBundlePath = resultBundlePath
 	return c
 }
 
@@ -220,6 +227,10 @@ func (c *CommandBuilder) cmdSlice() []string {
 
 	if c.sdk != "" {
 		slice = append(slice, "-sdk", c.sdk)
+	}
+
+	if c.resultBundlePath != "" {
+		slice = append(slice, "-resultBundlePath", c.resultBundlePath)
 	}
 
 	slice = append(slice, c.customOptions...)
