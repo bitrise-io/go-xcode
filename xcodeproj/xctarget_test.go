@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -164,7 +165,8 @@ func givenGeneratedProject(t *testing.T, template string) string {
 
 	destDir := filepath.Join(temporaryDir, template)
 
-	cmd := command.New("tuist", "generate", "--path", destDir, "--project-only")
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("tuist", []string{"generate", "--path", destDir, "--project-only"}, nil)
 
 	output, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	fmt.Println(output)

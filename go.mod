@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
-	github.com/bitrise-io/go-steputils v0.0.0-20210824140209-e19983be529f
+	github.com/bitrise-io/go-steputils v0.0.0-20210830080834-0208a71cf7f8
 	github.com/bitrise-io/go-utils v0.0.0-20210830075908-d621a78334fb
 	github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-xcode/models"
 	version "github.com/hashicorp/go-version"
 )
@@ -100,7 +101,8 @@ func getOsVersionSimulatorInfosMapFromSimctlList(simctlList string) (OsVersionSi
 
 // GetOsVersionSimulatorInfosMap ...
 func GetOsVersionSimulatorInfosMap() (OsVersionSimulatorInfosMap, error) {
-	cmd := command.New("xcrun", "simctl", "list")
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("xcrun", []string{"simctl", "list"}, nil)
 	simctlListOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return OsVersionSimulatorInfosMap{}, err
@@ -131,7 +133,8 @@ func getSimulatorInfoFromSimctlOut(simctlListOut, osNameAndVersion, deviceName s
 
 // GetSimulatorInfo ...
 func GetSimulatorInfo(osNameAndVersion, deviceName string) (InfoModel, error) {
-	cmd := command.New("xcrun", "simctl", "list")
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("xcrun", []string{"simctl", "list"}, nil)
 	simctlListOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return InfoModel{}, err
@@ -196,7 +199,8 @@ func getLatestSimulatorInfoFromSimctlOut(simctlListOut, osName, deviceName strin
 
 // GetLatestSimulatorInfoAndVersion ...
 func GetLatestSimulatorInfoAndVersion(osName, deviceName string) (InfoModel, string, error) {
-	cmd := command.New("xcrun", "simctl", "list")
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("xcrun", []string{"simctl", "list"}, nil)
 	simctlListOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return InfoModel{}, "", err
@@ -277,7 +281,8 @@ func Is64BitArchitecture(simulatorDevice string) (bool, error) {
 }
 
 func getXcodeDeveloperDirPath() (string, error) {
-	cmd := command.New("xcode-select", "--print-path")
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("xcode-select", []string{"--print-path"}, nil)
 	return cmd.RunAndReturnTrimmedCombinedOutput()
 }
 
@@ -293,11 +298,12 @@ func BootSimulator(simulator InfoModel, xcodebuildVersion models.XcodebuildVersi
 	}
 	simulatorAppFullPath := filepath.Join(xcodeDevDirPth, "Applications", simulatorApp+".app")
 
-	openCmd := command.New("open", simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulator.ID)
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("open", []string{simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulator.ID}, nil)
 
-	log.Printf("$ %s", openCmd.PrintableCommandArgs())
+	log.Printf("$ %s", cmd.PrintableCommandArgs())
 
-	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
+	outStr, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to start simulators (%s), output: %s, error: %s", simulator.ID, outStr, err)
 	}

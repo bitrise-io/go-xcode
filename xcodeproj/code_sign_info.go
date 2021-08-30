@@ -9,6 +9,7 @@ import (
 
 	"github.com/bitrise-io/go-steputils/command/rubyscript"
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/pkg/errors"
@@ -69,18 +70,16 @@ func readSchemeTargetMapping(projectPth, scheme, user string) (TargetMapping, er
 		return TargetMapping{}, fmt.Errorf("bundle install failed, output: %s, error: %s", out, err)
 	}
 
-	runCmd, err := runner.RunScriptCommand()
+	runCmd, err := runner.RunScriptCommand(&command.Opts{
+		Env: []string{
+			"project=" + projectPth,
+			"scheme=" + scheme,
+			"user=" + user,
+		},
+	})
 	if err != nil {
 		return TargetMapping{}, fmt.Errorf("failed to create script runner command, error: %s", err)
 	}
-
-	envsToAppend := []string{
-		"project=" + projectPth,
-		"scheme=" + scheme,
-		"user=" + user}
-	envs := append(runCmd.GetCmd().Env, envsToAppend...)
-
-	runCmd.SetEnvs(envs...)
 
 	out, err := runCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -144,8 +143,10 @@ func getTargetBuildSettingsWithXcodebuild(projectPth, target, configuration stri
 		args = append(args, "-configuration", configuration)
 	}
 
-	cmd := command.New("xcodebuild", args...)
-	cmd.SetDir(filepath.Dir(projectPth))
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("xcodebuild", args, &command.Opts{
+		Dir: filepath.Dir(projectPth),
+	})
 
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {

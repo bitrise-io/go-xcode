@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-xcode/models"
 )
 
@@ -42,7 +43,8 @@ func getXcodeVersionFromXcodebuildOutput(outStr string) (models.XcodebuildVersio
 
 // GetXcodeVersion ...
 func GetXcodeVersion() (models.XcodebuildVersionModel, error) {
-	cmd := command.New("xcodebuild", "-version")
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("xcodebuild", []string{"-version"}, nil)
 	outStr, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return models.XcodebuildVersionModel{}, fmt.Errorf("xcodebuild -version failed, err: %s, details: %s", err, outStr)
