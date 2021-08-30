@@ -2,7 +2,6 @@ package xcodebuild
 
 import (
 	"os"
-	"os/exec"
 
 	"github.com/bitrise-io/go-utils/env"
 
@@ -136,12 +135,6 @@ func (c TestCommandModel) Command(opts *command.Opts) command.Command {
 // PrintableCmd ...
 func (c TestCommandModel) PrintableCmd() string {
 	return c.Command(nil).PrintableCommandArgs()
-}
-
-// Cmd ...
-func (c TestCommandModel) Cmd(opts *command.Opts) *exec.Cmd {
-	command := c.Command(opts)
-	return command.GetCmd()
 }
 
 // Run ...

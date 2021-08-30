@@ -73,11 +73,11 @@ func (c CommandModel) Run() (string, error) {
 	})
 
 	// Run
-	if err := xcodebuildCmd.GetCmd().Start(); err != nil {
+	if err := xcodebuildCmd.Start(); err != nil {
 		out := outBuffer.String()
 		return out, err
 	}
-	if err := prettyCmd.GetCmd().Start(); err != nil {
+	if err := prettyCmd.Start(); err != nil {
 		out := outBuffer.String()
 		return out, err
 	}
@@ -88,12 +88,12 @@ func (c CommandModel) Run() (string, error) {
 			log.Warnf("Failed to close xcodebuild-xcpretty pipe, error: %s", err)
 		}
 
-		if err := prettyCmd.GetCmd().Wait(); err != nil {
+		if err := prettyCmd.Wait(); err != nil {
 			log.Warnf("xcpretty command failed, error: %s", err)
 		}
 	}()
 
-	if err := xcodebuildCmd.GetCmd().Wait(); err != nil {
+	if err := xcodebuildCmd.Wait(); err != nil {
 		out := outBuffer.String()
 		return out, err
 	}

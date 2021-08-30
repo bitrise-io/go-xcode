@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"os"
-	"os/exec"
 
 	"github.com/bitrise-io/go-utils/env"
 
@@ -71,12 +70,6 @@ func (c ExportCommandModel) Command(opts *command.Opts) command.Command {
 // PrintableCmd ...
 func (c ExportCommandModel) PrintableCmd() string {
 	return c.Command(nil).PrintableCommandArgs()
-}
-
-// Cmd ...
-func (c ExportCommandModel) Cmd(opts *command.Opts) *exec.Cmd {
-	command := c.Command(opts)
-	return command.GetCmd()
 }
 
 // Run ...

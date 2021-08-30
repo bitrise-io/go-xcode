@@ -2,7 +2,6 @@ package xcodebuild
 
 import (
 	"bufio"
-	"os/exec"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/env"
@@ -47,12 +46,6 @@ func (c ShowBuildSettingsCommandModel) Command(opts *command.Opts) command.Comma
 // PrintableCmd ...
 func (c ShowBuildSettingsCommandModel) PrintableCmd() string {
 	return c.Command(nil).PrintableCommandArgs()
-}
-
-// Cmd ...
-func (c ShowBuildSettingsCommandModel) Cmd(opts *command.Opts) *exec.Cmd {
-	command := c.Command(opts)
-	return command.GetCmd()
 }
 
 func parseBuildSettings(out string) (map[string]string, error) {
