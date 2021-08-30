@@ -4,6 +4,8 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/bitrise-io/go-utils/env"
+
 	"github.com/bitrise-io/go-utils/command"
 )
 
@@ -91,8 +93,8 @@ func (c *TestCommandModel) SetDisableIndexWhileBuilding(disable bool) *TestComma
 	return c
 }
 
-func (c *TestCommandModel) cmdSlice() []string {
-	slice := []string{toolName}
+func (c *TestCommandModel) args() []string {
+	var slice []string
 
 	if c.projectPath != "" {
 		if c.isWorkspace {
@@ -125,30 +127,28 @@ func (c *TestCommandModel) cmdSlice() []string {
 	return slice
 }
 
-// PrintableCmd ...
-func (c TestCommandModel) PrintableCmd() string {
-	cmdSlice := c.cmdSlice()
-	return command.PrintableCommandArgs(false, cmdSlice)
+// Command ...
+func (c TestCommandModel) Command(opts *command.Opts) command.Command {
+	f := command.NewFactory(env.NewRepository())
+	return f.Create(toolName, c.args(), opts)
 }
 
-// Command ...
-func (c TestCommandModel) Command() *command.Model {
-	cmdSlice := c.cmdSlice()
-	return command.New(cmdSlice[0], cmdSlice[1:]...)
+// PrintableCmd ...
+func (c TestCommandModel) PrintableCmd() string {
+	return c.Command(nil).PrintableCommandArgs()
 }
 
 // Cmd ...
-func (c TestCommandModel) Cmd() *exec.Cmd {
-	command := c.Command()
+func (c TestCommandModel) Cmd(opts *command.Opts) *exec.Cmd {
+	command := c.Command(opts)
 	return command.GetCmd()
 }
 
 // Run ...
 func (c TestCommandModel) Run() error {
-	command := c.Command()
-
-	command.SetStdout(os.Stdout)
-	command.SetStderr(os.Stderr)
-
+	command := c.Command(&command.Opts{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	})
 	return command.Run()
 }

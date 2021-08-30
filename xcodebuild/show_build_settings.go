@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/bitrise-io/go-utils/env"
+
 	"github.com/bitrise-io/go-utils/command"
 )
 
@@ -22,8 +24,8 @@ func NewShowBuildSettingsCommand(projectPath string, isWorkspace bool) *ShowBuil
 	}
 }
 
-func (c *ShowBuildSettingsCommandModel) cmdSlice() []string {
-	slice := []string{toolName}
+func (c *ShowBuildSettingsCommandModel) args() []string {
+	var slice []string
 
 	if c.projectPath != "" {
 		if c.isWorkspace {
@@ -36,21 +38,20 @@ func (c *ShowBuildSettingsCommandModel) cmdSlice() []string {
 	return slice
 }
 
-// PrintableCmd ...
-func (c ShowBuildSettingsCommandModel) PrintableCmd() string {
-	cmdSlice := c.cmdSlice()
-	return command.PrintableCommandArgs(false, cmdSlice)
+// Command ...
+func (c ShowBuildSettingsCommandModel) Command(opts *command.Opts) command.Command {
+	f := command.NewFactory(env.NewRepository())
+	return f.Create(toolName, c.args(), opts)
 }
 
-// Command ...
-func (c ShowBuildSettingsCommandModel) Command() *command.Model {
-	cmdSlice := c.cmdSlice()
-	return command.New(cmdSlice[0], cmdSlice[1:]...)
+// PrintableCmd ...
+func (c ShowBuildSettingsCommandModel) PrintableCmd() string {
+	return c.Command(nil).PrintableCommandArgs()
 }
 
 // Cmd ...
-func (c ShowBuildSettingsCommandModel) Cmd() *exec.Cmd {
-	command := c.Command()
+func (c ShowBuildSettingsCommandModel) Cmd(opts *command.Opts) *exec.Cmd {
+	command := c.Command(opts)
 	return command.GetCmd()
 }
 
@@ -78,7 +79,7 @@ func parseBuildSettings(out string) (map[string]string, error) {
 
 // RunAndReturnSettings ...
 func (c ShowBuildSettingsCommandModel) RunAndReturnSettings() (map[string]string, error) {
-	command := c.Command()
+	command := c.Command(nil)
 	out, err := command.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return map[string]string{}, err

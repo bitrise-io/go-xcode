@@ -30,7 +30,6 @@ func TestTestCommandModel_cmdSlice(t *testing.T) {
 			customBuildActions:        []string{""},
 			customOptions:             []string{""},
 			want: []string{
-				"xcodebuild",
 				"",
 				"test",
 				"-destination",
@@ -164,7 +163,7 @@ func TestTestCommandModel_cmdSlice(t *testing.T) {
 				customBuildActions:        tt.customBuildActions,
 				customOptions:             tt.customOptions,
 			}
-			if got := c.cmdSlice(); !reflect.DeepEqual(got, tt.want) {
+			if got := c.args(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("TestCommandModel.cmdSlice() = %v\nwant %v", strings.Join(got, "\n"), strings.Join(tt.want, "\n"))
 			}
 		})
