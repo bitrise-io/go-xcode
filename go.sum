@@ -2,9 +2,13 @@ github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10 h1:/2OyBFI7GjY
 github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10/go.mod h1:pARutiL3kEuRLV3JvswidvfCj+9Y3qMZtji2BDqLFsA=
 github.com/bitrise-io/go-steputils v0.0.0-20210830080834-0208a71cf7f8 h1:U2cAaNclLCIevCvpU9RXx3Y3shPiciWr8ZrbVebfLFQ=
 github.com/bitrise-io/go-steputils v0.0.0-20210830080834-0208a71cf7f8/go.mod h1:F+FPN4MS73h+m+8DYL1FyqEK4O1PqSdEpA1Pccp1LN0=
+github.com/bitrise-io/go-steputils v0.0.0-20210831050118-9a8de76b2f19 h1:ZLuZ7EqpV2mgxEZTZrWxFjDo8t0F576QQLyschuuJRE=
+github.com/bitrise-io/go-steputils v0.0.0-20210831050118-9a8de76b2f19/go.mod h1:deuDfnw5Hot7Uajr7gsM5hNKAlKS3iIAPpZgfZSDNOk=
 github.com/bitrise-io/go-utils v0.0.0-20210824130242-27933dca637a/go.mod h1:Vi4MHnaZVL3PVoPPA/Yp6g2pzntkDH8LGiRSY7qw6KQ=
 github.com/bitrise-io/go-utils v0.0.0-20210830075908-d621a78334fb h1:6jPT4AOQq/PQntTzb+EoyHSj0BwNgQxxCRj7rgP7F0Q=
 github.com/bitrise-io/go-utils v0.0.0-20210830075908-d621a78334fb/go.mod h1:Vi4MHnaZVL3PVoPPA/Yp6g2pzntkDH8LGiRSY7qw6KQ=
+github.com/bitrise-io/go-utils v0.0.0-20210830144330-49d11743a4fd h1:CZIAr+uoOhHS6WfsTXHi3v9CUhOXcKSyRupi9cIcRWc=
+github.com/bitrise-io/go-utils v0.0.0-20210830144330-49d11743a4fd/go.mod h1:Vi4MHnaZVL3PVoPPA/Yp6g2pzntkDH8LGiRSY7qw6KQ=
 github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630 h1:V+xoYqGSkN8aUxCc806zDKjGGpBVUtV0Vytf5OsB3gc=
 github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630/go.mod h1:UiXKNs0essbC14a2TvGlnUKo9isP9m4guPrp8KJHJpU=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
