@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +16,9 @@ func cloneSampleProject(t *testing.T, url, projectPth string) string {
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("__codesignproperties__")
 	require.NoError(t, err)
 
-	cmd := command.New("git", "clone", url, tmpDir)
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("git", []string{"clone", url, tmpDir}, nil)
+
 	require.NoError(t, cmd.Run())
 
 	return filepath.Join(tmpDir, projectPth)

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bitrise-io/go-utils/env"
+
 	"github.com/bitrise-io/go-steputils/command/rubyscript"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/errorutil"
@@ -29,6 +31,9 @@ type TargetMapping struct {
 	Configuration  string              `json:"configuration"`
 	ProjectTargets map[string][]string `json:"project_targets"`
 }
+
+// TODO remove
+var temporaryFactory = command.NewFactory(env.NewRepository())
 
 func clearRubyScriptOutput(out string) string {
 	reader := strings.NewReader(out)
@@ -69,18 +74,16 @@ func readSchemeTargetMapping(projectPth, scheme, user string) (TargetMapping, er
 		return TargetMapping{}, fmt.Errorf("bundle install failed, output: %s, error: %s", out, err)
 	}
 
-	runCmd, err := runner.RunScriptCommand()
+	runCmd, err := runner.RunScriptCommand(&command.Opts{
+		Env: []string{
+			"project=" + projectPth,
+			"scheme=" + scheme,
+			"user=" + user,
+		},
+	})
 	if err != nil {
 		return TargetMapping{}, fmt.Errorf("failed to create script runner command, error: %s", err)
 	}
-
-	envsToAppend := []string{
-		"project=" + projectPth,
-		"scheme=" + scheme,
-		"user=" + user}
-	envs := append(runCmd.GetCmd().Env, envsToAppend...)
-
-	runCmd.SetEnvs(envs...)
 
 	out, err := runCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -144,8 +147,9 @@ func getTargetBuildSettingsWithXcodebuild(projectPth, target, configuration stri
 		args = append(args, "-configuration", configuration)
 	}
 
-	cmd := command.New("xcodebuild", args...)
-	cmd.SetDir(filepath.Dir(projectPth))
+	cmd := temporaryFactory.Create("xcodebuild", args, &command.Opts{
+		Dir: filepath.Dir(projectPth),
+	})
 
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {

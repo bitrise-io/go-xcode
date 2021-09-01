@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,10 @@ func sampleRepoPath(t *testing.T) string {
 		dir, err = pathutil.NormalizedOSTempDirPath(tempDirName)
 		require.NoError(t, err)
 		sampleArtifactsGitURI := "https://github.com/bitrise-samples/sample-artifacts.git"
-		cmd := command.New("git", "clone", sampleArtifactsGitURI, dir)
+
+		f := command.NewFactory(env.NewRepository())
+		cmd := f.Create("git", []string{"clone", sampleArtifactsGitURI, dir}, nil)
+
 		require.NoError(t, cmd.Run())
 		tmpDir = dir
 	}

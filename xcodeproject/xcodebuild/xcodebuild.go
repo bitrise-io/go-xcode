@@ -5,9 +5,13 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
+
+// TODO remove
+var temporaryFactory = command.NewFactory(env.NewRepository())
 
 func parseShowBuildSettingsOutput(out string) serialized.Object {
 	settings := serialized.Object{}
@@ -39,7 +43,7 @@ func ShowProjectBuildSettings(project, target, configuration string, customOptio
 	args = append(args, "-showBuildSettings")
 	args = append(args, customOptions...)
 
-	cmd := command.New("xcodebuild", args...)
+	cmd := temporaryFactory.Create("xcodebuild", args, nil)
 
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -59,7 +63,7 @@ func ShowWorkspaceBuildSettings(workspace, scheme, configuration string, customO
 	args = append(args, "-showBuildSettings")
 	args = append(args, customOptions...)
 
-	cmd := command.New("xcodebuild", args...)
+	cmd := temporaryFactory.Create("xcodebuild", args, nil)
 
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {

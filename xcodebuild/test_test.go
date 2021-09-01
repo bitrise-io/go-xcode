@@ -30,7 +30,6 @@ func TestTestCommandModel_cmdSlice(t *testing.T) {
 			customBuildActions:        []string{""},
 			customOptions:             []string{""},
 			want: []string{
-				"xcodebuild",
 				"",
 				"test",
 				"-destination",
@@ -49,7 +48,6 @@ func TestTestCommandModel_cmdSlice(t *testing.T) {
 			customBuildActions:        []string{""},
 			customOptions:             []string{""},
 			want: []string{
-				"xcodebuild",
 				"",
 				"test",
 				"-destination",
@@ -68,7 +66,6 @@ func TestTestCommandModel_cmdSlice(t *testing.T) {
 			customBuildActions:        []string{""},
 			customOptions:             []string{""},
 			want: []string{
-				"xcodebuild",
 				"-scheme",
 				"ios_scheme",
 				"",
@@ -87,7 +84,6 @@ func TestTestCommandModel_cmdSlice(t *testing.T) {
 			customBuildActions:        []string{""},
 			customOptions:             []string{""},
 			want: []string{
-				"xcodebuild",
 				"GCC_INSTRUMENT_PROGRAM_FLOW_ARCS=YES",
 				"GCC_GENERATE_TEST_COVERAGE_FILES=YES",
 				"",
@@ -106,7 +102,6 @@ func TestTestCommandModel_cmdSlice(t *testing.T) {
 			customBuildActions:        []string{""},
 			customOptions:             []string{""},
 			want: []string{
-				"xcodebuild",
 				"-workspace",
 				"ios/project.xcworkspace",
 				"",
@@ -125,7 +120,6 @@ func TestTestCommandModel_cmdSlice(t *testing.T) {
 			customBuildActions:        []string{""},
 			customOptions:             []string{""},
 			want: []string{
-				"xcodebuild",
 				"-project",
 				"ios/project.xcodeproj",
 				"",
@@ -144,7 +138,6 @@ func TestTestCommandModel_cmdSlice(t *testing.T) {
 			customBuildActions:        []string{""},
 			customOptions:             []string{""},
 			want: []string{
-				"xcodebuild",
 				"",
 				"test",
 				"COMPILER_INDEX_STORE_ENABLE=NO",
@@ -164,7 +157,7 @@ func TestTestCommandModel_cmdSlice(t *testing.T) {
 				customBuildActions:        tt.customBuildActions,
 				customOptions:             tt.customOptions,
 			}
-			if got := c.cmdSlice(); !reflect.DeepEqual(got, tt.want) {
+			if got := c.args(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("TestCommandModel.cmdSlice() = %v\nwant %v", strings.Join(got, "\n"), strings.Join(tt.want, "\n"))
 			}
 		})

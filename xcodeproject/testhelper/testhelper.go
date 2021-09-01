@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/stretchr/testify/require"
@@ -21,7 +22,9 @@ func GitCloneIntoTmpDir(t *testing.T, repo string) string {
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("__xcode-proj__")
 	require.NoError(t, err)
 
-	cmd := command.New("git", "clone", repo, tmpDir)
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("git", []string{"clone", repo, tmpDir}, nil)
+
 	require.NoError(t, cmd.Run())
 
 	clonedRespos[repo] = tmpDir
@@ -34,7 +37,9 @@ func GitCloneBranchIntoTmpDir(t *testing.T, repo string, branch string) string {
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("__xcode-proj__")
 	require.NoError(t, err)
 
-	cmd := command.New("git", "clone", "-b", branch, repo, tmpDir)
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("git", []string{"clone", "-b", branch, repo, tmpDir}, nil)
+
 	require.NoError(t, cmd.Run())
 
 	return tmpDir

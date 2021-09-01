@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bitrise-io/go-utils/env"
+
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/log"
@@ -37,12 +39,17 @@ func fileContentHash(pth string) (string, error) {
 	return fmt.Sprintf("%x", h.Sum(nil)), nil
 }
 
-func getXcodebuildCmd(xcodeProjectPath string) *command.Model {
-	buildCmd := command.New("xcodebuild",
+func getXcodebuildCmd(xcodeProjectPath string) command.Command {
+	f := command.NewFactory(env.NewRepository())
+	c := f.Create("xcodebuild", []string{
 		"-project", xcodeProjectPath,
 		"-scheme", "sample-swiftpm2",
-		"-resolvePackageDependencies")
-	return buildCmd.SetStdout(os.Stdout).SetStderr(os.Stderr)
+		"-resolvePackageDependencies",
+	}, &command.Opts{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	})
+	return c
 }
 
 func TestCollectSwiftPackages(t *testing.T) {

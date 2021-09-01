@@ -1,11 +1,11 @@
 package integration
 
 import (
+	"path/filepath"
 	"testing"
 
-	"path/filepath"
-
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-xcode/ipa"
 	"github.com/stretchr/testify/require"
@@ -19,7 +19,8 @@ func testIpasDirPth(t *testing.T) string {
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("__ipa__")
 	require.NoError(t, err)
 
-	cmd := command.New("git", "clone", sampleArtifactsGitURI, tmpDir)
+	f := command.NewFactory(env.NewRepository())
+	cmd := f.Create("git", []string{"clone", sampleArtifactsGitURI, tmpDir}, nil)
 	require.NoError(t, cmd.Run())
 
 	ipasDir := filepath.Join(tmpDir, "ipas")

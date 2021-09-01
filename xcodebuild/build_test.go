@@ -47,7 +47,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"-destination",
 				"id=3222ioocsdcsa1",
 				"",
@@ -74,7 +73,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"-destination",
 				"generic/platform=iOS",
 				"",
@@ -101,7 +99,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"-scheme",
 				"project_scheme",
 				"",
@@ -128,7 +125,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "iphonesimulator12",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"",
 				"build",
 				"-sdk",
@@ -156,7 +152,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			resultBundlePath:                  "/tmp/Analyze.xcresult",
 			action:                            AnalyzeAction,
 			want: []string{
-				"xcodebuild",
 				"",
 				"analyze",
 				"-resultBundlePath",
@@ -183,7 +178,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"DEVELOPMENT_TEAM=Bitrise",
 				"",
 				"build",
@@ -209,7 +203,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"CODE_SIGN_IDENTITY=iOS Developer: Bitrise bot",
 				"",
 				"build",
@@ -235,7 +228,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"PROVISIONING_PROFILE_SPECIFIER=id 2331232",
 				"PROVISIONING_PROFILE=id 2331232",
 				"",
@@ -262,7 +254,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"-project",
 				"project.xcodeproj",
 				"",
@@ -289,7 +280,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"-workspace",
 				"project.xcworkspace",
 				"",
@@ -316,7 +306,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"-configuration",
 				"debug",
 				"",
@@ -343,7 +332,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            ArchiveAction,
 			want: []string{
-				"xcodebuild",
 				"",
 				"archive",
 				"-archivePath",
@@ -370,7 +358,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"COMPILER_INDEX_STORE_ENABLE=NO",
 				"",
 				"build",
@@ -396,7 +383,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			sdk:                               "",
 			action:                            BuildAction,
 			want: []string{
-				"xcodebuild",
 				"CODE_SIGNING_ALLOWED=NO",
 				"",
 				"build",
@@ -425,7 +411,7 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 				resultBundlePath:                  tt.resultBundlePath,
 				action:                            tt.action,
 			}
-			if got := c.cmdSlice(); !reflect.DeepEqual(got, tt.want) {
+			if got := c.args(); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CommandBuilder.cmdSlice() = %v\nwant %v", strings.Join(got, "\n"), strings.Join(tt.want, "\n"))
 			}
 		})

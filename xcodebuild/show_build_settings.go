@@ -2,7 +2,6 @@ package xcodebuild
 
 import (
 	"bufio"
-	"os/exec"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
@@ -10,20 +9,23 @@ import (
 
 // ShowBuildSettingsCommandModel ...
 type ShowBuildSettingsCommandModel struct {
+	commandFactory command.Factory
+
 	projectPath string
 	isWorkspace bool
 }
 
 // NewShowBuildSettingsCommand ...
-func NewShowBuildSettingsCommand(projectPath string, isWorkspace bool) *ShowBuildSettingsCommandModel {
+func NewShowBuildSettingsCommand(projectPath string, isWorkspace bool, commandFactory command.Factory) *ShowBuildSettingsCommandModel {
 	return &ShowBuildSettingsCommandModel{
-		projectPath: projectPath,
-		isWorkspace: isWorkspace,
+		commandFactory: commandFactory,
+		projectPath:    projectPath,
+		isWorkspace:    isWorkspace,
 	}
 }
 
-func (c *ShowBuildSettingsCommandModel) cmdSlice() []string {
-	slice := []string{toolName}
+func (c *ShowBuildSettingsCommandModel) args() []string {
+	var slice []string
 
 	if c.projectPath != "" {
 		if c.isWorkspace {
@@ -36,22 +38,14 @@ func (c *ShowBuildSettingsCommandModel) cmdSlice() []string {
 	return slice
 }
 
+// Command ...
+func (c ShowBuildSettingsCommandModel) Command(opts *command.Opts) command.Command {
+	return c.commandFactory.Create(toolName, c.args(), opts)
+}
+
 // PrintableCmd ...
 func (c ShowBuildSettingsCommandModel) PrintableCmd() string {
-	cmdSlice := c.cmdSlice()
-	return command.PrintableCommandArgs(false, cmdSlice)
-}
-
-// Command ...
-func (c ShowBuildSettingsCommandModel) Command() *command.Model {
-	cmdSlice := c.cmdSlice()
-	return command.New(cmdSlice[0], cmdSlice[1:]...)
-}
-
-// Cmd ...
-func (c ShowBuildSettingsCommandModel) Cmd() *exec.Cmd {
-	command := c.Command()
-	return command.GetCmd()
+	return c.Command(nil).PrintableCommandArgs()
 }
 
 func parseBuildSettings(out string) (map[string]string, error) {
@@ -78,7 +72,7 @@ func parseBuildSettings(out string) (map[string]string, error) {
 
 // RunAndReturnSettings ...
 func (c ShowBuildSettingsCommandModel) RunAndReturnSettings() (map[string]string, error) {
-	command := c.Command()
+	command := c.Command(nil)
 	out, err := command.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return map[string]string{}, err
