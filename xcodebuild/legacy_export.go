@@ -3,8 +3,6 @@ package xcodebuild
 import (
 	"os"
 
-	"github.com/bitrise-io/go-utils/env"
-
 	"github.com/bitrise-io/go-utils/command"
 )
 
@@ -20,6 +18,8 @@ xcodebuild -exportArchive \
 
 // LegacyExportCommandModel ...
 type LegacyExportCommandModel struct {
+	commandFactory command.Factory
+
 	exportFormat                  string
 	archivePath                   string
 	exportPath                    string
@@ -27,8 +27,10 @@ type LegacyExportCommandModel struct {
 }
 
 // NewLegacyExportCommand ...
-func NewLegacyExportCommand() *LegacyExportCommandModel {
-	return &LegacyExportCommandModel{}
+func NewLegacyExportCommand(commandFactory command.Factory) *LegacyExportCommandModel {
+	return &LegacyExportCommandModel{
+		commandFactory: commandFactory,
+	}
 }
 
 // SetExportFormat ...
@@ -74,8 +76,7 @@ func (c LegacyExportCommandModel) args() []string {
 
 // Command ...
 func (c LegacyExportCommandModel) Command(opts *command.Opts) command.Command {
-	f := command.NewFactory(env.NewRepository())
-	return f.Create(toolName, c.args(), opts)
+	return c.commandFactory.Create(toolName, c.args(), opts)
 }
 
 // PrintableCmd ...

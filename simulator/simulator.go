@@ -25,6 +25,9 @@ type InfoModel struct {
 // OsVersionSimulatorInfosMap ...
 type OsVersionSimulatorInfosMap map[string][]InfoModel // Os version - []Info map
 
+// TODO remove
+var temporaryFactory = command.NewFactory(env.NewRepository())
+
 // getSimulatorInfoFromLine ...
 // a simulator info line should look like this:
 //  iPhone 5s (EA1C7E48-8137-428C-A0A5-B2C63FF276EB) (Shutdown)
@@ -100,8 +103,7 @@ func getOsVersionSimulatorInfosMapFromSimctlList(simctlList string) (OsVersionSi
 
 // GetOsVersionSimulatorInfosMap ...
 func GetOsVersionSimulatorInfosMap() (OsVersionSimulatorInfosMap, error) {
-	f := command.NewFactory(env.NewRepository())
-	cmd := f.Create("xcrun", []string{"simctl", "list"}, nil)
+	cmd := temporaryFactory.Create("xcrun", []string{"simctl", "list"}, nil)
 	simctlListOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return OsVersionSimulatorInfosMap{}, err
@@ -132,8 +134,7 @@ func getSimulatorInfoFromSimctlOut(simctlListOut, osNameAndVersion, deviceName s
 
 // GetSimulatorInfo ...
 func GetSimulatorInfo(osNameAndVersion, deviceName string) (InfoModel, error) {
-	f := command.NewFactory(env.NewRepository())
-	cmd := f.Create("xcrun", []string{"simctl", "list"}, nil)
+	cmd := temporaryFactory.Create("xcrun", []string{"simctl", "list"}, nil)
 	simctlListOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return InfoModel{}, err
@@ -198,8 +199,7 @@ func getLatestSimulatorInfoFromSimctlOut(simctlListOut, osName, deviceName strin
 
 // GetLatestSimulatorInfoAndVersion ...
 func GetLatestSimulatorInfoAndVersion(osName, deviceName string) (InfoModel, string, error) {
-	f := command.NewFactory(env.NewRepository())
-	cmd := f.Create("xcrun", []string{"simctl", "list"}, nil)
+	cmd := temporaryFactory.Create("xcrun", []string{"simctl", "list"}, nil)
 	simctlListOut, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return InfoModel{}, "", err
@@ -280,8 +280,7 @@ func Is64BitArchitecture(simulatorDevice string) (bool, error) {
 }
 
 func getXcodeDeveloperDirPath() (string, error) {
-	f := command.NewFactory(env.NewRepository())
-	cmd := f.Create("xcode-select", []string{"--print-path"}, nil)
+	cmd := temporaryFactory.Create("xcode-select", []string{"--print-path"}, nil)
 	return cmd.RunAndReturnTrimmedCombinedOutput()
 }
 
@@ -297,8 +296,7 @@ func BootSimulator(simulatorID string, xcodebuildMajorVersion int) error {
 	}
 	simulatorAppFullPath := filepath.Join(xcodeDevDirPth, "Applications", simulatorApp+".app")
 
-	f := command.NewFactory(env.NewRepository())
-	cmd := f.Create("open", []string{simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
+	cmd := temporaryFactory.Create("open", []string{simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
 
 	log.Printf("$ %s", cmd.PrintableCommandArgs())
 

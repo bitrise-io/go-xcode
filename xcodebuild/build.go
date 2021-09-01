@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/bitrise-io/go-utils/env"
-
 	"github.com/bitrise-io/go-utils/command"
 )
 
@@ -42,6 +40,8 @@ type Action string
 
 // CommandBuilder ...
 type CommandBuilder struct {
+	commandFactory command.Factory
+
 	projectPath   string
 	isWorkspace   bool
 	scheme        string
@@ -70,11 +70,12 @@ type CommandBuilder struct {
 }
 
 // NewCommandBuilder ...
-func NewCommandBuilder(projectPath string, isWorkspace bool, action Action) *CommandBuilder {
+func NewCommandBuilder(projectPath string, isWorkspace bool, action Action, commandFactory command.Factory) *CommandBuilder {
 	return &CommandBuilder{
-		projectPath: projectPath,
-		isWorkspace: isWorkspace,
-		action:      action,
+		commandFactory: commandFactory,
+		projectPath:    projectPath,
+		isWorkspace:    isWorkspace,
+		action:         action,
 	}
 }
 
@@ -241,8 +242,7 @@ func (c *CommandBuilder) args() []string {
 
 // Command ...
 func (c CommandBuilder) Command(opts *command.Opts) command.Command {
-	f := command.NewFactory(env.NewRepository())
-	return f.Create(toolName, c.args(), opts)
+	return c.commandFactory.Create(toolName, c.args(), opts)
 }
 
 // PrintableCmd ...

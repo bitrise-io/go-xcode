@@ -7,9 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bitrise-io/go-utils/env"
+
 	"github.com/bitrise-io/go-steputils/command/rubyscript"
 	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/pkg/errors"
@@ -30,6 +31,9 @@ type TargetMapping struct {
 	Configuration  string              `json:"configuration"`
 	ProjectTargets map[string][]string `json:"project_targets"`
 }
+
+// TODO remove
+var temporaryFactory = command.NewFactory(env.NewRepository())
 
 func clearRubyScriptOutput(out string) string {
 	reader := strings.NewReader(out)
@@ -143,8 +147,7 @@ func getTargetBuildSettingsWithXcodebuild(projectPth, target, configuration stri
 		args = append(args, "-configuration", configuration)
 	}
 
-	f := command.NewFactory(env.NewRepository())
-	cmd := f.Create("xcodebuild", args, &command.Opts{
+	cmd := temporaryFactory.Create("xcodebuild", args, &command.Opts{
 		Dir: filepath.Dir(projectPth),
 	})
 

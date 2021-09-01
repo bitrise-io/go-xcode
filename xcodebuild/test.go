@@ -3,8 +3,6 @@ package xcodebuild
 import (
 	"os"
 
-	"github.com/bitrise-io/go-utils/env"
-
 	"github.com/bitrise-io/go-utils/command"
 )
 
@@ -32,6 +30,8 @@ xcodebuild -workspace <workspacename> \
 
 // TestCommandModel ...
 type TestCommandModel struct {
+	commandFactory command.Factory
+
 	projectPath string
 	isWorkspace bool
 	scheme      string
@@ -49,10 +49,11 @@ type TestCommandModel struct {
 }
 
 // NewTestCommand ...
-func NewTestCommand(projectPath string, isWorkspace bool) *TestCommandModel {
+func NewTestCommand(projectPath string, isWorkspace bool, commandFactory command.Factory) *TestCommandModel {
 	return &TestCommandModel{
-		projectPath: projectPath,
-		isWorkspace: isWorkspace,
+		commandFactory: commandFactory,
+		projectPath:    projectPath,
+		isWorkspace:    isWorkspace,
 	}
 }
 
@@ -128,8 +129,7 @@ func (c *TestCommandModel) args() []string {
 
 // Command ...
 func (c TestCommandModel) Command(opts *command.Opts) command.Command {
-	f := command.NewFactory(env.NewRepository())
-	return f.Create(toolName, c.args(), opts)
+	return c.commandFactory.Create(toolName, c.args(), opts)
 }
 
 // PrintableCmd ...

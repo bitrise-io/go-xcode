@@ -4,22 +4,23 @@ import (
 	"bufio"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/env"
-
 	"github.com/bitrise-io/go-utils/command"
 )
 
 // ShowBuildSettingsCommandModel ...
 type ShowBuildSettingsCommandModel struct {
+	commandFactory command.Factory
+
 	projectPath string
 	isWorkspace bool
 }
 
 // NewShowBuildSettingsCommand ...
-func NewShowBuildSettingsCommand(projectPath string, isWorkspace bool) *ShowBuildSettingsCommandModel {
+func NewShowBuildSettingsCommand(projectPath string, isWorkspace bool, commandFactory command.Factory) *ShowBuildSettingsCommandModel {
 	return &ShowBuildSettingsCommandModel{
-		projectPath: projectPath,
-		isWorkspace: isWorkspace,
+		commandFactory: commandFactory,
+		projectPath:    projectPath,
+		isWorkspace:    isWorkspace,
 	}
 }
 
@@ -39,8 +40,7 @@ func (c *ShowBuildSettingsCommandModel) args() []string {
 
 // Command ...
 func (c ShowBuildSettingsCommandModel) Command(opts *command.Opts) command.Command {
-	f := command.NewFactory(env.NewRepository())
-	return f.Create(toolName, c.args(), opts)
+	return c.commandFactory.Create(toolName, c.args(), opts)
 }
 
 // PrintableCmd ...

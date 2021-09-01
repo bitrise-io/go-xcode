@@ -5,8 +5,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/bitrise-io/go-utils/env"
-
 	"github.com/bitrise-io/go-utils/command"
 )
 
@@ -19,14 +17,18 @@ xcodebuild -exportArchive \
 
 // ExportCommandModel ...
 type ExportCommandModel struct {
+	commandFactory command.Factory
+
 	archivePath        string
 	exportDir          string
 	exportOptionsPlist string
 }
 
 // NewExportCommand ...
-func NewExportCommand() *ExportCommandModel {
-	return &ExportCommandModel{}
+func NewExportCommand(commandFactory command.Factory) *ExportCommandModel {
+	return &ExportCommandModel{
+		commandFactory: commandFactory,
+	}
 }
 
 // SetArchivePath ...
@@ -63,8 +65,7 @@ func (c ExportCommandModel) args() []string {
 
 // Command ...
 func (c ExportCommandModel) Command(opts *command.Opts) command.Command {
-	f := command.NewFactory(env.NewRepository())
-	return f.Create(toolName, c.args(), opts)
+	return c.commandFactory.Create(toolName, c.args(), opts)
 }
 
 // PrintableCmd ...
