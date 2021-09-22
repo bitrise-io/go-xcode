@@ -3,9 +3,8 @@ package autocodesign
 import (
 	"math/big"
 
-	"github.com/bitrise-io/go-xcode/devportalservice"
-
 	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
@@ -16,25 +15,6 @@ type Certificate struct {
 	ID          string
 }
 
-// CertificateType ...
-type CertificateType string
-
-// CertificateTypes ...
-const (
-	Development              CertificateType = "DEVELOPMENT"
-	Distribution             CertificateType = "DISTRIBUTION"
-	IOSDevelopment           CertificateType = "IOS_DEVELOPMENT"
-	IOSDistribution          CertificateType = "IOS_DISTRIBUTION"
-	MacDistribution          CertificateType = "MAC_APP_DISTRIBUTION"
-	MacInstallerDistribution CertificateType = "MAC_INSTALLER_DISTRIBUTION"
-	MacDevelopment           CertificateType = "MAC_APP_DEVELOPMENT"
-	DeveloperIDKext          CertificateType = "DEVELOPER_ID_KEXT"
-	DeveloperIDApplication   CertificateType = "DEVELOPER_ID_APPLICATION"
-)
-
-type DevicePlatform appstoreconnect.DevicePlatform
-type Device appstoreconnect.Device
-type BitriseTestDevice devportalservice.TestDevice
 type Profile interface {
 	ID() string
 	Attributes() appstoreconnect.ProfileAttributes
@@ -43,24 +23,22 @@ type Profile interface {
 	BundleID() (appstoreconnect.BundleID, error)
 }
 type Entitlement serialized.Object
-type BundleID appstoreconnect.BundleID
-type ProfileType appstoreconnect.ProfileType
 
 type DevPortalClient interface {
 	QueryCertificateBySerial(*big.Int) (Certificate, error)
-	QueryAllIOSCertificates() (map[CertificateType][]Certificate, error)
+	QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]Certificate, error)
 
-	ListDevices(udid string, platform DevicePlatform) ([]Device, error)
-	RegisterDevice(testDevice BitriseTestDevice) (*Device, error)
+	ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error)
+	RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error)
 
-	FindProfile(name string, profileType ProfileType) (Profile, error)
+	FindProfile(name string, profileType appstoreconnect.ProfileType) (Profile, error)
 	DeleteProfile(id string) error
-	CreateProfile(name string, profileType ProfileType, bundleID BundleID, certificateIDs []string, deviceIDs []string) (Profile, error)
+	CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error)
 
-	FindBundleID(bundleIDIdentifier string) (*BundleID, error)
-	CheckBundleIDEntitlements(bundleID BundleID, projectEntitlements Entitlement) error
-	SyncBundleID(bundleID BundleID, entitlements Entitlement) error
-	CreateBundleID(bundleIDIdentifier string) (*BundleID, error)
+	FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
+	CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error
+	SyncBundleID(bundleID appstoreconnect.BundleID, entitlements Entitlement) error
+	CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
 }
 
 type AppLayout struct {

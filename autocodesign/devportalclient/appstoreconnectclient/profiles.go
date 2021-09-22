@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
 // APIProfile ...
@@ -17,7 +17,7 @@ type APIProfile struct {
 }
 
 // NewAPIProfile ...
-func NewAPIProfile(client *appstoreconnect.Client, profile *appstoreconnect.Profile) devportal.Profile {
+func NewAPIProfile(client *appstoreconnect.Client, profile *appstoreconnect.Profile) autocodesign.Profile {
 	return &APIProfile{
 		profile: profile,
 		client:  client,
@@ -105,18 +105,18 @@ func (p APIProfile) BundleID() (appstoreconnect.BundleID, error) {
 	return bundleIDresp.Data, nil
 }
 
-// APIProfileClient ...
-type APIProfileClient struct {
+// ProfileClient ...
+type ProfileClient struct {
 	client *appstoreconnect.Client
 }
 
-// NewAPIProfileClient ...
-func NewAPIProfileClient(client *appstoreconnect.Client) devportal.ProfileClient {
-	return &APIProfileClient{client: client}
+// NewProfileClient ...
+func NewProfileClient(client *appstoreconnect.Client) *ProfileClient {
+	return &ProfileClient{client: client}
 }
 
 // FindProfile ...
-func (c *APIProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (devportal.Profile, error) {
+func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (autocodesign.Profile, error) {
 	opt := &appstoreconnect.ListProfilesOptions{
 		PagingOptions: appstoreconnect.PagingOptions{
 			Limit: 1,
@@ -137,7 +137,7 @@ func (c *APIProfileClient) FindProfile(name string, profileType appstoreconnect.
 }
 
 // DeleteProfile ...
-func (c *APIProfileClient) DeleteProfile(id string) error {
+func (c *ProfileClient) DeleteProfile(id string) error {
 	if err := c.client.Provisioning.DeleteProfile(id); err != nil {
 		if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
 			if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
@@ -152,7 +152,7 @@ func (c *APIProfileClient) DeleteProfile(id string) error {
 }
 
 // CreateProfile ...
-func (c *APIProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (devportal.Profile, error) {
+func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
 	profile, err := c.createProfile(name, profileType, bundleID, certificateIDs, deviceIDs)
 	if err != nil {
 		// Expired profiles are not listed via profiles endpoint,
@@ -178,7 +178,7 @@ func (c *APIProfileClient) CreateProfile(name string, profileType appstoreconnec
 	return profile, nil
 }
 
-func (c *APIProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
+func (c *ProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.BundleID, profileName string) error {
 	var nextPageURL string
 	var profile *appstoreconnect.Profile
 
@@ -211,7 +211,7 @@ func (c *APIProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.Bundle
 	return c.DeleteProfile(profile.ID)
 }
 
-func (c *APIProfileClient) createProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (devportal.Profile, error) {
+func (c *ProfileClient) createProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
 	// Create new Bitrise profile on App Store Connect
 	r, err := c.client.Provisioning.CreateProfile(
 		appstoreconnect.NewProfileCreateRequest(
@@ -230,7 +230,7 @@ func (c *APIProfileClient) createProfile(name string, profileType appstoreconnec
 }
 
 // FindBundleID ...
-func (c *APIProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
+func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
 	var nextPageURL string
 	var bundleIDs []appstoreconnect.BundleID
 	for {
@@ -268,8 +268,8 @@ func (c *APIProfileClient) FindBundleID(bundleIDIdentifier string) (*appstorecon
 }
 
 // CreateBundleID ...
-func (c *APIProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	appIDName := devportal.AppIDName(bundleIDIdentifier)
+func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
+	appIDName := autocodesign.AppIDName(bundleIDIdentifier)
 
 	r, err := c.client.Provisioning.CreateBundleID(
 		appstoreconnect.BundleIDCreateRequest{
@@ -291,7 +291,7 @@ func (c *APIProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstorec
 }
 
 // CheckBundleIDEntitlements checks if a given Bundle ID has every capability enabled, required by the project.
-func (c *APIProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements devportal.Entitlement) error {
+func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements autocodesign.Entitlement) error {
 	response, err := c.client.Provisioning.Capabilities(bundleID.Relationships.Capabilities.Links.Related)
 	if err != nil {
 		return err
@@ -301,9 +301,9 @@ func (c *APIProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.Bu
 }
 
 // SyncBundleID ...
-func (c *APIProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, entitlements devportal.Entitlement) error {
+func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, entitlements autocodesign.Entitlement) error {
 	for key, value := range entitlements {
-		ent := devportal.Entitlement{key: value}
+		ent := autocodesign.Entitlement{key: value}
 		cap, err := ent.Capability()
 		if err != nil {
 			return err
@@ -341,7 +341,7 @@ func (c *APIProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, entit
 func wrapInProfileError(err error) error {
 	if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
 		if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
-			return devportal.NonmatchingProfileError{
+			return autocodesign.NonmatchingProfileError{
 				Reason: fmt.Sprintf("profile was concurrently removed from Developer Portal: %v", err),
 			}
 		}
@@ -350,9 +350,9 @@ func wrapInProfileError(err error) error {
 	return err
 }
 
-func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCapability, projectEntitlements devportal.Entitlement) error {
+func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCapability, projectEntitlements autocodesign.Entitlement) error {
 	for k, v := range projectEntitlements {
-		ent := devportal.Entitlement{k: v}
+		ent := autocodesign.Entitlement{k: v}
 
 		if !ent.AppearsOnDeveloperPortal() {
 			continue
@@ -372,7 +372,7 @@ func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCa
 		}
 
 		if !found {
-			return devportal.NonmatchingProfileError{
+			return autocodesign.NonmatchingProfileError{
 				Reason: fmt.Sprintf("bundle ID missing Capability (%s) required by project Entitlement (%s)", appstoreconnect.ServiceTypeByKey[k], k),
 			}
 		}

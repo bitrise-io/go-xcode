@@ -1,15 +1,21 @@
 package appstoreconnectclient
 
 import (
+	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/devportal"
 )
 
+type Client struct {
+	*CertificateSource
+	*DeviceClient
+	*ProfileClient
+}
+
 // NewAPIDevportalClient ...
-func NewAPIDevportalClient(client *appstoreconnect.Client) devportal.Client {
-	return devportal.Client{
-		CertificateSource: NewAPICertificateSource(client),
-		DeviceClient:      NewAPIDeviceClient(client),
-		ProfileClient:     NewAPIProfileClient(client),
+func NewAPIDevportalClient(client *appstoreconnect.Client) autocodesign.DevPortalClient {
+	return Client{
+		CertificateSource: NewCertificateSource(client),
+		DeviceClient:      NewDeviceClient(client),
+		ProfileClient:     NewProfileClient(client),
 	}
 }
