@@ -7,6 +7,7 @@ require (
 	github.com/bitrise-io/go-steputils v0.0.0-20210831050118-9a8de76b2f19
 	github.com/bitrise-io/go-utils v0.0.0-20210830144330-49d11743a4fd
 	github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630
+	github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect v0.0.0-20210917130447-0c3bda4f8c2e // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
 	github.com/google/go-cmp v0.5.5
 	github.com/hashicorp/go-version v1.3.0
