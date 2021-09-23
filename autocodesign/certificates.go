@@ -5,20 +5,21 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-utils/log"
+	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 )
 
-func selectCertificatesAndDistributionTypes(certificateSource DevPortalClient, certs []certificateutil.CertificateInfoModel, distribution DistributionType, teamID string, signUITestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]Certificate, []DistributionType, error) {
+func selectCertificatesAndDistributionTypes(certificateSource DevPortalClient, certs []certificateutil.CertificateInfoModel, distribution models.DistributionType, teamID string, signUITestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]Certificate, []models.DistributionType, error) {
 	certType, ok := CertificateTypeByDistribution[distribution]
 	if !ok {
 		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", distribution))
 	}
 
-	distrTypes := []DistributionType{distribution}
+	distrTypes := []models.DistributionType{distribution}
 	requiredCertTypes := map[appstoreconnect.CertificateType]bool{certType: true}
-	if distribution != Development {
-		distrTypes = append(distrTypes, Development)
+	if distribution != models.Development {
+		distrTypes = append(distrTypes, models.Development)
 
 		if signUITestTargets {
 			log.Warnf("UITest target requires development code signing in addition to the specified %s code signing", distribution)
@@ -40,9 +41,9 @@ func selectCertificatesAndDistributionTypes(certificateSource DevPortalClient, c
 		return nil, nil, fmt.Errorf("failed to get valid certificates: %s", err)
 	}
 
-	if len(certsByType) == 1 && distribution != Development {
+	if len(certsByType) == 1 && distribution != models.Development {
 		// remove development distribution if there is no development certificate uploaded
-		distrTypes = []DistributionType{distribution}
+		distrTypes = []models.DistributionType{distribution}
 	}
 	log.Printf("ensuring codesigning files for distribution types: %s", distrTypes)
 

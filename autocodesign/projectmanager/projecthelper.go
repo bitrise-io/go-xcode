@@ -12,27 +12,13 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/autocodesign"
+	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/xcodeproject/schemeint"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 	"howett.net/plist"
 )
-
-///////////////
-// TODO: move
-
-// Platform ...
-type Platform string
-
-// Const
-const (
-	IOS   Platform = "iOS"
-	TVOS  Platform = "tvOS"
-	MacOS Platform = "macOS"
-)
-
-///////////////
 
 // ProjectHelper ...
 type ProjectHelper struct {
@@ -138,7 +124,7 @@ func (p *ProjectHelper) UITestTargetBundleIDs() ([]string, error) {
 }
 
 // Platform get the platform (PLATFORM_DISPLAY_NAME) - iOS, tvOS, macOS
-func (p *ProjectHelper) Platform(configurationName string) (Platform, error) {
+func (p *ProjectHelper) Platform(configurationName string) (models.Platform, error) {
 	settings, err := p.targetBuildSettings(p.MainTarget.Name, configurationName)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch project (%s) build settings: %s", p.XcProj.Path, err)
@@ -149,10 +135,10 @@ func (p *ProjectHelper) Platform(configurationName string) (Platform, error) {
 		return "", fmt.Errorf("no PLATFORM_DISPLAY_NAME config found for (%s) target", p.MainTarget.Name)
 	}
 
-	if platformDisplayName != string(IOS) && platformDisplayName != string(MacOS) && platformDisplayName != string(TVOS) {
-		return "", fmt.Errorf("not supported platform. Platform (PLATFORM_DISPLAY_NAME) = %s, supported: %s, %s", platformDisplayName, IOS, TVOS)
+	if platformDisplayName != string(models.IOS) && platformDisplayName != string(models.MacOS) && platformDisplayName != string(models.TVOS) {
+		return "", fmt.Errorf("not supported platform. Platform (PLATFORM_DISPLAY_NAME) = %s, supported: %s, %s", platformDisplayName, models.IOS, models.TVOS)
 	}
-	return Platform(platformDisplayName), nil
+	return models.Platform(platformDisplayName), nil
 }
 
 // ProjectTeamID returns the development team's ID

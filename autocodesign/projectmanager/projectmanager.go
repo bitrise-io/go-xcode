@@ -5,12 +5,12 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
+	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
-///////////////
-
-// CanGenerateProfileWithEntitlements checks all entitlements, wheter they can be generated
+// ToDo :(
+// CanGenerateProfileWithEntitlements checks all entitlements, whether they can be generated
 func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (ok bool, badEntitlement string, badBundleID string) {
 	for bundleID, entitlements := range entitlementsByBundleID {
 		for entitlementKey, value := range entitlements {
@@ -22,8 +22,6 @@ func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serial
 
 	return true, "", ""
 }
-
-///////////////
 
 // Project ...
 type Project struct {
@@ -100,14 +98,14 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 
 	return autocodesign.AppLayout{
 		TeamID:                                 teamID,
-		Platform:                               string(platform), // TODO: keep Platform type
+		Platform:                               platform,
 		ArchivableTargetBundleIDToEntitlements: archivableTargetBundleIDToEntitlements,
 		UITestTargetBundleIDs:                  uiTestTargetBundleIDs,
 	}, nil
 }
 
 // ForceCodesignAssets ...
-func (p Project) ForceCodesignAssets(distribution DistributionType, codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets) error {
+func (p Project) ForceCodesignAssets(distribution models.DistributionType, codesignAssetsByDistributionType map[models.DistributionType]models.AppCodesignAssets) error {
 	fmt.Println()
 	log.Infof("Apply Bitrise managed codesigning on the executable targets")
 	for _, target := range p.projHelper.ArchivableTargets() {
@@ -115,8 +113,8 @@ func (p Project) ForceCodesignAssets(distribution DistributionType, codesignAsse
 		log.Infof("  Target: %s", target.Name)
 
 		forceCodesignDistribution := distribution
-		if _, isDevelopmentAvailable := codesignAssetsByDistributionType[Development]; isDevelopmentAvailable {
-			forceCodesignDistribution = Development
+		if _, isDevelopmentAvailable := codesignAssetsByDistributionType[models.Development]; isDevelopmentAvailable {
+			forceCodesignDistribution = models.Development
 		}
 
 		codesignAssets, ok := codesignAssetsByDistributionType[forceCodesignDistribution]
@@ -143,7 +141,7 @@ func (p Project) ForceCodesignAssets(distribution DistributionType, codesignAsse
 		}
 	}
 
-	devCodesignAssets, isDevelopmentAvailable := codesignAssetsByDistributionType[Development]
+	devCodesignAssets, isDevelopmentAvailable := codesignAssetsByDistributionType[models.Development]
 	if isDevelopmentAvailable && len(devCodesignAssets.UITestTargetProfilesByBundleID) != 0 {
 		fmt.Println()
 		log.Infof("Apply Bitrise managed codesigning on the UITest targets")

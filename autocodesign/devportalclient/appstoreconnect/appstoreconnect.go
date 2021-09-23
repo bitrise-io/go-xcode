@@ -12,13 +12,12 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/hashicorp/go-retryablehttp"
-
 	"github.com/bitrise-io/go-utils/httputil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/google/go-querystring/query"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 const (

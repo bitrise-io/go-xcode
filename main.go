@@ -5,10 +5,13 @@ import (
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/env"
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/certdownloder"
+	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
+	"github.com/bitrise-io/go-xcode/autocodesign/projectmanager"
 )
 
 func main() {
@@ -30,5 +33,32 @@ func main() {
 	}
 
 	certDownloader := certdownloder.NewDownloader(nil)
-	autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, connection.TestDevices, *keychain)
+	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, connection.TestDevices, *keychain)
+
+	// Analyzing project
+	fmt.Println()
+	log.Infof("Analyzing project")
+	project, err := projectmanager.NewProject("path", "scheme", "config")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	appLayout, err := project.GetAppLayout(true)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	distribution := models.Development
+	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
+		DistributionType:       distribution,
+		MinProfileValidityDays: 0,
+		VerboseLog:             true,
+	})
+	if err != nil {
+		panic(fmt.Sprintf("Automatic code signing failed: %s", err))
+	}
+
+	if err := project.ForceCodesignAssets(distribution, codesignAssetsByDistributionType); err != nil {
+		panic(fmt.Sprintf("Failed to force codesign settings: %s", err))
+	}
 }

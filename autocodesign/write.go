@@ -8,11 +8,12 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
 )
 
-func installCodesigningFiles(codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets, kc keychain.Keychain) error {
+func installCodesigningFiles(codesignAssetsByDistributionType map[models.DistributionType]models.AppCodesignAssets, kc keychain.Keychain) error {
 	fmt.Println()
 	log.Infof("Install certificates and profiles")
 
@@ -53,7 +54,7 @@ func installCodesigningFiles(codesignAssetsByDistributionType map[DistributionTy
 // writeProfile writes the provided profile under the `$HOME/Library/MobileDevice/Provisioning Profiles` directory.
 // Xcode uses profiles located in that directory.
 // The file extension depends on the profile's platform `IOS` => `.mobileprovision`, `MAC_OS` => `.provisionprofile`
-func writeProfile(profile Profile) error {
+func writeProfile(profile models.Profile) error {
 	homeDir := os.Getenv("HOME")
 	profilesDir := path.Join(homeDir, "Library/MobileDevice/Provisioning Profiles")
 	if exists, err := pathutil.IsDirExists(profilesDir); err != nil {

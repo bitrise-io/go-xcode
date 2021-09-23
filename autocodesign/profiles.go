@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
+	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
@@ -22,11 +23,11 @@ func AppIDName(bundleID string) string {
 	return prefix + "Bitrise " + r.Replace(bundleID)
 }
 
-func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType,
+func ensureProfiles(profileClient DevPortalClient, distrTypes []models.DistributionType,
 	certsByType map[appstoreconnect.CertificateType][]Certificate, app AppLayout,
-	devPortalDeviceIDs []string, minProfileDaysValid int) (map[DistributionType]AppCodesignAssets, error) {
+	devPortalDeviceIDs []string, minProfileDaysValid int) (map[models.DistributionType]models.AppCodesignAssets, error) {
 	// Ensure Profiles
-	codesignAssetsByDistributionType := map[DistributionType]AppCodesignAssets{}
+	codesignAssetsByDistributionType := map[models.DistributionType]models.AppCodesignAssets{}
 
 	bundleIDByBundleIDIdentifer := map[string]*appstoreconnect.BundleID{}
 
@@ -55,9 +56,9 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 		}
 		log.Debugf("Using certificate for distribution type %s (certificate type %s): %s", distrType, certType, certs[0])
 
-		codesignAssets := AppCodesignAssets{
-			ArchivableTargetProfilesByBundleID: map[string]Profile{},
-			UITestTargetProfilesByBundleID:     map[string]Profile{},
+		codesignAssets := models.AppCodesignAssets{
+			ArchivableTargetProfilesByBundleID: map[string]models.Profile{},
+			UITestTargetProfilesByBundleID:     map[string]models.Profile{},
 			Certificate:                        certs[0].Certificate,
 		}
 
@@ -75,7 +76,7 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 
 		for bundleIDIdentifier, entitlements := range app.ArchivableTargetBundleIDToEntitlements {
 			var profileDeviceIDs []string
-			if distributionTypeRequiresDeviceList([]DistributionType{distrType}) {
+			if distributionTypeRequiresDeviceList([]models.DistributionType{distrType}) {
 				profileDeviceIDs = devPortalDeviceIDs
 			}
 
@@ -87,7 +88,7 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 
 		}
 
-		if len(app.UITestTargetBundleIDs) > 0 && distrType == Development {
+		if len(app.UITestTargetBundleIDs) > 0 && distrType == models.Development {
 			// Capabilities are not supported for UITest targets.
 			// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
 			for _, bundleIDIdentifier := range app.UITestTargetBundleIDs {
@@ -200,7 +201,7 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements s
 	return bundleID, nil
 }
 
-func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
+func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*models.Profile, error) {
 	fmt.Println()
 	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
 	log.Printf("  capabilities: %s", entitlements)
@@ -265,9 +266,9 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 	return &profile, nil
 }
 
-func distributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
+func distributionTypeRequiresDeviceList(distrTypes []models.DistributionType) bool {
 	for _, distrType := range distrTypes {
-		if distrType == Development || distrType == AdHoc {
+		if distrType == models.Development || distrType == models.AdHoc {
 			return true
 		}
 	}
@@ -305,7 +306,7 @@ func profileName(profileType appstoreconnect.ProfileType, bundleID string) (stri
 	return fmt.Sprintf("%sBitrise %s %s - (%s)", prefix, platform, distribution, bundleID), nil
 }
 
-func checkProfileEntitlements(client DevPortalClient, prof Profile, projectEntitlements Entitlement) error {
+func checkProfileEntitlements(client DevPortalClient, prof models.Profile, projectEntitlements Entitlement) error {
 	profileEnts, err := parseRawProfileEntitlements(prof)
 	if err != nil {
 		return err
@@ -331,7 +332,7 @@ func checkProfileEntitlements(client DevPortalClient, prof Profile, projectEntit
 	return client.CheckBundleIDEntitlements(bundleID, projectEntitlements)
 }
 
-func parseRawProfileEntitlements(prof Profile) (serialized.Object, error) {
+func parseRawProfileEntitlements(prof models.Profile) (serialized.Object, error) {
 	pkcs, err := profileutil.ProvisioningProfileFromContent(prof.Attributes().ProfileContent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pkcs7 from profile content: %s", err)
@@ -405,7 +406,7 @@ func checkProfileDevices(profileDeviceIDs map[string]bool, deviceIDs []string) e
 	return nil
 }
 
-func isProfileExpired(prof Profile, minProfileDaysValid int) bool {
+func isProfileExpired(prof models.Profile, minProfileDaysValid int) bool {
 	relativeExpiryTime := time.Now()
 	if minProfileDaysValid > 0 {
 		relativeExpiryTime = relativeExpiryTime.Add(time.Duration(minProfileDaysValid) * 24 * time.Hour)
@@ -413,7 +414,7 @@ func isProfileExpired(prof Profile, minProfileDaysValid int) bool {
 	return time.Time(prof.Attributes().ExpirationDate).Before(relativeExpiryTime)
 }
 
-func checkProfile(client DevPortalClient, prof Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
+func checkProfile(client DevPortalClient, prof models.Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
 	if isProfileExpired(prof, minProfileDaysValid) {
 		return NonmatchingProfileError{
 			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),

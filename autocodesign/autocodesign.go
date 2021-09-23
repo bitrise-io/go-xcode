@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/bitrise-io/go-utils/log"
+	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
 	"github.com/bitrise-io/go-xcode/certificateutil"
@@ -12,20 +13,13 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
+type Entitlement serialized.Object
+
 // Certificate is certificate present on Apple App Store Connect API, could match a local certificate
 type Certificate struct {
 	Certificate certificateutil.CertificateInfoModel
 	ID          string
 }
-
-type Profile interface {
-	ID() string
-	Attributes() appstoreconnect.ProfileAttributes
-	CertificateIDs() (map[string]bool, error)
-	DeviceIDs() (map[string]bool, error)
-	BundleID() (appstoreconnect.BundleID, error)
-}
-type Entitlement serialized.Object
 
 type DevPortalClient interface {
 	QueryCertificateBySerial(*big.Int) (Certificate, error)
@@ -34,9 +28,9 @@ type DevPortalClient interface {
 	ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error)
 	RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error)
 
-	FindProfile(name string, profileType appstoreconnect.ProfileType) (Profile, error)
+	FindProfile(name string, profileType appstoreconnect.ProfileType) (models.Profile, error)
 	DeleteProfile(id string) error
-	CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error)
+	CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (models.Profile, error)
 
 	FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
 	CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error
@@ -46,7 +40,7 @@ type DevPortalClient interface {
 
 type AppLayout struct {
 	TeamID                                 string
-	Platform                               Platform
+	Platform                               models.Platform
 	ArchivableTargetBundleIDToEntitlements map[string]serialized.Object
 	UITestTargetBundleIDs                  []string
 }
@@ -55,34 +49,14 @@ type CertificateProvider interface {
 	GetCertificates() ([]certificateutil.CertificateInfoModel, error)
 }
 
-// DistributionType ...
-type DistributionType string
-
-// DistributionTypes ...
-var (
-	Development DistributionType = "development"
-	AppStore    DistributionType = "app-store"
-	AdHoc       DistributionType = "ad-hoc"
-	Enterprise  DistributionType = "enterprise"
-)
-
 // CodesignAssetManager
 type CodesignAssetsOpts struct {
-	DistributionType       DistributionType
+	DistributionType       models.DistributionType
 	MinProfileValidityDays int
-	Keychain               keychain.Keychain
 	VerboseLog             bool
 }
-
-// AppCodesignAssets ...
-type AppCodesignAssets struct {
-	ArchivableTargetProfilesByBundleID map[string]Profile
-	UITestTargetProfilesByBundleID     map[string]Profile
-	Certificate                        certificateutil.CertificateInfoModel
-}
-
 type CodesignAssetManager interface {
-	EnsureCodesignAssets(appLayout AppLayout, opts CodesignAssetsOpts) (map[DistributionType]AppCodesignAssets, error)
+	EnsureCodesignAssets(appLayout AppLayout, opts CodesignAssetsOpts) (map[models.DistributionType]models.AppCodesignAssets, error)
 }
 
 type codesignAssetManager struct {
@@ -101,7 +75,7 @@ func NewCodesignAssetManager(devPortalClient DevPortalClient, certificateProvide
 	}
 }
 
-func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts CodesignAssetsOpts) (map[DistributionType]AppCodesignAssets, error) {
+func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts CodesignAssetsOpts) (map[models.DistributionType]models.AppCodesignAssets, error) {
 	fmt.Println()
 	log.Infof("Downloading certificates")
 
