@@ -6,6 +6,8 @@ github.com/bitrise-io/go-steputils v0.0.0-20210830080834-0208a71cf7f8 h1:U2cAaNc
 github.com/bitrise-io/go-steputils v0.0.0-20210830080834-0208a71cf7f8/go.mod h1:F+FPN4MS73h+m+8DYL1FyqEK4O1PqSdEpA1Pccp1LN0=
 github.com/bitrise-io/go-steputils v0.0.0-20210831050118-9a8de76b2f19 h1:ZLuZ7EqpV2mgxEZTZrWxFjDo8t0F576QQLyschuuJRE=
 github.com/bitrise-io/go-steputils v0.0.0-20210831050118-9a8de76b2f19/go.mod h1:deuDfnw5Hot7Uajr7gsM5hNKAlKS3iIAPpZgfZSDNOk=
+github.com/bitrise-io/go-steputils v0.0.0-20210923053150-ddc3f70aacd2 h1:aKbxnR3yQpdUVDv80qsJKiFzIUSvCiCXDkff58qnQRc=
+github.com/bitrise-io/go-steputils v0.0.0-20210923053150-ddc3f70aacd2/go.mod h1:e3iET6YTYpobuCbA5iyvy1pxHUb+qfCDOpeMel0bI6Q=
 github.com/bitrise-io/go-utils v0.0.0-20210507100250-37de47dfa6ce/go.mod h1:15EZZf02noI5nWFqXMZEoyb1CyqYRXTMz5Fyu4CWFzI=
 github.com/bitrise-io/go-utils v0.0.0-20210520073355-367fa34178f5/go.mod h1:DRx7oFuAqk0dbKpAKCqWl0TgrowfJUb/MqYPRscxJOQ=
 github.com/bitrise-io/go-utils v0.0.0-20210824130242-27933dca637a/go.mod h1:Vi4MHnaZVL3PVoPPA/Yp6g2pzntkDH8LGiRSY7qw6KQ=
@@ -13,6 +15,8 @@ github.com/bitrise-io/go-utils v0.0.0-20210830075908-d621a78334fb h1:6jPT4AOQq/P
 github.com/bitrise-io/go-utils v0.0.0-20210830075908-d621a78334fb/go.mod h1:Vi4MHnaZVL3PVoPPA/Yp6g2pzntkDH8LGiRSY7qw6KQ=
 github.com/bitrise-io/go-utils v0.0.0-20210830144330-49d11743a4fd h1:CZIAr+uoOhHS6WfsTXHi3v9CUhOXcKSyRupi9cIcRWc=
 github.com/bitrise-io/go-utils v0.0.0-20210830144330-49d11743a4fd/go.mod h1:Vi4MHnaZVL3PVoPPA/Yp6g2pzntkDH8LGiRSY7qw6KQ=
+github.com/bitrise-io/go-utils v0.0.0-20210922201414-6d7c12191c72 h1:Eov/ocBE9sfljzLo7C/6GuLUtACWJpY6dRLDhTtJ2L8=
+github.com/bitrise-io/go-utils v0.0.0-20210922201414-6d7c12191c72/go.mod h1:Vi4MHnaZVL3PVoPPA/Yp6g2pzntkDH8LGiRSY7qw6KQ=
 github.com/bitrise-io/go-xcode v0.0.0-20210602133333-d2c17ac1ee9b/go.mod h1:6Nv5RAsAVS745xN5IihUExVmCA9n9f7s/DSVow4hXrI=
 github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630 h1:V+xoYqGSkN8aUxCc806zDKjGGpBVUtV0Vytf5OsB3gc=
 github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630/go.mod h1:UiXKNs0essbC14a2TvGlnUKo9isP9m4guPrp8KJHJpU=

@@ -1,11 +1,11 @@
 module github.com/bitrise-io/go-xcode
 
-go 1.15
+go 1.16
 
 require (
 	github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
-	github.com/bitrise-io/go-steputils v0.0.0-20210831050118-9a8de76b2f19
-	github.com/bitrise-io/go-utils v0.0.0-20210830144330-49d11743a4fd
+	github.com/bitrise-io/go-steputils v0.0.0-20210923053150-ddc3f70aacd2
+	github.com/bitrise-io/go-utils v0.0.0-20210922201414-6d7c12191c72
 	github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630
 	github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect v0.0.0-20210917130447-0c3bda4f8c2e // indirect
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa

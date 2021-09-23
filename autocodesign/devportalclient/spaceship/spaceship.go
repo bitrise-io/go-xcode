@@ -1,7 +1,6 @@
 package spaceship
 
 import (
-	"bytes"
 	"embed"
 	"encoding/base64"
 	"encoding/json"
@@ -12,9 +11,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/bitrise-io/go-steputils/command/gems"
-	"github.com/bitrise-io/go-steputils/command/rubycommand"
+	"github.com/bitrise-io/go-steputils/command/ruby"
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/autocodesign"
@@ -60,7 +59,7 @@ func NewSpaceshipDevportalClient(client *Client) autocodesign.DevPortalClient {
 }
 
 type spaceshipCommand struct {
-	command              *command.Model
+	command              command.Command
 	printableCommandArgs string
 }
 
@@ -71,40 +70,39 @@ func (c *Client) createRequestCommand(subCommand string, opts ...string) (spaces
 		"--session", base64.StdEncoding.EncodeToString([]byte(c.authConfig.Session)),
 		"--team-id", c.teamID,
 	}
-	s := []string{"bundle", "exec", "ruby", "main.rb",
+	s := []string{"main.rb",
 		"--subcommand", subCommand,
 	}
 	s = append(s, opts...)
 	printableCommand := strings.Join(s, " ")
 	s = append(s, authParams...)
 
-	spaceshipCmd, err := rubycommand.NewFromSlice(s)
+	factory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), env.NewCommandLocator())
 	if err != nil {
 		return spaceshipCommand{}, err
 	}
-	spaceshipCmd.SetDir(c.workDir)
+
+	cmd := factory.CreateBundleExec("ruby", s, "", &command.Opts{
+		Dir: c.workDir,
+	})
 
 	return spaceshipCommand{
-		command:              spaceshipCmd,
+		command:              cmd,
 		printableCommandArgs: printableCommand,
 	}, nil
 }
 
 func runSpaceshipCommand(cmd spaceshipCommand) (string, error) {
-	var output bytes.Buffer
-	outWriter := &output
-	cmd.command.SetStdout(outWriter)
-	cmd.command.SetStderr(outWriter)
-
 	log.Debugf("$ %s", cmd.printableCommandArgs)
-	if err := cmd.command.Run(); err != nil {
-		return "", fmt.Errorf("spaceship command failed, output: %s, error: %v", output.String(), err)
+	output, err := cmd.command.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("spaceship command failed, output: %s, error: %v", output, err)
 	}
 
 	jsonRegexp := regexp.MustCompile(`(?m)^\{.*\}$`)
-	match := jsonRegexp.FindString(output.String())
+	match := jsonRegexp.FindString(output)
 	if match == "" {
-		return "", fmt.Errorf("output does not contain response: %s", output.String())
+		return "", fmt.Errorf("output does not contain response: %s", output)
 	}
 
 	var response struct {
@@ -156,28 +154,32 @@ func prepareSpaceship() (string, error) {
 		return "", err
 	}
 
-	bundler := gems.Version{Found: true, Version: "2.2.24"}
-	installBundlerCommand := gems.InstallBundlerCommand(bundler)
-	installBundlerCommand.SetStdout(os.Stdout).SetStderr(os.Stderr)
-	installBundlerCommand.SetDir(targetDir)
-
-	fmt.Println()
-	log.Donef("$ %s", installBundlerCommand.PrintableCommandArgs())
-	if err := installBundlerCommand.Run(); err != nil {
-		return "", fmt.Errorf("command failed, error: %s", err)
-	}
-
-	fmt.Println()
-	cmd, err := gems.BundleInstallCommand(bundler)
+	factory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), env.NewCommandLocator())
 	if err != nil {
-		return "", fmt.Errorf("failed to create bundle command model, error: %s", err)
+		return "", err
 	}
-	cmd.SetStdout(os.Stdout).SetStderr(os.Stderr)
-	cmd.SetDir(targetDir)
+
+	bundlerVersion := "2.2.24"
+	cmds := factory.CreateGemInstall("bunder", bundlerVersion, false, true, &command.Opts{
+		Dir: targetDir,
+	})
+	for _, cmd := range cmds {
+		log.Donef("$ %s", cmd.PrintableCommandArgs())
+		fmt.Println()
+
+		if err := cmd.Run(); err != nil {
+			return "", fmt.Errorf("command failed, error: %s", err)
+		}
+	}
 
 	fmt.Println()
-	log.Donef("$ %s", cmd.PrintableCommandArgs())
-	if err := cmd.Run(); err != nil {
+	bundleInstallCmd := factory.CreateBundleInstall(bundlerVersion, &command.Opts{
+		Dir: targetDir,
+	})
+
+	fmt.Println()
+	log.Donef("$ %s", bundleInstallCmd.PrintableCommandArgs())
+	if err := bundleInstallCmd.Run(); err != nil {
 		return "", fmt.Errorf("Command failed, error: %s", err)
 	}
 
