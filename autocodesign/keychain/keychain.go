@@ -18,10 +18,12 @@ import (
 type Keychain struct {
 	Path     string
 	Password stepconf.Secret
+
+	factory command.Factory
 }
 
 // New ...
-func New(pth string, pass stepconf.Secret) (*Keychain, error) {
+func New(pth string, pass stepconf.Secret, factory command.Factory) (*Keychain, error) {
 	if exist, err := pathutil.IsPathExists(pth); err != nil {
 		return nil, err
 	} else if exist {
@@ -41,7 +43,7 @@ func New(pth string, pass stepconf.Secret) (*Keychain, error) {
 		}, nil
 	}
 
-	return createKeychain(pth, pass)
+	return createKeychain(pth, pass, factory)
 }
 
 // InstallCertificate ...
@@ -64,7 +66,7 @@ func (k Keychain) InstallCertificate(cert certificateutil.CertificateInfoModel, 
 		return err
 	}
 
-	if needed, err := isKeyPartitionListNeeded(); err != nil {
+	if needed, err := k.isKeyPartitionListNeeded(); err != nil {
 		return err
 	} else if needed {
 		if err := k.setKeyPartitionList(); err != nil {
@@ -87,7 +89,7 @@ func (k Keychain) InstallCertificate(cert certificateutil.CertificateInfoModel, 
 	return k.unlock()
 }
 
-func runSecurityCmd(args ...interface{}) error {
+func runSecurityCmd(factory command.Factory, args ...interface{}) error {
 	var printableArgs []string
 	var cmdArgs []string
 	for _, arg := range args {
@@ -106,19 +108,19 @@ func runSecurityCmd(args ...interface{}) error {
 		}
 	}
 
-	out, err := command.New("security", cmdArgs...).RunAndReturnTrimmedCombinedOutput()
+	out, err := factory.Create("security", cmdArgs, nil).RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
-			return fmt.Errorf("%s failed: %s", command.PrintableCommandArgs(false, append([]string{"security"}, printableArgs...)), out)
+			return fmt.Errorf("%s failed: %s", strings.Join(append([]string{"security"}, printableArgs...), " "), out)
 		}
-		return fmt.Errorf("%s failed: %s", command.PrintableCommandArgs(false, append([]string{"security"}, printableArgs...)), err)
+		return fmt.Errorf("%s failed: %s", strings.Join(append([]string{"security"}, printableArgs...), " "), err)
 	}
 	return nil
 }
 
 // listKeychains returns the paths of available keychains
-func listKeychains() ([]string, error) {
-	cmd := command.New("security", "list-keychain")
+func (k Keychain) listKeychains() ([]string, error) {
+	cmd := k.factory.Create("security", []string{"list-keychain"}, nil)
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
@@ -142,8 +144,8 @@ func listKeychains() ([]string, error) {
 // if the keychain could not be created, otherwise
 // a Keychain object representing the created
 // keychain is returned.
-func createKeychain(path string, password stepconf.Secret) (*Keychain, error) {
-	err := runSecurityCmd("-v", "create-keychain", "-p", password, path)
+func createKeychain(path string, password stepconf.Secret, factory command.Factory) (*Keychain, error) {
+	err := runSecurityCmd(factory, "-v", "create-keychain", "-p", password, path)
 	if err != nil {
 		return nil, err
 	}
@@ -151,52 +153,53 @@ func createKeychain(path string, password stepconf.Secret) (*Keychain, error) {
 	return &Keychain{
 		Path:     path,
 		Password: password,
+		factory:  factory,
 	}, nil
 }
 
 // importCertificate adds the certificate at path, protected by
 // passphrase to the k keychain.
 func (k Keychain) importCertificate(path string, passphrase stepconf.Secret) error {
-	return runSecurityCmd("import", path, "-k", k.Path, "-P", passphrase, "-A")
+	return runSecurityCmd(k.factory, "import", path, "-k", k.Path, "-P", passphrase, "-A")
 }
 
 // setKeyPartitionList sets the partition list
 // for the keychain to allow access for tools.
 func (k Keychain) setKeyPartitionList() error {
-	return runSecurityCmd("set-key-partition-list", "-S", "apple-tool:,apple:", "-k", k.Password, k.Path)
+	return runSecurityCmd(k.factory, "set-key-partition-list", "-S", "apple-tool:,apple:", "-k", k.Password, k.Path)
 }
 
 // setLockSettings sets keychain autolocking.
 func (k Keychain) setLockSettings() error {
-	return runSecurityCmd("-v", "set-keychain-settings", "-lut", "72000", k.Path)
+	return runSecurityCmd(k.factory, "-v", "set-keychain-settings", "-lut", "72000", k.Path)
 }
 
 // addToSearchPath registers the keychain
 // in the systemwide search path
 func (k Keychain) addToSearchPath() error {
-	keychains, err := listKeychains()
+	keychains, err := k.listKeychains()
 	if err != nil {
 		return fmt.Errorf("get keychain list: %s", err)
 	}
 
-	return runSecurityCmd("-v", "list-keychains", "-s", keychains)
+	return runSecurityCmd(k.factory, "-v", "list-keychains", "-s", keychains)
 }
 
 // setAsDefault sets the keychain as the
 // default keychain for the system.
 func (k Keychain) setAsDefault() error {
-	return runSecurityCmd("-v", "default-keychain", "-s", k.Path)
+	return runSecurityCmd(k.factory, "-v", "default-keychain", "-s", k.Path)
 }
 
 // unlock unlocks the keychain
 func (k Keychain) unlock() error {
-	return runSecurityCmd("-v", "unlock-keychain", "-p", k.Password, k.Path)
+	return runSecurityCmd(k.factory, "-v", "unlock-keychain", "-p", k.Password, k.Path)
 }
 
 // isKeyPartitionListNeeded determines whether
 // key partition lists are used by the system.
-func isKeyPartitionListNeeded() (bool, error) {
-	cmd := command.New("sw_vers", "-productVersion")
+func (k Keychain) isKeyPartitionListNeeded() (bool, error) {
+	cmd := k.factory.Create("sw_vers", []string{"-productVersion"}, nil)
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
