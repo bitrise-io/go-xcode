@@ -14,10 +14,10 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
-// Keychain descritbes a macOS Keychain
+// Keychain describes a macOS Keychain
 type Keychain struct {
-	Path     string
-	Password stepconf.Secret
+	path     string
+	password stepconf.Secret
 
 	factory command.Factory
 }
@@ -28,8 +28,9 @@ func New(pth string, pass stepconf.Secret, factory command.Factory) (*Keychain, 
 		return nil, err
 	} else if exist {
 		return &Keychain{
-			Path:     pth,
-			Password: stepconf.Secret(pass),
+			path:     pth,
+			password: stepconf.Secret(pass),
+			factory:  factory,
 		}, nil
 	}
 
@@ -38,8 +39,9 @@ func New(pth string, pass stepconf.Secret, factory command.Factory) (*Keychain, 
 		return nil, err
 	} else if exist {
 		return &Keychain{
-			Path:     p,
-			Password: pass,
+			path:     p,
+			password: pass,
+			factory:  factory,
 		}, nil
 	}
 
@@ -151,8 +153,8 @@ func createKeychain(path string, password stepconf.Secret, factory command.Facto
 	}
 
 	return &Keychain{
-		Path:     path,
-		Password: password,
+		path:     path,
+		password: password,
 		factory:  factory,
 	}, nil
 }
@@ -160,18 +162,18 @@ func createKeychain(path string, password stepconf.Secret, factory command.Facto
 // importCertificate adds the certificate at path, protected by
 // passphrase to the k keychain.
 func (k Keychain) importCertificate(path string, passphrase stepconf.Secret) error {
-	return runSecurityCmd(k.factory, "import", path, "-k", k.Path, "-P", passphrase, "-A")
+	return runSecurityCmd(k.factory, "import", path, "-k", k.path, "-P", passphrase, "-A")
 }
 
 // setKeyPartitionList sets the partition list
 // for the keychain to allow access for tools.
 func (k Keychain) setKeyPartitionList() error {
-	return runSecurityCmd(k.factory, "set-key-partition-list", "-S", "apple-tool:,apple:", "-k", k.Password, k.Path)
+	return runSecurityCmd(k.factory, "set-key-partition-list", "-S", "apple-tool:,apple:", "-k", k.password, k.path)
 }
 
 // setLockSettings sets keychain autolocking.
 func (k Keychain) setLockSettings() error {
-	return runSecurityCmd(k.factory, "-v", "set-keychain-settings", "-lut", "72000", k.Path)
+	return runSecurityCmd(k.factory, "-v", "set-keychain-settings", "-lut", "72000", k.path)
 }
 
 // addToSearchPath registers the keychain
@@ -188,12 +190,12 @@ func (k Keychain) addToSearchPath() error {
 // setAsDefault sets the keychain as the
 // default keychain for the system.
 func (k Keychain) setAsDefault() error {
-	return runSecurityCmd(k.factory, "-v", "default-keychain", "-s", k.Path)
+	return runSecurityCmd(k.factory, "-v", "default-keychain", "-s", k.path)
 }
 
 // unlock unlocks the keychain
 func (k Keychain) unlock() error {
-	return runSecurityCmd(k.factory, "-v", "unlock-keychain", "-p", k.Password, k.Path)
+	return runSecurityCmd(k.factory, "-v", "unlock-keychain", "-p", k.password, k.path)
 }
 
 // isKeyPartitionListNeeded determines whether

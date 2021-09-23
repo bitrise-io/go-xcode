@@ -1,4 +1,4 @@
-package certdownloder
+package certdownloader
 
 import (
 	"context"

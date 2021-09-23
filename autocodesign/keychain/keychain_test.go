@@ -58,7 +58,7 @@ func TestKeychain_importCertificate(t *testing.T) {
 		t.Fatalf("keychain not created")
 	}
 
-	kchain := Keychain{Path: keychainPath, Password: testKeychainPassword, factory: command.NewFactory(env.NewRepository())}
+	kchain := Keychain{path: keychainPath, password: testKeychainPassword, factory: command.NewFactory(env.NewRepository())}
 	if err := kchain.unlock(); err != nil {
 		t.Fatalf("failed to unlock keychain: %s", err)
 	}
@@ -128,8 +128,8 @@ func TestKeychain_importCertificate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			k := Keychain{
-				Path:     tt.fields.Path,
-				Password: tt.fields.Password,
+				path:     tt.fields.Path,
+				password: tt.fields.Password,
 				factory:  command.NewFactory(env.NewRepository()),
 			}
 			err := k.importCertificate(tt.args.path, tt.args.passphrase)

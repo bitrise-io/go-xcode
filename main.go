@@ -7,7 +7,7 @@ import (
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/autocodesign/certdownloder"
+	"github.com/bitrise-io/go-xcode/autocodesign/certdownloader"
 	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
@@ -32,7 +32,7 @@ func main() {
 		panic(fmt.Sprintf("failed to initialize keychain: %s", err))
 	}
 
-	certDownloader := certdownloder.NewDownloader(nil)
+	certDownloader := certdownloader.NewDownloader(nil)
 	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain))
 
 	// Analyzing project
