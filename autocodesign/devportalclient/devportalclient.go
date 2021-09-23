@@ -8,10 +8,10 @@ import (
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/autocodesign"
+	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnectclient"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/spaceship"
 	"github.com/bitrise-io/go-xcode/devportalservice"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
 const notConnected = `Bitrise Apple service connection not found.
@@ -32,7 +32,7 @@ func NewClientFactory() ClientFactory {
 	return ClientFactory{}
 }
 
-func (f ClientFactory) CreateClient(clientType ClientType, teamID, buildURL, buildAPIToken string) (autocodesign.DevPortalClient, error) {
+func (f ClientFactory) CreateBitriseConnection(buildURL, buildAPIToken string) (devportalservice.AppleDeveloperConnection, error) {
 	fmt.Println()
 	log.Infof("Fetching Apple service connection")
 	connectionProvider := devportalservice.NewBitriseClient(retry.NewHTTPClient().StandardClient(), buildURL, buildAPIToken)
@@ -41,14 +41,14 @@ func (f ClientFactory) CreateClient(clientType ClientType, teamID, buildURL, bui
 		if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
 			fmt.Println()
 			log.Warnf("Unauthorized to query Bitrise Apple service connection. This happens by design, with a public app's PR build, to protect secrets.")
-			return nil, err
+			return devportalservice.AppleDeveloperConnection{}, err
 		}
 
 		fmt.Println()
 		log.Errorf("Failed to activate Bitrise Apple service connection")
 		log.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
 
-		return nil, err
+		return devportalservice.AppleDeveloperConnection{}, err
 	}
 
 	if len(conn.DuplicatedTestDevices) != 0 {
@@ -58,6 +58,10 @@ func (f ClientFactory) CreateClient(clientType ClientType, teamID, buildURL, bui
 		}
 	}
 
+	return *conn, nil
+}
+
+func (f ClientFactory) CreateClient(clientType ClientType, teamID string, conn devportalservice.AppleDeveloperConnection) (autocodesign.DevPortalClient, error) {
 	var authSource appleauth.Source
 	if clientType == APIKeyClient {
 		authSource = &appleauth.ConnectionAPIKeySource{}
@@ -65,7 +69,7 @@ func (f ClientFactory) CreateClient(clientType ClientType, teamID, buildURL, bui
 		authSource = &appleauth.ConnectionAppleIDFastlaneSource{}
 	}
 
-	authConfig, err := appleauth.Select(conn, []appleauth.Source{authSource}, appleauth.Inputs{})
+	authConfig, err := appleauth.Select(&conn, []appleauth.Source{authSource}, appleauth.Inputs{})
 	if err != nil {
 		if conn.APIKeyConnection == nil && conn.AppleIDConnection == nil {
 			fmt.Println()

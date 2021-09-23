@@ -7,7 +7,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 )
 
 // APIProfile ...

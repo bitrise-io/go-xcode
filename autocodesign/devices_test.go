@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnectclient"
 	"github.com/bitrise-io/go-xcode/devportalservice"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"

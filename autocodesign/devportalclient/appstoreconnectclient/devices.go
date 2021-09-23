@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/devportalservice"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
 // DeviceClient ...

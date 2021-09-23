@@ -1,6 +1,6 @@
 package autocodesign
 
-import "github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
+import "github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 
 // CertificateTypeByDistribution ...
 var CertificateTypeByDistribution = map[DistributionType]appstoreconnect.CertificateType{

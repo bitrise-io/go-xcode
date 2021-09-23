@@ -5,11 +5,11 @@ import (
 	"math/big"
 
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/keychain"
 )
 
 // Certificate is certificate present on Apple App Store Connect API, could match a local certificate
@@ -46,7 +46,7 @@ type DevPortalClient interface {
 
 type AppLayout struct {
 	TeamID                                 string
-	Platform                               string
+	Platform                               Platform
 	ArchivableTargetBundleIDToEntitlements map[string]serialized.Object
 	UITestTargetBundleIDs                  []string
 }
@@ -88,12 +88,16 @@ type CodesignAssetManager interface {
 type codesignAssetManager struct {
 	devPortalClient     DevPortalClient
 	certificateProvider CertificateProvider
+	bitriseTestDevices  []devportalservice.TestDevice
+	keychain            keychain.Keychain
 }
 
-func NewCodesignAssetManager(devPortalClient DevPortalClient, certificateProvider CertificateProvider) CodesignAssetManager {
+func NewCodesignAssetManager(devPortalClient DevPortalClient, certificateProvider CertificateProvider, bitriseTestDevices []devportalservice.TestDevice, keychain keychain.Keychain) CodesignAssetManager {
 	return codesignAssetManager{
 		devPortalClient:     devPortalClient,
 		certificateProvider: certificateProvider,
+		bitriseTestDevices:  bitriseTestDevices,
+		keychain:            keychain,
 	}
 }
 
@@ -123,24 +127,23 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		return nil, fmt.Errorf("%v", err)
 	}
 
-	// Ensure devices
 	var devPortalDeviceIDs []string
 	if distributionTypeRequiresDeviceList(distrTypes) {
 		var err error
-		devPortalDeviceIDs, err = ensureTestDevices(m.devportalClient.DeviceClient, m.testDevices, project.Platform)
+		devPortalDeviceIDs, err = ensureTestDevices(m.devPortalClient, m.bitriseTestDevices, appLayout.Platform)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to ensure test devices: %s", err)
 		}
 	}
 
 	// Ensure Profiles
-	codesignAssetsByDistributionType, err := ensureProfiles(m.devportalClient.ProfileClient, distrTypes, certsByType, project, devPortalDeviceIDs, minProfileDaysValid)
+	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, appLayout, devPortalDeviceIDs, opts.MinProfileValidityDays)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to ensure profiles: %s", err)
 	}
 
 	// Install certificates and profiles
-	if err := installCodesigningFiles(codesignAssetsByDistributionType, keychain); err != nil {
+	if err := installCodesigningFiles(codesignAssetsByDistributionType, m.keychain); err != nil {
 		return nil, fmt.Errorf("Failed to install codesigning files: %s", err)
 	}
 

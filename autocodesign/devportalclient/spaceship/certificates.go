@@ -7,8 +7,8 @@ import (
 	"math/big"
 
 	"github.com/bitrise-io/go-xcode/autocodesign"
+	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-steplib/steps-ios-auto-provision-appstoreconnect/appstoreconnect"
 )
 
 // CertificateSource ...
