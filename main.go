@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/certdownloder"
+	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
 	"github.com/bitrise-io/go-xcode/autocodesign/projectmanager"
@@ -32,7 +33,7 @@ func main() {
 	}
 
 	certDownloader := certdownloder.NewDownloader(nil)
-	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, connection.TestDevices, *keychain)
+	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain))
 
 	// Analyzing project
 	fmt.Println()
@@ -50,6 +51,7 @@ func main() {
 	distribution := autocodesign.Development
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
 		DistributionType:       distribution,
+		BitriseTestDevices:     connection.TestDevices,
 		MinProfileValidityDays: 0,
 		VerboseLog:             true,
 	})
