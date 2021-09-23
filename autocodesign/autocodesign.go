@@ -49,6 +49,7 @@ var (
 	Enterprise  DistributionType = "enterprise"
 )
 
+// Entitlement ...
 type Entitlement serialized.Object
 
 // Certificate is certificate present on Apple App Store Connect API, could match a local certificate
@@ -57,6 +58,7 @@ type Certificate struct {
 	ID          string
 }
 
+// DevPortalClient ...
 type DevPortalClient interface {
 	QueryCertificateBySerial(*big.Int) (Certificate, error)
 	QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]Certificate, error)
@@ -74,6 +76,7 @@ type DevPortalClient interface {
 	CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
 }
 
+// AppLayout ...
 type AppLayout struct {
 	TeamID                                 string
 	Platform                               Platform
@@ -81,16 +84,19 @@ type AppLayout struct {
 	UITestTargetBundleIDs                  []string
 }
 
+// CertificateProvider ...
 type CertificateProvider interface {
 	GetCertificates() ([]certificateutil.CertificateInfoModel, error)
 }
 
-// CodesignAssetManager
+// CodesignAssetsOpts ...
 type CodesignAssetsOpts struct {
 	DistributionType       DistributionType
 	MinProfileValidityDays int
 	VerboseLog             bool
 }
+
+// CodesignAssetManager ...
 type CodesignAssetManager interface {
 	EnsureCodesignAssets(appLayout AppLayout, opts CodesignAssetsOpts) (map[DistributionType]AppCodesignAssets, error)
 }
@@ -102,6 +108,7 @@ type codesignAssetManager struct {
 	keychain            keychain.Keychain
 }
 
+// NewCodesignAssetManager ...
 func NewCodesignAssetManager(devPortalClient DevPortalClient, certificateProvider CertificateProvider, bitriseTestDevices []devportalservice.TestDevice, keychain keychain.Keychain) CodesignAssetManager {
 	return codesignAssetManager{
 		devPortalClient:     devPortalClient,
@@ -111,6 +118,7 @@ func NewCodesignAssetManager(devPortalClient DevPortalClient, certificateProvide
 	}
 }
 
+// EnsureCodesignAssets ...
 func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts CodesignAssetsOpts) (map[DistributionType]AppCodesignAssets, error) {
 	fmt.Println()
 	log.Infof("Downloading certificates")

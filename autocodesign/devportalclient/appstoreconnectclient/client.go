@@ -5,6 +5,7 @@ import (
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 )
 
+// Client ...
 type Client struct {
 	*CertificateSource
 	*DeviceClient

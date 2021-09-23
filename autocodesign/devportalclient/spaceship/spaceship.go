@@ -43,6 +43,7 @@ func NewClient(authConfig appleauth.AppleID, teamID string) (*Client, error) {
 	}, nil
 }
 
+// DevPortalClient ...
 type DevPortalClient struct {
 	*CertificateSource
 	*ProfileClient

@@ -18,20 +18,26 @@ const notConnected = `Bitrise Apple service connection not found.
 Most likely because there is no configured Bitrise Apple service connection.
 Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
 
+// ClientType ...
 type ClientType int
 
 const (
+	// APIKeyClient ...
 	APIKeyClient ClientType = iota
+	// AppleIDClient ...
 	AppleIDClient
 )
 
+// ClientFactory ...
 type ClientFactory struct {
 }
 
+// NewClientFactory ...
 func NewClientFactory() ClientFactory {
 	return ClientFactory{}
 }
 
+// CreateBitriseConnection ...
 func (f ClientFactory) CreateBitriseConnection(buildURL, buildAPIToken string) (devportalservice.AppleDeveloperConnection, error) {
 	fmt.Println()
 	log.Infof("Fetching Apple service connection")
@@ -61,6 +67,7 @@ func (f ClientFactory) CreateBitriseConnection(buildURL, buildAPIToken string) (
 	return *conn, nil
 }
 
+// CreateClient ...
 func (f ClientFactory) CreateClient(clientType ClientType, teamID string, conn devportalservice.AppleDeveloperConnection) (autocodesign.DevPortalClient, error) {
 	var authSource appleauth.Source
 	if clientType == APIKeyClient {

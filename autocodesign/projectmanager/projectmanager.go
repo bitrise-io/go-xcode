@@ -5,22 +5,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
-
-// ToDo :(
-// CanGenerateProfileWithEntitlements checks all entitlements, whether they can be generated
-func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (ok bool, badEntitlement string, badBundleID string) {
-	for bundleID, entitlements := range entitlementsByBundleID {
-		for entitlementKey, value := range entitlements {
-			if (autocodesign.Entitlement{entitlementKey: value}).IsProfileAttached() {
-				return false, entitlementKey, bundleID
-			}
-		}
-	}
-
-	return true, "", ""
-}
 
 // Project ...
 type Project struct {
@@ -77,7 +62,7 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 		return autocodesign.AppLayout{}, fmt.Errorf("failed to read archivable targets' entitlements: %s", err)
 	}
 
-	if ok, entitlement, bundleID := CanGenerateProfileWithEntitlements(archivableTargetBundleIDToEntitlements); !ok {
+	if ok, entitlement, bundleID := autocodesign.CanGenerateProfileWithEntitlements(archivableTargetBundleIDToEntitlements); !ok {
 		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
 		return autocodesign.AppLayout{}, fmt.Errorf("please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead")
 	}

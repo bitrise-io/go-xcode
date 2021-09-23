@@ -24,6 +24,7 @@ type downloader struct {
 	urls []CertificateFileURL
 }
 
+// NewDownloader ...
 func NewDownloader(urls []CertificateFileURL) autocodesign.CertificateProvider {
 	return downloader{
 		urls: urls,
