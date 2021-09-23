@@ -3,33 +3,12 @@ package projectmanager
 import (
 	"fmt"
 
-	"github.com/bitrise-io/go-xcode/certificateutil"
-
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
 ///////////////
-// TODO: move
-
-// AppCodesignAssets ...
-type AppCodesignAssets struct {
-	ArchivableTargetProfilesByBundleID map[string]autocodesign.Profile
-	UITestTargetProfilesByBundleID     map[string]autocodesign.Profile
-	Certificate                        certificateutil.CertificateInfoModel
-}
-
-// DistributionType ...
-type DistributionType string
-
-// DistributionTypes ...
-var (
-	Development DistributionType = "development"
-	AppStore    DistributionType = "app-store"
-	AdHoc       DistributionType = "ad-hoc"
-	Enterprise  DistributionType = "enterprise"
-)
 
 // CanGenerateProfileWithEntitlements checks all entitlements, wheter they can be generated
 func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (ok bool, badEntitlement string, badBundleID string) {

@@ -68,7 +68,7 @@ var (
 
 // CodesignAssetManager
 type CodesignAssetsOpts struct {
-	DistributionType       string
+	DistributionType       DistributionType
 	MinProfileValidityDays int
 	Keychain               keychain.Keychain
 	VerboseLog             bool
