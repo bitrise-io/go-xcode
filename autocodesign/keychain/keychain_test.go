@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-steputils/stepconf"
+	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 )
 
@@ -17,7 +19,7 @@ func TestCreateKeychain(t *testing.T) {
 		t.Errorf("setup: create temp dir for keychain: %s", err)
 	}
 	path := filepath.Join(dir, "testkeychain")
-	_, err = createKeychain(path, "randompassword")
+	_, err = createKeychain(path, "randompassword", command.NewFactory(env.NewRepository()))
 
 	if err != nil {
 		t.Errorf("error creating keychain: %s", err)
@@ -47,7 +49,7 @@ func TestKeychain_importCertificate(t *testing.T) {
 	}()
 
 	keychainPath := filepath.Join(dirTmp, "testkeychain")
-	_, err = createKeychain(keychainPath, testKeychainPassword)
+	_, err = createKeychain(keychainPath, testKeychainPassword, command.NewFactory(env.NewRepository()))
 	if err != nil {
 		t.Fatalf("error creating keychain: %s", err)
 	}
@@ -56,7 +58,7 @@ func TestKeychain_importCertificate(t *testing.T) {
 		t.Fatalf("keychain not created")
 	}
 
-	kchain := Keychain{Path: keychainPath, Password: testKeychainPassword}
+	kchain := Keychain{Path: keychainPath, Password: testKeychainPassword, factory: command.NewFactory(env.NewRepository())}
 	if err := kchain.unlock(); err != nil {
 		t.Fatalf("failed to unlock keychain: %s", err)
 	}
@@ -128,6 +130,7 @@ func TestKeychain_importCertificate(t *testing.T) {
 			k := Keychain{
 				Path:     tt.fields.Path,
 				Password: tt.fields.Password,
+				factory:  command.NewFactory(env.NewRepository()),
 			}
 			err := k.importCertificate(tt.args.path, tt.args.passphrase)
 			if (err != nil) != tt.wantErr {
