@@ -8,7 +8,6 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/certdownloder"
-	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
 	"github.com/bitrise-io/go-xcode/autocodesign/projectmanager"
@@ -48,7 +47,7 @@ func main() {
 		panic(err.Error())
 	}
 
-	distribution := models.Development
+	distribution := autocodesign.Development
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
 		DistributionType:       distribution,
 		MinProfileValidityDays: 0,

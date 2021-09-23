@@ -5,12 +5,11 @@ import (
 	"fmt"
 
 	"github.com/bitrise-io/go-utils/log"
-	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 )
 
-func ensureTestDevices(deviceClient DevPortalClient, testDevices []devportalservice.TestDevice, platform models.Platform) ([]string, error) {
+func ensureTestDevices(deviceClient DevPortalClient, testDevices []devportalservice.TestDevice, platform Platform) ([]string, error) {
 	var devPortalDeviceIDs []string
 
 	log.Infof("Fetching Apple Developer Portal devices")
@@ -93,14 +92,14 @@ func findDevPortalDevice(testDevice devportalservice.TestDevice, devPortalDevice
 	return nil
 }
 
-func filterDevPortalDevices(devPortalDevices []appstoreconnect.Device, platform models.Platform) []appstoreconnect.Device {
+func filterDevPortalDevices(devPortalDevices []appstoreconnect.Device, platform Platform) []appstoreconnect.Device {
 	var filteredDevices []appstoreconnect.Device
 
 	for _, devPortalDevice := range devPortalDevices {
 		deviceClass := devPortalDevice.Attributes.DeviceClass
 
 		switch platform {
-		case models.IOS:
+		case IOS:
 			isIosOrWatchosDevice := deviceClass == appstoreconnect.AppleWatch ||
 				deviceClass == appstoreconnect.Ipad ||
 				deviceClass == appstoreconnect.Iphone ||
@@ -109,7 +108,7 @@ func filterDevPortalDevices(devPortalDevices []appstoreconnect.Device, platform 
 			if isIosOrWatchosDevice {
 				filteredDevices = append(filteredDevices, devPortalDevice)
 			}
-		case models.TVOS:
+		case TVOS:
 			if deviceClass == appstoreconnect.AppleTV {
 				filteredDevices = append(filteredDevices, devPortalDevice)
 			}

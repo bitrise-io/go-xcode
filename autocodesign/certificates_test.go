@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
-	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/devportalservice"
@@ -41,13 +40,13 @@ func (m *MockCertificateSource) RegisterDevice(testDevice devportalservice.TestD
 	return nil, nil
 }
 
-func (m *MockCertificateSource) FindProfile(name string, profileType appstoreconnect.ProfileType) (models.Profile, error) {
+func (m *MockCertificateSource) FindProfile(name string, profileType appstoreconnect.ProfileType) (Profile, error) {
 	return nil, nil
 }
 func (m *MockCertificateSource) DeleteProfile(id string) error {
 	return nil
 }
-func (m *MockCertificateSource) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (models.Profile, error) {
+func (m *MockCertificateSource) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error) {
 	return nil, nil
 }
 

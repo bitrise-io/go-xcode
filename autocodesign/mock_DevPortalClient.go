@@ -7,8 +7,6 @@ import (
 
 	appstoreconnect "github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 
-	codesignmodels "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
-
 	devportalservice "github.com/bitrise-io/go-xcode/devportalservice"
 
 	mock "github.com/stretchr/testify/mock"
@@ -57,15 +55,15 @@ func (_m *MockDevPortalClient) CreateBundleID(bundleIDIdentifier string) (*appst
 }
 
 // CreateProfile provides a mock function with given fields: name, profileType, bundleID, certificateIDs, deviceIDs
-func (_m *MockDevPortalClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (codesignmodels.Profile, error) {
+func (_m *MockDevPortalClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error) {
 	ret := _m.Called(name, profileType, bundleID, certificateIDs, deviceIDs)
 
-	var r0 codesignmodels.Profile
-	if rf, ok := ret.Get(0).(func(string, appstoreconnect.ProfileType, appstoreconnect.BundleID, []string, []string) codesignmodels.Profile); ok {
+	var r0 Profile
+	if rf, ok := ret.Get(0).(func(string, appstoreconnect.ProfileType, appstoreconnect.BundleID, []string, []string) Profile); ok {
 		r0 = rf(name, profileType, bundleID, certificateIDs, deviceIDs)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(codesignmodels.Profile)
+			r0 = ret.Get(0).(Profile)
 		}
 	}
 
@@ -117,15 +115,15 @@ func (_m *MockDevPortalClient) FindBundleID(bundleIDIdentifier string) (*appstor
 }
 
 // FindProfile provides a mock function with given fields: name, profileType
-func (_m *MockDevPortalClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (codesignmodels.Profile, error) {
+func (_m *MockDevPortalClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (Profile, error) {
 	ret := _m.Called(name, profileType)
 
-	var r0 codesignmodels.Profile
-	if rf, ok := ret.Get(0).(func(string, appstoreconnect.ProfileType) codesignmodels.Profile); ok {
+	var r0 Profile
+	if rf, ok := ret.Get(0).(func(string, appstoreconnect.ProfileType) Profile); ok {
 		r0 = rf(name, profileType)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(codesignmodels.Profile)
+			r0 = ret.Get(0).(Profile)
 		}
 	}
 

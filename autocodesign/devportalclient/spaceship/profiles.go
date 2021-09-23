@@ -8,7 +8,6 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 )
 
@@ -97,7 +96,7 @@ type ProfileInfo struct {
 	Devices      []string                         `json:"devices"`
 }
 
-func newProfile(p ProfileInfo) (models.Profile, error) {
+func newProfile(p ProfileInfo) (autocodesign.Profile, error) {
 	contents, err := base64.StdEncoding.DecodeString(p.Content)
 	if err != nil {
 		return Profile{}, fmt.Errorf("failed to decode profile contents: %v", err)
@@ -127,7 +126,7 @@ type AppInfo struct {
 }
 
 // FindProfile ...
-func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (models.Profile, error) {
+func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (autocodesign.Profile, error) {
 	cmd, err := c.client.createRequestCommand("list_profiles",
 		profileNameArgKey, name,
 		profileTypeArgKey, string(profileType),
@@ -179,7 +178,7 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 }
 
 // CreateProfile ...
-func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (models.Profile, error) {
+func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
 	cmd, err := c.client.createRequestCommand("create_profile",
 		bundleIDIdentifierArgKey, bundleID.Attributes.Identifier,
 		certificateIDArgKey, certificateIDs[0],

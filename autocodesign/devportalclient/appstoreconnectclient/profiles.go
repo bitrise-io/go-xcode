@@ -7,7 +7,6 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 )
 
@@ -18,7 +17,7 @@ type APIProfile struct {
 }
 
 // NewAPIProfile ...
-func NewAPIProfile(client *appstoreconnect.Client, profile *appstoreconnect.Profile) models.Profile {
+func NewAPIProfile(client *appstoreconnect.Client, profile *appstoreconnect.Profile) autocodesign.Profile {
 	return &APIProfile{
 		profile: profile,
 		client:  client,
@@ -117,7 +116,7 @@ func NewProfileClient(client *appstoreconnect.Client) *ProfileClient {
 }
 
 // FindProfile ...
-func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (models.Profile, error) {
+func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (autocodesign.Profile, error) {
 	opt := &appstoreconnect.ListProfilesOptions{
 		PagingOptions: appstoreconnect.PagingOptions{
 			Limit: 1,
@@ -153,7 +152,7 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 }
 
 // CreateProfile ...
-func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (models.Profile, error) {
+func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
 	profile, err := c.createProfile(name, profileType, bundleID, certificateIDs, deviceIDs)
 	if err != nil {
 		// Expired profiles are not listed via profiles endpoint,
@@ -212,7 +211,7 @@ func (c *ProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 	return c.DeleteProfile(profile.ID)
 }
 
-func (c *ProfileClient) createProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (models.Profile, error) {
+func (c *ProfileClient) createProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
 	// Create new Bitrise profile on App Store Connect
 	r, err := c.client.Provisioning.CreateProfile(
 		appstoreconnect.NewProfileCreateRequest(

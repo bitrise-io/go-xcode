@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"testing"
 
-	models "github.com/bitrise-io/go-xcode/autocodesign/codesignmodels"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/stretchr/testify/assert"
@@ -85,30 +84,30 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 
 func Test_listRelevantDevPortalDevices_filtersDevicesForPlatform(t *testing.T) {
 	tests := []struct {
-		platform      models.Platform
+		platform      Platform
 		deviceClass   appstoreconnect.DeviceClass
 		devicesLength int
 	}{
-		{platform: models.IOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 1},
-		{platform: models.IOS, deviceClass: appstoreconnect.Ipad, devicesLength: 1},
-		{platform: models.IOS, deviceClass: appstoreconnect.Iphone, devicesLength: 1},
-		{platform: models.IOS, deviceClass: appstoreconnect.Ipod, devicesLength: 1},
-		{platform: models.IOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 0},
-		{platform: models.IOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
+		{platform: IOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 1},
+		{platform: IOS, deviceClass: appstoreconnect.Ipad, devicesLength: 1},
+		{platform: IOS, deviceClass: appstoreconnect.Iphone, devicesLength: 1},
+		{platform: IOS, deviceClass: appstoreconnect.Ipod, devicesLength: 1},
+		{platform: IOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 0},
+		{platform: IOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
 
-		{platform: models.TVOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 0},
-		{platform: models.TVOS, deviceClass: appstoreconnect.Ipad, devicesLength: 0},
-		{platform: models.TVOS, deviceClass: appstoreconnect.Iphone, devicesLength: 0},
-		{platform: models.TVOS, deviceClass: appstoreconnect.Ipod, devicesLength: 0},
-		{platform: models.TVOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 1},
-		{platform: models.TVOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
+		{platform: TVOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 0},
+		{platform: TVOS, deviceClass: appstoreconnect.Ipad, devicesLength: 0},
+		{platform: TVOS, deviceClass: appstoreconnect.Iphone, devicesLength: 0},
+		{platform: TVOS, deviceClass: appstoreconnect.Ipod, devicesLength: 0},
+		{platform: TVOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 1},
+		{platform: TVOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
 
-		{platform: models.MacOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 0},
-		{platform: models.MacOS, deviceClass: appstoreconnect.Ipad, devicesLength: 0},
-		{platform: models.MacOS, deviceClass: appstoreconnect.Iphone, devicesLength: 0},
-		{platform: models.MacOS, deviceClass: appstoreconnect.Ipod, devicesLength: 0},
-		{platform: models.MacOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 0},
-		{platform: models.MacOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.AppleWatch, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.Ipad, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.Iphone, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.Ipod, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.AppleTV, devicesLength: 0},
+		{platform: MacOS, deviceClass: appstoreconnect.Mac, devicesLength: 0},
 	}
 
 	for _, tt := range tests {
