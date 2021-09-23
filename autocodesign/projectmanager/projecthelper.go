@@ -419,7 +419,7 @@ func mainTargetOfScheme(proj xcodeproj.XcodeProj, scheme xcscheme.Scheme) (xcode
 		}
 	}
 
-	return xcodeproj.Target{}, fmt.Errorf("failed to find the project's main target for scheme (%s)", scheme)
+	return xcodeproj.Target{}, fmt.Errorf("failed to find the project's main target for scheme (%v)", scheme)
 }
 
 // findBuiltProject returns the Xcode project which will be built for the provided scheme, plus the scheme.
