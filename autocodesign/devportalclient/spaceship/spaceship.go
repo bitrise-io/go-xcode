@@ -161,7 +161,7 @@ func prepareSpaceship() (string, error) {
 	}
 
 	bundlerVersion := "2.2.24"
-	cmds := factory.CreateGemInstall("bunder", bundlerVersion, false, true, &command.Opts{
+	cmds := factory.CreateGemInstall("bundler", bundlerVersion, false, true, &command.Opts{
 		Dir: targetDir,
 	})
 	for _, cmd := range cmds {
