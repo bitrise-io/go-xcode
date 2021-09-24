@@ -245,10 +245,10 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 }
 
 // CreateBundleID ...
-func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
+func (c *ProfileClient) CreateBundleID(bundleIDIdentifier, appIDName string) (*appstoreconnect.BundleID, error) {
 	cmd, err := c.client.createRequestCommand("create_app",
 		bundleIDIdentifierArgKey, bundleIDIdentifier,
-		bundleIDNameArgKey, autocodesign.AppIDName(bundleIDIdentifier),
+		bundleIDNameArgKey, appIDName,
 	)
 	if err != nil {
 		return nil, err

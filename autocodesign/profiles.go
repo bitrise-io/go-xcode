@@ -11,8 +11,7 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
-// AppIDName ...
-func AppIDName(bundleID string) string {
+func appIDName(bundleID string) string {
 	prefix := ""
 	if strings.HasSuffix(bundleID, ".*") {
 		prefix = "Wildcard "
@@ -177,7 +176,7 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements s
 
 	capabilities := Entitlement(entitlements)
 
-	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier)
+	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier, appIDName(bundleIDIdentifier))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bundle ID: %s", err)
 	}

@@ -72,7 +72,7 @@ type DevPortalClient interface {
 	FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
 	CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error
 	SyncBundleID(bundleID appstoreconnect.BundleID, entitlements Entitlement) error
-	CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
+	CreateBundleID(bundleIDIdentifier, appIDName string) (*appstoreconnect.BundleID, error)
 }
 
 // AssetWriter ...

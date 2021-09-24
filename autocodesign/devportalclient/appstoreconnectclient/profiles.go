@@ -268,9 +268,7 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 }
 
 // CreateBundleID ...
-func (c *ProfileClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	appIDName := autocodesign.AppIDName(bundleIDIdentifier)
-
+func (c *ProfileClient) CreateBundleID(bundleIDIdentifier, appIDName string) (*appstoreconnect.BundleID, error) {
 	r, err := c.client.Provisioning.CreateBundleID(
 		appstoreconnect.BundleIDCreateRequest{
 			Data: appstoreconnect.BundleIDCreateRequestData{
