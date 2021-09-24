@@ -438,16 +438,3 @@ func checkProfile(client DevPortalClient, prof Profile, entitlements Entitlement
 	}
 	return checkProfileDevices(profileDeviceIDs, deviceIDs)
 }
-
-// CanGenerateProfileWithEntitlements checks all entitlements, whether they can be generated
-func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (ok bool, badEntitlement string, badBundleID string) {
-	for bundleID, entitlements := range entitlementsByBundleID {
-		for entitlementKey, value := range entitlements {
-			if (Entitlement{entitlementKey: value}).IsProfileAttached() {
-				return false, entitlementKey, bundleID
-			}
-		}
-	}
-
-	return true, "", ""
-}
