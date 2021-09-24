@@ -14,6 +14,7 @@ import (
 	"github.com/bitrise-io/go-steputils/ruby"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/env"
+	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/autocodesign"
@@ -168,8 +169,13 @@ func prepareSpaceship() (string, error) {
 		log.Donef("$ %s", cmd.PrintableCommandArgs())
 		fmt.Println()
 
-		if err := cmd.Run(); err != nil {
-			return "", fmt.Errorf("command failed, error: %s", err)
+		output, err := cmd.RunAndReturnTrimmedCombinedOutput()
+		if err != nil {
+			if errorutil.IsExitStatusError(err) {
+				return "", fmt.Errorf("Installing bundler gem failed: %s", output)
+			}
+
+			return "", fmt.Errorf("running command failed: %s", err)
 		}
 	}
 
@@ -180,8 +186,14 @@ func prepareSpaceship() (string, error) {
 
 	fmt.Println()
 	log.Donef("$ %s", bundleInstallCmd.PrintableCommandArgs())
-	if err := bundleInstallCmd.Run(); err != nil {
-		return "", fmt.Errorf("Command failed, error: %s", err)
+
+	output, err := bundleInstallCmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		if errorutil.IsExitStatusError(err) {
+			return "", fmt.Errorf("Bundle install failed: %s", output)
+		}
+
+		return "", fmt.Errorf("running command failed: %s", err)
 	}
 
 	return targetDir, nil
