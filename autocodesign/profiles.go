@@ -1,7 +1,6 @@
 package autocodesign
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -84,7 +83,6 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 				return nil, err
 			}
 			codesignAssets.ArchivableTargetProfilesByBundleID[bundleIDIdentifier] = *profile
-
 		}
 
 		if len(app.UITestTargetBundleIDs) > 0 && distrType == Development {
@@ -108,19 +106,22 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 		codesignAssetsByDistributionType[distrType] = codesignAssets
 	}
 
-	if len(containersByBundleID) > 0 {
-		fmt.Println()
-		log.Errorf("Unable to automatically assign iCloud containers to the following app IDs:")
-		fmt.Println()
+	if len(profileManager.containersByBundleID) > 0 {
+		iCloudContainers := ""
 		for bundleID, containers := range containersByBundleID {
-			log.Warnf("%s, containers:", bundleID)
+			iCloudContainers = fmt.Sprintf("%s, containers:\n", bundleID)
 			for _, container := range containers {
-				log.Warnf("- %s", container)
+				iCloudContainers += fmt.Sprintf("- %s\n", container)
 			}
-			fmt.Println()
+			iCloudContainers += "\n"
 		}
-		// TODO: improve error handling
-		return nil, errors.New("you have to manually add the listed containers to your app ID at: https://developer.apple.com/account/resources/identifiers/list")
+
+		return nil, &DetailedError{
+			ErrorMessage:   "could not automatically assign iCloud containers",
+			Title:          "Unable to automatically assign iCloud containers to the following app IDs:",
+			Description:    iCloudContainers,
+			Reccomendation: "You have to manually add the listed containers to your app ID at: https://developer.apple.com/account/resources/identifiers/list.",
+		}
 	}
 
 	return codesignAssetsByDistributionType, nil
@@ -439,7 +440,7 @@ func checkProfile(client DevPortalClient, prof Profile, entitlements Entitlement
 	return checkProfileDevices(profileDeviceIDs, deviceIDs)
 }
 
-// CanGenerateProfileWithEntitlements checks all entitlements, wheter they can be generated
+// CanGenerateProfileWithEntitlements checks all entitlements, whether they can be generated
 func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (ok bool, badEntitlement string, badBundleID string) {
 	for bundleID, entitlements := range entitlementsByBundleID {
 		for entitlementKey, value := range entitlements {

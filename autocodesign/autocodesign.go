@@ -160,7 +160,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	// Ensure Profiles
 	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, appLayout, devPortalDeviceIDs, opts.MinProfileValidityDays)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to ensure profiles: %s", err)
+		return nil, fmt.Errorf("Failed to ensure profiles: %w", err)
 	}
 
 	// Install certificates and profiles

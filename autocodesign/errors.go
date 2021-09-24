@@ -6,6 +6,18 @@ import (
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 )
 
+// DetailedError ...
+type DetailedError struct {
+	ErrorMessage   string
+	Title          string
+	Description    string
+	Reccomendation string
+}
+
+func (e *DetailedError) Error() string {
+	return e.ErrorMessage
+}
+
 // missingCertificateError ...
 type missingCertificateError struct {
 	Type   appstoreconnect.CertificateType
