@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/bitrise-io/go-steputils/command/ruby"
+	"github.com/bitrise-io/go-steputils/ruby"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
