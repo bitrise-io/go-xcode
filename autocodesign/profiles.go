@@ -325,6 +325,7 @@ func checkProfileEntitlements(client DevPortalClient, prof Profile, projectEntit
 	return client.CheckBundleIDEntitlements(bundleID, projectEntitlements)
 }
 
+// ParseRawProfileEntitlements ...
 func ParseRawProfileEntitlements(profileContents []byte) (serialized.Object, error) {
 	pkcs, err := profileutil.ProvisioningProfileFromContent(profileContents)
 	if err != nil {

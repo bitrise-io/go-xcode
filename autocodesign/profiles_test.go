@@ -102,11 +102,6 @@ func Test_profileName(t *testing.T) {
 			bundleID:    "io.bitrise.app",
 			want:        "Bitrise tvOS enterprise - (io.bitrise.app)",
 		},
-		{
-			profileType: appstoreconnect.ProfileType("unknown"),
-			bundleID:    "io.bitrise.app",
-			want:        "",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.profileType), func(t *testing.T) {
