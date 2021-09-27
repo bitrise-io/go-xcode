@@ -18,6 +18,7 @@ type Profile interface {
 	CertificateIDs() (map[string]bool, error)
 	DeviceIDs() (map[string]bool, error)
 	BundleID() (appstoreconnect.BundleID, error)
+	Entitlements() (serialized.Object, error)
 }
 
 // AppCodesignAssets ...
@@ -128,7 +129,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 
 	certs, err := m.certificateProvider.GetCertificates()
 	if err != nil {
-		return nil, fmt.Errorf("failed to download certificates: %s", err)
+		return nil, fmt.Errorf("failed to download certificates: %w", err)
 	}
 	log.Printf("%d certificates downloaded:", len(certs))
 	for _, cert := range certs {
@@ -145,7 +146,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		opts.VerboseLog,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("%v", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	var devPortalDeviceIDs []string
@@ -153,7 +154,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		var err error
 		devPortalDeviceIDs, err = ensureTestDevices(m.devPortalClient, opts.BitriseTestDevices, appLayout.Platform)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to ensure test devices: %s", err)
+			return nil, fmt.Errorf("Failed to ensure test devices: %w", err)
 		}
 	}
 

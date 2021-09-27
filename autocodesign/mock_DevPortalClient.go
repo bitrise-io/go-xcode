@@ -31,24 +31,22 @@ func (_m *MockDevPortalClient) CheckBundleIDEntitlements(bundleID appstoreconnec
 	return r0
 }
 
-// CreateBundleID provides a mock function with given fields: bundleIDIdentifier
-func (_m *MockDevPortalClient) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	ret := _m.Called(bundleIDIdentifier)
+// CreateBundleID provides a mock function with given fields: bundleIDIdentifier, appIDName
+func (_m *MockDevPortalClient) CreateBundleID(bundleIDIdentifier string, appIDName string) (*appstoreconnect.BundleID, error) {
+	ret := _m.Called(bundleIDIdentifier, appIDName)
 
 	var r0 *appstoreconnect.BundleID
-	if rf, ok := ret.Get(0).(func(string) *appstoreconnect.BundleID); ok {
-		r0 = rf(bundleIDIdentifier)
+	if rf, ok := ret.Get(0).(func(string, string) *appstoreconnect.BundleID); ok {
+		r0 = rf(bundleIDIdentifier, appIDName)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(*appstoreconnect.BundleID)
-			if !ok {
-			}
+			r0 = ret.Get(0).(*appstoreconnect.BundleID)
 		}
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(string) error); ok {
-		r1 = rf(bundleIDIdentifier)
+	if rf, ok := ret.Get(1).(func(string, string) error); ok {
+		r1 = rf(bundleIDIdentifier, appIDName)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -65,9 +63,7 @@ func (_m *MockDevPortalClient) CreateProfile(name string, profileType appstoreco
 		r0 = rf(name, profileType, bundleID, certificateIDs, deviceIDs)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(Profile)
-			if !ok {
-			}
+			r0 = ret.Get(0).(Profile)
 		}
 	}
 
@@ -104,9 +100,7 @@ func (_m *MockDevPortalClient) FindBundleID(bundleIDIdentifier string) (*appstor
 		r0 = rf(bundleIDIdentifier)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(*appstoreconnect.BundleID)
-			if !ok {
-			}
+			r0 = ret.Get(0).(*appstoreconnect.BundleID)
 		}
 	}
 
@@ -129,9 +123,7 @@ func (_m *MockDevPortalClient) FindProfile(name string, profileType appstoreconn
 		r0 = rf(name, profileType)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(Profile)
-			if !ok {
-			}
+			r0 = ret.Get(0).(Profile)
 		}
 	}
 
@@ -154,9 +146,7 @@ func (_m *MockDevPortalClient) ListDevices(udid string, platform appstoreconnect
 		r0 = rf(udid, platform)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).([]appstoreconnect.Device)
-			if !ok {
-			}
+			r0 = ret.Get(0).([]appstoreconnect.Device)
 		}
 	}
 
@@ -179,9 +169,7 @@ func (_m *MockDevPortalClient) QueryAllIOSCertificates() (map[appstoreconnect.Ce
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(map[appstoreconnect.CertificateType][]Certificate)
-			if !ok {
-			}
+			r0 = ret.Get(0).(map[appstoreconnect.CertificateType][]Certificate)
 		}
 	}
 
@@ -203,9 +191,7 @@ func (_m *MockDevPortalClient) QueryCertificateBySerial(_a0 *big.Int) (Certifica
 	if rf, ok := ret.Get(0).(func(*big.Int) Certificate); ok {
 		r0 = rf(_a0)
 	} else {
-		r0, ok = ret.Get(0).(Certificate)
-		if !ok {
-		}
+		r0 = ret.Get(0).(Certificate)
 	}
 
 	var r1 error
@@ -227,9 +213,7 @@ func (_m *MockDevPortalClient) RegisterDevice(testDevice devportalservice.TestDe
 		r0 = rf(testDevice)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(*appstoreconnect.Device)
-			if !ok {
-			}
+			r0 = ret.Get(0).(*appstoreconnect.Device)
 		}
 	}
 

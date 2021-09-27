@@ -10,63 +10,87 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/stretchr/testify/mock"
 )
 
-type MockCertificateSource struct {
-	certs map[appstoreconnect.CertificateType][]Certificate
+type devportalArgs struct {
+	certs    map[appstoreconnect.CertificateType][]Certificate
+	devices  []appstoreconnect.Device
+	profiles map[appstoreconnect.ProfileType][]Profile
+	appIDs   []appstoreconnect.BundleID
 }
 
-func (m *MockCertificateSource) QueryCertificateBySerial(serial *big.Int) (Certificate, error) {
-	for _, certList := range m.certs {
-		for _, cert := range certList {
-			if serial.Cmp(cert.Certificate.Certificate.SerialNumber) == 0 {
-				return cert, nil
+// newMockDevportalClient is a default mock implementing listing of trivial assets
+// To be mocked in tests:
+// - RegisterDevice
+// - DeleteProfile
+// - CreateProfile
+// - CheckBundleIDEntitlements
+// - SyncBundleID
+// - CreateBundleID
+func newMockDevportalClient(m devportalArgs) *MockDevPortalClient {
+	mockDevportalClient := new(MockDevPortalClient)
+	mockDevportalClient.On("QueryCertificateBySerial", mock.Anything).Return(
+		func(serial *big.Int) Certificate {
+			for _, certList := range m.certs {
+				for _, cert := range certList {
+					if serial.Cmp(cert.Certificate.Certificate.SerialNumber) == 0 {
+						return cert
+					}
+				}
+			}
+
+			return Certificate{}
+		},
+		func(serial *big.Int) error {
+			for _, certList := range m.certs {
+				for _, cert := range certList {
+					if serial.Cmp(cert.Certificate.Certificate.SerialNumber) == 0 {
+						return nil
+					}
+				}
+			}
+
+			return fmt.Errorf("certificate with serial %s not found", serial.String())
+		},
+	)
+	mockDevportalClient.On("QueryAllIOSCertificates").Return(func() map[appstoreconnect.CertificateType][]Certificate {
+		return m.certs
+	}, nil)
+	mockDevportalClient.On("ListDevices", "", appstoreconnect.IOSDevice).Return(func(udid string, platform appstoreconnect.DevicePlatform) []appstoreconnect.Device {
+		return m.devices
+	}, nil)
+	mockDevportalClient.On("FindProfile", mock.Anything, mock.Anything).Return(func(name string, profileType appstoreconnect.ProfileType) Profile {
+		profiles, ok := m.profiles[profileType]
+		if !ok {
+			panic(fmt.Sprintf("invalid type: %T", profileType))
+		}
+
+		for _, profile := range profiles {
+			if profile.Attributes().Name == name {
+				return profile
 			}
 		}
-	}
 
-	return Certificate{}, fmt.Errorf("certificate with serial %s not found", serial.String())
-}
+		return nil
+	}, nil)
+	mockDevportalClient.On("FindBundleID", mock.Anything).Return(func(bundleIDIdentifier string) *appstoreconnect.BundleID {
+		for _, appID := range m.appIDs {
+			if appID.Attributes.Identifier == bundleIDIdentifier {
+				return &appID
+			}
+		}
 
-func (m *MockCertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]Certificate, error) {
-	return m.certs, nil
-}
+		return nil
+	}, nil)
 
-func (m *MockCertificateSource) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
-	return nil, nil
-}
-func (m *MockCertificateSource) RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error) {
-	return nil, nil
-}
-
-func (m *MockCertificateSource) FindProfile(name string, profileType appstoreconnect.ProfileType) (Profile, error) {
-	return nil, nil
-}
-func (m *MockCertificateSource) DeleteProfile(id string) error {
-	return nil
-}
-func (m *MockCertificateSource) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error) {
-	return nil, nil
+	return mockDevportalClient
 }
 
-func (m *MockCertificateSource) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	return nil, nil
-}
-func (m *MockCertificateSource) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error {
-	return nil
-}
-func (m *MockCertificateSource) SyncBundleID(bundleID appstoreconnect.BundleID, entitlements Entitlement) error {
-	return nil
-}
-func (m *MockCertificateSource) CreateBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	return nil, nil
-}
-
-func NewMockCertificateSource(certs map[appstoreconnect.CertificateType][]Certificate) DevPortalClient {
-	return &MockCertificateSource{
+func newMockCertClient(certs map[appstoreconnect.CertificateType][]Certificate) DevPortalClient {
+	return newMockDevportalClient(devportalArgs{
 		certs: certs,
-	}
+	})
 }
 
 func TestGetValidCertificates(t *testing.T) {
@@ -119,7 +143,7 @@ func TestGetValidCertificates(t *testing.T) {
 				localCertificates: []certificateutil.CertificateInfoModel{
 					devCert,
 				},
-				client:                   NewMockCertificateSource(map[appstoreconnect.CertificateType][]Certificate{}),
+				client:                   newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: false},
 				teamID:                   "",
 			},
@@ -134,7 +158,7 @@ func TestGetValidCertificates(t *testing.T) {
 					devCert,
 					devCert2,
 				},
-				client: NewMockCertificateSource(map[appstoreconnect.CertificateType][]Certificate{
+				client: newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{
 					appstoreconnect.IOSDevelopment: {{
 						Certificate: devCert,
 						ID:          "devcert",
@@ -155,7 +179,7 @@ func TestGetValidCertificates(t *testing.T) {
 			name: "no local; no API; dev+dist required",
 			args: args{
 				localCertificates:        []certificateutil.CertificateInfoModel{},
-				client:                   NewMockCertificateSource(map[appstoreconnect.CertificateType][]Certificate{}),
+				client:                   newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: true},
 				teamID:                   "",
 			},
@@ -168,7 +192,7 @@ func TestGetValidCertificates(t *testing.T) {
 				localCertificates: []certificateutil.CertificateInfoModel{
 					devCert,
 				},
-				client:                   NewMockCertificateSource(map[appstoreconnect.CertificateType][]Certificate{}),
+				client:                   newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: true},
 				teamID:                   "",
 			},
@@ -181,7 +205,7 @@ func TestGetValidCertificates(t *testing.T) {
 				localCertificates: []certificateutil.CertificateInfoModel{
 					devCert,
 				},
-				client: NewMockCertificateSource(map[appstoreconnect.CertificateType][]Certificate{
+				client: newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{
 					appstoreconnect.IOSDevelopment: {{
 						Certificate: devCert,
 						ID:          "apicertid",
@@ -205,7 +229,7 @@ func TestGetValidCertificates(t *testing.T) {
 					devCert,
 					devCert2,
 				},
-				client: NewMockCertificateSource(map[appstoreconnect.CertificateType][]Certificate{
+				client: newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{
 					appstoreconnect.IOSDevelopment: {{
 						Certificate: devCert,
 						ID:          "dev1",
@@ -228,7 +252,7 @@ func TestGetValidCertificates(t *testing.T) {
 				localCertificates: []certificateutil.CertificateInfoModel{
 					devCert,
 				},
-				client: NewMockCertificateSource(map[appstoreconnect.CertificateType][]Certificate{
+				client: newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{
 					appstoreconnect.IOSDevelopment: {
 						{
 							Certificate: devCert,
@@ -253,7 +277,7 @@ func TestGetValidCertificates(t *testing.T) {
 					devCert,
 					distributionCert,
 				},
-				client: NewMockCertificateSource(map[appstoreconnect.CertificateType][]Certificate{
+				client: newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{
 					appstoreconnect.IOSDevelopment: {{
 						Certificate: devCert,
 						ID:          "dev",
@@ -275,7 +299,7 @@ func TestGetValidCertificates(t *testing.T) {
 					devCert,
 					distributionCert,
 				},
-				client: NewMockCertificateSource(map[appstoreconnect.CertificateType][]Certificate{
+				client: newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{
 					appstoreconnect.IOSDevelopment: {
 						{
 							Certificate: devCert,

@@ -206,11 +206,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 	log.Printf("  capabilities: %s", entitlements)
 
 	// Search for Bitrise managed Profile
-	name, err := profileName(profileType, bundleIDIdentifier)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create profile name: %s", err)
-	}
-
+	name := profileName(profileType, bundleIDIdentifier)
 	profile, err := m.client.FindProfile(name, profileType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find profile: %s", err)
@@ -284,15 +280,15 @@ func createWildcardBundleID(bundleID string) (string, error) {
 }
 
 // profileName generates profile name with layout: Bitrise <platform> <distribution type> - (<bundle id>)
-func profileName(profileType appstoreconnect.ProfileType, bundleID string) (string, error) {
+func profileName(profileType appstoreconnect.ProfileType, bundleID string) string {
 	platform, ok := ProfileTypeToPlatform[profileType]
 	if !ok {
-		return "", fmt.Errorf("unknown profile type: %s", profileType)
+		panic(fmt.Sprintf("unknown profile type: %s", profileType))
 	}
 
 	distribution, ok := ProfileTypeToDistribution[profileType]
 	if !ok {
-		return "", fmt.Errorf("unknown profile type: %s", profileType)
+		panic(fmt.Sprintf("unknown profile type: %s", profileType))
 	}
 
 	prefix := ""
@@ -302,18 +298,16 @@ func profileName(profileType appstoreconnect.ProfileType, bundleID string) (stri
 		prefix = "Wildcard "
 	}
 
-	return fmt.Sprintf("%sBitrise %s %s - (%s)", prefix, platform, distribution, bundleID), nil
+	return fmt.Sprintf("%sBitrise %s %s - (%s)", prefix, platform, distribution, bundleID)
 }
 
 func checkProfileEntitlements(client DevPortalClient, prof Profile, projectEntitlements Entitlement) error {
-	profileEnts, err := parseRawProfileEntitlements(prof)
+	profileEnts, err := prof.Entitlements()
 	if err != nil {
 		return err
 	}
 
-	projectEnts := serialized.Object(projectEntitlements)
-
-	missingContainers, err := findMissingContainers(projectEnts, profileEnts)
+	missingContainers, err := findMissingContainers(serialized.Object(projectEntitlements), profileEnts)
 	if err != nil {
 		return fmt.Errorf("failed to check missing containers: %s", err)
 	}
@@ -331,8 +325,8 @@ func checkProfileEntitlements(client DevPortalClient, prof Profile, projectEntit
 	return client.CheckBundleIDEntitlements(bundleID, projectEntitlements)
 }
 
-func parseRawProfileEntitlements(prof Profile) (serialized.Object, error) {
-	pkcs, err := profileutil.ProvisioningProfileFromContent(prof.Attributes().ProfileContent)
+func ParseRawProfileEntitlements(profileContents []byte) (serialized.Object, error) {
+	pkcs, err := profileutil.ProvisioningProfileFromContent(profileContents)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pkcs7 from profile content: %s", err)
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
 // APIProfile ...
@@ -103,6 +104,11 @@ func (p APIProfile) BundleID() (appstoreconnect.BundleID, error) {
 	}
 
 	return bundleIDresp.Data, nil
+}
+
+// Entitlements ...
+func (p APIProfile) Entitlements() (serialized.Object, error) {
+	return autocodesign.ParseRawProfileEntitlements(p.profile.Attributes.ProfileContent)
 }
 
 // ProfileClient ...
