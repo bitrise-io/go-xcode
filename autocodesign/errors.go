@@ -15,7 +15,23 @@ type DetailedError struct {
 }
 
 func (e *DetailedError) Error() string {
-	return e.ErrorMessage
+	message := ""
+	if e.ErrorMessage != "" {
+		message += e.ErrorMessage + "\n"
+	}
+	message += "\n"
+	if e.Title != "" {
+		message += e.Title + "\n"
+	}
+	if e.Description != "" {
+		message += e.Description + "\n"
+	}
+	if e.Reccomendation != "" {
+		message += "\n"
+		message += e.Reccomendation + "\n"
+	}
+
+	return message
 }
 
 // missingCertificateError ...

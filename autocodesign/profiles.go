@@ -116,7 +116,7 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 		}
 
 		return nil, &DetailedError{
-			ErrorMessage:   "could not automatically assign iCloud containers",
+			ErrorMessage:   "",
 			Title:          "Unable to automatically assign iCloud containers to the following app IDs:",
 			Description:    iCloudContainers,
 			Reccomendation: "You have to manually add the listed containers to your app ID at: https://developer.apple.com/account/resources/identifiers/list.",

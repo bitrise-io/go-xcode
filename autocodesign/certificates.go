@@ -32,8 +32,8 @@ func selectCertificatesAndDistributionTypes(certificateSource DevPortalClient, c
 	if err != nil {
 		if missingCertErr, ok := err.(missingCertificateError); ok {
 			return nil, nil, &DetailedError{
-				ErrorMessage:   err.Error(),
-				Title:          fmt.Sprintf("No valid %s type certificates uploaded with Team ID (%s)\n ", missingCertErr.Type, missingCertErr.TeamID),
+				ErrorMessage:   "",
+				Title:          fmt.Sprintf("No valid %s type certificates uploaded with Team ID (%s) ", missingCertErr.Type, missingCertErr.TeamID),
 				Description:    fmt.Sprintf("Maybe you forgot to provide a(n) %s type certificate.", missingCertErr.Type),
 				Reccomendation: fmt.Sprintf("Upload a %s type certificate (.p12) on the Code Signing tab of the Workflow Editor.", missingCertErr.Type),
 			}
