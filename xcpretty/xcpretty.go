@@ -6,10 +6,9 @@ import (
 	"io"
 	"os"
 
-	"github.com/bitrise-io/go-utils/env"
-
-	"github.com/bitrise-io/go-steputils/command/rubycommand"
+	"github.com/bitrise-io/go-steputils/ruby"
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/xcodebuild"
 	version "github.com/hashicorp/go-version"
@@ -103,15 +102,25 @@ func (c CommandModel) Run() (string, error) {
 
 // IsInstalled ...
 func IsInstalled() (bool, error) {
-	return rubycommand.IsGemInstalled("xcpretty", "")
+	locator := env.NewCommandLocator()
+	factory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), locator)
+	if err != nil {
+		return false, err
+	}
+
+	return ruby.NewEnvironment(factory, locator).IsGemInstalled("xcpretty", "")
 }
 
 // Install ...
 func Install() ([]command.Command, error) {
-	cmds, err := rubycommand.GemInstall("xcpretty", "", false)
+	locator := env.NewCommandLocator()
+	factory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), locator)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create command model, error: %s", err)
+		return nil, err
 	}
+
+	cmds := factory.CreateGemInstall("xcpretty", "", false, false, nil)
+
 	return cmds, nil
 }
 
