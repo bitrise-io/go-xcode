@@ -4,14 +4,12 @@ package certdownloader
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
+	"github.com/bitrise-io/go-steputils/input"
+	"github.com/bitrise-io/go-utils/filedownloader"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 )
@@ -71,58 +69,14 @@ func downloadPKCS12(httpClient *http.Client, certificateURL, passphrase string) 
 }
 
 func downloadFile(httpClient *http.Client, src string) ([]byte, error) {
-	url, err := url.Parse(src)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse url (%s): %s", src, err)
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
 
-	// Local file
-	if url.Scheme == "file" {
-		src := strings.Replace(src, url.Scheme+"://", "", -1)
+	downloader := filedownloader.New(httpClient)
+	downloader.WithContext(ctx)
+	fileProvider := input.NewFileProvider(downloader)
 
-		return ioutil.ReadFile(src)
-	}
-
-	// Remote file
-	req, err := http.NewRequest(http.MethodGet, url.String(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %s", err)
-	}
-
-	var contents []byte
-	err = retry.Times(2).Wait(5 * time.Second).Try(func(attempt uint) error {
-		log.Debugf("Downloading %s, attempt %d", src, attempt)
-
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
-		defer cancel()
-		req = req.WithContext(ctx)
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return fmt.Errorf("failed to download (%s): %s", src, err)
-		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				log.Warnf("failed to close (%s) body: %s", src, err)
-			}
-		}()
-
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("download (%s) failed with status code (%d)", src, resp.StatusCode)
-		}
-
-		contents, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("failed to read response (%s): %s", src, err)
-		}
-
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return contents, nil
+	return fileProvider.Contents(src)
 }
 
 func certsToString(certs []certificateutil.CertificateInfoModel) (s string) {

@@ -4,8 +4,8 @@ go 1.16
 
 require (
 	github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
-	github.com/bitrise-io/go-steputils v0.0.0-20210924114124-851d30b88892
-	github.com/bitrise-io/go-utils v0.0.0-20210924090918-3e7a04d0da9d
+	github.com/bitrise-io/go-steputils v0.0.0-20210928133902-0a485b6e1084
+	github.com/bitrise-io/go-utils v0.0.0-20210928145438-954864df0316
 	github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
