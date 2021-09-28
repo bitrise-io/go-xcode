@@ -343,17 +343,6 @@ func resolveEntitlementVariables(entitlements autocodesign.Entitlement, bundleID
 	return serialized.Object(entitlements), nil
 }
 
-// 'iPhone Developer' should match to 'iPhone Developer: Bitrise Bot (ABCD)'
-func codesignIdentitesMatch(identity1, identity2 string) bool {
-	if strings.Contains(strings.ToLower(identity1), strings.ToLower(identity2)) {
-		return true
-	}
-	if strings.Contains(strings.ToLower(identity2), strings.ToLower(identity1)) {
-		return true
-	}
-	return false
-}
-
 func expandTargetSetting(value string, buildSettings serialized.Object) (string, error) {
 	regexpStr := `^(.*)[$][({](.+?)([:].+)?[})](.*)$`
 	r, err := regexp.Compile(regexpStr)

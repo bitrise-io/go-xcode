@@ -118,8 +118,7 @@ func (c *Client) ensureSignedToken() (string, error) {
 		// https://developer.apple.com/documentation/appstoreconnectapi/generating_tokens_for_api_requests
 		//
 		// The step generates a new token 2 minutes before the expiry.
-		expireIn := expiration.Sub(time.Now())
-		if expireIn > jwtReserveTime {
+		if time.Until(expiration) > jwtReserveTime {
 			return c.signedToken, nil
 		}
 
