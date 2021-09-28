@@ -1,3 +1,4 @@
+// Package keychain contains methods to manage and install certificates to the MacOS keychain.
 package keychain
 
 import (

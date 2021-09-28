@@ -1,3 +1,7 @@
+// Package autocodesign is a framework for automatic code signing.
+//
+// Contains common types, interfaces and logic needed for codesigning.
+// Parsing an Xcode project or archive and applying settings is not part of the package, for modularity.
 package autocodesign
 
 import (

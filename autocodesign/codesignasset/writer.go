@@ -1,3 +1,4 @@
+// Package codesignasset implements a autocodesign.AssetWriter which writes certificates, profiles to the keychain and filesystem.
 package codesignasset
 
 import (

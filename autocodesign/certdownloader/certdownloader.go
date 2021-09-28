@@ -1,3 +1,4 @@
+// Package certdownloader implements a autocodesign.CertificateProvider which fetches Bitrise hosted Xcode codesigning certificates.
 package certdownloader
 
 import (

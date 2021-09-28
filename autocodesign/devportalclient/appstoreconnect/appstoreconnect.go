@@ -1,3 +1,6 @@
+// Package appstoreconnect implements a client for the App Store Connect API.
+//
+// It contains type definitions, authentication and API calls, without business logic built on those API calls.
 package appstoreconnect
 
 import (

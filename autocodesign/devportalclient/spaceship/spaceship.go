@@ -1,3 +1,6 @@
+// Package spaceship implements autocodesign.DevPortalClient, using Apple ID as the authentication method.
+//
+// The actual calls are made by the spaceship Ruby package, this is achieved by wrapping a Ruby project.
 package spaceship
 
 import (

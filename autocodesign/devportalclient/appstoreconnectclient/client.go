@@ -1,3 +1,6 @@
+// Package appstoreconnectclient implements autocodesign.DevPortalClient, using an API key as the authentication method.
+//
+// It depends on appstoreconnect package.
 package appstoreconnectclient
 
 import (

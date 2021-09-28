@@ -1,3 +1,4 @@
+// Package devportalclient contains glue code to select and initialize a autocodesign.DevPortalClient either using Apple ID or API key authentication.
 package devportalclient
 
 import (

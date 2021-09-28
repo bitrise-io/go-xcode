@@ -1,3 +1,8 @@
+// Package projectmanager parses and edits an Xcode project.
+//
+// Use cases:
+//  1. Get codesigning related information, needed to fetch or recreate certificates and provisioning profiles
+//  2. Apply codesigning settings in the projects
 package projectmanager
 
 import (
