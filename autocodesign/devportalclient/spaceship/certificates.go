@@ -25,7 +25,7 @@ func NewSpaceshipCertificateSource(client *Client) *CertificateSource {
 }
 
 // QueryCertificateBySerial ...
-func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (autocodesign.Certificate, error) {
+func (s *CertificateSource) QueryCertificateBySerial(serial big.Int) (autocodesign.Certificate, error) {
 	if s.certificates == nil {
 		if err := s.downloadAll(); err != nil {
 			return autocodesign.Certificate{}, err
@@ -34,12 +34,12 @@ func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (autocodes
 
 	allCerts := append(s.certificates[appstoreconnect.IOSDevelopment], s.certificates[appstoreconnect.IOSDistribution]...)
 	for _, cert := range allCerts {
-		if serial.Cmp(cert.Certificate.Certificate.SerialNumber) == 0 {
+		if serial.Cmp(cert.CertificateInfo.Certificate.SerialNumber) == 0 {
 			return cert, nil
 		}
 	}
 
-	return autocodesign.Certificate{}, fmt.Errorf("can not find certificate with serial")
+	return autocodesign.Certificate{}, fmt.Errorf("can not find certificate with serial (%s)", serial.Text(16))
 }
 
 // QueryAllIOSCertificates ...
@@ -113,8 +113,8 @@ func getCertificates(cmd spaceshipCommand) ([]autocodesign.Certificate, error) {
 		}
 
 		certInfos = append(certInfos, autocodesign.Certificate{
-			Certificate: certificateutil.NewCertificateInfo(*cert, nil),
-			ID:          certInfo.ID,
+			CertificateInfo: certificateutil.NewCertificateInfo(*cert, nil),
+			ID:              certInfo.ID,
 		})
 	}
 

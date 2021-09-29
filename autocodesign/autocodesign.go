@@ -58,16 +58,16 @@ type Entitlement serialized.Object
 
 // Certificate is certificate present on Apple App Store Connect API, could match a local certificate
 type Certificate struct {
-	Certificate certificateutil.CertificateInfoModel
-	ID          string
+	CertificateInfo certificateutil.CertificateInfoModel
+	ID              string
 }
 
 // DevPortalClient ...
 type DevPortalClient interface {
-	QueryCertificateBySerial(*big.Int) (Certificate, error)
+	QueryCertificateBySerial(serial big.Int) (Certificate, error)
 	QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]Certificate, error)
 
-	ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error)
+	ListDevices(UDID string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error)
 	RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error)
 
 	FindProfile(name string, profileType appstoreconnect.ProfileType) (Profile, error)
@@ -89,7 +89,7 @@ type AssetWriter interface {
 type AppLayout struct {
 	TeamID                                 string
 	Platform                               Platform
-	ArchivableTargetBundleIDToEntitlements map[string]serialized.Object
+	EntitlementsByArchivableTargetBundleID map[string]serialized.Object
 	UITestTargetBundleIDs                  []string
 }
 
@@ -150,7 +150,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		opts.VerboseLog,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
+		return nil, err
 	}
 
 	var devPortalDeviceIDs []string
@@ -158,21 +158,21 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		var err error
 		devPortalDeviceIDs, err = ensureTestDevices(m.devPortalClient, opts.BitriseTestDevices, appLayout.Platform)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to ensure test devices: %w", err)
+			return nil, fmt.Errorf("failed to ensure test devices: %w", err)
 		}
 	}
 
 	// Ensure Profiles
 	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, appLayout, devPortalDeviceIDs, opts.MinProfileValidityDays)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to ensure profiles: %w", err)
+		return nil, fmt.Errorf("failed to ensure profiles: %w", err)
 	}
 
 	// Install certificates and profiles
 	fmt.Println()
 	log.Infof("Install certificates and profiles")
 	if err := m.assetWriter.Write(codesignAssetsByDistributionType); err != nil {
-		return nil, fmt.Errorf("Failed to install codesigning files: %s", err)
+		return nil, fmt.Errorf("failed to install codesigning files: %s", err)
 	}
 
 	return codesignAssetsByDistributionType, nil

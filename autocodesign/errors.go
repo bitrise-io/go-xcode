@@ -11,7 +11,7 @@ type DetailedError struct {
 	ErrorMessage   string
 	Title          string
 	Description    string
-	Reccomendation string
+	Recommendation string
 }
 
 func (e *DetailedError) Error() string {
@@ -26,9 +26,9 @@ func (e *DetailedError) Error() string {
 	if e.Description != "" {
 		message += e.Description + "\n"
 	}
-	if e.Reccomendation != "" {
+	if e.Recommendation != "" {
 		message += "\n"
-		message += e.Reccomendation + "\n"
+		message += e.Recommendation + "\n"
 	}
 
 	return message

@@ -34,7 +34,6 @@ type ProjectHelper struct {
 // Previously in the ruby version the initialize method did the same
 // It returns a new ProjectHelper, whose Configuration field contains is the selected configuration (even when configurationName parameter is empty)
 func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*ProjectHelper, error) {
-	// Maybe we should do this checks during the input parsing
 	if exits, err := pathutil.IsPathExists(projOrWSPath); err != nil {
 		return nil, err
 	} else if !exits {

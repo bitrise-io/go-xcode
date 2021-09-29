@@ -23,7 +23,7 @@ func NewCertificateSource(client *appstoreconnect.Client) *CertificateSource {
 }
 
 // QueryCertificateBySerial ...
-func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (autocodesign.Certificate, error) {
+func (s *CertificateSource) QueryCertificateBySerial(serial big.Int) (autocodesign.Certificate, error) {
 	response, err := s.client.Provisioning.FetchCertificate(serial.Text(16))
 	if err != nil {
 		return autocodesign.Certificate{}, err
@@ -33,6 +33,7 @@ func (s *CertificateSource) QueryCertificateBySerial(serial *big.Int) (autocodes
 	if err != nil {
 		return autocodesign.Certificate{}, err
 	}
+
 	return certs[0], nil
 }
 
@@ -63,8 +64,8 @@ func parseCertificatesResponse(response []appstoreconnect.Certificate) ([]autoco
 			certInfo := certificateutil.NewCertificateInfo(*cert, nil)
 
 			certifacteInfos = append(certifacteInfos, autocodesign.Certificate{
-				Certificate: certInfo,
-				ID:          resp.ID,
+				CertificateInfo: certInfo,
+				ID:              resp.ID,
 			})
 		}
 	}

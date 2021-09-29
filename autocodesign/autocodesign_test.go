@@ -88,8 +88,8 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 	checkOnlyDevportalProfile := newMockDevportalClient(devportalArgs{
 		certs: map[appstoreconnect.CertificateType][]Certificate{
 			appstoreconnect.IOSDevelopment: {{
-				Certificate: devCert,
-				ID:          "dev1",
+				CertificateInfo: devCert,
+				ID:              "dev1",
 			}},
 		},
 		profiles: map[appstoreconnect.ProfileType][]Profile{
@@ -117,8 +117,8 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 	devportalWithNoAppID := newMockDevportalClient(devportalArgs{
 		certs: map[appstoreconnect.CertificateType][]Certificate{
 			appstoreconnect.IOSDevelopment: {{
-				Certificate: devCert,
-				ID:          "dev1",
+				CertificateInfo: devCert,
+				ID:              "dev1",
 			}},
 		},
 		profiles: map[appstoreconnect.ProfileType][]Profile{
@@ -164,7 +164,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			},
 			appLayout: AppLayout{
 				Platform: IOS,
-				ArchivableTargetBundleIDToEntitlements: map[string]serialized.Object{
+				EntitlementsByArchivableTargetBundleID: map[string]serialized.Object{
 					"io.test": {},
 				},
 			},
@@ -190,7 +190,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			},
 			appLayout: AppLayout{
 				Platform: IOS,
-				ArchivableTargetBundleIDToEntitlements: map[string]serialized.Object{
+				EntitlementsByArchivableTargetBundleID: map[string]serialized.Object{
 					"io.test": map[string]interface{}{
 						"com.apple.developer.icloud-services": []interface{}{
 							"CloudDocuments",

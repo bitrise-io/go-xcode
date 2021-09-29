@@ -15,8 +15,8 @@ type Client struct {
 	*ProfileClient
 }
 
-// NewAPIDevportalClient ...
-func NewAPIDevportalClient(client *appstoreconnect.Client) autocodesign.DevPortalClient {
+// NewAPIDevPortalClient ...
+func NewAPIDevPortalClient(client *appstoreconnect.Client) autocodesign.DevPortalClient {
 	return Client{
 		CertificateSource: NewCertificateSource(client),
 		DeviceClient:      NewDeviceClient(client),

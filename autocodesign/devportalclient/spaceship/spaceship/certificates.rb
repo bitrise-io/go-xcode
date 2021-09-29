@@ -4,7 +4,6 @@ require_relative 'portal/certificate_client'
 class CertificateHelper
   def list_dev_certs
     certs = Portal::CertificateClient.download_development_certificates
-    puts certs
     get_cert_infos(certs)
   end
 

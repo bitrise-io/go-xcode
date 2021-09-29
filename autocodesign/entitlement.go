@@ -56,7 +56,7 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 		capSett := appstoreconnect.CapabilitySetting{
 			Key: appstoreconnect.IcloudVersion,
 			Options: []appstoreconnect.CapabilityOption{
-				appstoreconnect.CapabilityOption{
+				{
 					Key: appstoreconnect.Xcode6,
 				},
 			},
@@ -76,7 +76,7 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 		capSett := appstoreconnect.CapabilitySetting{
 			Key: appstoreconnect.DataProtectionPermissionLevel,
 			Options: []appstoreconnect.CapabilityOption{
-				appstoreconnect.CapabilityOption{
+				{
 					Key: key,
 				},
 			},
@@ -86,7 +86,7 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 		capSett := appstoreconnect.CapabilitySetting{
 			Key: appstoreconnect.AppleIDAuthAppConsent,
 			Options: []appstoreconnect.CapabilityOption{
-				appstoreconnect.CapabilityOption{
+				{
 					Key: "PRIMARY_APP_CONSENT",
 				},
 			},

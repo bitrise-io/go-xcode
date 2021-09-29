@@ -47,16 +47,16 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 		} else if len(certs) > 1 {
 			log.Warnf("Multiple certificates provided for distribution type: %s", distrType)
 			for _, c := range certs {
-				log.Warnf("- %s", c.Certificate.CommonName)
+				log.Warnf("- %s", c.CertificateInfo.CommonName)
 			}
-			log.Warnf("Using: %s", certs[0].Certificate.CommonName)
+			log.Warnf("Using: %s", certs[0].CertificateInfo.CommonName)
 		}
 		log.Debugf("Using certificate for distribution type %s (certificate type %s): %s", distrType, certType, certs[0])
 
 		codesignAssets := AppCodesignAssets{
 			ArchivableTargetProfilesByBundleID: map[string]Profile{},
 			UITestTargetProfilesByBundleID:     map[string]Profile{},
-			Certificate:                        certs[0].Certificate,
+			Certificate:                        certs[0].CertificateInfo,
 		}
 
 		var certIDs []string
@@ -71,7 +71,7 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 
 		profileType := platformProfileTypes[distrType]
 
-		for bundleIDIdentifier, entitlements := range app.ArchivableTargetBundleIDToEntitlements {
+		for bundleIDIdentifier, entitlements := range app.EntitlementsByArchivableTargetBundleID {
 			var profileDeviceIDs []string
 			if distributionTypeRequiresDeviceList([]DistributionType{distrType}) {
 				profileDeviceIDs = devPortalDeviceIDs
@@ -119,7 +119,7 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 			ErrorMessage:   "",
 			Title:          "Unable to automatically assign iCloud containers to the following app IDs:",
 			Description:    iCloudContainers,
-			Reccomendation: "You have to manually add the listed containers to your app ID at: https://developer.apple.com/account/resources/identifiers/list.",
+			Recommendation: "You have to manually add the listed containers to your app ID at: https://developer.apple.com/account/resources/identifiers/list.",
 		}
 	}
 

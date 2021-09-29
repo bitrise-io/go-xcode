@@ -89,7 +89,7 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 	return autocodesign.AppLayout{
 		TeamID:                                 teamID,
 		Platform:                               platform,
-		ArchivableTargetBundleIDToEntitlements: archivableTargetBundleIDToEntitlements,
+		EntitlementsByArchivableTargetBundleID: archivableTargetBundleIDToEntitlements,
 		UITestTargetBundleIDs:                  uiTestTargetBundleIDs,
 	}, nil
 }

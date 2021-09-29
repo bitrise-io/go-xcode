@@ -32,8 +32,8 @@ type DeviceInfo struct {
 	Class    appstoreconnect.DeviceClass      `json:"class"`
 }
 
-func newDevice(d DeviceInfo) *appstoreconnect.Device {
-	return &appstoreconnect.Device{
+func newDevice(d DeviceInfo) appstoreconnect.Device {
+	return appstoreconnect.Device{
 		ID:   d.ID,
 		Type: d.Model,
 		Attributes: appstoreconnect.DeviceAttributes{
@@ -68,7 +68,7 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 
 	var devices []appstoreconnect.Device
 	for _, d := range deviceResponse.Data {
-		devices = append(devices, *newDevice(d))
+		devices = append(devices, newDevice(d))
 	}
 
 	var filteredDevices []appstoreconnect.Device
@@ -123,5 +123,7 @@ func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*
 		return nil, errors.New("unexpected device registration failure")
 	}
 
-	return newDevice(*deviceResponse.Data.Device), nil
+	device := newDevice(*deviceResponse.Data.Device)
+
+	return &device, nil
 }
