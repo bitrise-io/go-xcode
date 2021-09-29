@@ -9,19 +9,19 @@ import (
 func TestICloudContainers(t *testing.T) {
 	tests := []struct {
 		name                string
-		projectEntitlements Entitlement
+		projectEntitlements Entitlements
 		want                []string
 		errHandler          func(require.TestingT, error, ...interface{})
 	}{
 		{
 			name:                "no containers",
-			projectEntitlements: Entitlement(map[string]interface{}{}),
+			projectEntitlements: Entitlements(map[string]interface{}{}),
 			want:                nil,
 			errHandler:          require.NoError,
 		},
 		{
 			name: "no containers - CloudDocuments",
-			projectEntitlements: Entitlement(map[string]interface{}{
+			projectEntitlements: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudDocuments",
 				},
@@ -31,7 +31,7 @@ func TestICloudContainers(t *testing.T) {
 		},
 		{
 			name: "no containers - CloudKit",
-			projectEntitlements: Entitlement(map[string]interface{}{
+			projectEntitlements: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudKit",
 				},
@@ -41,7 +41,7 @@ func TestICloudContainers(t *testing.T) {
 		},
 		{
 			name: "no containers - CloudKit and CloudDocuments",
-			projectEntitlements: Entitlement(map[string]interface{}{
+			projectEntitlements: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudKit",
 					"CloudDocuments",
@@ -52,7 +52,7 @@ func TestICloudContainers(t *testing.T) {
 		},
 		{
 			name: "has containers - CloudDocuments",
-			projectEntitlements: Entitlement(map[string]interface{}{
+			projectEntitlements: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudDocuments",
 				},
@@ -65,7 +65,7 @@ func TestICloudContainers(t *testing.T) {
 		},
 		{
 			name: "has containers - CloudKit",
-			projectEntitlements: Entitlement(map[string]interface{}{
+			projectEntitlements: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudKit",
 				},
@@ -78,7 +78,7 @@ func TestICloudContainers(t *testing.T) {
 		},
 		{
 			name: "has containers - CloudKit and CloudDocuments",
-			projectEntitlements: Entitlement(map[string]interface{}{
+			projectEntitlements: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-services": []interface{}{
 					"CloudKit",
 					"CloudDocuments",

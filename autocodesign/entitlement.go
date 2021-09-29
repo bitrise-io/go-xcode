@@ -135,7 +135,7 @@ func (e Entitlement) AppearsOnDeveloperPortal() bool {
 }
 
 // Equal ...
-func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability) (bool, error) {
+func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability, allEntitlements Entitlements) (bool, error) {
 	if len(e) == 0 {
 		return false, nil
 	}
@@ -152,7 +152,7 @@ func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability) (bool, error)
 	}
 
 	if capType == appstoreconnect.ICloud {
-		return iCloudEquals(e, cap)
+		return iCloudEquals(allEntitlements, cap)
 	} else if capType == appstoreconnect.DataProtection {
 		entVal, err := serialized.Object(e).String(entKey)
 		if err != nil {
@@ -164,7 +164,7 @@ func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability) (bool, error)
 	return true, nil
 }
 
-func (e Entitlement) iCloudServices() (iCloudDocuments, iCloudKit, keyValueStorage bool, err error) {
+func (e Entitlements) iCloudServices() (iCloudDocuments, iCloudKit, keyValueStorage bool, err error) {
 	v, err := serialized.Object(e).String("com.apple.developer.ubiquity-kvstore-identifier")
 	if err != nil && !serialized.IsKeyNotFoundError(err) {
 		return false, false, false, err
@@ -184,7 +184,7 @@ func (e Entitlement) iCloudServices() (iCloudDocuments, iCloudKit, keyValueStora
 }
 
 // ICloudContainers returns the list of iCloud containers
-func (e Entitlement) ICloudContainers() ([]string, error) {
+func (e Entitlements) ICloudContainers() ([]string, error) {
 	usesDocuments, usesCloudKit, _, err := e.iCloudServices()
 	if err != nil && !serialized.IsKeyNotFoundError(err) {
 		return nil, err
@@ -201,7 +201,7 @@ func (e Entitlement) ICloudContainers() ([]string, error) {
 	return containers, nil
 }
 
-func iCloudEquals(ent Entitlement, cap appstoreconnect.BundleIDCapability) (bool, error) {
+func iCloudEquals(ent Entitlements, cap appstoreconnect.BundleIDCapability) (bool, error) {
 	documents, cloudKit, kvStorage, err := ent.iCloudServices()
 	if err != nil {
 		return false, err

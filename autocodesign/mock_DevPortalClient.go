@@ -17,13 +17,13 @@ type MockDevPortalClient struct {
 	mock.Mock
 }
 
-// CheckBundleIDEntitlements provides a mock function with given fields: bundleID, projectEntitlements
-func (_m *MockDevPortalClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error {
-	ret := _m.Called(bundleID, projectEntitlements)
+// CheckBundleIDEntitlements provides a mock function with given fields: bundleID, appEntitlements
+func (_m *MockDevPortalClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, appEntitlements Entitlements) error {
+	ret := _m.Called(bundleID, appEntitlements)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(appstoreconnect.BundleID, Entitlement) error); ok {
-		r0 = rf(bundleID, projectEntitlements)
+	if rf, ok := ret.Get(0).(func(appstoreconnect.BundleID, Entitlements) error); ok {
+		r0 = rf(bundleID, appEntitlements)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -40,9 +40,7 @@ func (_m *MockDevPortalClient) CreateBundleID(bundleIDIdentifier string, appIDNa
 		r0 = rf(bundleIDIdentifier, appIDName)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(*appstoreconnect.BundleID)
-			if !ok {
-			}
+			r0 = ret.Get(0).(*appstoreconnect.BundleID)
 		}
 	}
 
@@ -65,9 +63,7 @@ func (_m *MockDevPortalClient) CreateProfile(name string, profileType appstoreco
 		r0 = rf(name, profileType, bundleID, certificateIDs, deviceIDs)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(Profile)
-			if !ok {
-			}
+			r0 = ret.Get(0).(Profile)
 		}
 	}
 
@@ -104,9 +100,7 @@ func (_m *MockDevPortalClient) FindBundleID(bundleIDIdentifier string) (*appstor
 		r0 = rf(bundleIDIdentifier)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(*appstoreconnect.BundleID)
-			if !ok {
-			}
+			r0 = ret.Get(0).(*appstoreconnect.BundleID)
 		}
 	}
 
@@ -129,9 +123,7 @@ func (_m *MockDevPortalClient) FindProfile(name string, profileType appstoreconn
 		r0 = rf(name, profileType)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(Profile)
-			if !ok {
-			}
+			r0 = ret.Get(0).(Profile)
 		}
 	}
 
@@ -145,24 +137,22 @@ func (_m *MockDevPortalClient) FindProfile(name string, profileType appstoreconn
 	return r0, r1
 }
 
-// ListDevices provides a mock function with given fields: udid, platform
-func (_m *MockDevPortalClient) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
-	ret := _m.Called(udid, platform)
+// ListDevices provides a mock function with given fields: UDID, platform
+func (_m *MockDevPortalClient) ListDevices(UDID string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
+	ret := _m.Called(UDID, platform)
 
 	var r0 []appstoreconnect.Device
 	if rf, ok := ret.Get(0).(func(string, appstoreconnect.DevicePlatform) []appstoreconnect.Device); ok {
-		r0 = rf(udid, platform)
+		r0 = rf(UDID, platform)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).([]appstoreconnect.Device)
-			if !ok {
-			}
+			r0 = ret.Get(0).([]appstoreconnect.Device)
 		}
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(string, appstoreconnect.DevicePlatform) error); ok {
-		r1 = rf(udid, platform)
+		r1 = rf(UDID, platform)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -179,9 +169,7 @@ func (_m *MockDevPortalClient) QueryAllIOSCertificates() (map[appstoreconnect.Ce
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(map[appstoreconnect.CertificateType][]Certificate)
-			if !ok {
-			}
+			r0 = ret.Get(0).(map[appstoreconnect.CertificateType][]Certificate)
 		}
 	}
 
@@ -195,22 +183,20 @@ func (_m *MockDevPortalClient) QueryAllIOSCertificates() (map[appstoreconnect.Ce
 	return r0, r1
 }
 
-// QueryCertificateBySerial provides a mock function with given fields: _a0
-func (_m *MockDevPortalClient) QueryCertificateBySerial(_a0 *big.Int) (Certificate, error) {
-	ret := _m.Called(_a0)
+// QueryCertificateBySerial provides a mock function with given fields: serial
+func (_m *MockDevPortalClient) QueryCertificateBySerial(serial big.Int) (Certificate, error) {
+	ret := _m.Called(serial)
 
 	var r0 Certificate
-	if rf, ok := ret.Get(0).(func(*big.Int) Certificate); ok {
-		r0 = rf(_a0)
+	if rf, ok := ret.Get(0).(func(big.Int) Certificate); ok {
+		r0 = rf(serial)
 	} else {
-		r0, ok = ret.Get(0).(Certificate)
-		if !ok {
-		}
+		r0 = ret.Get(0).(Certificate)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(*big.Int) error); ok {
-		r1 = rf(_a0)
+	if rf, ok := ret.Get(1).(func(big.Int) error); ok {
+		r1 = rf(serial)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -227,9 +213,7 @@ func (_m *MockDevPortalClient) RegisterDevice(testDevice devportalservice.TestDe
 		r0 = rf(testDevice)
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).(*appstoreconnect.Device)
-			if !ok {
-			}
+			r0 = ret.Get(0).(*appstoreconnect.Device)
 		}
 	}
 
@@ -243,13 +227,13 @@ func (_m *MockDevPortalClient) RegisterDevice(testDevice devportalservice.TestDe
 	return r0, r1
 }
 
-// SyncBundleID provides a mock function with given fields: bundleID, entitlements
-func (_m *MockDevPortalClient) SyncBundleID(bundleID appstoreconnect.BundleID, entitlements Entitlement) error {
-	ret := _m.Called(bundleID, entitlements)
+// SyncBundleID provides a mock function with given fields: bundleID, appEntitlements
+func (_m *MockDevPortalClient) SyncBundleID(bundleID appstoreconnect.BundleID, appEntitlements Entitlements) error {
+	ret := _m.Called(bundleID, appEntitlements)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(appstoreconnect.BundleID, Entitlement) error); ok {
-		r0 = rf(bundleID, entitlements)
+	if rf, ok := ret.Get(0).(func(appstoreconnect.BundleID, Entitlements) error); ok {
+		r0 = rf(bundleID, appEntitlements)
 	} else {
 		r0 = ret.Error(0)
 	}

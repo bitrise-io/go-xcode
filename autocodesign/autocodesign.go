@@ -19,10 +19,10 @@ import (
 type Profile interface {
 	ID() string
 	Attributes() appstoreconnect.ProfileAttributes
-	CertificateIDs() (map[string]bool, error)
-	DeviceIDs() (map[string]bool, error)
+	CertificateIDs() ([]string, error)
+	DeviceIDs() ([]string, error)
 	BundleID() (appstoreconnect.BundleID, error)
-	Entitlements() (serialized.Object, error)
+	Entitlements() (Entitlements, error)
 }
 
 // AppCodesignAssets ...
@@ -56,6 +56,9 @@ var (
 // Entitlement ...
 type Entitlement serialized.Object
 
+// Entitlements ...
+type Entitlements serialized.Object
+
 // Certificate is certificate present on Apple App Store Connect API, could match a local certificate
 type Certificate struct {
 	CertificateInfo certificateutil.CertificateInfoModel
@@ -75,8 +78,8 @@ type DevPortalClient interface {
 	CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error)
 
 	FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
-	CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements Entitlement) error
-	SyncBundleID(bundleID appstoreconnect.BundleID, entitlements Entitlement) error
+	CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, appEntitlements Entitlements) error
+	SyncBundleID(bundleID appstoreconnect.BundleID, appEntitlements Entitlements) error
 	CreateBundleID(bundleIDIdentifier, appIDName string) (*appstoreconnect.BundleID, error)
 }
 
@@ -89,7 +92,7 @@ type AssetWriter interface {
 type AppLayout struct {
 	TeamID                                 string
 	Platform                               Platform
-	EntitlementsByArchivableTargetBundleID map[string]serialized.Object
+	EntitlementsByArchivableTargetBundleID map[string]Entitlements
 	UITestTargetBundleIDs                  []string
 }
 

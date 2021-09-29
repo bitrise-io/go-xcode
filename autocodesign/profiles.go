@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
@@ -132,7 +133,7 @@ type profileManager struct {
 	containersByBundleID        map[string][]string
 }
 
-func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements serialized.Object) (*appstoreconnect.BundleID, error) {
+func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements Entitlements) (*appstoreconnect.BundleID, error) {
 	fmt.Println()
 	log.Infof("  Searching for app ID for bundle ID: %s", bundleIDIdentifier)
 
@@ -151,12 +152,12 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements s
 		m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
 
 		// Check if BundleID is sync with the project
-		err := m.client.CheckBundleIDEntitlements(*bundleID, Entitlement(entitlements))
+		err := m.client.CheckBundleIDEntitlements(*bundleID, entitlements)
 		if err != nil {
 			if mErr, ok := err.(NonmatchingProfileError); ok {
 				log.Warnf("  app ID capabilities invalid: %s", mErr.Reason)
 				log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
-				if err := m.client.SyncBundleID(*bundleID, Entitlement(entitlements)); err != nil {
+				if err := m.client.SyncBundleID(*bundleID, entitlements); err != nil {
 					return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
 				}
 
@@ -174,14 +175,12 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements s
 	// Create BundleID
 	log.Warnf("  app ID not found, generating...")
 
-	capabilities := Entitlement(entitlements)
-
 	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier, appIDName(bundleIDIdentifier))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create bundle ID: %s", err)
 	}
 
-	containers, err := capabilities.ICloudContainers()
+	containers, err := entitlements.ICloudContainers()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get list of iCloud containers: %s", err)
 	}
@@ -191,7 +190,7 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements s
 		log.Errorf("  app ID created but couldn't add iCloud containers: %v", containers)
 	}
 
-	if err := m.client.SyncBundleID(*bundleID, capabilities); err != nil {
+	if err := m.client.SyncBundleID(*bundleID, entitlements); err != nil {
 		return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
 	}
 
@@ -200,7 +199,7 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements s
 	return bundleID, nil
 }
 
-func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements serialized.Object, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
+func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements Entitlements, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
 	fmt.Println()
 	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
 	log.Printf("  capabilities: %s", entitlements)
@@ -219,7 +218,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 
 		if profile.Attributes().ProfileState == appstoreconnect.Active {
 			// Check if Bitrise managed Profile is sync with the project
-			err := checkProfile(m.client, profile, Entitlement(entitlements), deviceIDs, certIDs, minProfileDaysValid)
+			err := checkProfile(m.client, profile, entitlements, deviceIDs, certIDs, minProfileDaysValid)
 			if err != nil {
 				if mErr, ok := err.(NonmatchingProfileError); ok {
 					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
@@ -301,13 +300,13 @@ func profileName(profileType appstoreconnect.ProfileType, bundleID string) strin
 	return fmt.Sprintf("%sBitrise %s %s - (%s)", prefix, platform, distribution, bundleID)
 }
 
-func checkProfileEntitlements(client DevPortalClient, prof Profile, projectEntitlements Entitlement) error {
+func checkProfileEntitlements(client DevPortalClient, prof Profile, appEntitlements Entitlements) error {
 	profileEnts, err := prof.Entitlements()
 	if err != nil {
 		return err
 	}
 
-	missingContainers, err := findMissingContainers(serialized.Object(projectEntitlements), profileEnts)
+	missingContainers, err := findMissingContainers(appEntitlements, profileEnts)
 	if err != nil {
 		return fmt.Errorf("failed to check missing containers: %s", err)
 	}
@@ -322,11 +321,11 @@ func checkProfileEntitlements(client DevPortalClient, prof Profile, projectEntit
 		return err
 	}
 
-	return client.CheckBundleIDEntitlements(bundleID, projectEntitlements)
+	return client.CheckBundleIDEntitlements(bundleID, appEntitlements)
 }
 
 // ParseRawProfileEntitlements ...
-func ParseRawProfileEntitlements(profileContents []byte) (serialized.Object, error) {
+func ParseRawProfileEntitlements(profileContents []byte) (Entitlements, error) {
 	pkcs, err := profileutil.ProvisioningProfileFromContent(profileContents)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pkcs7 from profile content: %s", err)
@@ -336,10 +335,10 @@ func ParseRawProfileEntitlements(profileContents []byte) (serialized.Object, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse profile info from pkcs7 content: %s", err)
 	}
-	return serialized.Object(profile.Entitlements), nil
+	return Entitlements(profile.Entitlements), nil
 }
 
-func findMissingContainers(projectEnts, profileEnts serialized.Object) ([]string, error) {
+func findMissingContainers(projectEnts, profileEnts Entitlements) ([]string, error) {
 	projContainerIDs, err := serialized.Object(projectEnts).StringSlice("com.apple.developer.icloud-container-identifiers")
 	if err != nil {
 		if serialized.IsKeyNotFoundError(err) {
@@ -377,9 +376,9 @@ func findMissingContainers(projectEnts, profileEnts serialized.Object) ([]string
 	return missing, nil
 }
 
-func checkProfileCertificates(profileCertificateIDs map[string]bool, certificateIDs []string) error {
+func checkProfileCertificates(profileCertificateIDs []string, certificateIDs []string) error {
 	for _, id := range certificateIDs {
-		if !profileCertificateIDs[id] {
+		if !sliceutil.IsStringInSlice(id, profileCertificateIDs) {
 			return NonmatchingProfileError{
 				Reason: fmt.Sprintf("certificate with ID (%s) not included in the profile", id),
 			}
@@ -388,9 +387,9 @@ func checkProfileCertificates(profileCertificateIDs map[string]bool, certificate
 	return nil
 }
 
-func checkProfileDevices(profileDeviceIDs map[string]bool, deviceIDs []string) error {
+func checkProfileDevices(profileDeviceIDs []string, deviceIDs []string) error {
 	for _, id := range deviceIDs {
-		if !profileDeviceIDs[id] {
+		if !sliceutil.IsStringInSlice(id, profileDeviceIDs) {
 			return NonmatchingProfileError{
 				Reason: fmt.Sprintf("device with ID (%s) not included in the profile", id),
 			}
@@ -408,7 +407,7 @@ func isProfileExpired(prof Profile, minProfileDaysValid int) bool {
 	return time.Time(prof.Attributes().ExpirationDate).Before(relativeExpiryTime)
 }
 
-func checkProfile(client DevPortalClient, prof Profile, entitlements Entitlement, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
+func checkProfile(client DevPortalClient, prof Profile, entitlements Entitlements, deviceIDs, certificateIDs []string, minProfileDaysValid int) error {
 	if isProfileExpired(prof, minProfileDaysValid) {
 		return NonmatchingProfileError{
 			Reason: fmt.Sprintf("profile expired, or will expire in less then %d day(s)", minProfileDaysValid),

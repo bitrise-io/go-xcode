@@ -8,7 +8,6 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -33,9 +32,9 @@ type profileArgs struct {
 	attributes   appstoreconnect.ProfileAttributes
 	id           string
 	appID        appstoreconnect.BundleID
-	devices      map[string]bool
-	certificates map[string]bool
-	entitlements serialized.Object
+	devices      []string
+	certificates []string
+	entitlements Entitlements
 }
 
 func newMockProfile(m profileArgs) Profile {
@@ -49,13 +48,13 @@ func newMockProfile(m profileArgs) Profile {
 	profile.On("BundleID").Return(func() appstoreconnect.BundleID {
 		return m.appID
 	}, nil)
-	profile.On("DeviceIDs").Return(func() map[string]bool {
+	profile.On("DeviceIDs").Return(func() []string {
 		return m.devices
 	}, nil)
-	profile.On("CertificateIDs").Return(func() map[string]bool {
+	profile.On("CertificateIDs").Return(func() []string {
 		return m.certificates
 	}, nil)
-	profile.On("Entitlements").Return(func() serialized.Object {
+	profile.On("Entitlements").Return(func() Entitlements {
 		return m.entitlements
 	}, nil)
 
@@ -82,7 +81,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			ProfileState:   appstoreconnect.Active,
 			ExpirationDate: appstoreconnect.Time(expiry),
 		},
-		certificates: map[string]bool{"dev1": true},
+		certificates: []string{"dev1"},
 	})
 
 	checkOnlyDevportalProfile := newMockDevportalClient(devportalArgs{
@@ -164,7 +163,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			},
 			appLayout: AppLayout{
 				Platform: IOS,
-				EntitlementsByArchivableTargetBundleID: map[string]serialized.Object{
+				EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
 					"io.test": {},
 				},
 			},
@@ -190,7 +189,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			},
 			appLayout: AppLayout{
 				Platform: IOS,
-				EntitlementsByArchivableTargetBundleID: map[string]serialized.Object{
+				EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
 					"io.test": map[string]interface{}{
 						"com.apple.developer.icloud-services": []interface{}{
 							"CloudDocuments",

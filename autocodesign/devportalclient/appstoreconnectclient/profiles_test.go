@@ -19,13 +19,13 @@ func Test_checkBundleIDEntitlements(t *testing.T) {
 	tests := []struct {
 		name                 string
 		bundleIDEntitlements []appstoreconnect.BundleIDCapability
-		projectEntitlements  autocodesign.Entitlement
+		appEntitlements      autocodesign.Entitlements
 		wantErr              bool
 	}{
 		{
 			name:                 "Check known entitlements, which does not need to be registered on the Developer Portal",
 			bundleIDEntitlements: []appstoreconnect.BundleIDCapability{},
-			projectEntitlements: autocodesign.Entitlement(map[string]interface{}{
+			appEntitlements: autocodesign.Entitlements(map[string]interface{}{
 				"keychain-access-groups":                             "",
 				"com.apple.developer.ubiquity-kvstore-identifier":    "",
 				"com.apple.developer.icloud-container-identifiers":   "",
@@ -36,7 +36,7 @@ func Test_checkBundleIDEntitlements(t *testing.T) {
 		{
 			name:                 "Needed to register entitlements",
 			bundleIDEntitlements: []appstoreconnect.BundleIDCapability{},
-			projectEntitlements: autocodesign.Entitlement(map[string]interface{}{
+			appEntitlements: autocodesign.Entitlements(map[string]interface{}{
 				"com.apple.developer.applesignin": "",
 			}),
 			wantErr: true,
@@ -44,7 +44,7 @@ func Test_checkBundleIDEntitlements(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := checkBundleIDEntitlements(tt.bundleIDEntitlements, tt.projectEntitlements)
+			err := checkBundleIDEntitlements(tt.bundleIDEntitlements, tt.appEntitlements)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("checkBundleIDEntitlements() error = %v, wantErr %v", err, tt.wantErr)
 				return

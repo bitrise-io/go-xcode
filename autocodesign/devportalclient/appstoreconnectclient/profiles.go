@@ -8,7 +8,6 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
 // APIProfile ...
@@ -36,7 +35,7 @@ func (p APIProfile) Attributes() appstoreconnect.ProfileAttributes {
 }
 
 // CertificateIDs ...
-func (p APIProfile) CertificateIDs() (map[string]bool, error) {
+func (p APIProfile) CertificateIDs() ([]string, error) {
 	var nextPageURL string
 	var certificates []appstoreconnect.Certificate
 	for {
@@ -59,18 +58,18 @@ func (p APIProfile) CertificateIDs() (map[string]bool, error) {
 		}
 	}
 
-	ids := map[string]bool{}
+	ids := []string{}
 	for _, cert := range certificates {
-		ids[cert.ID] = true
+		ids = append(ids, cert.ID)
 	}
 
 	return ids, nil
 }
 
 // DeviceIDs ...
-func (p APIProfile) DeviceIDs() (map[string]bool, error) {
+func (p APIProfile) DeviceIDs() ([]string, error) {
 	var nextPageURL string
-	ids := map[string]bool{}
+	var ids []string
 	for {
 		response, err := p.client.Provisioning.Devices(
 			p.profile.Relationships.Devices.Links.Related,
@@ -83,8 +82,8 @@ func (p APIProfile) DeviceIDs() (map[string]bool, error) {
 			return nil, wrapInProfileError(err)
 		}
 
-		for _, dev := range response.Data {
-			ids[dev.ID] = true
+		for _, device := range response.Data {
+			ids = append(ids, device.ID)
 		}
 
 		nextPageURL = response.Links.Next
@@ -107,7 +106,7 @@ func (p APIProfile) BundleID() (appstoreconnect.BundleID, error) {
 }
 
 // Entitlements ...
-func (p APIProfile) Entitlements() (serialized.Object, error) {
+func (p APIProfile) Entitlements() (autocodesign.Entitlements, error) {
 	return autocodesign.ParseRawProfileEntitlements(p.profile.Attributes.ProfileContent)
 }
 
@@ -295,18 +294,18 @@ func (c *ProfileClient) CreateBundleID(bundleIDIdentifier, appIDName string) (*a
 }
 
 // CheckBundleIDEntitlements checks if a given Bundle ID has every capability enabled, required by the project.
-func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements autocodesign.Entitlement) error {
+func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, appEntitlements autocodesign.Entitlements) error {
 	response, err := c.client.Provisioning.Capabilities(bundleID.Relationships.Capabilities.Links.Related)
 	if err != nil {
 		return err
 	}
 
-	return checkBundleIDEntitlements(response.Data, projectEntitlements)
+	return checkBundleIDEntitlements(response.Data, appEntitlements)
 }
 
 // SyncBundleID ...
-func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, entitlements autocodesign.Entitlement) error {
-	for key, value := range entitlements {
+func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, appEntitlements autocodesign.Entitlements) error {
+	for key, value := range appEntitlements {
 		ent := autocodesign.Entitlement{key: value}
 		cap, err := ent.Capability()
 		if err != nil {
@@ -354,8 +353,8 @@ func wrapInProfileError(err error) error {
 	return err
 }
 
-func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCapability, projectEntitlements autocodesign.Entitlement) error {
-	for k, v := range projectEntitlements {
+func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCapability, appEntitlements autocodesign.Entitlements) error {
+	for k, v := range appEntitlements {
 		ent := autocodesign.Entitlement{k: v}
 
 		if !ent.AppearsOnDeveloperPortal() {
@@ -364,7 +363,7 @@ func checkBundleIDEntitlements(bundleIDEntitlements []appstoreconnect.BundleIDCa
 
 		found := false
 		for _, cap := range bundleIDEntitlements {
-			equal, err := ent.Equal(cap)
+			equal, err := ent.Equal(cap, appEntitlements)
 			if err != nil {
 				return err
 			}

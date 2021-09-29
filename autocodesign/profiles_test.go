@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/stretchr/testify/require"
 )
 
@@ -116,17 +115,17 @@ func Test_profileName(t *testing.T) {
 func Test_findMissingContainers(t *testing.T) {
 	tests := []struct {
 		name        string
-		projectEnts serialized.Object
-		profileEnts serialized.Object
+		appEnts     Entitlements
+		profileEnts Entitlements
 		want        []string
 		wantErr     bool
 	}{
 		{
 			name: "equal without container",
-			projectEnts: serialized.Object(map[string]interface{}{
+			appEnts: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": []interface{}{},
 			}),
-			profileEnts: serialized.Object(map[string]interface{}{
+			profileEnts: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": []interface{}{},
 			}),
 
@@ -135,10 +134,10 @@ func Test_findMissingContainers(t *testing.T) {
 		},
 		{
 			name: "equal with container",
-			projectEnts: serialized.Object(map[string]interface{}{
+			appEnts: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": []interface{}{"container1"},
 			}),
-			profileEnts: serialized.Object(map[string]interface{}{
+			profileEnts: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": []interface{}{"container1"},
 			}),
 
@@ -147,10 +146,10 @@ func Test_findMissingContainers(t *testing.T) {
 		},
 		{
 			name: "profile has more containers than project",
-			projectEnts: serialized.Object(map[string]interface{}{
+			appEnts: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": []interface{}{},
 			}),
-			profileEnts: serialized.Object(map[string]interface{}{
+			profileEnts: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": []interface{}{"container1"},
 			}),
 
@@ -159,10 +158,10 @@ func Test_findMissingContainers(t *testing.T) {
 		},
 		{
 			name: "project has more containers than profile",
-			projectEnts: serialized.Object(map[string]interface{}{
+			appEnts: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": []interface{}{"container1"},
 			}),
-			profileEnts: serialized.Object(map[string]interface{}{
+			profileEnts: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": []interface{}{},
 			}),
 
@@ -171,10 +170,10 @@ func Test_findMissingContainers(t *testing.T) {
 		},
 		{
 			name: "project has containers but profile doesn't",
-			projectEnts: serialized.Object(map[string]interface{}{
+			appEnts: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": []interface{}{"container1"},
 			}),
-			profileEnts: serialized.Object(map[string]interface{}{
+			profileEnts: Entitlements(map[string]interface{}{
 				"otherentitlement": "",
 			}),
 
@@ -183,7 +182,7 @@ func Test_findMissingContainers(t *testing.T) {
 		},
 		{
 			name: "error check",
-			projectEnts: serialized.Object(map[string]interface{}{
+			appEnts: Entitlements(map[string]interface{}{
 				"com.apple.developer.icloud-container-identifiers": "break",
 			}),
 
@@ -193,7 +192,7 @@ func Test_findMissingContainers(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := findMissingContainers(tt.projectEnts, tt.profileEnts)
+			got, err := findMissingContainers(tt.appEnts, tt.profileEnts)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

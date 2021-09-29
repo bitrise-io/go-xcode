@@ -3,20 +3,20 @@ package projectmanager
 import (
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
+	"github.com/bitrise-io/go-xcode/autocodesign"
 )
 
 func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 	tests := []struct {
 		name                   string
-		entitlementsByBundleID map[string]serialized.Object
+		entitlementsByBundleID map[string]autocodesign.Entitlements
 		wantOk                 bool
 		wantEntitlement        string
 		wantBundleID           string
 	}{
 		{
 			name: "no entitlements",
-			entitlementsByBundleID: map[string]serialized.Object{
+			entitlementsByBundleID: map[string]autocodesign.Entitlements{
 				"com.bundleid": map[string]interface{}{},
 			},
 			wantOk:          true,
@@ -25,7 +25,7 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 		},
 		{
 			name: "contains unsupported entitlement",
-			entitlementsByBundleID: map[string]serialized.Object{
+			entitlementsByBundleID: map[string]autocodesign.Entitlements{
 				"com.bundleid": map[string]interface{}{
 					"com.entitlement-ignored":            true,
 					"com.apple.developer.contacts.notes": true,
@@ -37,7 +37,7 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 		},
 		{
 			name: "contains unsupported entitlement, multiple bundle IDs",
-			entitlementsByBundleID: map[string]serialized.Object{
+			entitlementsByBundleID: map[string]autocodesign.Entitlements{
 				"com.bundleid": map[string]interface{}{
 					"aps-environment": true,
 				},
@@ -52,7 +52,7 @@ func TestCanGenerateProfileWithEntitlements(t *testing.T) {
 		},
 		{
 			name: "all entitlements supported",
-			entitlementsByBundleID: map[string]serialized.Object{
+			entitlementsByBundleID: map[string]autocodesign.Entitlements{
 				"com.bundleid": map[string]interface{}{
 					"aps-environment": true,
 				},

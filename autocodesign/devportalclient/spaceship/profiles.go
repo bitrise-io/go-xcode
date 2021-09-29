@@ -9,7 +9,6 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
 const (
@@ -42,23 +41,13 @@ func (p Profile) Attributes() appstoreconnect.ProfileAttributes {
 }
 
 // CertificateIDs ...
-func (p Profile) CertificateIDs() (map[string]bool, error) {
-	ids := make(map[string]bool)
-	for _, id := range p.certificateIDs {
-		ids[id] = true
-	}
-
-	return ids, nil
+func (p Profile) CertificateIDs() ([]string, error) {
+	return p.certificateIDs, nil
 }
 
 // DeviceIDs ...
-func (p Profile) DeviceIDs() (map[string]bool, error) {
-	ids := make(map[string]bool)
-	for _, id := range p.deviceIDs {
-		ids[id] = true
-	}
-
-	return ids, nil
+func (p Profile) DeviceIDs() ([]string, error) {
+	return p.deviceIDs, nil
 }
 
 // BundleID ...
@@ -73,7 +62,7 @@ func (p Profile) BundleID() (appstoreconnect.BundleID, error) {
 }
 
 // Entitlements ...
-func (p Profile) Entitlements() (serialized.Object, error) {
+func (p Profile) Entitlements() (autocodesign.Entitlements, error) {
 	return autocodesign.ParseRawProfileEntitlements(p.attributes.ProfileContent)
 }
 
@@ -282,8 +271,8 @@ func (c *ProfileClient) CreateBundleID(bundleIDIdentifier, appIDName string) (*a
 }
 
 // CheckBundleIDEntitlements ...
-func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, projectEntitlements autocodesign.Entitlement) error {
-	entitlementsBytes, err := json.Marshal(projectEntitlements)
+func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, appEntitlements autocodesign.Entitlements) error {
+	entitlementsBytes, err := json.Marshal(appEntitlements)
 	if err != nil {
 		return err
 	}
@@ -306,8 +295,8 @@ func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.Bundl
 }
 
 // SyncBundleID ...
-func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, projectEntitlements autocodesign.Entitlement) error {
-	entitlementsBytes, err := json.Marshal(projectEntitlements)
+func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, appEntitlements autocodesign.Entitlements) error {
+	entitlementsBytes, err := json.Marshal(appEntitlements)
 	if err != nil {
 		return err
 	}

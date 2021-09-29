@@ -10,7 +10,6 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
 // Project ...
@@ -170,7 +169,7 @@ func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType,
 }
 
 // CanGenerateProfileWithEntitlements checks all entitlements, whether they can be generated
-func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]serialized.Object) (ok bool, badEntitlement string, badBundleID string) {
+func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]autocodesign.Entitlements) (ok bool, badEntitlement string, badBundleID string) {
 	for bundleID, entitlements := range entitlementsByBundleID {
 		for entitlementKey, value := range entitlements {
 			if (autocodesign.Entitlement{entitlementKey: value}).IsProfileAttached() {
