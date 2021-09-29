@@ -15,7 +15,7 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
-// Profile ...
+// Profile represents a provisioning profiles
 type Profile interface {
 	ID() string
 	Attributes() appstoreconnect.ProfileAttributes
@@ -25,7 +25,7 @@ type Profile interface {
 	Entitlements() (Entitlements, error)
 }
 
-// AppCodesignAssets ...
+// AppCodesignAssets is the result of ensuring codesigning assets
 type AppCodesignAssets struct {
 	ArchivableTargetProfilesByBundleID map[string]Profile
 	UITestTargetProfilesByBundleID     map[string]Profile
@@ -56,7 +56,7 @@ var (
 // Entitlement ...
 type Entitlement serialized.Object
 
-// Entitlements ...
+// Entitlements is all the entitlements that are contained in a target or profile
 type Entitlements serialized.Object
 
 // Certificate is certificate present on Apple App Store Connect API, could match a local certificate
@@ -65,7 +65,7 @@ type Certificate struct {
 	ID              string
 }
 
-// DevPortalClient ...
+// DevPortalClient abstract away the Apple Developer Portal API
 type DevPortalClient interface {
 	QueryCertificateBySerial(serial big.Int) (Certificate, error)
 	QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]Certificate, error)
@@ -88,7 +88,7 @@ type AssetWriter interface {
 	Write(codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets) error
 }
 
-// AppLayout ...
+// AppLayout contains codesigning related settings that are needed to ensure codesigning files
 type AppLayout struct {
 	TeamID                                 string
 	Platform                               Platform
@@ -96,12 +96,12 @@ type AppLayout struct {
 	UITestTargetBundleIDs                  []string
 }
 
-// CertificateProvider ...
+// CertificateProvider returns codesigning certificates (with private key)
 type CertificateProvider interface {
 	GetCertificates() ([]certificateutil.CertificateInfoModel, error)
 }
 
-// CodesignAssetsOpts ...
+// CodesignAssetsOpts are codesigning related paramters that are not specified by the project (or archive)
 type CodesignAssetsOpts struct {
 	DistributionType       DistributionType
 	BitriseTestDevices     []devportalservice.TestDevice
@@ -129,7 +129,7 @@ func NewCodesignAssetManager(devPortalClient DevPortalClient, certificateProvide
 	}
 }
 
-// EnsureCodesignAssets ...
+// EnsureCodesignAssets is the main entry point of the codesigning logic
 func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts CodesignAssetsOpts) (map[DistributionType]AppCodesignAssets, error) {
 	fmt.Println()
 	log.Infof("Downloading certificates")
