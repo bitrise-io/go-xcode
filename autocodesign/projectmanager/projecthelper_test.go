@@ -497,7 +497,7 @@ func TestProjectHelper_targetEntitlements(t *testing.T) {
 		targetName    string
 		conf          string
 		bundleID      string
-		want          serialized.Object
+		want          autocodesign.Entitlements
 		projectHelper ProjectHelper
 		wantErr       bool
 	}{
@@ -506,7 +506,7 @@ func TestProjectHelper_targetEntitlements(t *testing.T) {
 			targetName:    targetCases[2],
 			conf:          configCases[2],
 			projectHelper: projHelpCases[2],
-			want: func() serialized.Object {
+			want: func() autocodesign.Entitlements {
 				m := make(map[string]interface{})
 				m["com.apple.security.app-sandbox"] = true
 				m["com.apple.security.files.user-selected.read-only"] = true
@@ -519,7 +519,7 @@ func TestProjectHelper_targetEntitlements(t *testing.T) {
 			targetName:    targetCases[3],
 			conf:          configCases[3],
 			projectHelper: projHelpCases[3],
-			want: func() serialized.Object {
+			want: func() autocodesign.Entitlements {
 				m := make(map[string]interface{})
 				m["com.apple.security.app-sandbox"] = true
 				m["com.apple.security.files.user-selected.read-only"] = true
