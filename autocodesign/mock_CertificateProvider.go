@@ -21,7 +21,9 @@ func (_m *MockCertificateProvider) GetCertificates() ([]certificateutil.Certific
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]certificateutil.CertificateInfoModel)
+			r0, ok = ret.Get(0).([]certificateutil.CertificateInfoModel)
+			if !ok {
+			}
 		}
 	}
 

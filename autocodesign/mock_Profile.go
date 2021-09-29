@@ -20,7 +20,9 @@ func (_m *MockProfile) Attributes() appstoreconnect.ProfileAttributes {
 	if rf, ok := ret.Get(0).(func() appstoreconnect.ProfileAttributes); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(appstoreconnect.ProfileAttributes)
+		r0, ok = ret.Get(0).(appstoreconnect.ProfileAttributes)
+		if !ok {
+		}
 	}
 
 	return r0
@@ -34,7 +36,9 @@ func (_m *MockProfile) BundleID() (appstoreconnect.BundleID, error) {
 	if rf, ok := ret.Get(0).(func() appstoreconnect.BundleID); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(appstoreconnect.BundleID)
+		r0, ok = ret.Get(0).(appstoreconnect.BundleID)
+		if !ok {
+		}
 	}
 
 	var r1 error
@@ -56,7 +60,9 @@ func (_m *MockProfile) CertificateIDs() ([]string, error) {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
+			r0, ok = ret.Get(0).([]string)
+			if !ok {
+			}
 		}
 	}
 
@@ -79,7 +85,9 @@ func (_m *MockProfile) DeviceIDs() ([]string, error) {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]string)
+			r0, ok = ret.Get(0).([]string)
+			if !ok {
+			}
 		}
 	}
 
@@ -102,7 +110,9 @@ func (_m *MockProfile) Entitlements() (Entitlements, error) {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(Entitlements)
+			r0, ok = ret.Get(0).(Entitlements)
+			if !ok {
+			}
 		}
 	}
 
@@ -124,7 +134,9 @@ func (_m *MockProfile) ID() string {
 	if rf, ok := ret.Get(0).(func() string); ok {
 		r0 = rf()
 	} else {
-		r0 = ret.Get(0).(string)
+		r0, ok = ret.Get(0).(string)
+		if !ok {
+		}
 	}
 
 	return r0
