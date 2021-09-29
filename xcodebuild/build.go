@@ -46,6 +46,7 @@ type CommandBuilder struct {
 	scheme        string
 	configuration string
 	destination   string
+	xcconfigPath  string
 
 	// buildsetting
 	forceDevelopmentTeam              string
@@ -83,15 +84,21 @@ func (c *CommandBuilder) SetScheme(scheme string) *CommandBuilder {
 	return c
 }
 
+// SetConfiguration ...
+func (c *CommandBuilder) SetConfiguration(configuration string) *CommandBuilder {
+	c.configuration = configuration
+	return c
+}
+
 // SetDestination ...
 func (c *CommandBuilder) SetDestination(destination string) *CommandBuilder {
 	c.destination = destination
 	return c
 }
 
-// SetConfiguration ...
-func (c *CommandBuilder) SetConfiguration(configuration string) *CommandBuilder {
-	c.configuration = configuration
+// SetXCConfigPath ...
+func (c *CommandBuilder) SetXCConfigPath(xcconfigPath string) *CommandBuilder {
+	c.xcconfigPath = xcconfigPath
 	return c
 }
 
@@ -180,6 +187,15 @@ func (c *CommandBuilder) cmdSlice() []string {
 		slice = append(slice, "-configuration", c.configuration)
 	}
 
+	if c.destination != "" {
+		// "-destination" "id=07933176-D03B-48D3-A853-0800707579E6" => (need the plus `"` marks between the `destination` and the `id`)
+		slice = append(slice, "-destination", c.destination)
+	}
+
+	if c.xcconfigPath != "" {
+		slice = append(slice, "-xcconfig", c.xcconfigPath)
+	}
+
 	if c.disableCodesign {
 		slice = append(slice, "CODE_SIGNING_ALLOWED=NO")
 	} else {
@@ -198,12 +214,6 @@ func (c *CommandBuilder) cmdSlice() []string {
 		if c.forceCodeSignIdentity != "" {
 			slice = append(slice, fmt.Sprintf("CODE_SIGN_IDENTITY=%s", c.forceCodeSignIdentity))
 		}
-	}
-
-	if c.destination != "" {
-		// "-destination" "id=07933176-D03B-48D3-A853-0800707579E6" => (need the plus `"` marks between the `destination` and the `id`)
-		slice = append(slice, "-destination")
-		slice = append(slice, c.destination)
 	}
 
 	if c.disableIndexWhileBuilding {
