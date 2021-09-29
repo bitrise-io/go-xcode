@@ -17,6 +17,7 @@ type Project struct {
 	projHelper ProjectHelper
 }
 
+// InitParams ...
 type InitParams struct {
 	ProjectOrWorkspacePath string
 	SchemeName             string
