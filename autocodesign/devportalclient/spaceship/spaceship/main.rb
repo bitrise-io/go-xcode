@@ -27,7 +27,12 @@ begin
 
   Log.verbose = true
 
-  Portal::AuthClient.login(options[:username], options[:password], options[:session], options[:team_id])
+  begin
+    Portal::AuthClient.login(options[:username], options[:password], options[:session], options[:team_id])
+  rescue => e
+    puts "\nApple ID authentication failed."
+    exit(1)
+  end
 
   result = '{}'
   case options[:subcommand]
