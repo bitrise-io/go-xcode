@@ -30,7 +30,7 @@ begin
   begin
     Portal::AuthClient.login(options[:username], options[:password], options[:session], options[:team_id])
   rescue => e
-    puts "\nApple ID authentication failed."
+    puts "\nApple ID authentication failed: #{e}"
     exit(1)
   end
 

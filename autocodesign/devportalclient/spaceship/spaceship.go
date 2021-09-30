@@ -166,11 +166,13 @@ func prepareSpaceship() (string, error) {
 
 	bundlerVersion := "2.2.24"
 	cmds := factory.CreateGemInstall("bundler", bundlerVersion, false, true, &command.Opts{
-		Dir: targetDir,
+		Dir:    targetDir,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	})
 	for _, cmd := range cmds {
-		log.Donef("$ %s", cmd.PrintableCommandArgs())
 		fmt.Println()
+		log.Donef("$ %s", cmd.PrintableCommandArgs())
 
 		output, err := cmd.RunAndReturnTrimmedCombinedOutput()
 		if err != nil {
@@ -184,7 +186,9 @@ func prepareSpaceship() (string, error) {
 
 	fmt.Println()
 	bundleInstallCmd := factory.CreateBundleInstall(bundlerVersion, &command.Opts{
-		Dir: targetDir,
+		Dir:    targetDir,
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
 	})
 
 	fmt.Println()
