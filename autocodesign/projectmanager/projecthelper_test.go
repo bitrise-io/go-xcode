@@ -467,7 +467,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 			schemeCase,
 		)
 		if err != nil {
-			return nil, nil, nil, nil, nil, nil, fmt.Errorf("Failed to generate XcodeProj for test case: %s", err)
+			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate XcodeProj for test case: %s", err)
 		}
 		xcProjCases = append(xcProjCases, xcProj)
 
@@ -477,7 +477,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 			configCases[i],
 		)
 		if err != nil {
-			return nil, nil, nil, nil, nil, nil, fmt.Errorf("Failed to generate projectHelper for test case: %s", err)
+			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate projectHelper for test case: %s", err)
 		}
 		projHelpCases = append(projHelpCases, *projHelp)
 	}

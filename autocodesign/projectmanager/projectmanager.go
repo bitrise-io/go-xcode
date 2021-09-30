@@ -59,7 +59,7 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 
 	platform, err := p.projHelper.Platform(p.projHelper.Configuration)
 	if err != nil {
-		return autocodesign.AppLayout{}, fmt.Errorf("Failed to read project platform: %s", err)
+		return autocodesign.AppLayout{}, fmt.Errorf("failed to read project platform: %s", err)
 	}
 
 	log.Printf("Platform: %s", platform)
@@ -88,7 +88,7 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 
 		uiTestTargetBundleIDs, err = p.projHelper.UITestTargetBundleIDs()
 		if err != nil {
-			return autocodesign.AppLayout{}, fmt.Errorf("Failed to read UITest targets' entitlements: %s", err)
+			return autocodesign.AppLayout{}, fmt.Errorf("failed to read UITest targets' entitlements: %s", err)
 		}
 	}
 

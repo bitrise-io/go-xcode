@@ -12,21 +12,9 @@ import (
 )
 
 func Test_downloader_GetCertificates_Local(t *testing.T) {
-	const teamID = "MYTEAMID"
-	const commonName = "Apple Developer: test"
-	const teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
-	expiry := time.Now().AddDate(1, 0, 0)
-	serial := int64(1234)
-
-	cert, privateKey, err := certificateutil.GenerateTestCertificate(serial, teamID, teamName, commonName, expiry)
-	if err != nil {
-		t.Errorf("init: failed to generate certificate: %s", err)
-	}
-
-	certInfo := certificateutil.NewCertificateInfo(*cert, privateKey)
-	t.Logf("Test certificate generated. Serial: %s Team ID: %s Common name: %s", certInfo.Serial, certInfo.TeamID, certInfo.CommonName)
-
+	certInfo := createTestCert(t)
 	passphrase := ""
+
 	certData, err := certInfo.EncodeToP12(passphrase)
 	if err != nil {
 		t.Errorf("init: failed to encode certificate: %s", err)
@@ -65,21 +53,9 @@ func Test_downloader_GetCertificates_Local(t *testing.T) {
 }
 
 func Test_downloader_GetCertificates_Remote(t *testing.T) {
-	const teamID = "MYTEAMID"
-	const commonName = "Apple Developer: test"
-	const teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
-	expiry := time.Now().AddDate(1, 0, 0)
-	serial := int64(1234)
-
-	cert, privateKey, err := certificateutil.GenerateTestCertificate(serial, teamID, teamName, commonName, expiry)
-	if err != nil {
-		t.Errorf("init: failed to generate certificate: %s", err)
-	}
-
-	certInfo := certificateutil.NewCertificateInfo(*cert, privateKey)
-	t.Logf("Test certificate generated. Serial: %s Team ID: %s Common name: %s", certInfo.Serial, certInfo.TeamID, certInfo.CommonName)
-
+	certInfo := createTestCert(t)
 	passphrase := ""
+
 	certData, err := certInfo.EncodeToP12(passphrase)
 	if err != nil {
 		t.Errorf("init: failed to encode certificate: %s", err)
@@ -98,7 +74,6 @@ func Test_downloader_GetCertificates_Remote(t *testing.T) {
 		}
 	}))
 
-	//
 	d := downloader{
 		urls: []CertificateAndPassphrase{{
 			URL:        storage.URL,
@@ -114,4 +89,24 @@ func Test_downloader_GetCertificates_Remote(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, want, got)
+}
+
+func createTestCert(t *testing.T) certificateutil.CertificateInfoModel {
+	const (
+		teamID     = "MYTEAMID"
+		commonName = "Apple Developer: test"
+		teamName   = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
+	)
+	expiry := time.Now().AddDate(1, 0, 0)
+	serial := int64(1234)
+
+	cert, privateKey, err := certificateutil.GenerateTestCertificate(serial, teamID, teamName, commonName, expiry)
+	if err != nil {
+		t.Errorf("init: failed to generate certificate: %s", err)
+	}
+
+	certInfo := certificateutil.NewCertificateInfo(*cert, privateKey)
+	t.Logf("Test certificate generated. Serial: %s Team ID: %s Common name: %s", certInfo.Serial, certInfo.TeamID, certInfo.CommonName)
+
+	return certInfo
 }
