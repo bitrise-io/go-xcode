@@ -132,7 +132,7 @@ func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType,
 		log.Printf("  provisioning Profile: %s", profile.Attributes().Name)
 		log.Printf("  certificate: %s", codesignAssets.Certificate.CommonName)
 
-		if err := p.projHelper.XcProj.ForceCodeSign(p.projHelper.Configuration, target.Name, teamID, codesignAssets.Certificate.CommonName, profile.Attributes().UUID); err != nil {
+		if err := p.projHelper.XcProj.ForceCodeSign(p.projHelper.Configuration, target.Name, teamID, codesignAssets.Certificate.SHA1Fingerprint, profile.Attributes().UUID); err != nil {
 			return fmt.Errorf("failed to apply code sign settings for target (%s): %s", target.Name, err)
 		}
 	}
@@ -161,7 +161,7 @@ func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType,
 			log.Printf("  certificate: %s", devCodesignAssets.Certificate.CommonName)
 
 			for _, c := range uiTestTarget.BuildConfigurationList.BuildConfigurations {
-				if err := p.projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, devCodesignAssets.Certificate.CommonName, profile.Attributes().UUID); err != nil {
+				if err := p.projHelper.XcProj.ForceCodeSign(c.Name, uiTestTarget.Name, teamID, devCodesignAssets.Certificate.SHA1Fingerprint, profile.Attributes().UUID); err != nil {
 					return fmt.Errorf("failed to apply code sign settings for target (%s): %s", uiTestTarget.Name, err)
 				}
 			}
