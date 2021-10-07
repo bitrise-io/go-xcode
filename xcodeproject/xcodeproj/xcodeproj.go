@@ -12,12 +12,14 @@ import (
 	"strings"
 
 	plist "github.com/bitrise-io/go-plist"
+	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/pretty"
+	"github.com/bitrise-io/go-xcode/xcodebuild"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcodebuild"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 	"golang.org/x/text/unicode/norm"
 )
@@ -26,6 +28,9 @@ const (
 	// XcodeProjExtension ...
 	XcodeProjExtension = ".xcodeproj"
 )
+
+// TODO remove
+var temporaryFactory = command.NewFactory(env.NewRepository())
 
 // XcodeProj ...
 type XcodeProj struct {
@@ -299,7 +304,8 @@ func envInBuildSettings(envKey string, buildSettings serialized.Object) (string,
 
 // TargetBuildSettings ...
 func (p XcodeProj) TargetBuildSettings(target, configuration string, customOptions ...string) (serialized.Object, error) {
-	return xcodebuild.ShowProjectBuildSettings(p.Path, target, configuration, customOptions...)
+	commandModel := xcodebuild.NewShowBuildSettingsCommand(p.Path, false, target, "", configuration, customOptions, temporaryFactory)
+	return commandModel.RunAndReturnSettings()
 }
 
 // Scheme returns the project's scheme by name and the project's absolute path.
