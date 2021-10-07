@@ -285,11 +285,8 @@ func getXcodeDeveloperDirPath() (string, error) {
 }
 
 // BootSimulator ...
-func BootSimulator(simulatorID string, xcodebuildMajorVersion int) error {
+func BootSimulator(simulatorID string) error {
 	simulatorApp := "Simulator"
-	if xcodebuildMajorVersion == 6 {
-		simulatorApp = "iOS Simulator"
-	}
 	xcodeDevDirPth, err := getXcodeDeveloperDirPath()
 	if err != nil {
 		return fmt.Errorf("failed to get Xcode Developer Directory - most likely Xcode.app is not installed")
