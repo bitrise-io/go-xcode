@@ -30,21 +30,25 @@ func NewShowBuildSettingsCommand(projectPath string, commandFactory command.Fact
 	}
 }
 
+// SetTarget ...
 func (c *ShowBuildSettingsCommandModel) SetTarget(target string) *ShowBuildSettingsCommandModel {
 	c.target = target
 	return c
 }
 
+// SetScheme ...
 func (c *ShowBuildSettingsCommandModel) SetScheme(scheme string) *ShowBuildSettingsCommandModel {
 	c.scheme = scheme
 	return c
 }
 
+// SetConfiguration ...
 func (c *ShowBuildSettingsCommandModel) SetConfiguration(configuration string) *ShowBuildSettingsCommandModel {
 	c.configuration = configuration
 	return c
 }
 
+// SetCustomOptions ...
 func (c *ShowBuildSettingsCommandModel) SetCustomOptions(customOptions []string) *ShowBuildSettingsCommandModel {
 	c.customOptions = customOptions
 	return c
