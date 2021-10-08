@@ -100,9 +100,9 @@ func parseBuildSettings(out string) (serialized.Object, error) {
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 
-		if split := strings.Split(line, "="); len(split) == 2 {
+		if split := strings.Split(line, "="); len(split) > 1 {
 			key := strings.TrimSpace(split[0])
-			value := strings.TrimSpace(split[1])
+			value := strings.TrimSpace(strings.Join(split[1:], "="))
 			value = strings.Trim(value, `"`)
 
 			settings[key] = value
