@@ -75,8 +75,7 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 		{
 			name: "force development team",
 			builder: CommandBuilder{
-				forceDevelopmentTeam: "Bitrise",
-				action:               BuildAction,
+				action: BuildAction,
 			},
 			want: []string{
 				"DEVELOPMENT_TEAM=Bitrise",
@@ -98,7 +97,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			name: "force profile",
 			builder: CommandBuilder{
 				forceProvisioningProfileSpecifier: "id 2331232",
-				forceProvisioningProfile:          "id 2331232",
 				action:                            BuildAction,
 			},
 			want: []string{
@@ -159,8 +157,7 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 		{
 			name: "disable index while building",
 			builder: CommandBuilder{
-				disableIndexWhileBuilding: true,
-				action:                    BuildAction,
+				action: BuildAction,
 			},
 			want: []string{
 				"COMPILER_INDEX_STORE_ENABLE=NO",
