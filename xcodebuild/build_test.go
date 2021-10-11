@@ -73,16 +73,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			},
 		},
 		{
-			name: "force development team",
-			builder: CommandBuilder{
-				action: BuildAction,
-			},
-			want: []string{
-				"DEVELOPMENT_TEAM=Bitrise",
-				"build",
-			},
-		},
-		{
 			name: "force code sign identity",
 			builder: CommandBuilder{
 				forceCodeSignIdentity: "iOS Developer: Bitrise bot",
@@ -90,18 +80,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			},
 			want: []string{
 				"CODE_SIGN_IDENTITY=iOS Developer: Bitrise bot",
-				"build",
-			},
-		},
-		{
-			name: "force profile",
-			builder: CommandBuilder{
-				forceProvisioningProfileSpecifier: "id 2331232",
-				action:                            BuildAction,
-			},
-			want: []string{
-				"PROVISIONING_PROFILE_SPECIFIER=id 2331232",
-				"PROVISIONING_PROFILE=id 2331232",
 				"build",
 			},
 		},
@@ -152,16 +130,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 				"archive",
 				"-archivePath",
 				"archive/path",
-			},
-		},
-		{
-			name: "disable index while building",
-			builder: CommandBuilder{
-				action: BuildAction,
-			},
-			want: []string{
-				"COMPILER_INDEX_STORE_ENABLE=NO",
-				"build",
 			},
 		},
 		{
