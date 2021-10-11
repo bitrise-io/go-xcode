@@ -77,8 +77,8 @@ func (c *ShowBuildSettingsCommandModel) args() []string {
 		slice = append(slice, "-configuration", c.configuration)
 	}
 
-	slice = append(slice, c.customOptions...)
 	slice = append(slice, "-showBuildSettings")
+	slice = append(slice, c.customOptions...)
 
 	return slice
 }
