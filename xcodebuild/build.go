@@ -49,12 +49,9 @@ type CommandBuilder struct {
 	xcconfigPath  string
 
 	// buildsetting
-	forceDevelopmentTeam              string
 	forceProvisioningProfileSpecifier string
-	forceProvisioningProfile          string
 	forceCodeSignIdentity             string
 	disableCodesign                   bool
-	disableIndexWhileBuilding         bool
 
 	// buildaction
 	customBuildActions []string
@@ -102,21 +99,9 @@ func (c *CommandBuilder) SetXCConfigPath(xcconfigPath string) *CommandBuilder {
 	return c
 }
 
-// SetForceDevelopmentTeam ...
-func (c *CommandBuilder) SetForceDevelopmentTeam(forceDevelopmentTeam string) *CommandBuilder {
-	c.forceDevelopmentTeam = forceDevelopmentTeam
-	return c
-}
-
 // SetForceProvisioningProfileSpecifier ...
 func (c *CommandBuilder) SetForceProvisioningProfileSpecifier(forceProvisioningProfileSpecifier string) *CommandBuilder {
 	c.forceProvisioningProfileSpecifier = forceProvisioningProfileSpecifier
-	return c
-}
-
-// SetForceProvisioningProfile ...
-func (c *CommandBuilder) SetForceProvisioningProfile(forceProvisioningProfile string) *CommandBuilder {
-	c.forceProvisioningProfile = forceProvisioningProfile
 	return c
 }
 
@@ -162,12 +147,6 @@ func (c *CommandBuilder) SetDisableCodesign(disable bool) *CommandBuilder {
 	return c
 }
 
-// SetDisableIndexWhileBuilding ...
-func (c *CommandBuilder) SetDisableIndexWhileBuilding(disable bool) *CommandBuilder {
-	c.disableIndexWhileBuilding = disable
-	return c
-}
-
 func (c *CommandBuilder) cmdSlice() []string {
 	slice := []string{toolName}
 
@@ -199,25 +178,13 @@ func (c *CommandBuilder) cmdSlice() []string {
 	if c.disableCodesign {
 		slice = append(slice, "CODE_SIGNING_ALLOWED=NO")
 	} else {
-		if c.forceDevelopmentTeam != "" {
-			slice = append(slice, fmt.Sprintf("DEVELOPMENT_TEAM=%s", c.forceDevelopmentTeam))
-		}
-
 		if c.forceProvisioningProfileSpecifier != "" {
 			slice = append(slice, fmt.Sprintf("PROVISIONING_PROFILE_SPECIFIER=%s", c.forceProvisioningProfileSpecifier))
-		}
-
-		if c.forceProvisioningProfile != "" {
-			slice = append(slice, fmt.Sprintf("PROVISIONING_PROFILE=%s", c.forceProvisioningProfile))
 		}
 
 		if c.forceCodeSignIdentity != "" {
 			slice = append(slice, fmt.Sprintf("CODE_SIGN_IDENTITY=%s", c.forceCodeSignIdentity))
 		}
-	}
-
-	if c.disableIndexWhileBuilding {
-		slice = append(slice, "COMPILER_INDEX_STORE_ENABLE=NO")
 	}
 
 	slice = append(slice, c.customBuildActions...)
