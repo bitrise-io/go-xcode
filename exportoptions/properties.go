@@ -149,6 +149,12 @@ const UploadSymbolsKey = "uploadSymbols"
 // UploadSymbolsDefault ...
 const UploadSymbolsDefault = true
 
+const (
+	// manageAppVersionKey is the plist key for the manage app version option (app-store exports)
+	manageAppVersionKey     = "manageAppVersionAndBuildNumber"
+	manageAppVersionDefault = true
+)
+
 // ProvisioningProfilesKey ...
 const ProvisioningProfilesKey = "provisioningProfiles"
 
