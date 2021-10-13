@@ -78,18 +78,6 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			},
 		},
 		{
-			name: "force code sign identity",
-			builder: CommandBuilder{
-				forceCodeSignIdentity: "iOS Developer: Bitrise bot",
-				action:                BuildAction,
-			},
-			want: []string{
-				"xcodebuild",
-				"CODE_SIGN_IDENTITY=iOS Developer: Bitrise bot",
-				"build",
-			},
-		},
-		{
 			name: "project",
 			builder: CommandBuilder{
 				projectPath: "project.xcodeproj",

@@ -1,7 +1,6 @@
 package xcodebuild
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 
@@ -49,9 +48,7 @@ type CommandBuilder struct {
 	xcconfigPath  string
 
 	// buildsetting
-	forceProvisioningProfileSpecifier string
-	forceCodeSignIdentity             string
-	disableCodesign                   bool
+	disableCodesign bool
 
 	// buildaction
 	customBuildActions []string
@@ -96,18 +93,6 @@ func (c *CommandBuilder) SetDestination(destination string) *CommandBuilder {
 // SetXCConfigPath ...
 func (c *CommandBuilder) SetXCConfigPath(xcconfigPath string) *CommandBuilder {
 	c.xcconfigPath = xcconfigPath
-	return c
-}
-
-// SetForceProvisioningProfileSpecifier ...
-func (c *CommandBuilder) SetForceProvisioningProfileSpecifier(forceProvisioningProfileSpecifier string) *CommandBuilder {
-	c.forceProvisioningProfileSpecifier = forceProvisioningProfileSpecifier
-	return c
-}
-
-// SetForceCodeSignIdentity ...
-func (c *CommandBuilder) SetForceCodeSignIdentity(forceCodeSignIdentity string) *CommandBuilder {
-	c.forceCodeSignIdentity = forceCodeSignIdentity
 	return c
 }
 
@@ -177,14 +162,6 @@ func (c *CommandBuilder) cmdSlice() []string {
 
 	if c.disableCodesign {
 		slice = append(slice, "CODE_SIGNING_ALLOWED=NO")
-	} else {
-		if c.forceProvisioningProfileSpecifier != "" {
-			slice = append(slice, fmt.Sprintf("PROVISIONING_PROFILE_SPECIFIER=%s", c.forceProvisioningProfileSpecifier))
-		}
-
-		if c.forceCodeSignIdentity != "" {
-			slice = append(slice, fmt.Sprintf("CODE_SIGN_IDENTITY=%s", c.forceCodeSignIdentity))
-		}
 	}
 
 	slice = append(slice, c.customBuildActions...)
