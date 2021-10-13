@@ -1,6 +1,7 @@
 package exportoptions
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -117,8 +118,9 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 	t.Log("default app-store type options creates hash with method")
 	{
 		options := NewAppStoreOptions()
+		options.ManageAppVersion = true
 		hash := options.Hash()
-		require.Equal(t, 1, len(hash))
+		require.Equal(t, 1, len(hash), fmt.Sprintf("Hash: %+v", hash))
 
 		{
 			value, ok := hash[MethodKey]
@@ -133,28 +135,34 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 		options.TeamID = "123"
 		options.UploadBitcode = false
 		options.UploadSymbols = false
+		options.ManageAppVersion = false
 
 		hash := options.Hash()
-		require.Equal(t, 4, len(hash))
+		require.Equal(t, 5, len(hash))
 
 		{
 			value, ok := hash[MethodKey]
-			require.Equal(t, true, ok)
+			require.True(t, ok)
 			require.Equal(t, MethodAppStore, value)
 		}
 		{
 			value, ok := hash[TeamIDKey]
-			require.Equal(t, true, ok)
+			require.True(t, ok)
 			require.Equal(t, "123", value)
 		}
 		{
 			value, ok := hash[UploadBitcodeKey]
-			require.Equal(t, true, ok)
+			require.True(t, ok)
 			require.Equal(t, false, value)
 		}
 		{
 			value, ok := hash[UploadSymbolsKey]
-			require.Equal(t, true, ok)
+			require.True(t, ok)
+			require.Equal(t, false, value)
+		}
+		{
+			value, ok := hash[manageAppVersionKey]
+			require.True(t, ok)
 			require.Equal(t, false, value)
 		}
 	}
@@ -168,6 +176,7 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
 		options := NewAppStoreOptions()
+		options.ManageAppVersion = true
 		require.NoError(t, options.WriteToFile(pth))
 
 		content, err := fileutil.ReadStringFromFile(pth)
@@ -193,6 +202,7 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 		options.TeamID = "123"
 		options.UploadBitcode = false
 		options.UploadSymbols = false
+		options.ManageAppVersion = false
 		require.NoError(t, options.WriteToFile(pth))
 
 		content, err := fileutil.ReadStringFromFile(pth)
@@ -201,6 +211,8 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
+		<key>manageAppVersionAndBuildNumber</key>
+		<false/>
 		<key>method</key>
 		<string>app-store</string>
 		<key>teamID</key>
