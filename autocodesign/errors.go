@@ -53,3 +53,12 @@ type NonmatchingProfileError struct {
 func (e NonmatchingProfileError) Error() string {
 	return fmt.Sprintf("provisioning profile does not match requirements: %s", e.Reason)
 }
+
+// ErrAppClipAppID ...
+type ErrAppClipAppID struct {
+}
+
+// Error ...
+func (ErrAppClipAppID) Error() string {
+	return "can't create Application Identifier for App Clip target"
+}

@@ -146,6 +146,10 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 		}
 	}
 
+	if bundleID == nil && isAppClip(entitlements) {
+		return nil, ErrAppClipAppID{}
+	}
+
 	if bundleID != nil {
 		log.Printf("  app ID found: %s", bundleID.Attributes.Name)
 
@@ -244,7 +248,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 	// Search for BundleID
 	bundleID, err := m.ensureBundleID(bundleIDIdentifier, entitlements)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to ensure application identifier for %s: %w", bundleIDIdentifier, err)
 	}
 
 	// Create Bitrise managed Profile
@@ -258,6 +262,15 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 
 	log.Donef("  profile created: %s", profile.Attributes().Name)
 	return &profile, nil
+}
+
+func isAppClip(entitlements Entitlements) bool {
+	for key := range entitlements {
+		if key == appstoreconnect.ParentApplicationIdentifierEntitlementKey {
+			return true
+		}
+	}
+	return false
 }
 
 func distributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
