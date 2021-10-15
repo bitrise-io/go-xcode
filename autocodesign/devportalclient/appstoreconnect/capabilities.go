@@ -48,6 +48,7 @@ const (
 )
 
 const ParentApplicationIdentifierEntitlementKey = "com.apple.developer.parent-application-identifiers"
+const SignInWithAppleEntitlementKey = "com.apple.developer.applesignin"
 
 // ServiceTypeByKey ...
 var ServiceTypeByKey = map[string]CapabilityType{
@@ -65,7 +66,7 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	"com.apple.developer.networking.vpn.api":                                   PersonalVPN,
 	"aps-environment":                                                          PushNotifications,
 	"com.apple.developer.siri":                                                 Sirikit,
-	"com.apple.developer.applesignin":                                          SignInWithApple,
+	SignInWithAppleEntitlementKey:                                              SignInWithApple,
 	"com.apple.developer.on-demand-install-capable":                            OnDemandInstallCapable,
 	"com.apple.developer.pass-type-identifiers":                                Wallet,
 	"com.apple.external-accessory.wireless-configuration":                      WirelessAccessoryConfiguration,

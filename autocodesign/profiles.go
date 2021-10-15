@@ -159,6 +159,10 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 		err := m.client.CheckBundleIDEntitlements(*bundleID, entitlements)
 		if err != nil {
 			if mErr, ok := err.(NonmatchingProfileError); ok {
+				if isAppClip(entitlements) && hasSignInWithAppleEntitlement(entitlements) {
+					return nil, ErrAppClipAppIDWithAppleSigning{}
+				}
+
 				log.Warnf("  app ID capabilities invalid: %s", mErr.Reason)
 				log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
 				if err := m.client.SyncBundleID(*bundleID, entitlements); err != nil {
@@ -267,6 +271,15 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 func isAppClip(entitlements Entitlements) bool {
 	for key := range entitlements {
 		if key == appstoreconnect.ParentApplicationIdentifierEntitlementKey {
+			return true
+		}
+	}
+	return false
+}
+
+func hasSignInWithAppleEntitlement(entitlements Entitlements) bool {
+	for key := range entitlements {
+		if key == appstoreconnect.SignInWithAppleEntitlementKey {
 			return true
 		}
 	}

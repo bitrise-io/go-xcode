@@ -232,14 +232,14 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 	}
 }
 
-func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenFails(t *testing.T) {
+func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	// Given
 	const teamID = "MY_TEAM_ID"
 	expiry := time.Now().AddDate(1, 0, 0)
 	devCert := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test", expiry)
 
 	certProvider := newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert})
-	client := newClientWithoutAppIDAndProfile(t, devCert)
+	client := newClientWithoutAppIDAndProfile(devCert)
 	assetWriter := newDefaultMockAssetWriter()
 	manager := NewCodesignAssetManager(client, certProvider, assetWriter)
 
@@ -247,7 +247,7 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenFails(t *testing.T) {
 		TeamID:   teamID,
 		Platform: IOS,
 		EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
-			"io.bitrise.appclip": {"com.apple.developer.parent-application-identifiers": "io.bitrise.app"},
+			"io.bitrise.appclip": {"com.apple.developer.parent-application-identifiers": []string{"io.bitrise.app"}},
 		},
 	}
 	opts := CodesignAssetsOpts{
@@ -261,7 +261,41 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenFails(t *testing.T) {
 	require.ErrorAs(t, err, &ErrAppClipAppID{})
 }
 
-func newClientWithoutAppIDAndProfile(t *testing.T, cert certificateutil.CertificateInfoModel) *MockDevPortalClient {
+func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
+	// Given
+	const teamID = "MY_TEAM_ID"
+	const appClipBundleID = "io.bitrise.appclip"
+
+	expiry := time.Now().AddDate(1, 0, 0)
+	devCert := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test", expiry)
+
+	certProvider := newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert})
+	client := newClientWithAppIDWithoutAppleSignIn(devCert, appClipBundleID)
+	assetWriter := newDefaultMockAssetWriter()
+	manager := NewCodesignAssetManager(client, certProvider, assetWriter)
+
+	appLayout := AppLayout{
+		TeamID:   teamID,
+		Platform: IOS,
+		EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
+			appClipBundleID: {
+				"com.apple.developer.parent-application-identifiers": []string{"io.bitrise.app"},
+				"com.apple.developer.applesignin":                    []string{"Default"},
+			},
+		},
+	}
+	opts := CodesignAssetsOpts{
+		DistributionType: Development,
+	}
+
+	// When
+	_, err := manager.EnsureCodesignAssets(appLayout, opts)
+
+	// Then
+	require.ErrorAs(t, err, &ErrAppClipAppIDWithAppleSigning{})
+}
+
+func newClientWithoutAppIDAndProfile(cert certificateutil.CertificateInfoModel) *MockDevPortalClient {
 	client := newMockDevportalClient(devportalArgs{
 		certs: map[appstoreconnect.CertificateType][]Certificate{
 			appstoreconnect.IOSDevelopment: {{
@@ -274,6 +308,31 @@ func newClientWithoutAppIDAndProfile(t *testing.T, cert certificateutil.Certific
 		},
 		appIDs: []appstoreconnect.BundleID{},
 	})
+
+	return client
+}
+
+func newClientWithAppIDWithoutAppleSignIn(cert certificateutil.CertificateInfoModel, bundleID string) *MockDevPortalClient {
+	appID := appstoreconnect.BundleID{
+		Attributes: appstoreconnect.BundleIDAttributes{
+			Identifier: bundleID,
+			Name:       "test-app",
+		},
+	}
+
+	client := newMockDevportalClient(devportalArgs{
+		certs: map[appstoreconnect.CertificateType][]Certificate{
+			appstoreconnect.IOSDevelopment: {{
+				CertificateInfo: cert,
+				ID:              "dev1",
+			}},
+		},
+		profiles: map[appstoreconnect.ProfileType][]Profile{
+			appstoreconnect.IOSAppDevelopment: {},
+		},
+		appIDs: []appstoreconnect.BundleID{appID},
+	})
+	client.On("CheckBundleIDEntitlements", appID, mock.Anything).Return(NonmatchingProfileError{})
 
 	return client
 }
