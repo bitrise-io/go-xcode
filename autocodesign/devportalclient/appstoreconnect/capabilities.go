@@ -47,8 +47,11 @@ const (
 	OnDemandInstallCapable         CapabilityType = "ON_DEMAND_INSTALL_CAPABLE"
 )
 
-const ParentApplicationIdentifierEntitlementKey = "com.apple.developer.parent-application-identifiers"
-const SignInWithAppleEntitlementKey = "com.apple.developer.applesignin"
+// Entitlement keys ...
+const (
+	ParentApplicationIdentifierEntitlementKey = "com.apple.developer.parent-application-identifiers"
+	SignInWithAppleEntitlementKey             = "com.apple.developer.applesignin"
+)
 
 // ServiceTypeByKey ...
 var ServiceTypeByKey = map[string]CapabilityType{
