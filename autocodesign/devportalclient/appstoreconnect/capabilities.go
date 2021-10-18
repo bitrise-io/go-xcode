@@ -47,6 +47,12 @@ const (
 	OnDemandInstallCapable         CapabilityType = "ON_DEMAND_INSTALL_CAPABLE"
 )
 
+// Entitlement keys ...
+const (
+	ParentApplicationIdentifierEntitlementKey = "com.apple.developer.parent-application-identifiers"
+	SignInWithAppleEntitlementKey             = "com.apple.developer.applesignin"
+)
+
 // ServiceTypeByKey ...
 var ServiceTypeByKey = map[string]CapabilityType{
 	"com.apple.security.application-groups":                                    AppGroups,
@@ -63,7 +69,7 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	"com.apple.developer.networking.vpn.api":                                   PersonalVPN,
 	"aps-environment":                                                          PushNotifications,
 	"com.apple.developer.siri":                                                 Sirikit,
-	"com.apple.developer.applesignin":                                          SignInWithApple,
+	SignInWithAppleEntitlementKey:                                              SignInWithApple,
 	"com.apple.developer.on-demand-install-capable":                            OnDemandInstallCapable,
 	"com.apple.developer.pass-type-identifiers":                                Wallet,
 	"com.apple.external-accessory.wireless-configuration":                      WirelessAccessoryConfiguration,
@@ -76,7 +82,7 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	// does not appear on developer portal
 	"com.apple.developer.icloud-container-identifiers":   Ignored,
 	"com.apple.developer.ubiquity-container-identifiers": Ignored,
-	"com.apple.developer.parent-application-identifiers": Ignored,
+	ParentApplicationIdentifierEntitlementKey:            Ignored,
 	// These are entitlements not supported via the API and this step,
 	// profile needs to be manually generated on Apple Developer Portal.
 	"com.apple.developer.contacts.notes":         ProfileAttachedEntitlement,
