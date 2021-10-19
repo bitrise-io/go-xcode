@@ -175,7 +175,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 			log.Warnf("Please generate the Application Identifier manually on Apple Developer Portal, after that the Step will continue working.")
 		case errors.As(err, &ErrAppClipAppIDWithAppleSigning{}):
 			log.Warnf("Can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability.")
-			log.Warnf("Please configure Capabilities on  Apple Developer Portal for App Clip target manually, after that the Step will continue working.")
+			log.Warnf("Please configure Capabilities on Apple Developer Portal for App Clip target manually, after that the Step will continue working.")
 		}
 
 		return nil, fmt.Errorf("failed to ensure profiles: %w", err)
