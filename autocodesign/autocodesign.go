@@ -5,6 +5,7 @@
 package autocodesign
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -168,6 +169,15 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	// Ensure Profiles
 	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, appLayout, devPortalDeviceIDs, opts.MinProfileValidityDays)
 	if err != nil {
+		switch {
+		case errors.As(err, &ErrAppClipAppID{}):
+			log.Warnf("Can't create Application Identifier for App Clip targets.")
+			log.Warnf("Please generate the Application Identifier manually on Apple Developer Portal, after that the Step will continue working.")
+		case errors.As(err, &ErrAppClipAppIDWithAppleSigning{}):
+			log.Warnf("Can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability.")
+			log.Warnf("Please configure Capabilities on Apple Developer Portal for App Clip target manually, after that the Step will continue working.")
+		}
+
 		return nil, fmt.Errorf("failed to ensure profiles: %w", err)
 	}
 
