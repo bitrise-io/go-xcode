@@ -18,6 +18,9 @@ workflows:
       - integration-test
     steps:
       - go-list:
+          inputs:
+            - exclude: |-
+                */mocks
       - golint:
       - errcheck:
       - go-test:
