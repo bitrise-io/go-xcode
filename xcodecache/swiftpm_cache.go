@@ -14,6 +14,7 @@ import (
 //   The repository at [path] is invalid; try resetting package caches
 const SwiftPackagesStateInvalid = "Could not resolve package dependencies:"
 
+// SwiftPackageCache ...
 type SwiftPackageCache interface {
 	SwiftPackagesPath(projectPth string) (string, error)
 	CollectSwiftPackages(projectPath string) error
@@ -65,11 +66,13 @@ func (c swiftPackageCache) CollectSwiftPackages(xcodeProjectPath string) error {
 	return nil
 }
 
+// SwiftPackagesPath ...
 // Deprecated: SwiftPackagesPath is deprecated. Please use the SwiftPackageCache interface instead.
 func SwiftPackagesPath(xcodeProjectPath string) (string, error) {
 	return NewSwiftPackageCache().SwiftPackagesPath(xcodeProjectPath)
 }
 
+// CollectSwiftPackages ...
 // Deprecated: CollectSwiftPackages is deprecated. Please use the SwiftPackageCache interface instead.
 func CollectSwiftPackages(xcodeProjectPath string) error {
 	return NewSwiftPackageCache().CollectSwiftPackages(xcodeProjectPath)
