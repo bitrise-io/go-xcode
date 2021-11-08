@@ -14,9 +14,22 @@ import (
 //   The repository at [path] is invalid; try resetting package caches
 const SwiftPackagesStateInvalid = "Could not resolve package dependencies:"
 
+type SwiftPackageCache interface {
+	SwiftPackagesPath(projectPth string) (string, error)
+	CollectSwiftPackages(projectPath string) error
+}
+
+type swiftPackageCache struct {
+}
+
+// NewSwiftPackageCache ...
+func NewSwiftPackageCache() SwiftPackageCache {
+	return &swiftPackageCache{}
+}
+
 // SwiftPackagesPath returns the Swift packages cache dir path. The input must be an absolute path.
 // The directory is: $HOME/Library/Developer/Xcode/DerivedData/[PER_PROJECT_DERIVED_DATA]/SourcePackages.
-func SwiftPackagesPath(xcodeProjectPath string) (string, error) {
+func (c swiftPackageCache) SwiftPackagesPath(xcodeProjectPath string) (string, error) {
 	if !path.IsAbs(xcodeProjectPath) {
 		return "", fmt.Errorf("project path not an absolute path: %s", xcodeProjectPath)
 	}
@@ -35,8 +48,8 @@ func SwiftPackagesPath(xcodeProjectPath string) (string, error) {
 
 // CollectSwiftPackages marks the Swift Package Manager packages directory to be added the cache.
 // The directory cached is: $HOME/Library/Developer/Xcode/DerivedData/[PER_PROJECT_DERIVED_DATA]/SourcePackages.
-func CollectSwiftPackages(xcodeProjectPath string) error {
-	swiftPackagesDir, err := SwiftPackagesPath(xcodeProjectPath)
+func (c swiftPackageCache) CollectSwiftPackages(xcodeProjectPath string) error {
+	swiftPackagesDir, err := c.SwiftPackagesPath(xcodeProjectPath)
 	if err != nil {
 		return fmt.Errorf("failed to get Swift packages path, error %s", err)
 	}
@@ -50,4 +63,14 @@ func CollectSwiftPackages(xcodeProjectPath string) error {
 		return fmt.Errorf("failed to commit cache, error: %s", err)
 	}
 	return nil
+}
+
+// Deprecated: SwiftPackagesPath is deprecated. Please use the SwiftPackageCache interface instead.
+func SwiftPackagesPath(xcodeProjectPath string) (string, error) {
+	return NewSwiftPackageCache().SwiftPackagesPath(xcodeProjectPath)
+}
+
+// Deprecated: CollectSwiftPackages is deprecated. Please use the SwiftPackageCache interface instead.
+func CollectSwiftPackages(xcodeProjectPath string) error {
+	return NewSwiftPackageCache().CollectSwiftPackages(xcodeProjectPath)
 }
