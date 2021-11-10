@@ -380,6 +380,7 @@ func (archive IosArchive) FindDSYMs() ([]string, []string, error) {
 	return findDSYMs(archive.Path)
 }
 
+// ReadCodesignParameters ...
 func (archive IosArchive) ReadCodesignParameters() (*autocodesign.AppLayout, error) {
 	var teamID string
 	entitlementsMap := map[string]autocodesign.Entitlements{}
