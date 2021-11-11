@@ -179,7 +179,7 @@ func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir stri
 	}
 
 	xcodeProjPath := path.Join(xcodeProjSourceDir, "sample-swiftpm2.xcodeproj")
-	packagesPath, err := SwiftPackagesPath(xcodeProjPath)
+	packagesPath, err := NewSwiftPackageCache().SwiftPackagesPath(xcodeProjPath)
 	if err != nil {
 		t.Fatalf("failed to get Swift packages path, err: %s", err)
 	}
