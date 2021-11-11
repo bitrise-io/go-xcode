@@ -195,10 +195,10 @@ func (p *ProjectHelper) ProjectTeamID(config string) (string, error) {
 	return teamID, nil
 }
 
-func (p *ProjectHelper) targetTeamID(targatName, config string) (string, error) {
-	settings, err := p.targetBuildSettings(targatName, config)
+func (p *ProjectHelper) targetTeamID(targetName, config string) (string, error) {
+	settings, err := p.targetBuildSettings(targetName, config)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch Team ID from target settings (%s): %s", targatName, err)
+		return "", fmt.Errorf("failed to fetch Team ID from target settings (%s): %s", targetName, err)
 	}
 
 	devTeam, err := settings.String("DEVELOPMENT_TEAM")
