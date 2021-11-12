@@ -1,4 +1,4 @@
-package exportOptionsGenerator
+package exportoptionsgenerator
 
 import (
 	"fmt"
@@ -37,8 +37,8 @@ type ExportOptionsGenerator struct {
 	logger              log.Logger
 }
 
-// NewExportOptionsGenerator constructs a new ExportOptionsGenerator.
-func NewExportOptionsGenerator(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration string, logger log.Logger) ExportOptionsGenerator {
+// New constructs a new ExportOptionsGenerator.
+func New(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration string, logger log.Logger) ExportOptionsGenerator {
 	g := ExportOptionsGenerator{
 		xcodeProj:     xcodeProj,
 		scheme:        scheme,

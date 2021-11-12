@@ -1,4 +1,4 @@
-package exportOptionsGenerator
+package exportoptionsgenerator
 
 import (
 	"fmt"
@@ -153,7 +153,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget, appClipTarget})
 			scheme := givenScheme(applicationTarget)
 			logger := log.NewLogger()
-			g := NewExportOptionsGenerator(&xcodeProj, &scheme, "", logger)
+			g := New(&xcodeProj, &scheme, "", logger)
 			g.certificateProvider = MockCodesignIdentityProvider{
 				[]certificateutil.CertificateInfoModel{certificate},
 			}
