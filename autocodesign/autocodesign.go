@@ -158,18 +158,20 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		return nil, err
 	}
 
-	localProvisioningProfileProvider := localcodesignasset.LocalProvisioningProfileProvider{}
-	localcodesignasset := localcodesignasset.New(localProvisioningProfileProvider)
-	missingCodesignAssets := localcodesignasset.FindMissingCodesingAssets(appLayout, distrTypes, certsByType)
+	//TODO: Code was here originally but the deviceID collection happens below so I though I move our logic .
 
 	var devPortalDeviceIDs []string
 	if distributionTypeRequiresDeviceList(distrTypes) {
 		var err error
-		devPortalDeviceIDs, err = ensureTestDevices(m.devPortalClient, opts.BitriseTestDevices, missingCodesignAssets.Platform)
+		devPortalDeviceIDs, err = ensureTestDevices(m.devPortalClient, opts.BitriseTestDevices, appLayout.Platform)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ensure test devices: %w", err)
 		}
 	}
+
+	localProvisioningProfileProvider := localcodesignasset.LocalProvisioningProfileProvider{}
+	localcodesignasset := localcodesignasset.New(localProvisioningProfileProvider)
+	missingCodesignAssets := localcodesignasset.FindMissingCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
 
 	// Ensure Profiles
 	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)

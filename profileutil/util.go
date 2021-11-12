@@ -14,8 +14,13 @@ type ProfileType string
 // ProfileTypeIos ...
 const ProfileTypeIos ProfileType = "ios"
 
+//TODO: Check if the macOS and tvOS values are correct.
+
 // ProfileTypeMacOs ...
-const ProfileTypeMacOs ProfileType = "macOs"
+const ProfileTypeMacOs ProfileType = "macos"
+
+// ProfileTypeTvOs...
+const ProfileTypeTvOs ProfileType = "tvos"
 
 // ProvProfileSystemDirPath ...
 const ProvProfileSystemDirPath = "~/Library/MobileDevice/Provisioning Profiles"

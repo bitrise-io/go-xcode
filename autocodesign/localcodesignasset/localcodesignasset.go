@@ -1,7 +1,7 @@
 package localcodesignasset
 
 import (
-	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bitrise-io/go-xcode/autocodesign"
@@ -10,7 +10,7 @@ import (
 )
 
 type LocalCodeSignAsset interface {
-	FindMissingCodesingAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate) autocodesign.AppLayout
+	FindMissingCodesignAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, deviceIDs []string, minProfileDaysValid int) autocodesign.AppLayout
 }
 
 type manager struct {
@@ -23,6 +23,57 @@ func New(provisioningProfileProvider ProvisioningProfileProvider) LocalCodeSignA
 	}
 }
 
+func (m manager) FindMissingCodesignAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, deviceIDs []string, minProfileDaysValid int) autocodesign.AppLayout {
+	profiles, err := m.profileProvider.ListProvisioningProfiles()
+	if err != nil {
+		return appLayout
+	}
+
+	for _, distrType := range distrTypes {
+		certSerials := certificateSerials(certsByType, distrType)
+
+		for bundleID, entitlements := range appLayout.EntitlementsByArchivableTargetBundleID {
+			profile := findProfile(profiles, appLayout.Platform, distrType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs)
+
+			if profile == nil {
+				continue
+			}
+
+			delete(appLayout.EntitlementsByArchivableTargetBundleID, bundleID)
+		}
+	}
+
+	for i, bundleID := range appLayout.UITestTargetBundleIDs {
+		for _, profile := range profiles {
+			//TODO: Is bundle id check enough or should we do the full profile id check?
+			if profile.BundleID == bundleID {
+				remove(appLayout.UITestTargetBundleIDs, i)
+			}
+		}
+	}
+
+	return appLayout
+}
+
+func findProfile(localProfiles []profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements, minProfileDaysValid int, certSerials []string, deviceIDs []string) *profileutil.ProvisioningProfileInfoModel {
+	//TODO: Are these needed?
+	//platformProfileTypes, ok := autocodesign.PlatformToProfileTypeByDistribution[platform]
+	//if !ok {
+	//	return nil, fmt.Errorf("no profiles for platform: %s", platform)
+	//}
+	//profileType := platformProfileTypes[distributionType]
+	//
+	//profileName := autocodesign.ProfileName(profileType, bundleID)
+
+	for _, profile := range localProfiles {
+		if isProfileMatching(profile, platform , distributionType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs) {
+			return &profile
+		}
+	}
+
+	return nil
+}
+
 /*
 Check if the given profile:
 - x type matches the desired distribution type
@@ -30,160 +81,107 @@ Check if the given profile:
 - x bundle id matches
 - x contains the given certificate ids
 - x contains the given entitlements
-- contains the given deviceIDs
+- x contains the given deviceIDs
 - x if valid for <minProfileDaysValid>
-- platform matching
+- x platform matching
 */
-
-func isProfileMatching(profile profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements, minProfileDaysValid int, certSerials []string) bool {
-	if profile.BundleID != bundleID {
+func isProfileMatching(profile profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements, minProfileDaysValid int, certSerials []string, deviceIDs []string) bool {
+	if isActive(profile, minProfileDaysValid) == false {
 		return false
 	}
 
-	var devCertSerials []string
-	for _, devCert := range profile.DeveloperCertificates {
-		devCertSerials = append(devCertSerials, devCert.Serial)
-	}
-
-	if len(intersection(certSerials, devCertSerials)) == 0 {
+	if hasMatchingDistributionType(profile, distributionType) == false {
 		return false
 	}
 
+	if hasMatchingBundleID(profile, bundleID) == false {
+		return false
+	}
+
+	if hasMatchingPlatform(profile, platform) == false {
+		return false
+	}
+
+	if hasMatchingLocalCertificate(profile, certSerials) == false {
+		return false
+	}
+
+	if containsAllAppEntitlements(profile, entitlements) == false {
+		return false
+	}
+
+	if provisionsDevices(profile, deviceIDs) == false {
+		return false
+	}
+
+	return true
+}
+
+//TODO: Kept these here while developing the feature. Move it to utils.go.
+
+func hasMatchingBundleID(profile profileutil.ProvisioningProfileInfoModel, bundleID string) bool {
+	return profile.BundleID == bundleID
+}
+
+func hasMatchingLocalCertificate(profile profileutil.ProvisioningProfileInfoModel, localCertificateSerials []string) bool {
+	var profileCertificateSerials []string
+	for _, certificate := range profile.DeveloperCertificates {
+		profileCertificateSerials = append(profileCertificateSerials, certificate.Serial)
+	}
+
+	return 0 < len(intersection(localCertificateSerials, profileCertificateSerials))
+}
+
+func containsAllAppEntitlements(profile profileutil.ProvisioningProfileInfoModel, appEntitlements autocodesign.Entitlements) bool {
 	profileEntitlements := autocodesign.Entitlements(profile.Entitlements)
 	hasMissingEntitlement := false
 
-	for key, value := range entitlements {
+	for key, value := range appEntitlements {
 		profileEntitlementValue := profileEntitlements[key]
 
+		//TODO: Better interface value comparison
 		if profileEntitlementValue == nil || profileEntitlementValue != value {
 			hasMissingEntitlement = true
 			break
 		}
 	}
 
-	if hasMissingEntitlement {
-		return false
-	}
+	return hasMissingEntitlement == false
+}
 
-	if autocodesign.DistributionType(profile.ExportType) != distributionType {
-		return false
-	}
+func hasMatchingDistributionType(profile profileutil.ProvisioningProfileInfoModel, distributionType autocodesign.DistributionType) bool {
+	return autocodesign.DistributionType(profile.ExportType) == distributionType
+}
 
+func isActive(profile profileutil.ProvisioningProfileInfoModel, minProfileDaysValid int) bool {
 	expiration := time.Now()
 	if minProfileDaysValid > 0 {
 		expiration = expiration.AddDate(0, 0, minProfileDaysValid)
 	}
-	if !expiration.Before(profile.ExpirationDate) {
+
+	return expiration.Before(profile.ExpirationDate)
+}
+
+func hasMatchingPlatform(profile profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform) bool {
+	//TODO: Remove lowercasing?
+	return strings.ToLower(string(platform)) == string(profile.Type)
+}
+
+func provisionsDevices(profile profileutil.ProvisioningProfileInfoModel, deviceIDs []string) bool {
+	if profile.ProvisionsAllDevices || len(deviceIDs) == 0 {
+		return true
+	}
+
+	if len(profile.ProvisionedDevices) == 0 {
 		return false
 	}
 
-	profile.Type
+	for _, deviceID := range deviceIDs {
+		if contains(profile.ProvisionedDevices, deviceID) {
+			continue
+		}
+		return false
+	}
 
 	return true
-}
-
-func findProfile(localProfiles []profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements) (*profileutil.ProvisioningProfileInfoModel, error) {
-	platformProfileTypes, ok := autocodesign.PlatformToProfileTypeByDistribution[platform]
-	if !ok {
-		return nil, fmt.Errorf("no profiles for platform: %s", platform)
-	}
-
-	profileType := platformProfileTypes[distributionType]
-
-	profileName := autocodesign.ProfileName(profileType, bundleID)
-
-	for _, profile := range localProfiles {
-	}
-
-	return nil
-}
-
-func (m manager) FindMissingCodesingAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate) autocodesign.AppLayout {
-	profiles, err := m.profileProvider.ListProvisioningProfiles()
-	if err != nil {
-		return appLayout
-	}
-
-	var localAppLayout = appLayout
-
-	for _, distrType := range distrTypes {
-		certType := autocodesign.CertificateTypeByDistribution[distrType]
-		certs := certsByType[certType]
-
-		// The other place was using the cert ID but the profiles returned by the profileProvider only have the CertificateInfoModel type which only has a serial field.
-		var certSerials []string
-		for _, cert := range certs {
-			certSerials = append(certSerials, cert.CertificateInfo.Serial)
-		}
-
-		// The other place also does this. Not sure if it is needed.
-		//platformProfileTypes, _ := autocodesign.PlatformToProfileTypeByDistribution[appLayout.Platform]
-		//profileType := platformProfileTypes[distrType]
-
-		for bundleID, entitlements := range appLayout.EntitlementsByArchivableTargetBundleID {
-			for _, profile := range profiles {
-				if profile.BundleID != bundleID {
-					continue
-				}
-
-				var devCertSerials []string
-				for _, devCert := range profile.DeveloperCertificates {
-					devCertSerials = append(devCertSerials, devCert.Serial)
-				}
-
-				if len(intersection(certSerials, devCertSerials)) == 0 {
-					continue
-				}
-
-				profileEntitlements := autocodesign.Entitlements(profile.Entitlements)
-				hasMissingEntitlement := false
-
-				for key, value := range entitlements {
-					profileEntitlementValue := profileEntitlements[key]
-
-					if profileEntitlementValue == nil || profileEntitlementValue != value {
-						hasMissingEntitlement = true
-						break
-					}
-				}
-
-				if hasMissingEntitlement {
-					continue
-				}
-
-				delete(localAppLayout.EntitlementsByArchivableTargetBundleID, bundleID)
-			}
-		}
-
-		for i, bundleID := range appLayout.UITestTargetBundleIDs {
-			for _, profile := range profiles {
-				if profile.BundleID == bundleID {
-					remove(localAppLayout.UITestTargetBundleIDs, i)
-				}
-			}
-		}
-	}
-
-	return localAppLayout
-}
-
-func remove(slice []string, i int) []string {
-	copy(slice[i:], slice[i+1:])
-	return slice[:len(slice)-1]
-}
-
-func intersection(a, b []string) (c []string) {
-	m := make(map[string]bool)
-
-	for _, item := range a {
-		m[item] = true
-	}
-
-	for _, item := range b {
-		if _, ok := m[item]; ok {
-			c = append(c, item)
-		}
-	}
-
-	return
 }
