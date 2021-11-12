@@ -7,6 +7,7 @@ package autocodesign
 import (
 	"errors"
 	"fmt"
+	"github.com/bitrise-io/go-xcode/autocodesign/localcodesignasset"
 	"math/big"
 
 	"github.com/bitrise-io/go-utils/log"
@@ -157,17 +158,21 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		return nil, err
 	}
 
+	localProvisioningProfileProvider := localcodesignasset.LocalProvisioningProfileProvider{}
+	localcodesignasset := localcodesignasset.New(localProvisioningProfileProvider)
+	missingCodesignAssets := localcodesignasset.FindMissingCodesingAssets(appLayout, distrTypes, certsByType)
+
 	var devPortalDeviceIDs []string
 	if distributionTypeRequiresDeviceList(distrTypes) {
 		var err error
-		devPortalDeviceIDs, err = ensureTestDevices(m.devPortalClient, opts.BitriseTestDevices, appLayout.Platform)
+		devPortalDeviceIDs, err = ensureTestDevices(m.devPortalClient, opts.BitriseTestDevices, missingCodesignAssets.Platform)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ensure test devices: %w", err)
 		}
 	}
 
 	// Ensure Profiles
-	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, appLayout, devPortalDeviceIDs, opts.MinProfileValidityDays)
+	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
 	if err != nil {
 		switch {
 		case errors.As(err, &ErrAppClipAppID{}):
