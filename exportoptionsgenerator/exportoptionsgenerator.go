@@ -20,6 +20,7 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 )
 
+// const for AppClipProductType and manualSigningStyle
 const (
 	AppClipProductType = "com.apple.product-type.application.on-demand-install-capable"
 	manualSigningStyle = "manual"
@@ -108,6 +109,7 @@ func (b XcodebuildTargetInfoProvider) TargetCodeSignEntitlements(target, configu
 	return b.xcodeProj.TargetCodeSignEntitlements(target, configuration)
 }
 
+// Locate archivable app target from a given project and scheme
 func ArchivableApplicationTarget(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme) (*xcodeproj.Target, error) {
 	archiveEntry, ok := scheme.AppBuildActionEntry()
 	if !ok {
