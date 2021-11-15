@@ -391,7 +391,7 @@ func addDistributionBundleIdentifierFromXcode12(exportOpts exportoptions.ExportO
 	switch options := exportOpts.(type) {
 	case exportoptions.AppStoreOptionsModel:
 		// Export option plist with App store export method (Xcode 12.0.1) do not contain distribution bundle identifier.
-		// Propably due to App store IPAs containing App Clips also, which are executable targets with a separate bundle ID.
+		// Probably due to App store IPAs containing App Clips also, which are executable targets with a separate bundle ID.
 		return exportOpts
 	case exportoptions.NonAppStoreOptionsModel:
 		options.DistributionBundleIdentifier = distributionBundleIdentifier
