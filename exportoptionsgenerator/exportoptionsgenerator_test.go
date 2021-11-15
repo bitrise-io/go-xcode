@@ -233,7 +233,7 @@ func givenAppClipTarget() xcodeproj.Target {
 		ID:               "app_clip_id",
 		Name:             "App Clip",
 		ProductReference: xcodeproj.ProductReference{Path: "Fruta iOS Clip.app"},
-		ProductType:      appClipProductType,
+		ProductType:      AppClipProductType,
 	}
 }
 

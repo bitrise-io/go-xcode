@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	appClipProductType = "com.apple.product-type.application.on-demand-install-capable"
+	AppClipProductType = "com.apple.product-type.application.on-demand-install-capable"
 	manualSigningStyle = "manual"
 )
 
@@ -135,7 +135,7 @@ func dependentApplicationBundleTargetsOf(exportMethod exportoptions.Method, appl
 		// </dict>
 		// ..,
 		if exportMethod != exportoptions.MethodAppStore &&
-			target.ProductType == appClipProductType {
+			target.ProductType == AppClipProductType {
 			continue
 		}
 
