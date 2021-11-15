@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -248,6 +251,168 @@ func Test_applicationFromPlist(t *testing.T) {
 			}
 			if got1 != tt.want1 {
 				t.Errorf("applicationFromPlist() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func TestIosArchive_ReadCodesignParameters(t *testing.T) {
+	tests := []struct {
+		name    string
+		archive IosArchive
+		want    *autocodesign.AppLayout
+		wantErr bool
+	}{
+		{
+			name: "Single target app",
+			archive: IosArchive{
+				Application: IosApplication{
+					iosBaseApplication: iosBaseApplication{
+						InfoPlist: map[string]interface{}{
+							"CFBundleIdentifier": "io.bitrise.app",
+							"DTPlatformName":     "iphoneos",
+						},
+						ProvisioningProfile: profileutil.ProvisioningProfileInfoModel{
+							TeamID: "1234ASDF",
+						},
+					},
+				},
+			},
+			want: &autocodesign.AppLayout{
+				TeamID:   "1234ASDF",
+				Platform: autocodesign.IOS,
+				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
+					"io.bitrise.app": nil,
+				},
+			},
+		},
+		{
+			name: "Multi target app",
+			archive: IosArchive{
+				Application: IosApplication{
+					iosBaseApplication: iosBaseApplication{
+						InfoPlist: map[string]interface{}{
+							"CFBundleIdentifier": "io.bitrise.app",
+							"DTPlatformName":     "iphoneos",
+						},
+						ProvisioningProfile: profileutil.ProvisioningProfileInfoModel{
+							TeamID: "1234ASDF",
+						},
+					},
+					WatchApplication: &IosWatchApplication{
+						iosBaseApplication: iosBaseApplication{
+							InfoPlist: map[string]interface{}{
+								"CFBundleIdentifier": "io.bitrise.watchapp",
+								"DTPlatformName":     "watchos",
+							},
+							ProvisioningProfile: profileutil.ProvisioningProfileInfoModel{
+								TeamID: "1234ASDF",
+							},
+						},
+						Extensions: []IosExtension{
+							{
+								iosBaseApplication{
+									InfoPlist: map[string]interface{}{
+										"CFBundleIdentifier": "io.bitrise.watch-widget",
+										"DTPlatformName":     "watchos",
+									},
+									ProvisioningProfile: profileutil.ProvisioningProfileInfoModel{
+										TeamID: "1234ASDF",
+									},
+								},
+							},
+						},
+					},
+					ClipApplication: &IosClipApplication{
+						iosBaseApplication: iosBaseApplication{
+							InfoPlist: map[string]interface{}{
+								"CFBundleIdentifier": "io.bitrise.clip",
+								"DTPlatformName":     "iphoneos",
+							},
+							ProvisioningProfile: profileutil.ProvisioningProfileInfoModel{
+								TeamID: "1234ASDF",
+							},
+						},
+					},
+					Extensions: []IosExtension{
+						{
+							iosBaseApplication{
+								InfoPlist: map[string]interface{}{
+									"CFBundleIdentifier": "io.bitrise.ios-widget1",
+									"DTPlatformName":     "iphoneos",
+								},
+								ProvisioningProfile: profileutil.ProvisioningProfileInfoModel{
+									TeamID: "1234ASDF",
+								},
+							},
+						},
+						{
+							iosBaseApplication{
+								InfoPlist: map[string]interface{}{
+									"CFBundleIdentifier": "io.bitrise.ios-widget2",
+									"DTPlatformName":     "iphoneos",
+								},
+								ProvisioningProfile: profileutil.ProvisioningProfileInfoModel{
+									TeamID: "1234ASDF",
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &autocodesign.AppLayout{
+				TeamID:   "1234ASDF",
+				Platform: autocodesign.IOS,
+				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
+					"io.bitrise.app":          nil,
+					"io.bitrise.watchapp":     nil,
+					"io.bitrise.watch-widget": nil,
+					"io.bitrise.clip":         nil,
+					"io.bitrise.ios-widget1":  nil,
+					"io.bitrise.ios-widget2":  nil,
+				},
+			},
+		},
+		{
+			name: "Single target app with capabilities",
+			archive: IosArchive{
+				Application: IosApplication{
+					iosBaseApplication: iosBaseApplication{
+						InfoPlist: map[string]interface{}{
+							"CFBundleIdentifier": "io.bitrise.app",
+							"DTPlatformName":     "iphoneos",
+						},
+						ProvisioningProfile: profileutil.ProvisioningProfileInfoModel{
+							TeamID: "1234ASDF",
+							Entitlements: map[string]interface{}{
+								"get-task-allow":                        false,
+								"com.apple.security.application-groups": []string{"group.io.bitrise.app"},
+							},
+						},
+					},
+				},
+			},
+			want: &autocodesign.AppLayout{
+				TeamID:   "1234ASDF",
+				Platform: autocodesign.IOS,
+				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
+					"io.bitrise.app": {
+						"get-task-allow":                        false,
+						"com.apple.security.application-groups": []string{"group.io.bitrise.app"},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.archive.ReadCodesignParameters()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ReadCodesignParameters() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ReadCodesignParameters() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
