@@ -109,7 +109,7 @@ func (b XcodebuildTargetInfoProvider) TargetCodeSignEntitlements(target, configu
 	return b.xcodeProj.TargetCodeSignEntitlements(target, configuration)
 }
 
-// Locate archivable app target from a given project and scheme
+// ArchivableApplicationTarget locate archivable app target from a given project and scheme
 func ArchivableApplicationTarget(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme) (*xcodeproj.Target, error) {
 	archiveEntry, ok := scheme.AppBuildActionEntry()
 	if !ok {
