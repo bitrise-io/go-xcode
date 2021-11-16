@@ -1,6 +1,7 @@
 package localcodesignasset
 
 import (
+	"reflect"
 	"strings"
 	"time"
 
@@ -9,16 +10,12 @@ import (
 	"github.com/bitrise-io/go-xcode/profileutil"
 )
 
-type LocalCodeSignAsset interface {
-	FindMissingCodesignAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, deviceIDs []string, minProfileDaysValid int) autocodesign.AppLayout
-}
-
-type manager struct {
+type Manager struct {
 	profileProvider ProvisioningProfileProvider
 }
 
-func New(provisioningProfileProvider ProvisioningProfileProvider) LocalCodeSignAsset {
-	return manager{
+func NewManager(provisioningProfileProvider ProvisioningProfileProvider) Manager {
+	return Manager{
 		profileProvider: provisioningProfileProvider,
 	}
 }
@@ -65,43 +62,32 @@ func findProfile(localProfiles []profileutil.ProvisioningProfileInfoModel, platf
 	return nil
 }
 
-/*
-Check if the given profile:
-- x type matches the desired distribution type
-- x active (not expired)?
-- x bundle id matches
-- x contains the given certificate ids
-- x contains the given entitlements
-- x contains the given deviceIDs
-- x if valid for <minProfileDaysValid>
-- x platform matching
-*/
 func isProfileMatching(profile profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements, minProfileDaysValid int, certSerials []string, deviceIDs []string) bool {
-	if isActive(profile, minProfileDaysValid) == false {
+	if !isActive(profile, minProfileDaysValid) {
 		return false
 	}
 
-	if hasMatchingDistributionType(profile, distributionType) == false {
+	if !hasMatchingDistributionType(profile, distributionType) {
 		return false
 	}
 
-	if hasMatchingBundleID(profile, bundleID) == false {
+	if !hasMatchingBundleID(profile, bundleID) {
 		return false
 	}
 
-	if hasMatchingPlatform(profile, platform) == false {
+	if !hasMatchingPlatform(profile, platform) {
 		return false
 	}
 
-	if hasMatchingLocalCertificate(profile, certSerials) == false {
+	if !hasMatchingLocalCertificate(profile, certSerials) {
 		return false
 	}
 
-	if containsAllAppEntitlements(profile, entitlements) == false {
+	if !containsAllAppEntitlements(profile, entitlements) {
 		return false
 	}
 
-	if provisionsDevices(profile, deviceIDs) == false {
+	if !provisionsDevices(profile, deviceIDs) {
 		return false
 	}
 
@@ -131,13 +117,14 @@ func containsAllAppEntitlements(profile profileutil.ProvisioningProfileInfoModel
 		profileEntitlementValue := profileEntitlements[key]
 
 		//TODO: Better interface value comparison
-		if profileEntitlementValue == nil || profileEntitlementValue != value {
+		if reflect.DeepEqual(profileEntitlementValue, value) {
+			//if profileEntitlementValue == nil || profileEntitlementValue != value {
 			hasMissingEntitlement = true
 			break
 		}
 	}
 
-	return hasMissingEntitlement == false
+	return !hasMissingEntitlement
 }
 
 func hasMatchingDistributionType(profile profileutil.ProvisioningProfileInfoModel, distributionType autocodesign.DistributionType) bool {
