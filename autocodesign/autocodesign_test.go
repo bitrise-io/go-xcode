@@ -241,7 +241,8 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	certProvider := newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert})
 	client := newClientWithoutAppIDAndProfile(devCert)
 	assetWriter := newDefaultMockAssetWriter()
-	manager := NewCodesignAssetManager(client, certProvider, assetWriter)
+	// TODO: mock localCodeSignAssetManager
+	manager := NewCodesignAssetManager(client, certProvider, assetWriter, nil)
 
 	appLayout := AppLayout{
 		TeamID:   teamID,
@@ -272,7 +273,8 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 	certProvider := newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert})
 	client := newClientWithAppIDWithoutAppleSignIn(devCert, appClipBundleID)
 	assetWriter := newDefaultMockAssetWriter()
-	manager := NewCodesignAssetManager(client, certProvider, assetWriter)
+	// TODO: mock localCodeSignAssetManager
+	manager := NewCodesignAssetManager(client, certProvider, assetWriter, nil)
 
 	appLayout := AppLayout{
 		TeamID:   teamID,

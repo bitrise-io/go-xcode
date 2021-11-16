@@ -7,7 +7,6 @@ package autocodesign
 import (
 	"errors"
 	"fmt"
-	"github.com/bitrise-io/go-xcode/autocodesign/localcodesignasset"
 	"math/big"
 
 	"github.com/bitrise-io/go-utils/log"
@@ -90,6 +89,11 @@ type AssetWriter interface {
 	Write(codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets) error
 }
 
+// LocalCodeSignAssetManager ...
+type LocalCodeSignAssetManager interface {
+	FindMissingCodesignAssets(appLayout AppLayout, distrTypes []DistributionType, certsByType map[appstoreconnect.CertificateType][]Certificate, deviceIDs []string, minProfileDaysValid int) AppLayout
+}
+
 // AppLayout contains codesigning related settings that are needed to ensure codesigning files
 type AppLayout struct {
 	TeamID                                 string
@@ -117,17 +121,19 @@ type CodesignAssetManager interface {
 }
 
 type codesignAssetManager struct {
-	devPortalClient     DevPortalClient
-	certificateProvider CertificateProvider
-	assetWriter         AssetWriter
+	devPortalClient           DevPortalClient
+	certificateProvider       CertificateProvider
+	assetWriter               AssetWriter
+	localCodeSignAssetManager LocalCodeSignAssetManager
 }
 
 // NewCodesignAssetManager ...
-func NewCodesignAssetManager(devPortalClient DevPortalClient, certificateProvider CertificateProvider, assetWriter AssetWriter) CodesignAssetManager {
+func NewCodesignAssetManager(devPortalClient DevPortalClient, certificateProvider CertificateProvider, assetWriter AssetWriter, localCodeSignAssetManager LocalCodeSignAssetManager) CodesignAssetManager {
 	return codesignAssetManager{
-		devPortalClient:     devPortalClient,
-		certificateProvider: certificateProvider,
-		assetWriter:         assetWriter,
+		devPortalClient:           devPortalClient,
+		certificateProvider:       certificateProvider,
+		assetWriter:               assetWriter,
+		localCodeSignAssetManager: localCodeSignAssetManager,
 	}
 }
 
@@ -158,8 +164,6 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		return nil, err
 	}
 
-	//TODO: Code was here originally but the deviceID collection happens below so I though I move our logic .
-
 	var devPortalDeviceIDs []string
 	if distributionTypeRequiresDeviceList(distrTypes) {
 		var err error
@@ -169,9 +173,12 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		}
 	}
 
-	localProvisioningProfileProvider := localcodesignasset.LocalProvisioningProfileProvider{}
-	localcodesignasset := localcodesignasset.New(localProvisioningProfileProvider)
-	missingCodesignAssets := localcodesignasset.FindMissingCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
+	var missingCodesignAssets AppLayout
+	if m.localCodeSignAssetManager != nil {
+		missingCodesignAssets = m.localCodeSignAssetManager.FindMissingCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
+	} else {
+		missingCodesignAssets = appLayout
+	}
 
 	// Ensure Profiles
 	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
@@ -195,5 +202,6 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		return nil, fmt.Errorf("failed to install codesigning files: %s", err)
 	}
 
+	// TODO: this should contain all the code sign settings (including locally available and managed parts too)
 	return codesignAssetsByDistributionType, nil
 }

@@ -56,17 +56,8 @@ func (m manager) FindMissingCodesignAssets(appLayout autocodesign.AppLayout, dis
 }
 
 func findProfile(localProfiles []profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements, minProfileDaysValid int, certSerials []string, deviceIDs []string) *profileutil.ProvisioningProfileInfoModel {
-	//TODO: Are these needed?
-	//platformProfileTypes, ok := autocodesign.PlatformToProfileTypeByDistribution[platform]
-	//if !ok {
-	//	return nil, fmt.Errorf("no profiles for platform: %s", platform)
-	//}
-	//profileType := platformProfileTypes[distributionType]
-	//
-	//profileName := autocodesign.ProfileName(profileType, bundleID)
-
 	for _, profile := range localProfiles {
-		if isProfileMatching(profile, platform , distributionType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs) {
+		if isProfileMatching(profile, platform, distributionType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs) {
 			return &profile
 		}
 	}
