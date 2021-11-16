@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/bitrise-io/go-utils/pretty"
+
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/certificateutil"
@@ -176,6 +178,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	var missingCodesignAssets AppLayout
 	if m.localCodeSignAssetManager != nil {
 		missingCodesignAssets = m.localCodeSignAssetManager.FindMissingCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
+		fmt.Println("missingCodesignAssets:\n", pretty.Object(missingCodesignAssets))
 	} else {
 		missingCodesignAssets = appLayout
 	}

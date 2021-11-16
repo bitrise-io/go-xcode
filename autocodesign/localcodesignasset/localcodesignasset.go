@@ -20,7 +20,47 @@ func NewManager(provisioningProfileProvider ProvisioningProfileProvider) Manager
 	}
 }
 
-func (m manager) FindMissingCodesignAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, deviceIDs []string, minProfileDaysValid int) autocodesign.AppLayout {
+/*
+// AppCodesignAssets is the result of ensuring codesigning assets
+type AppCodesignAssets struct {
+	ArchivableTargetProfilesByBundleID map[string]Profile
+	UITestTargetProfilesByBundleID     map[string]Profile
+	Certificate                        certificateutil.CertificateInfoModel
+}
+*/
+//func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, deviceIDs []string, minProfileDaysValid int) map[autocodesign.DistributionType]autocodesign.AppCodesignAssets {
+//	profiles, err := m.profileProvider.ListProvisioningProfiles()
+//	if err != nil {
+//		return appLayout
+//	}
+//
+//	for _, distrType := range distrTypes {
+//		certSerials := certificateSerials(certsByType, distrType)
+//
+//		for bundleID, entitlements := range appLayout.EntitlementsByArchivableTargetBundleID {
+//			profile := findProfile(profiles, appLayout.Platform, distrType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs)
+//
+//			if profile == nil {
+//				continue
+//			}
+//
+//			delete(appLayout.EntitlementsByArchivableTargetBundleID, bundleID)
+//		}
+//	}
+//
+//	for i, bundleID := range appLayout.UITestTargetBundleIDs {
+//		for _, profile := range profiles {
+//			//TODO: Is bundle id check enough or should we do the full profile id check?
+//			if profile.BundleID == bundleID {
+//				remove(appLayout.UITestTargetBundleIDs, i)
+//			}
+//		}
+//	}
+//
+//	return appLayout
+//}
+
+func (m Manager) FindMissingCodesignAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, deviceIDs []string, minProfileDaysValid int) autocodesign.AppLayout {
 	profiles, err := m.profileProvider.ListProvisioningProfiles()
 	if err != nil {
 		return appLayout
@@ -116,9 +156,8 @@ func containsAllAppEntitlements(profile profileutil.ProvisioningProfileInfoModel
 	for key, value := range appEntitlements {
 		profileEntitlementValue := profileEntitlements[key]
 
-		//TODO: Better interface value comparison
+		// TODO: Better entitlements comparison
 		if reflect.DeepEqual(profileEntitlementValue, value) {
-			//if profileEntitlementValue == nil || profileEntitlementValue != value {
 			hasMissingEntitlement = true
 			break
 		}
