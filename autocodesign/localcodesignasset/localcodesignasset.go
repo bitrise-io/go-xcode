@@ -1,6 +1,8 @@
 package localcodesignasset
 
 import (
+	"fmt"
+	"io/ioutil"
 	"reflect"
 	"strings"
 	"time"
@@ -20,76 +22,185 @@ func NewManager(provisioningProfileProvider ProvisioningProfileProvider) Manager
 	}
 }
 
-/*
-// AppCodesignAssets is the result of ensuring codesigning assets
-type AppCodesignAssets struct {
-	ArchivableTargetProfilesByBundleID map[string]Profile
-	UITestTargetProfilesByBundleID     map[string]Profile
-	Certificate                        certificateutil.CertificateInfoModel
+// Profile ...
+type Profile struct {
+	attributes     appstoreconnect.ProfileAttributes
+	id             string
+	bundleID       string
+	deviceIDs      []string
+	certificateIDs []string
 }
-*/
-//func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, deviceIDs []string, minProfileDaysValid int) map[autocodesign.DistributionType]autocodesign.AppCodesignAssets {
-//	profiles, err := m.profileProvider.ListProvisioningProfiles()
-//	if err != nil {
-//		return appLayout
-//	}
-//
-//	for _, distrType := range distrTypes {
-//		certSerials := certificateSerials(certsByType, distrType)
-//
-//		for bundleID, entitlements := range appLayout.EntitlementsByArchivableTargetBundleID {
-//			profile := findProfile(profiles, appLayout.Platform, distrType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs)
-//
-//			if profile == nil {
-//				continue
-//			}
-//
-//			delete(appLayout.EntitlementsByArchivableTargetBundleID, bundleID)
-//		}
-//	}
-//
-//	for i, bundleID := range appLayout.UITestTargetBundleIDs {
-//		for _, profile := range profiles {
-//			//TODO: Is bundle id check enough or should we do the full profile id check?
-//			if profile.BundleID == bundleID {
-//				remove(appLayout.UITestTargetBundleIDs, i)
-//			}
-//		}
-//	}
-//
-//	return appLayout
-//}
 
-func (m Manager) FindMissingCodesignAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, deviceIDs []string, minProfileDaysValid int) autocodesign.AppLayout {
+// ID ...
+func (p Profile) ID() string {
+	return p.id
+}
+
+// Attributes ...
+func (p Profile) Attributes() appstoreconnect.ProfileAttributes {
+	return p.attributes
+}
+
+// CertificateIDs ...
+func (p Profile) CertificateIDs() ([]string, error) {
+	return p.certificateIDs, nil
+}
+
+// DeviceIDs ...
+func (p Profile) DeviceIDs() ([]string, error) {
+	return p.deviceIDs, nil
+}
+
+// BundleID ...
+func (p Profile) BundleID() (appstoreconnect.BundleID, error) {
+	return appstoreconnect.BundleID{
+		ID: p.id,
+		Attributes: appstoreconnect.BundleIDAttributes{
+			Identifier: p.bundleID,
+			Name:       p.attributes.Name,
+		},
+	}, nil
+}
+
+// Entitlements ...
+func (p Profile) Entitlements() (autocodesign.Entitlements, error) {
+	return autocodesign.ParseRawProfileEntitlements(p.attributes.ProfileContent)
+}
+
+/*
+	IOS       BundleIDPlatform = "IOS"
+	MacOS     BundleIDPlatform = "MAC_OS"
+	Universal BundleIDPlatform = "UNIVERSAL"
+*/
+
+func getBundleIDPlatform(profileType profileutil.ProfileType) appstoreconnect.BundleIDPlatform {
+	switch profileType {
+	case profileutil.ProfileTypeIos, profileutil.ProfileTypeTvOs:
+		return appstoreconnect.IOS
+	case profileutil.ProfileTypeMacOs:
+		return appstoreconnect.MacOS
+	}
+
+	return ""
+}
+
+func ProfileInfoToProfile(info profileutil.ProvisioningProfileInfoModel) (autocodesign.Profile, error) {
+	_, pth, err := profileutil.FindProvisioningProfile(info.UUID)
+	if err != nil {
+		return nil, err
+	}
+	content, err := ioutil.ReadFile(pth)
+	if err != nil {
+		return nil, err
+	}
+
+	return Profile{
+		attributes: appstoreconnect.ProfileAttributes{
+			Name:           info.Name,
+			UUID:           info.UUID,
+			ProfileContent: content,
+			Platform:       getBundleIDPlatform(info.Type),
+			ExpirationDate: appstoreconnect.Time(info.ExpirationDate),
+		},
+		id:             "", // only in case of Developer Portal Profiles
+		bundleID:       info.BundleID,
+		certificateIDs: nil, // only in case of Developer Portal Profiles
+		deviceIDs:      nil, // only in case of Developer Portal Profiles
+	}, nil
+}
+
+func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrTypes []autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, deviceIDs []string, minProfileDaysValid int) (map[autocodesign.DistributionType]autocodesign.AppCodesignAssets, *autocodesign.AppLayout, error) {
 	profiles, err := m.profileProvider.ListProvisioningProfiles()
 	if err != nil {
-		return appLayout
+		return nil, nil, err
 	}
+
+	assetsByDistribution := map[autocodesign.DistributionType]autocodesign.AppCodesignAssets{}
 
 	for _, distrType := range distrTypes {
 		certSerials := certificateSerials(certsByType, distrType)
 
+		var asset *autocodesign.AppCodesignAssets
 		for bundleID, entitlements := range appLayout.EntitlementsByArchivableTargetBundleID {
-			profile := findProfile(profiles, appLayout.Platform, distrType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs)
-
-			if profile == nil {
+			profileInfo := findProfile(profiles, appLayout.Platform, distrType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs)
+			if profileInfo == nil {
 				continue
+			}
+
+			profile, err := ProfileInfoToProfile(*profileInfo)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			if asset == nil {
+				asset = &autocodesign.AppCodesignAssets{
+					ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
+						bundleID: profile,
+					},
+				}
+			} else {
+				profileByArchivableTargetBundleID := asset.ArchivableTargetProfilesByBundleID
+				if profileByArchivableTargetBundleID == nil {
+					profileByArchivableTargetBundleID = map[string]autocodesign.Profile{}
+				}
+
+				profileByArchivableTargetBundleID[bundleID] = profile
+				asset.ArchivableTargetProfilesByBundleID = profileByArchivableTargetBundleID
 			}
 
 			delete(appLayout.EntitlementsByArchivableTargetBundleID, bundleID)
 		}
-	}
 
-	for i, bundleID := range appLayout.UITestTargetBundleIDs {
-		for _, profile := range profiles {
-			//TODO: Is bundle id check enough or should we do the full profile id check?
-			if profile.BundleID == bundleID {
+		if distrType == autocodesign.Development {
+			for i, bundleID := range appLayout.UITestTargetBundleIDs {
+				wildcardBundleID, err := autocodesign.CreateWildcardBundleID(bundleID)
+				if err != nil {
+					return nil, nil, fmt.Errorf("could not create wildcard bundle id: %s", err)
+				}
+
+				// Capabilities are not supported for UITest targets.
+				profileInfo := findProfile(profiles, appLayout.Platform, distrType, wildcardBundleID, nil, minProfileDaysValid, certSerials, deviceIDs)
+				if profileInfo == nil {
+					continue
+				}
+
+				profile, err := ProfileInfoToProfile(*profileInfo)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				if asset == nil {
+					asset = &autocodesign.AppCodesignAssets{
+						UITestTargetProfilesByBundleID: map[string]autocodesign.Profile{
+							bundleID: profile,
+						},
+					}
+				} else {
+					profileByUITestTargetBundleID := asset.UITestTargetProfilesByBundleID
+					if profileByUITestTargetBundleID == nil {
+						profileByUITestTargetBundleID = map[string]autocodesign.Profile{}
+					}
+
+					profileByUITestTargetBundleID[bundleID] = profile
+					asset.UITestTargetProfilesByBundleID = profileByUITestTargetBundleID
+				}
+
 				remove(appLayout.UITestTargetBundleIDs, i)
 			}
 		}
+
+		if asset != nil {
+			certType := autocodesign.CertificateTypeByDistribution[distrType]
+			certs := certsByType[certType]
+			cert := certs[0]
+
+			asset.Certificate = cert.CertificateInfo
+
+			assetsByDistribution[distrType] = *asset
+		}
 	}
 
-	return appLayout
+	return assetsByDistribution, &appLayout, nil
 }
 
 func findProfile(localProfiles []profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements, minProfileDaysValid int, certSerials []string, deviceIDs []string) *profileutil.ProvisioningProfileInfoModel {

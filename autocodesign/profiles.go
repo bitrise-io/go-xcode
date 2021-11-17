@@ -89,7 +89,7 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 			// Capabilities are not supported for UITest targets.
 			// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
 			for _, bundleIDIdentifier := range app.UITestTargetBundleIDs {
-				wildcardBundleID, err := createWildcardBundleID(bundleIDIdentifier)
+				wildcardBundleID, err := CreateWildcardBundleID(bundleIDIdentifier)
 				if err != nil {
 					return nil, fmt.Errorf("could not create wildcard bundle id: %s", err)
 				}
@@ -295,7 +295,7 @@ func distributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
 	return false
 }
 
-func createWildcardBundleID(bundleID string) (string, error) {
+func CreateWildcardBundleID(bundleID string) (string, error) {
 	idx := strings.LastIndex(bundleID, ".")
 	if idx == -1 {
 		return "", fmt.Errorf("invalid bundle id (%s): does not contain *", bundleID)

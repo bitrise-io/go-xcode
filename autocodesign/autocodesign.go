@@ -93,7 +93,7 @@ type AssetWriter interface {
 
 // LocalCodeSignAssetManager ...
 type LocalCodeSignAssetManager interface {
-	FindMissingCodesignAssets(appLayout AppLayout, distrTypes []DistributionType, certsByType map[appstoreconnect.CertificateType][]Certificate, deviceIDs []string, minProfileDaysValid int) AppLayout
+	FindCodesignAssets(appLayout AppLayout, distrTypes []DistributionType, certsByType map[appstoreconnect.CertificateType][]Certificate, deviceIDs []string, minProfileDaysValid int) (map[DistributionType]AppCodesignAssets, *AppLayout, error)
 }
 
 // AppLayout contains codesigning related settings that are needed to ensure codesigning files
@@ -175,16 +175,15 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		}
 	}
 
-	var missingCodesignAssets AppLayout
+	missingCodesignAssets := &appLayout
+	var localCodesignAssets map[DistributionType]AppCodesignAssets
 	if m.localCodeSignAssetManager != nil {
-		missingCodesignAssets = m.localCodeSignAssetManager.FindMissingCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
+		localCodesignAssets, missingCodesignAssets, err = m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
 		fmt.Println("missingCodesignAssets:\n", pretty.Object(missingCodesignAssets))
-	} else {
-		missingCodesignAssets = appLayout
 	}
 
 	// Ensure Profiles
-	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
+	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, *missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
 	if err != nil {
 		switch {
 		case errors.As(err, &ErrAppClipAppID{}):
@@ -196,6 +195,33 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		}
 
 		return nil, fmt.Errorf("failed to ensure profiles: %w", err)
+	}
+
+	// merge local and recently generated code signing assets
+	if localCodesignAssets != nil {
+		for distrType, localAssets := range localCodesignAssets {
+			newAssets := codesignAssetsByDistributionType[distrType]
+
+			if newAssets.ArchivableTargetProfilesByBundleID == nil {
+				newAssets.ArchivableTargetProfilesByBundleID = localAssets.ArchivableTargetProfilesByBundleID
+			} else {
+				for bundleID, profile := range localAssets.ArchivableTargetProfilesByBundleID {
+					newAssets.ArchivableTargetProfilesByBundleID[bundleID] = profile
+				}
+			}
+
+			if distrType == Development {
+				if newAssets.UITestTargetProfilesByBundleID == nil {
+					newAssets.UITestTargetProfilesByBundleID = localAssets.UITestTargetProfilesByBundleID
+				} else {
+					for bundleID, profile := range localAssets.UITestTargetProfilesByBundleID {
+						newAssets.UITestTargetProfilesByBundleID[bundleID] = profile
+					}
+				}
+			}
+
+			codesignAssetsByDistributionType[distrType] = newAssets
+		}
 	}
 
 	// Install certificates and profiles
