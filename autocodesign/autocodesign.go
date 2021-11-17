@@ -263,6 +263,5 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		return nil, fmt.Errorf("failed to install codesigning files: %s", err)
 	}
 
-	// TODO: this should contain all the code sign settings (including locally available and managed parts too)
 	return codesignAssetsByDistributionType, nil
 }
