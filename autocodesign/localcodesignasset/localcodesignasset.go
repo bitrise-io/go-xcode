@@ -201,6 +201,10 @@ func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrTypes
 		}
 	}
 
+	if len(appLayout.EntitlementsByArchivableTargetBundleID) == 0 && len(appLayout.UITestTargetBundleIDs) == 0 {
+		return assetsByDistribution, nil, nil
+	}
+
 	return assetsByDistribution, &appLayout, nil
 }
 

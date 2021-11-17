@@ -8,8 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-
-	"github.com/bitrise-io/go-utils/pretty"
+	"time"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
@@ -184,31 +183,56 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	var localCodesignAssets map[DistributionType]AppCodesignAssets
 	if m.localCodeSignAssetManager != nil {
 		localCodesignAssets, missingCodesignAssets, err = m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceUUIDs, opts.MinProfileValidityDays)
-		fmt.Println("localCodesignAssets:\n", pretty.Object(localCodesignAssets))
-		fmt.Println("missingCodesignAssets:\n", pretty.Object(missingCodesignAssets))
-	}
 
-	// Ensure Profiles
-	codesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, *missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
-	if err != nil {
-		switch {
-		case errors.As(err, &ErrAppClipAppID{}):
-			log.Warnf("Can't create Application Identifier for App Clip targets.")
-			log.Warnf("Please generate the Application Identifier manually on Apple Developer Portal, after that the Step will continue working.")
-		case errors.As(err, &ErrAppClipAppIDWithAppleSigning{}):
-			log.Warnf("Can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability.")
-			log.Warnf("Please configure Capabilities on Apple Developer Portal for App Clip target manually, after that the Step will continue working.")
+		for distrType, assets := range localCodesignAssets {
+			fmt.Println()
+			log.Infof("Local code signing assets for %s distribution:", distrType)
+			log.Printf("Certificate: %s (team name: %s, serial: %s)", assets.Certificate.CommonName, assets.Certificate.TeamName, assets.Certificate.Serial)
+			log.Printf("Archivable targets (%d)", len(assets.ArchivableTargetProfilesByBundleID))
+			for bundleID, profile := range assets.ArchivableTargetProfilesByBundleID {
+				log.Printf("- %s: %s (ID: %s UUID: %s Expiry: %s)", bundleID, profile.Attributes().Name, profile.ID(), profile.Attributes().UUID, time.Time(profile.Attributes().ExpirationDate))
+			}
+
+			log.Printf("UITest targets (%d)", len(assets.UITestTargetProfilesByBundleID))
+			for bundleID, profile := range assets.UITestTargetProfilesByBundleID {
+				log.Printf("- %s: %s (ID: %s UUID: %s Expiry: %s)", bundleID, profile.Attributes().Name, profile.ID(), profile.Attributes().UUID, time.Time(profile.Attributes().ExpirationDate))
+			}
 		}
 
-		return nil, fmt.Errorf("failed to ensure profiles: %w", err)
+		if missingCodesignAssets != nil {
+			fmt.Println()
+			log.Infof("Local code signing assets not found for:")
+			log.Printf("Archivable targets (%d)", len(missingCodesignAssets.EntitlementsByArchivableTargetBundleID))
+			for bundleID := range missingCodesignAssets.EntitlementsByArchivableTargetBundleID {
+				log.Printf("- %s", bundleID)
+			}
+			log.Printf("UITest targets (%d)", len(missingCodesignAssets.UITestTargetBundleIDs))
+			for bundleID := range missingCodesignAssets.UITestTargetBundleIDs {
+				log.Printf("- %s", bundleID)
+			}
+		}
 	}
 
-	fmt.Println("codesignAssetsByDistributionType:\n", pretty.Object(codesignAssetsByDistributionType))
+	codesignAssetsByDistributionType := localCodesignAssets
+	if missingCodesignAssets != nil {
+		// Ensure Profiles
+		newCodesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, *missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
+		if err != nil {
+			switch {
+			case errors.As(err, &ErrAppClipAppID{}):
+				log.Warnf("Can't create Application Identifier for App Clip targets.")
+				log.Warnf("Please generate the Application Identifier manually on Apple Developer Portal, after that the Step will continue working.")
+			case errors.As(err, &ErrAppClipAppIDWithAppleSigning{}):
+				log.Warnf("Can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability.")
+				log.Warnf("Please configure Capabilities on Apple Developer Portal for App Clip target manually, after that the Step will continue working.")
+			}
 
-	// merge local and recently generated code signing assets
-	if localCodesignAssets != nil {
-		for distrType, localAssets := range localCodesignAssets {
-			newAssets := codesignAssetsByDistributionType[distrType]
+			return nil, fmt.Errorf("failed to ensure profiles: %w", err)
+		}
+
+		// merge local and recently generated code signing assets
+		for distrType, newAssets := range newCodesignAssetsByDistributionType {
+			localAssets := codesignAssetsByDistributionType[distrType]
 
 			if newAssets.ArchivableTargetProfilesByBundleID == nil {
 				newAssets.ArchivableTargetProfilesByBundleID = localAssets.ArchivableTargetProfilesByBundleID
@@ -231,8 +255,6 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 			codesignAssetsByDistributionType[distrType] = newAssets
 		}
 	}
-
-	fmt.Println("merged codesign assets:\n", pretty.Object(codesignAssetsByDistributionType))
 
 	// Install certificates and profiles
 	fmt.Println()

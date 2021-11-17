@@ -10,6 +10,7 @@ import (
 )
 
 func ensureTestDevices(deviceClient DevPortalClient, testDevices []devportalservice.TestDevice, platform Platform) ([]appstoreconnect.Device, error) {
+	fmt.Println()
 	log.Infof("Fetching Apple Developer Portal devices")
 	// IOS device platform includes: APPLE_WATCH, IPAD, IPHONE, IPOD and APPLE_TV device classes.
 	devPortalDevices, err := deviceClient.ListDevices("", appstoreconnect.IOSDevice)
