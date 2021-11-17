@@ -9,9 +9,7 @@ import (
 	"github.com/bitrise-io/go-xcode/devportalservice"
 )
 
-func ensureTestDevices(deviceClient DevPortalClient, testDevices []devportalservice.TestDevice, platform Platform) ([]string, error) {
-	var devPortalDeviceIDs []string
-
+func ensureTestDevices(deviceClient DevPortalClient, testDevices []devportalservice.TestDevice, platform Platform) ([]appstoreconnect.Device, error) {
 	log.Infof("Fetching Apple Developer Portal devices")
 	// IOS device platform includes: APPLE_WATCH, IPAD, IPHONE, IPOD and APPLE_TV device classes.
 	devPortalDevices, err := deviceClient.ListDevices("", appstoreconnect.IOSDevice)
@@ -40,11 +38,7 @@ func ensureTestDevices(deviceClient DevPortalClient, testDevices []devportalserv
 
 	devPortalDevices = filterDevPortalDevices(devPortalDevices, platform)
 
-	for _, devPortalDevice := range devPortalDevices {
-		devPortalDeviceIDs = append(devPortalDeviceIDs, devPortalDevice.ID)
-	}
-
-	return devPortalDeviceIDs, nil
+	return devPortalDevices, nil
 }
 
 func registerMissingTestDevices(client DevPortalClient, testDevices []devportalservice.TestDevice, devPortalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {

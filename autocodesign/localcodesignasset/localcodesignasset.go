@@ -194,6 +194,7 @@ func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrTypes
 			certs := certsByType[certType]
 			cert := certs[0]
 
+			// TODO: This and the certificate part of the ensureProfile function call should be extracted
 			asset.Certificate = cert.CertificateInfo
 
 			assetsByDistribution[distrType] = *asset

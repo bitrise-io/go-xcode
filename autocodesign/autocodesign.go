@@ -167,18 +167,24 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	}
 
 	var devPortalDeviceIDs []string
+	var devPortalDeviceUUIDs []string
 	if distributionTypeRequiresDeviceList(distrTypes) {
-		var err error
-		devPortalDeviceIDs, err = ensureTestDevices(m.devPortalClient, opts.BitriseTestDevices, appLayout.Platform)
+		devPortalDevices, err := ensureTestDevices(m.devPortalClient, opts.BitriseTestDevices, appLayout.Platform)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ensure test devices: %w", err)
+		}
+
+		for _, device := range devPortalDevices {
+			devPortalDeviceIDs = append(devPortalDeviceIDs, device.ID)
+			devPortalDeviceUUIDs = append(devPortalDeviceUUIDs, device.Attributes.UDID)
 		}
 	}
 
 	missingCodesignAssets := &appLayout
 	var localCodesignAssets map[DistributionType]AppCodesignAssets
 	if m.localCodeSignAssetManager != nil {
-		localCodesignAssets, missingCodesignAssets, err = m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
+		localCodesignAssets, missingCodesignAssets, err = m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceUUIDs, opts.MinProfileValidityDays)
+		fmt.Println("localCodesignAssets:\n", pretty.Object(localCodesignAssets))
 		fmt.Println("missingCodesignAssets:\n", pretty.Object(missingCodesignAssets))
 	}
 
@@ -196,6 +202,8 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 
 		return nil, fmt.Errorf("failed to ensure profiles: %w", err)
 	}
+
+	fmt.Println("codesignAssetsByDistributionType:\n", pretty.Object(codesignAssetsByDistributionType))
 
 	// merge local and recently generated code signing assets
 	if localCodesignAssets != nil {
@@ -223,6 +231,8 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 			codesignAssetsByDistributionType[distrType] = newAssets
 		}
 	}
+
+	fmt.Println("merged codesign assets:\n", pretty.Object(codesignAssetsByDistributionType))
 
 	// Install certificates and profiles
 	fmt.Println()
