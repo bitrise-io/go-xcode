@@ -19,11 +19,11 @@ type Project struct {
 
 // Factory ...
 type Factory interface {
-	Create() (Project, error)
+	Create() (*Project, error)
 }
 
 type defaultFactory struct {
-	projectHelper *ProjectHelper
+	params InitParams
 }
 
 // InitParams ...
@@ -34,17 +34,13 @@ type InitParams struct {
 }
 
 // NewFactory ...
-func NewFactory(projectHelper *ProjectHelper) defaultFactory {
-	return defaultFactory{
-		projectHelper: projectHelper,
-	}
+func NewFactory(params InitParams) defaultFactory {
+	return defaultFactory{params: params}
 }
 
 // Create ...
 func (f *defaultFactory) Create() (Project, error) {
-	return Project{
-		projHelper: *f.projectHelper,
-	}, nil
+	return NewProject(f.params)
 }
 
 // NewProject ...
@@ -57,6 +53,24 @@ func NewProject(params InitParams) (Project, error) {
 	return Project{
 		projHelper: *projectHelper,
 	}, nil
+}
+
+// IsSigningManagedAutomatically checks the "Automatically manage signing" checkbox in Xcode
+// Note: it only checks the main Target based on the given Scheme and Configuration
+func (p Project) IsSigningManagedAutomatically() (bool, error) {
+	return p.projHelper.IsSigningManagedAutomatically()
+}
+
+// Platform get the platform (PLATFORM_DISPLAY_NAME) - iOS, tvOS, macOS
+func (p Project) Platform() (autocodesign.Platform, error) {
+	platform, err := p.projHelper.Platform(p.projHelper.Configuration)
+	if err != nil {
+		return "", fmt.Errorf("failed to read project platform: %s", err)
+	}
+
+	log.Printf("Platform: %s", platform)
+
+	return platform, nil
 }
 
 // MainTargetBundleID ...
