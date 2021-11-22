@@ -30,6 +30,22 @@ type ProjectHelper struct {
 	buildSettingsCache map[string]map[string]serialized.Object // target/config/buildSettings(serialized.Object)
 }
 
+// ProjectHelperFactory ...
+type ProjectHelperFactory interface {
+	Create(projOrWSPath, schemeName, configurationName string) (*ProjectHelper, error)
+}
+
+type projectHelperFactory struct{}
+
+func newProjectHelperFactory() projectHelperFactory {
+	return projectHelperFactory{}
+}
+
+// Create ...
+func (f *projectHelperFactory) Create(projOrWSPath, schemeName, configurationName string) (*ProjectHelper, error) {
+	return NewProjectHelper(projOrWSPath, schemeName, configurationName)
+}
+
 // NewProjectHelper checks the provided project or workspace and generate a ProjectHelper with the provided scheme and configuration
 // Previously in the ruby version the initialize method did the same
 // It returns a new ProjectHelper, whose Configuration field contains is the selected configuration (even when configurationName parameter is empty)

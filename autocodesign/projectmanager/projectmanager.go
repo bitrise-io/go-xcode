@@ -17,11 +17,34 @@ type Project struct {
 	projHelper ProjectHelper
 }
 
+// Factory ...
+type Factory interface {
+	Create() (Project, error)
+}
+
+type defaultFactory struct {
+	projectHelper *ProjectHelper
+}
+
 // InitParams ...
 type InitParams struct {
 	ProjectOrWorkspacePath string
 	SchemeName             string
 	ConfigurationName      string
+}
+
+// NewFactory ...
+func NewFactory(projectHelper *ProjectHelper) defaultFactory {
+	return defaultFactory{
+		projectHelper: projectHelper,
+	}
+}
+
+// Create ...
+func (f *defaultFactory) Create() (Project, error) {
+	return Project{
+		projHelper: *f.projectHelper,
+	}, nil
 }
 
 // NewProject ...

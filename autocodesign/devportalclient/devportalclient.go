@@ -15,7 +15,7 @@ import (
 	"github.com/bitrise-io/go-xcode/devportalservice"
 )
 
-const notConnected = `Bitrise Apple service connection not found.
+const NotConnectedWarning = `Bitrise Apple service connection not found.
 Most likely because there is no configured Bitrise Apple service connection.
 Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
 
@@ -81,7 +81,7 @@ func (f ClientFactory) CreateClient(clientType ClientType, teamID string, conn d
 	if err != nil {
 		if conn.APIKeyConnection == nil && conn.AppleIDConnection == nil {
 			fmt.Println()
-			log.Warnf("%s", notConnected)
+			log.Warnf("%s", NotConnectedWarning)
 		}
 		return nil, fmt.Errorf("could not configure Apple service authentication: %v", err)
 	}
