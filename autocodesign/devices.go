@@ -42,7 +42,11 @@ func EnsureTestDevices(deviceClient DevPortalClient, testDevices []devportalserv
 
 	devPortalDevices = filterDevPortalDevices(devPortalDevices, platform)
 
-	return devPortalDevices, nil
+	for _, devPortalDevice := range devPortalDevices {
+		devPortalDeviceIDs = append(devPortalDeviceIDs, devPortalDevice.ID)
+	}
+
+	return devPortalDeviceIDs, nil
 }
 
 func registerMissingTestDevices(client DevPortalClient, testDevices []devportalservice.TestDevice, devPortalDevices []appstoreconnect.Device) ([]appstoreconnect.Device, error) {

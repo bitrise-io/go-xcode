@@ -179,17 +179,12 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		if err != nil {
 			return nil, fmt.Errorf("failed to ensure test devices: %w", err)
 		}
-
-		for _, device := range devPortalDevices {
-			devPortalDeviceIDs = append(devPortalDeviceIDs, device.ID)
-			devPortalDeviceUUIDs = append(devPortalDeviceUUIDs, device.Attributes.UDID)
-		}
 	}
 
 	missingCodesignAssets := &appLayout
 	var localCodesignAssets map[DistributionType]AppCodesignAssets
 	if m.localCodeSignAssetManager != nil {
-		localCodesignAssets, missingCodesignAssets, err = m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceUUIDs, opts.MinProfileValidityDays)
+		localCodesignAssets, missingCodesignAssets, err = m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
 
 		for distrType, assets := range localCodesignAssets {
 			fmt.Println()
