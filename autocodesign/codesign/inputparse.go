@@ -19,7 +19,6 @@ type StepInputParser struct {
 	CertificatePassphraseList stepconf.Secret
 	KeychainPath              string
 	KeychainPassword          stepconf.Secret
-	IsCI                      bool
 
 	CommandFactory command.Factory
 }
@@ -32,13 +31,13 @@ type ParsedConfig struct {
 }
 
 // Parse ...
-func (p StepInputParser) Parse() (ParsedConfig, error) {
+func (p StepInputParser) Parse(authType AuthType) (ParsedConfig, error) {
 	var (
 		certificatesAndPassphrases []certdownloader.CertificateAndPassphrase
 		keychainWriter             keychain.Keychain
 	)
 
-	if p.IsCI {
+	if authType != NoAuth {
 		if strings.TrimSpace(p.CertificateURLList) == "" {
 			return ParsedConfig{}, fmt.Errorf("Code signing certificate URL: required variable is not present")
 		}
