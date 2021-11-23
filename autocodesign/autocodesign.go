@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"time"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
@@ -174,42 +173,14 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		}
 	}
 
-	missingCodesignAssets := &appLayout
-	var localCodesignAssets map[DistributionType]AppCodesignAssets
-	if m.localCodeSignAssetManager != nil {
-		localCodesignAssets, missingCodesignAssets, err = m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
+	localCodesignAssets, missingCodesignAssets, err := m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
 
-		for distrType, assets := range localCodesignAssets {
-			fmt.Println()
-			log.Infof("Local code signing assets for %s distribution:", distrType)
-			log.Printf("Certificate: %s (team name: %s, serial: %s)", assets.Certificate.CommonName, assets.Certificate.TeamName, assets.Certificate.Serial)
-			log.Printf("Archivable targets (%d)", len(assets.ArchivableTargetProfilesByBundleID))
-			for bundleID, profile := range assets.ArchivableTargetProfilesByBundleID {
-				log.Printf("- %s: %s (ID: %s UUID: %s Expiry: %s)", bundleID, profile.Attributes().Name, profile.ID(), profile.Attributes().UUID, time.Time(profile.Attributes().ExpirationDate))
-			}
-
-			log.Printf("UITest targets (%d)", len(assets.UITestTargetProfilesByBundleID))
-			for bundleID, profile := range assets.UITestTargetProfilesByBundleID {
-				log.Printf("- %s: %s (ID: %s UUID: %s Expiry: %s)", bundleID, profile.Attributes().Name, profile.ID(), profile.Attributes().UUID, time.Time(profile.Attributes().ExpirationDate))
-			}
-		}
-
-		if missingCodesignAssets != nil {
-			fmt.Println()
-			log.Infof("Local code signing assets not found for:")
-			log.Printf("Archivable targets (%d)", len(missingCodesignAssets.EntitlementsByArchivableTargetBundleID))
-			for bundleID := range missingCodesignAssets.EntitlementsByArchivableTargetBundleID {
-				log.Printf("- %s", bundleID)
-			}
-			log.Printf("UITest targets (%d)", len(missingCodesignAssets.UITestTargetBundleIDs))
-			for bundleID := range missingCodesignAssets.UITestTargetBundleIDs {
-				log.Printf("- %s", bundleID)
-			}
-		}
-	}
+	printExistingCodesignAssets(localCodesignAssets)
 
 	codesignAssetsByDistributionType := localCodesignAssets
 	if missingCodesignAssets != nil {
+		printMissingCodeSignAssets(missingCodesignAssets)
+
 		// Ensure Profiles
 		newCodesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, *missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
 		if err != nil {
@@ -226,29 +197,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		}
 
 		// merge local and recently generated code signing assets
-		for distrType, newAssets := range newCodesignAssetsByDistributionType {
-			localAssets := codesignAssetsByDistributionType[distrType]
-
-			if newAssets.ArchivableTargetProfilesByBundleID == nil {
-				newAssets.ArchivableTargetProfilesByBundleID = localAssets.ArchivableTargetProfilesByBundleID
-			} else {
-				for bundleID, profile := range localAssets.ArchivableTargetProfilesByBundleID {
-					newAssets.ArchivableTargetProfilesByBundleID[bundleID] = profile
-				}
-			}
-
-			if distrType == Development {
-				if newAssets.UITestTargetProfilesByBundleID == nil {
-					newAssets.UITestTargetProfilesByBundleID = localAssets.UITestTargetProfilesByBundleID
-				} else {
-					for bundleID, profile := range localAssets.UITestTargetProfilesByBundleID {
-						newAssets.UITestTargetProfilesByBundleID[bundleID] = profile
-					}
-				}
-			}
-
-			codesignAssetsByDistributionType[distrType] = newAssets
-		}
+		codesignAssetsByDistributionType = mergeCodeSignAssets(codesignAssetsByDistributionType, newCodesignAssetsByDistributionType)
 	}
 
 	// Install certificates and profiles

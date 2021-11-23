@@ -158,6 +158,20 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 		Certificate:                    devCert,
 	}
 
+	icloudContainerAppLayout := AppLayout{
+		Platform: IOS,
+		EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
+			"io.test": map[string]interface{}{
+				"com.apple.developer.icloud-services": []interface{}{
+					"CloudDocuments",
+				},
+				"com.apple.developer.icloud-container-identifiers": []interface{}{
+					"iCloud.test.container.id",
+				},
+			},
+		},
+	}
+
 	type fields struct {
 		devPortalClient           DevPortalClient
 		certificateProvider       CertificateProvider
@@ -233,22 +247,11 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 		{
 			name: "can not create iCloud containers",
 			fields: fields{
-				devPortalClient:     devportalWithNoAppID,
-				certificateProvider: newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert}),
+				devPortalClient:           devportalWithNoAppID,
+				certificateProvider:       newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert}),
+				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(map[DistributionType]AppCodesignAssets{}, icloudContainerAppLayout),
 			},
-			appLayout: AppLayout{
-				Platform: IOS,
-				EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
-					"io.test": map[string]interface{}{
-						"com.apple.developer.icloud-services": []interface{}{
-							"CloudDocuments",
-						},
-						"com.apple.developer.icloud-container-identifiers": []interface{}{
-							"iCloud.test.container.id",
-						},
-					},
-				},
-			},
+			appLayout: icloudContainerAppLayout,
 			opts: CodesignAssetsOpts{
 				DistributionType: Development,
 			},

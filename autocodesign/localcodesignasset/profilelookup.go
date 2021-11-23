@@ -71,9 +71,9 @@ func containsAllAppEntitlements(profile profileutil.ProvisioningProfileInfoModel
 	for key, value := range appEntitlements {
 		profileEntitlementValue := profileEntitlements[key]
 
-		// TODO: The project entitlement values can have variables coming from build settings which will be resolved later
-		// 	during the archive action. It is not the best but this is also the logic used at other places. An example of
-		// 	what we could be comparing:
+		// The project entitlement values can have variables coming from build settings which will be resolved later
+		// during the archive action. It is not the best but this is also the logic used at other places. An example of
+		// what we could be comparing:
 		// 		$(AppIdentifierPrefix)${BASE_BUNDLE_ID}.ios == 72SA8V3WYL.io.bitrise.samples.fruta.los
 		if reflect.DeepEqual(profileEntitlementValue, value) == false {
 			hasMissingEntitlement = true
