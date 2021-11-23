@@ -8,17 +8,21 @@ import (
 	"github.com/bitrise-io/go-xcode/profileutil"
 )
 
-// LocalProvisioningProfileConverter ...
-type LocalProvisioningProfileConverter struct {
+// ProvisioningProfileConverter ...
+type ProvisioningProfileConverter interface {
+	ProfileInfoToProfile(info profileutil.ProvisioningProfileInfoModel) (autocodesign.Profile, error)
 }
 
-// NewConverter ...
-func NewConverter() autocodesign.ProvisioningProfileConverter {
-	return LocalProvisioningProfileConverter{}
+type provisioningProfileConverter struct {
+}
+
+// NewProvisioningProfileConverter ...
+func NewProvisioningProfileConverter() ProvisioningProfileConverter {
+	return provisioningProfileConverter{}
 }
 
 // ProfileInfoToProfile ...
-func (c LocalProvisioningProfileConverter) ProfileInfoToProfile(info profileutil.ProvisioningProfileInfoModel) (autocodesign.Profile, error) {
+func (c provisioningProfileConverter) ProfileInfoToProfile(info profileutil.ProvisioningProfileInfoModel) (autocodesign.Profile, error) {
 	_, pth, err := profileutil.FindProvisioningProfile(info.UUID)
 	if err != nil {
 		return nil, err

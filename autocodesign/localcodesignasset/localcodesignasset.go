@@ -10,11 +10,11 @@ import (
 // Manager ...
 type Manager struct {
 	profileProvider  ProvisioningProfileProvider
-	profileConverter autocodesign.ProvisioningProfileConverter
+	profileConverter ProvisioningProfileConverter
 }
 
 // NewManager ...
-func NewManager(provisioningProfileProvider ProvisioningProfileProvider, provisioningProfileConverter autocodesign.ProvisioningProfileConverter) Manager {
+func NewManager(provisioningProfileProvider ProvisioningProfileProvider, provisioningProfileConverter ProvisioningProfileConverter) Manager {
 	return Manager{
 		profileProvider:  provisioningProfileProvider,
 		profileConverter: provisioningProfileConverter,

@@ -14,7 +14,6 @@ import (
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/devportalservice"
-	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
@@ -94,11 +93,6 @@ type AssetWriter interface {
 // LocalCodeSignAssetManager ...
 type LocalCodeSignAssetManager interface {
 	FindCodesignAssets(appLayout AppLayout, distrTypes []DistributionType, certsByType map[appstoreconnect.CertificateType][]Certificate, deviceIDs []string, minProfileDaysValid int) (map[DistributionType]AppCodesignAssets, *AppLayout, error)
-}
-
-// ProvisioningProfileConverter ...
-type ProvisioningProfileConverter interface {
-	ProfileInfoToProfile(info profileutil.ProvisioningProfileInfoModel) (Profile, error)
 }
 
 // AppLayout contains codesigning related settings that are needed to ensure codesigning files
