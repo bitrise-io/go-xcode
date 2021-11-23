@@ -17,12 +17,7 @@ type Project struct {
 	projHelper ProjectHelper
 }
 
-// Factory ...
-type Factory interface {
-	Create() (*Project, error)
-}
-
-type defaultFactory struct {
+type Factory struct {
 	params InitParams
 }
 
@@ -34,12 +29,12 @@ type InitParams struct {
 }
 
 // NewFactory ...
-func NewFactory(params InitParams) defaultFactory {
-	return defaultFactory{params: params}
+func NewFactory(params InitParams) Factory {
+	return Factory{params: params}
 }
 
 // Create ...
-func (f *defaultFactory) Create() (Project, error) {
+func (f *Factory) Create() (Project, error) {
 	return NewProject(f.params)
 }
 

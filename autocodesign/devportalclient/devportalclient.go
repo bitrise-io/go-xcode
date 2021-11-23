@@ -34,7 +34,7 @@ func NewFactory(logger log.Logger) Factory {
 }
 
 // CreateBitriseConnection ...
-func (f Factory) CreateBitriseConnection(buildURL, buildAPIToken string) (devportalservice.AppleDeveloperConnection, error) {
+func (f Factory) CreateBitriseConnection(buildURL, buildAPIToken string) (*devportalservice.AppleDeveloperConnection, error) {
 	f.logger.Println()
 	f.logger.Infof("Fetching Apple service connection")
 	connectionProvider := devportalservice.NewBitriseClient(retry.NewHTTPClient().StandardClient(), buildURL, buildAPIToken)
@@ -43,14 +43,14 @@ func (f Factory) CreateBitriseConnection(buildURL, buildAPIToken string) (devpor
 		if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {
 			f.logger.Println()
 			f.logger.Warnf("Unauthorized to query Bitrise Apple service connection. This happens by design, with a public app's PR build, to protect secrets.")
-			return devportalservice.AppleDeveloperConnection{}, err
+			return nil, err
 		}
 
 		f.logger.Println()
 		f.logger.Errorf("Failed to activate Bitrise Apple service connection")
 		f.logger.Warnf("Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/")
 
-		return devportalservice.AppleDeveloperConnection{}, err
+		return nil, err
 	}
 
 	if len(conn.DuplicatedTestDevices) != 0 {
@@ -60,7 +60,7 @@ func (f Factory) CreateBitriseConnection(buildURL, buildAPIToken string) (devpor
 		}
 	}
 
-	return *conn, nil
+	return conn, nil
 }
 
 // Create ...
