@@ -7,10 +7,14 @@ type ProvisioningProfileProvider interface {
 	ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error)
 }
 
-// LocalProvisioningProfileProvider ...
-type LocalProvisioningProfileProvider struct{}
+type provisioningProfileProvider struct{}
+
+// NewProvisioningProfileProvider ...
+func NewProvisioningProfileProvider() ProvisioningProfileProvider {
+	return provisioningProfileProvider{}
+}
 
 // ListProvisioningProfiles ...
-func (p LocalProvisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
+func (p provisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
 	return profileutil.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
 }

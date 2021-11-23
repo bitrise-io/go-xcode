@@ -58,7 +58,7 @@ func Example() {
 
 	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, retry.NewHTTPClient().StandardClient())
 
-	profileProvider := localcodesignasset.LocalProvisioningProfileProvider{}
+	profileProvider := localcodesignasset.NewProvisioningProfileProvider()
 	profileConverter := localcodesignasset.NewProvisioningProfileConverter()
 	localCodesignAssetManager := localcodesignasset.NewManager(profileProvider, profileConverter)
 	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain), localCodesignAssetManager)
