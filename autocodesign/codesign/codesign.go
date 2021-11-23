@@ -176,6 +176,7 @@ func (m *Manager) PrepareCodesigning(opts Opts) (Result, error) {
 	return Result{}, nil
 }
 
+// SelectConnectionCredentials ...
 func SelectConnectionCredentials(authType AuthType, conn *devportalservice.AppleDeveloperConnection, logger log.Logger) (appleauth.Credentials, error) {
 	var authSource appleauth.Source
 
