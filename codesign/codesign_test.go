@@ -2,10 +2,10 @@ package codesign
 
 import (
 	"errors"
+	"github.com/bitrise-io/go-xcode/codesign/mocks"
 	"testing"
 
 	"github.com/bitrise-io/go-xcode/appleauth"
-	"github.com/bitrise-io/go-xcode/autocodesign/codesign/mocks"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -70,10 +70,13 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Manager{
 				project: tt.project,
+				opts: Opts{
+					XcodeMajorVersion:          tt.XcodeMajorVersion,
+					ShouldConsiderXcodeSigning: true,
+				},
 			}
-			IsXcodeCodeSigningEnabled := true
 
-			got, _, err := m.selectCodeSigningStrategy(tt.credentials, IsXcodeCodeSigningEnabled, tt.XcodeMajorVersion)
+			got, _, err := m.selectCodeSigningStrategy(tt.credentials)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("manager.selectCodeSigningStrategy() error = %v, wantErr %v", err, tt.wantErr)
 				return
