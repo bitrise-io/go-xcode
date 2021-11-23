@@ -132,7 +132,6 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningPr
 		return ProvisioningProfileInfoModel{}, fmt.Errorf("missing Platform array in profile")
 	}
 
-	//TODO: Should we lowercase the name?
 	platform := strings.ToLower(platforms[0])
 	var profileType ProfileType
 

@@ -40,25 +40,20 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 	for _, distrType := range distrTypes {
 		fmt.Println()
 		log.Infof("Checking %s provisioning profiles", distrType)
-		certType := CertificateTypeByDistribution[distrType]
-		certs := certsByType[certType]
 
-		if len(certs) == 0 {
-			return nil, fmt.Errorf("no valid certificate provided for distribution type: %s", distrType)
-		} else if len(certs) > 1 {
-			log.Warnf("Multiple certificates provided for distribution type: %s", distrType)
-			for _, c := range certs {
-				log.Warnf("- %s", c.CertificateInfo.CommonName)
-			}
-			log.Warnf("Using: %s", certs[0].CertificateInfo.CommonName)
+		certificate, err := SelectCertificate(certsByType, distrType)
+		if err != nil {
+			return nil, err
 		}
-		log.Debugf("Using certificate for distribution type %s (certificate type %s): %s", distrType, certType, certs[0])
 
 		codesignAssets := AppCodesignAssets{
 			ArchivableTargetProfilesByBundleID: map[string]Profile{},
 			UITestTargetProfilesByBundleID:     map[string]Profile{},
-			Certificate:                        certs[0].CertificateInfo,
+			Certificate:                        certificate.CertificateInfo,
 		}
+
+		certType := CertificateTypeByDistribution[distrType]
+		certs := certsByType[certType]
 
 		var certIDs []string
 		for _, cert := range certs {
@@ -457,4 +452,26 @@ func checkProfile(client DevPortalClient, prof Profile, entitlements Entitlement
 		return err
 	}
 	return checkProfileDevices(profileDeviceIDs, deviceIDs)
+}
+
+func SelectCertificate(certsByType map[appstoreconnect.CertificateType][]Certificate, distrType DistributionType) (*Certificate, error) {
+	certType := CertificateTypeByDistribution[distrType]
+	certs := certsByType[certType]
+
+	if len(certs) == 0 {
+		return nil, fmt.Errorf("no valid certificate provided for distribution type: %s", distrType)
+	}
+
+	if len(certs) > 1 {
+		log.Warnf("Multiple certificates provided for distribution type: %s", distrType)
+		for _, c := range certs {
+			log.Warnf("- %s", c.CertificateInfo.CommonName)
+		}
+	}
+
+	selectedCertificate := certs[0]
+
+	log.Warnf("Using: %s", selectedCertificate.CertificateInfo.CommonName)
+
+	return &selectedCertificate, nil
 }

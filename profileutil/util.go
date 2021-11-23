@@ -14,8 +14,6 @@ type ProfileType string
 // ProfileTypeIos ...
 const ProfileTypeIos ProfileType = "ios"
 
-//TODO: Check if the macOS and tvOS values are correct.
-
 // ProfileTypeMacOs ...
 const ProfileTypeMacOs ProfileType = "macos"
 
