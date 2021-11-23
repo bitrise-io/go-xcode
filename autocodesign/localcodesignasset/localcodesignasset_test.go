@@ -141,7 +141,10 @@ func createTestObjects(t *testing.T) (Manager, []profileutil.ProvisioningProfile
 	mockConverter := new(mocks.ProvisioningProfileConverter)
 	call := mockConverter.On("ProfileInfoToProfile", mock.Anything)
 	call.RunFn = func(args mock.Arguments) {
-		profileInfo := args[0].(profileutil.ProvisioningProfileInfoModel)
+		profileInfo, ok := args[0].(profileutil.ProvisioningProfileInfoModel)
+		if !ok {
+			t.Fatalf("Failed to cast arg to ProvisioningProfileInfoModel")
+		}
 		call.ReturnArguments = mock.Arguments{profileFromModel(profileInfo), nil}
 	}
 

@@ -105,7 +105,11 @@ func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrTypes
 		if asset != nil {
 			// We will always have a certificate at this point because if we do not have any then we also could not have
 			// found a profile as all of them requires at least one certificate.
-			certificate, _ := autocodesign.SelectCertificate(certsByType, distrType)
+			certificate, err := autocodesign.SelectCertificate(certsByType, distrType)
+			if err != nil {
+				return nil, nil, err
+			}
+
 			asset.Certificate = certificate.CertificateInfo
 
 			assetsByDistribution[distrType] = *asset

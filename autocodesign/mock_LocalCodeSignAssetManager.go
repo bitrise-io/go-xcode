@@ -22,7 +22,9 @@ func (_m *MockLocalCodeSignAssetManager) FindCodesignAssets(appLayout AppLayout,
 		r0 = rf(appLayout, distrTypes, certsByType, deviceIDs, minProfileDaysValid)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(map[DistributionType]AppCodesignAssets)
+			r0, ok = ret.Get(0).(map[DistributionType]AppCodesignAssets)
+			if !ok {
+			}
 		}
 	}
 
@@ -31,7 +33,9 @@ func (_m *MockLocalCodeSignAssetManager) FindCodesignAssets(appLayout AppLayout,
 		r1 = rf(appLayout, distrTypes, certsByType, deviceIDs, minProfileDaysValid)
 	} else {
 		if ret.Get(1) != nil {
-			r1 = ret.Get(1).(*AppLayout)
+			r1, ok = ret.Get(1).(*AppLayout)
+			if !ok {
+			}
 		}
 	}
 
