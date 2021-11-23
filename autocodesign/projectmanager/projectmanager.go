@@ -17,6 +17,7 @@ type Project struct {
 	projHelper ProjectHelper
 }
 
+// Factory ...
 type Factory struct {
 	params InitParams
 }

@@ -16,12 +16,15 @@ import (
 )
 
 const (
+	// NotConnectedWarning ...
 	NotConnectedWarning = `Bitrise Apple service connection not found.
 Most likely because there is no configured Bitrise Apple service connection.
 Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
+	// NotConnectedLocalTestingInfo ...
 	NotConnectedLocalTestingInfo = `For testing purposes please provide BITRISE_BUILD_URL as json file (file://path-to-json) while setting BITRISE_BUILD_API_TOKEN to any non-empty string.`
 )
 
+// Factory ...
 type Factory struct {
 	logger log.Logger
 }

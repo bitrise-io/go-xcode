@@ -13,12 +13,18 @@ import (
 	"github.com/bitrise-io/go-xcode/devportalservice"
 )
 
+// AuthType ...
 type AuthType int
 
 const (
+	// NoAuth ...
 	NoAuth AuthType = iota
+	// APIKeyAuth ...
 	APIKeyAuth
+	// AppleIDAuth ...
 	AppleIDAuth
+	// AnyAuth ...
+	AnyAuth
 )
 
 type codeSigningStrategy int
@@ -29,6 +35,7 @@ const (
 	codeSigningBitriseAppleID
 )
 
+// Opts ...
 type Opts struct {
 	AuthType                  AuthType
 	IsXcodeCodeSigningEnabled bool
@@ -42,10 +49,12 @@ type Opts struct {
 	IsVerboseLog        bool
 }
 
+// Result ...
 type Result struct {
 	XcodebuildAuthParams *devportalservice.APIKeyConnection
 }
 
+// Manager ...
 type Manager struct {
 	bitriseConnection      *devportalservice.AppleDeveloperConnection
 	devPortalClientFactory devportalclient.Factory
@@ -59,6 +68,7 @@ type Manager struct {
 	logger log.Logger
 }
 
+// New ...
 func New(logger log.Logger,
 	connection *devportalservice.AppleDeveloperConnection,
 	clientFactory devportalclient.Factory,
@@ -78,6 +88,7 @@ func New(logger log.Logger,
 	}
 }
 
+// Project ...
 type Project interface {
 	IsSigningManagedAutomatically() (bool, error)
 	Platform() (autocodesign.Platform, error)
@@ -97,6 +108,7 @@ func (m *Manager) getProject() (Project, error) {
 	return m.project, nil
 }
 
+// PrepareCodesigning ...
 func (m *Manager) PrepareCodesigning(opts Opts) (Result, error) {
 	if opts.AuthType == NoAuth {
 		m.logger.Println()

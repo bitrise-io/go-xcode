@@ -256,6 +256,7 @@ func validateTestDevice(deviceList []TestDevice) (validDevices, duplicatedDevice
 	return validDevices, duplicatedDevices
 }
 
+// WritePrivateKeyToFile ...
 func (c *APIKeyConnection) WritePrivateKeyToFile() (string, error) {
 	privatekeyFile, err := os.CreateTemp("", "apiKey*.p8")
 	if err != nil {

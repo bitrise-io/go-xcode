@@ -21,12 +21,6 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 		wantErr           bool
 	}{
 		{
-			name:        "No auth",
-			credentials: appleauth.Credentials{},
-			project:     newMockProject(false, nil),
-			want:        noCodeSign,
-		},
-		{
 			name: "Apple ID",
 			credentials: appleauth.Credentials{
 				AppleID: &appleauth.AppleID{},
@@ -74,10 +68,12 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &manager{
+			m := &Manager{
 				project: tt.project,
 			}
-			got, err := m.selectCodeSigningStrategy(tt.credentials, tt.XcodeMajorVersion)
+			IsXcodeCodeSigningEnabled := true
+
+			got, _, err := m.selectCodeSigningStrategy(tt.credentials, IsXcodeCodeSigningEnabled, tt.XcodeMajorVersion)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("manager.selectCodeSigningStrategy() error = %v, wantErr %v", err, tt.wantErr)
 				return
