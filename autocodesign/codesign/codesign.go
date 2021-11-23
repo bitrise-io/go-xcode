@@ -131,7 +131,7 @@ func (m *Manager) PrepareCodesigning(opts Opts) (Result, error) {
 		{
 			m.logger.Println()
 			m.logger.Infof("Preparing for Xcode-managed code-signing")
-			m.logger.Printf("Using this method as, %s", reason)
+			m.logger.Printf(reason)
 			m.logger.Println()
 			m.logger.Infof("Downloading certificates from Bitrise")
 			if err := m.downloadAndInstallCertificates(); err != nil {
@@ -153,7 +153,7 @@ func (m *Manager) PrepareCodesigning(opts Opts) (Result, error) {
 		{
 			m.logger.Println()
 			m.logger.Infof("Bitrise-managed code-signing with Apple API key")
-			m.logger.Printf("Using this method as, %s", reason)
+			log.Printf(reason)
 			if err := m.manageCodeSigningBitrise(m.appleAuthCredentials, opts); err != nil {
 				return Result{}, err
 			}
@@ -164,7 +164,7 @@ func (m *Manager) PrepareCodesigning(opts Opts) (Result, error) {
 		{
 			m.logger.Println()
 			m.logger.Infof("Bitrise-managed code-signing with Apple ID")
-			m.logger.Printf("Using this method as, %s", reason)
+			m.logger.Printf(reason)
 			if err := m.manageCodeSigningBitrise(m.appleAuthCredentials, opts); err != nil {
 				return Result{}, err
 			}
@@ -222,8 +222,10 @@ func SelectConnectionCredentials(authType AuthType, conn *devportalservice.Apple
 }
 
 func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials, IsXcodeCodeSigningEnabled bool, XcodeMajorVersion int) (codeSigningStrategy, string, error) {
+	const manualProfilesReason = "Using Bitrise-managed code-signing, as Xcode-managed code-signing requires automatically managed provisioning profiles"
+
 	if credentials.AppleID != nil {
-		return codeSigningBitriseAppleID, "Apple ID is not supported by Xcode-managed code-signing", nil
+		return codeSigningBitriseAppleID, "Using Bitrise-managed code-signing, as Apple ID is not supported by Xcode-managed code-signing.", nil
 	}
 
 	if !IsXcodeCodeSigningEnabled {
@@ -235,24 +237,24 @@ func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials, I
 	}
 
 	if XcodeMajorVersion < 13 {
-		return codeSigningBitriseAPIKey, "Xcode-managed code-signing requires at least Xcode 13", nil
+		return codeSigningBitriseAPIKey, "Using Bitrise-managed code-signing, as Xcode-managed code-signing requires at least Xcode 13.", nil
 	}
 
 	project, err := m.getProject()
 	if err != nil {
-		return codeSigningXcode, "", err
+		return codeSigningXcode, "Using Xcode-managed code-signing, as failed to parse project.", err
 	}
 
-	managedSigning, err := project.IsSigningManagedAutomatically()
+	automaticProfiles, err := project.IsSigningManagedAutomatically()
 	if err != nil {
-		return codeSigningXcode, "", err
+		return codeSigningBitriseAPIKey, manualProfilesReason, err
 	}
 
-	if managedSigning {
-		return codeSigningXcode, "project uses automatically managed provisioning profiles", nil
+	if automaticProfiles {
+		return codeSigningXcode, "Using Xcode-managed code-signing, as project uses automatically managed provisioning profiles.", nil
 	}
 
-	return codeSigningBitriseAPIKey, "Xcode-managed code-signing requries automatically managed provisioning profiles", nil
+	return codeSigningBitriseAPIKey, manualProfilesReason, nil
 }
 
 func (m *Manager) downloadAndInstallCertificates() error {

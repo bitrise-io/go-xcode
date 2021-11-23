@@ -56,13 +56,13 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 			want:              codeSigningXcode,
 		},
 		{
-			name: "API Key, Xcode 13, project helper returns error",
+			name: "API Key, Xcode 13, can not determine if project automtic",
 			credentials: appleauth.Credentials{
 				APIKey: &devportalservice.APIKeyConnection{},
 			},
 			XcodeMajorVersion: 13,
 			project:           newMockProject(true, errors.New("")),
-			want:              codeSigningXcode,
+			want:              codeSigningBitriseAPIKey,
 			wantErr:           true,
 		},
 	}
