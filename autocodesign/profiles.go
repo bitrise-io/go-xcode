@@ -291,6 +291,7 @@ func DistributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
 	return false
 }
 
+// CreateWildcardBundleID creates a wildcard bundle identifier, by replacing the provided bundle id's last component with an asterisk (*).
 func CreateWildcardBundleID(bundleID string) (string, error) {
 	idx := strings.LastIndex(bundleID, ".")
 	if idx == -1 {
@@ -455,6 +456,7 @@ func checkProfile(client DevPortalClient, prof Profile, entitlements Entitlement
 	return checkProfileDevices(profileDeviceIDs, deviceIDs)
 }
 
+// SelectCertificate selects the first certificate with the given distribution type.
 func SelectCertificate(certsByType map[appstoreconnect.CertificateType][]Certificate, distrType DistributionType) (*Certificate, error) {
 	certType := CertificateTypeByDistribution[distrType]
 	certs := certsByType[certType]
