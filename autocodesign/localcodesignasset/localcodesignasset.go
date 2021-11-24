@@ -98,7 +98,7 @@ func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrTypes
 					asset.UITestTargetProfilesByBundleID = profileByUITestTargetBundleID
 				}
 
-				remove(appLayout.UITestTargetBundleIDs, i)
+				appLayout.UITestTargetBundleIDs = remove(appLayout.UITestTargetBundleIDs, i)
 			}
 		}
 
