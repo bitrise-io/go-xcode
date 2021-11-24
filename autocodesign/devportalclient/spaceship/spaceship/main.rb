@@ -70,7 +70,7 @@ begin
   response = { data: result }
   puts response.to_json.to_s
 rescue RetryNeeded
-  result = { retry: true, error: "#{e}" }
+  result = { retry: true, error: "#{e.cause}" }
   puts result.to_json.to_s
 rescue Spaceship::BasicPreferredInfoError, Spaceship::UnexpectedResponse => e
   result = { error: "#{e.preferred_error_info&.join("\n") || e.to_s}, stacktrace: #{e.backtrace.join("\n")}" }
