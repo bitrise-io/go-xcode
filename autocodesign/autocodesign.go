@@ -165,17 +165,23 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	}
 
 	var devPortalDeviceIDs []string
+	var devPortalDeviceUDIDs []string
 	if DistributionTypeRequiresDeviceList(distrTypes) {
-		var err error
-		devPortalDeviceIDs, err = EnsureTestDevices(m.devPortalClient, opts.BitriseTestDevices, appLayout.Platform)
+		devPortalDevices, err := EnsureTestDevices(m.devPortalClient, opts.BitriseTestDevices, appLayout.Platform)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ensure test devices: %w", err)
 		}
+
+		for _, devPortalDevice := range devPortalDevices {
+			devPortalDeviceIDs = append(devPortalDeviceIDs, devPortalDevice.ID)
+			devPortalDeviceUDIDs = append(devPortalDeviceUDIDs, devPortalDevice.Attributes.UDID)
+		}
+
 	}
 
-	localCodesignAssets, missingCodesignAssets, err := m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
+	localCodesignAssets, missingCodesignAssets, err := m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceUDIDs, opts.MinProfileValidityDays)
 	if err != nil {
-		return nil, fmt.Errorf("failed to collect local code signing assets: %s", err)
+		return nil, fmt.Errorf("failed to collect local code signing assets: %w", err)
 	}
 
 	printExistingCodesignAssets(localCodesignAssets)
@@ -207,7 +213,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	fmt.Println()
 	log.Infof("Install certificates and profiles")
 	if err := m.assetWriter.Write(codesignAssetsByDistributionType); err != nil {
-		return nil, fmt.Errorf("failed to install codesigning files: %s", err)
+		return nil, fmt.Errorf("failed to install codesigning files: %w", err)
 	}
 
 	return codesignAssetsByDistributionType, nil
