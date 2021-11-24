@@ -18,14 +18,10 @@ import (
 type AuthType int
 
 const (
-	// NoAuth ...
-	NoAuth AuthType = iota
 	// APIKeyAuth ...
-	APIKeyAuth
+	APIKeyAuth AuthType = iota
 	// AppleIDAuth ...
 	AppleIDAuth
-	// AnyAuth ...
-	AnyAuth
 )
 
 type codeSigningStrategy int
@@ -119,13 +115,6 @@ func (m *Manager) getProject() (Project, error) {
 
 // PrepareCodesigning ...
 func (m *Manager) PrepareCodesigning() (Result, error) {
-	if m.opts.AuthType == NoAuth {
-		m.logger.Println()
-		m.logger.Infof("Skip downloading any code signing assets")
-
-		return Result{}, nil
-	}
-
 	strategy, reason, err := m.selectCodeSigningStrategy(m.appleAuthCredentials)
 	if err != nil {
 		m.logger.Warnf("%s", err)
@@ -179,8 +168,6 @@ func SelectConnectionCredentials(authType AuthType, conn *devportalservice.Apple
 		authSource = &appleauth.ConnectionAPIKeySource{}
 	case AppleIDAuth:
 		authSource = &appleauth.ConnectionAppleIDFastlaneSource{}
-	case NoAuth:
-		panic("not supported")
 	default:
 		panic("missing implementation")
 	}
