@@ -54,6 +54,24 @@ func (e NonmatchingProfileError) Error() string {
 	return fmt.Sprintf("provisioning profile does not match requirements: %s", e.Reason)
 }
 
+type ProfilesInconsistentError struct {
+	wrapErr error
+}
+
+func NewProfilesInconsistentError(wrapErr error) ProfilesInconsistentError {
+	return ProfilesInconsistentError{
+		wrapErr: wrapErr,
+	}
+}
+
+func (e ProfilesInconsistentError) Error() string {
+	return fmt.Sprintf("provisioning profiles were concurrently changed on Developer Portal, %s", e.wrapErr)
+}
+
+func (e ProfilesInconsistentError) Unwrap() error {
+	return e.wrapErr
+}
+
 // ErrAppClipAppID ...
 type ErrAppClipAppID struct {
 }

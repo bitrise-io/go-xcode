@@ -342,11 +342,9 @@ func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, appEntit
 }
 
 func wrapInProfileError(err error) error {
-	if respErr, ok := err.(appstoreconnect.ErrorResponse); ok {
+	if respErr, ok := err.(*appstoreconnect.ErrorResponse); ok {
 		if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
-			return autocodesign.NonmatchingProfileError{
-				Reason: fmt.Sprintf("profile was concurrently removed from Developer Portal: %v", err),
-			}
+			return autocodesign.NewProfilesInconsistentError(err)
 		}
 	}
 

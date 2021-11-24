@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/profileutil"
@@ -78,7 +79,7 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 				profileDeviceIDs = devPortalDeviceIDs
 			}
 
-			profile, err := profileManager.ensureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, minProfileDaysValid)
+			profile, err := profileManager.ensureProfileWithRetry(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, minProfileDaysValid)
 			if err != nil {
 				return nil, err
 			}
@@ -95,7 +96,7 @@ func ensureProfiles(profileClient DevPortalClient, distrTypes []DistributionType
 				}
 
 				// Capabilities are not supported for UITest targets.
-				profile, err := profileManager.ensureProfile(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid)
+				profile, err := profileManager.ensureProfileWithRetry(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid)
 				if err != nil {
 					return nil, err
 				}
@@ -205,6 +206,31 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 	m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
 
 	return bundleID, nil
+}
+
+func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements Entitlements, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
+	var profile *Profile
+	// Accessing the same Apple Developer Portal team can cause race conditions (parallel CI runs for example).
+	// Between the time of finding and downloading a profile, it could have been deleted for example.
+	if err := retry.Times(5).Wait(10 * time.Second).TryWithAbort(func(attempt uint) (error, bool) {
+		if attempt > 0 {
+			fmt.Println()
+			log.Printf("  Retrying profile preparation (attempt %d)", attempt)
+		}
+
+		var err error
+		profile, err = m.ensureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs, minProfileDaysValid)
+		if _, ok := err.(*ProfilesInconsistentError); ok {
+			log.Warnf("  %s", err)
+			return err, false
+		}
+
+		return nil, true
+	}); err != nil {
+		return nil, err
+	}
+
+	return profile, nil
 }
 
 func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements Entitlements, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
