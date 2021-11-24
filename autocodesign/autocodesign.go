@@ -174,6 +174,9 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	}
 
 	localCodesignAssets, missingCodesignAssets, err := m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceIDs, opts.MinProfileValidityDays)
+	if err != nil {
+		return nil, fmt.Errorf("failed to collect local code signing assets: %s", err)
+	}
 
 	printExistingCodesignAssets(localCodesignAssets)
 
