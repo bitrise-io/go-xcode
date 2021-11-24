@@ -205,15 +205,15 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 			return nil, fmt.Errorf("failed to ensure profiles: %w", err)
 		}
 
-		// merge local and recently generated code signing assets
-		codesignAssetsByDistributionType = mergeCodeSignAssets(codesignAssetsByDistributionType, newCodesignAssetsByDistributionType)
-	}
+		// Install new certificates and profiles
+		fmt.Println()
+		log.Infof("Install certificates and profiles")
+		if err := m.assetWriter.Write(newCodesignAssetsByDistributionType); err != nil {
+			return nil, fmt.Errorf("failed to install codesigning files: %w", err)
+		}
 
-	// Install certificates and profiles
-	fmt.Println()
-	log.Infof("Install certificates and profiles")
-	if err := m.assetWriter.Write(codesignAssetsByDistributionType); err != nil {
-		return nil, fmt.Errorf("failed to install codesigning files: %w", err)
+		// Merge local and recently generated code signing assets
+		codesignAssetsByDistributionType = mergeCodeSignAssets(codesignAssetsByDistributionType, newCodesignAssetsByDistributionType)
 	}
 
 	return codesignAssetsByDistributionType, nil
