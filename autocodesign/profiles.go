@@ -474,7 +474,7 @@ func SelectCertificate(certsByType map[appstoreconnect.CertificateType][]Certifi
 
 	selectedCertificate := certs[0]
 
-	log.Warnf("Using: %s", selectedCertificate.CertificateInfo.CommonName)
+	log.Warnf("Using certificate for %s distribution: %s", distrType, selectedCertificate.CertificateInfo.CommonName)
 
 	return &selectedCertificate, nil
 }

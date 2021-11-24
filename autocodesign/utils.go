@@ -43,7 +43,7 @@ func printMissingCodeSignAssets(missingCodesignAssets *AppLayout) {
 		log.Printf("- %s", bundleID)
 	}
 	log.Printf("UITest targets (%d)", len(missingCodesignAssets.UITestTargetBundleIDs))
-	for bundleID := range missingCodesignAssets.UITestTargetBundleIDs {
+	for _, bundleID := range missingCodesignAssets.UITestTargetBundleIDs {
 		log.Printf("- %s", bundleID)
 	}
 }
