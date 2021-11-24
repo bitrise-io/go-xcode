@@ -9,6 +9,7 @@ import (
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
+	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
 	"github.com/bitrise-io/go-xcode/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/devportalservice"
@@ -243,6 +244,25 @@ func (m *Manager) downloadAndInstallCertificates() error {
 	certificates, err := m.certDownloader.GetCertificates()
 	if err != nil {
 		return fmt.Errorf("failed to download certificates: %s", err)
+	}
+
+	certificateType, ok := autocodesign.CertificateTypeByDistribution[m.opts.ExportMethod]
+	if !ok {
+		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", m.opts.ExportMethod))
+	}
+
+	teamID := ""
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates, teamID)
+	if err != nil {
+		return err
+	}
+
+	if len(typeToLocalCerts[certificateType]) == 0 {
+		if certificateType == appstoreconnect.IOSDevelopment {
+			return fmt.Errorf("no valid development type certificate uploaded")
+		} else {
+			log.Warnf("no valid %s type certificate uploaded", certificateType)
+		}
 	}
 
 	m.logger.Infof("Installing downloaded certificates:")
