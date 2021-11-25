@@ -319,6 +319,8 @@ func (p *ProjectHelper) IsSigningManagedAutomatically() (bool, error) {
 	codeSignStyle, err := settings.String("CODE_SIGN_STYLE")
 	if err != nil {
 		if errors.As(err, &serialized.KeyNotFoundError{}) {
+			log.Debugf("setting CODE_SIGN_STYLE unspecified for target (%s), defaulting to `Manual`", targetName)
+
 			return false, nil
 		}
 
