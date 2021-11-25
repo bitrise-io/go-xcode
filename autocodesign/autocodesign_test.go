@@ -295,6 +295,77 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 	require.ErrorAs(t, err, &ErrAppClipAppIDWithAppleSigning{})
 }
 
+func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.T) {
+	// Given
+	const teamID = "MY_TEAM_ID"
+	expiry := time.Now().AddDate(1, 0, 0)
+	devCert := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test", expiry)
+
+	expiredProfile := newMockProfile(profileArgs{
+		attributes: appstoreconnect.ProfileAttributes{
+			Name:           profileName(appstoreconnect.IOSAppDevelopment, "io.test"),
+			ProfileState:   appstoreconnect.Active,
+			ExpirationDate: appstoreconnect.Time(time.Now().AddDate(0, -1, 0)),
+		},
+		certificates: []string{"dev1"},
+	})
+	validProfile := newMockProfile(profileArgs{
+		attributes: appstoreconnect.ProfileAttributes{
+			Name:           profileName(appstoreconnect.IOSAppDevelopment, "io.test"),
+			ProfileState:   appstoreconnect.Active,
+			ExpirationDate: appstoreconnect.Time(expiry),
+		},
+		certificates: []string{"dev1"},
+	})
+
+	certProvider := newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert})
+	client := newMockDevportalClient(devportalArgs{
+		certs: map[appstoreconnect.CertificateType][]Certificate{
+			appstoreconnect.IOSDevelopment: {{
+				CertificateInfo: devCert,
+				ID:              "dev1",
+			}},
+		},
+		profiles: map[appstoreconnect.ProfileType][]Profile{
+			appstoreconnect.IOSAppDevelopment: {expiredProfile},
+		},
+		appIDs: []appstoreconnect.BundleID{{
+			Attributes: appstoreconnect.BundleIDAttributes{
+				Identifier: "io.test",
+				Name:       "test-app",
+			},
+		}},
+	})
+	// FindProfile
+	client.On("DeleteProfile", expiredProfile.ID()).Return(nil).Once()
+	client.On("CheckBundleIDEntitlements", mock.Anything, mock.Anything).Return(nil).Once()
+	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, ProfilesInconsistentError{}).Once()
+	// FindProfile
+	client.On("DeleteProfile", expiredProfile.ID()).Return(nil).Once()
+	client.On("CheckBundleIDEntitlements", mock.Anything, mock.Anything).Return(nil).Once()
+	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(validProfile, nil).Once()
+
+	assetWriter := newDefaultMockAssetWriter()
+	manager := NewCodesignAssetManager(client, certProvider, assetWriter)
+
+	appLayout := AppLayout{
+		TeamID:   teamID,
+		Platform: IOS,
+		EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
+			"io.test": {},
+		},
+	}
+	opts := CodesignAssetsOpts{
+		DistributionType: Development,
+	}
+
+	// When
+	_, err := manager.EnsureCodesignAssets(appLayout, opts)
+
+	// Then
+	require.NoError(t, err)
+}
+
 func newClientWithoutAppIDAndProfile(cert certificateutil.CertificateInfoModel) *MockDevPortalClient {
 	client := newMockDevportalClient(devportalArgs{
 		certs: map[appstoreconnect.CertificateType][]Certificate{
