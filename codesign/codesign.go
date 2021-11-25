@@ -7,10 +7,8 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
-	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
 	"github.com/bitrise-io/go-xcode/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 )
@@ -60,8 +58,7 @@ type Manager struct {
 	bitriseConnection      *devportalservice.AppleDeveloperConnection
 	devPortalClientFactory devportalclient.Factory
 	certDownloader         autocodesign.CertificateProvider
-	keychain               keychain.Keychain
-	assetWriter            codesignasset.Writer
+	assetWriter            autocodesign.AssetWriter
 
 	projectFactory projectmanager.Factory
 	project        Project
@@ -77,8 +74,7 @@ func NewManager(
 	connection *devportalservice.AppleDeveloperConnection,
 	clientFactory devportalclient.Factory,
 	certDownloader autocodesign.CertificateProvider,
-	keychain keychain.Keychain,
-	assetWriter codesignasset.Writer,
+	assetWriter autocodesign.AssetWriter,
 	projectFactory projectmanager.Factory,
 ) Manager {
 	return Manager{
@@ -87,7 +83,6 @@ func NewManager(
 		bitriseConnection:      connection,
 		devPortalClientFactory: clientFactory,
 		certDownloader:         certDownloader,
-		keychain:               keychain,
 		assetWriter:            assetWriter,
 		projectFactory:         projectFactory,
 		logger:                 logger,
@@ -267,7 +262,7 @@ func (m *Manager) downloadAndInstallCertificates() error {
 	for _, cert := range certificates {
 		m.logger.Printf("- %s", cert)
 		// Empty passphrase provided, as already parsed certificate + private key
-		if err := m.keychain.InstallCertificate(cert, ""); err != nil {
+		if err := m.assetWriter.InstallCertificate(cert); err != nil {
 			return err
 		}
 	}

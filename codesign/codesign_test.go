@@ -3,13 +3,12 @@ package codesign
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
-	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
-	autoMocks "github.com/bitrise-io/go-xcode/autocodesign/mocks"
+	autocodesignMocks "github.com/bitrise-io/go-xcode/autocodesign/mocks"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/codesign/mocks"
 	"github.com/bitrise-io/go-xcode/devportalservice"
@@ -101,26 +100,14 @@ func newMockProject(isAutoSign bool, mockErr error) Project {
 }
 
 func TestManager_downloadAndInstallCertificates(t *testing.T) {
-	// const teamID = "MYTEAMID"
-	// // Could be "Apple Development: test"
-	// const commonNameIOSDevelopment = "iPhone Developer: test"
-	// // Could be "Apple Distribution: test"
-	// const commonNameIOSDistribution = "iPhone Distribution: test"
-	// const teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
-	// expiry := time.Now().AddDate(1, 0, 0)
-
-	// cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, commonNameIOSDevelopment, expiry)
-	// if err != nil {
-	// 	t.Fatalf("init: failed to generate certificate: %s", err)
-	// }
-	// devCert := certificateutil.NewCertificateInfo(*cert, privateKey)
+	devCert := generateCert(t, "Apple Development: test")
+	distCert := generateCert(t, "Apple Distribution: test")
 
 	tests := []struct {
 		name               string
 		distributionMethod autocodesign.DistributionType
 		certDownloader     autocodesign.CertificateProvider
-		keychain           keychain.Keychain
-		assetWriter        codesignasset.Writer
+		assetWriter        autocodesign.AssetWriter
 		wantErr            bool
 	}{
 		{
@@ -130,15 +117,26 @@ func TestManager_downloadAndInstallCertificates(t *testing.T) {
 			wantErr:            true,
 		},
 		{
+			name:               "development, no matching cert",
+			distributionMethod: autocodesign.Development,
+			certDownloader:     newCertDownloaderMock([]certificateutil.CertificateInfoModel{distCert}),
+			wantErr:            true,
+		},
+		{
 			name:               "no certs uploaded, distribution",
 			distributionMethod: autocodesign.AppStore,
 			certDownloader:     newCertDownloaderMock([]certificateutil.CertificateInfoModel{}),
 		},
-		// {
-		// 	name:               "1 certs uploaded, development",
-		// 	distributionMethod: autocodesign.Development,
-		// 	certDownloader:     newCertDownloaderMock([]certificateutil.CertificateInfoModel{devCert}),
-		// },
+		{
+			name:               "1 certs uploaded, development",
+			distributionMethod: autocodesign.Development,
+			certDownloader:     newCertDownloaderMock([]certificateutil.CertificateInfoModel{devCert}),
+		},
+		{
+			name:               "1 certs uploaded, distribution",
+			distributionMethod: autocodesign.AdHoc,
+			certDownloader:     newCertDownloaderMock([]certificateutil.CertificateInfoModel{distCert}),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -147,8 +145,7 @@ func TestManager_downloadAndInstallCertificates(t *testing.T) {
 					ExportMethod: tt.distributionMethod,
 				},
 				certDownloader: tt.certDownloader,
-				keychain:       tt.keychain,
-				assetWriter:    tt.assetWriter,
+				assetWriter:    newMockAssetWriter(nil),
 				logger:         log.NewLogger(),
 			}
 
@@ -159,9 +156,31 @@ func TestManager_downloadAndInstallCertificates(t *testing.T) {
 	}
 }
 
+func generateCert(t *testing.T, commonName string) certificateutil.CertificateInfoModel {
+	const (
+		teamID   = "MYTEAMID"
+		teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
+	)
+	expiry := time.Now().AddDate(1, 0, 0)
+
+	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, commonName, expiry)
+	if err != nil {
+		t.Fatalf("init: failed to generate certificate: %s", err)
+	}
+
+	return certificateutil.NewCertificateInfo(*cert, privateKey)
+}
+
 func newCertDownloaderMock(certs []certificateutil.CertificateInfoModel) autocodesign.CertificateProvider {
-	mockDownloader := new(autoMocks.CertificateProvider)
+	mockDownloader := new(autocodesignMocks.CertificateProvider)
 	mockDownloader.On("GetCertificates").Return(certs, nil)
 
 	return mockDownloader
+}
+
+func newMockAssetWriter(mockErr error) autocodesign.AssetWriter {
+	mockWriter := new(autocodesignMocks.AssetWriter)
+	mockWriter.On("InstallCertificate", mock.Anything).Return(mockErr)
+
+	return mockWriter
 }
