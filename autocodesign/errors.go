@@ -54,10 +54,12 @@ func (e NonmatchingProfileError) Error() string {
 	return fmt.Sprintf("provisioning profile does not match requirements: %s", e.Reason)
 }
 
+// ProfilesInconsistentError is returned when a profile is deleted by an other actor
 type ProfilesInconsistentError struct {
 	wrapErr error
 }
 
+// NewProfilesInconsistentError ...
 func NewProfilesInconsistentError(wrapErr error) ProfilesInconsistentError {
 	return ProfilesInconsistentError{
 		wrapErr: wrapErr,
