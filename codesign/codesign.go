@@ -45,11 +45,6 @@ type Opts struct {
 	IsVerboseLog        bool
 }
 
-// Result ...
-type Result struct {
-	XcodebuildAuthParams *devportalservice.APIKeyConnection
-}
-
 // Manager ...
 type Manager struct {
 	opts Opts
