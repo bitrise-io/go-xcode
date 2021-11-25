@@ -1,6 +1,7 @@
 package autocodesign
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -143,7 +144,7 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 		var err error
 		bundleID, err = m.client.FindBundleID(bundleIDIdentifier)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find bundle ID: %s", err)
+			return nil, fmt.Errorf("failed to find bundle ID: %w", err)
 		}
 	}
 
@@ -167,13 +168,13 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 				log.Warnf("  app ID capabilities invalid: %s", mErr.Reason)
 				log.Warnf("  app ID capabilities are not in sync with the project capabilities, synchronizing...")
 				if err := m.client.SyncBundleID(*bundleID, entitlements); err != nil {
-					return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
+					return nil, fmt.Errorf("failed to update bundle ID capabilities: %w", err)
 				}
 
 				return bundleID, nil
 			}
 
-			return nil, fmt.Errorf("failed to validate bundle ID: %s", err)
+			return nil, fmt.Errorf("failed to validate bundle ID: %w", err)
 		}
 
 		log.Printf("  app ID capabilities are in sync with the project capabilities")
@@ -186,12 +187,12 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 
 	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier, appIDName(bundleIDIdentifier))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create bundle ID: %s", err)
+		return nil, fmt.Errorf("failed to create bundle ID: %w", err)
 	}
 
 	containers, err := entitlements.ICloudContainers()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get list of iCloud containers: %s", err)
+		return nil, fmt.Errorf("failed to get list of iCloud containers: %w", err)
 	}
 
 	if len(containers) > 0 {
@@ -200,7 +201,7 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 	}
 
 	if err := m.client.SyncBundleID(*bundleID, entitlements); err != nil {
-		return nil, fmt.Errorf("failed to update bundle ID capabilities: %s", err)
+		return nil, fmt.Errorf("failed to update bundle ID capabilities: %w", err)
 	}
 
 	m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
@@ -221,7 +222,7 @@ func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.Profi
 		var err error
 		profile, err = m.ensureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs, minProfileDaysValid)
 		if err != nil {
-			if _, ok := err.(*ProfilesInconsistentError); ok {
+			if ok := errors.As(err, &ProfilesInconsistentError{}); ok {
 				log.Warnf("  %s", err)
 				return err, false
 			}
@@ -246,7 +247,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 	name := profileName(profileType, bundleIDIdentifier)
 	profile, err := m.client.FindProfile(name, profileType)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find profile: %s", err)
+		return nil, fmt.Errorf("failed to find profile: %w", err)
 	}
 
 	if profile == nil {
@@ -261,7 +262,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 				if mErr, ok := err.(NonmatchingProfileError); ok {
 					log.Warnf("  the profile is not in sync with the project requirements (%s), regenerating ...", mErr.Reason)
 				} else {
-					return nil, fmt.Errorf("failed to check if profile is valid: %s", err)
+					return nil, fmt.Errorf("failed to check if profile is valid: %w", err)
 				}
 			} else { // Profile matches
 				log.Donef("  profile is in sync with the project requirements")
@@ -275,7 +276,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 		}
 
 		if err := m.client.DeleteProfile(profile.ID()); err != nil {
-			return nil, fmt.Errorf("failed to delete profile: %s", err)
+			return nil, fmt.Errorf("failed to delete profile: %w", err)
 		}
 	}
 
@@ -291,7 +292,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 
 	profile, err = m.client.CreateProfile(name, profileType, *bundleID, certIDs, deviceIDs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create profile: %s", err)
+		return nil, fmt.Errorf("failed to create profile: %w", err)
 	}
 
 	log.Donef("  profile created: %s", profile.Attributes().Name)
