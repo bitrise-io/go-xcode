@@ -114,8 +114,9 @@ func (m *Manager) getProject() (Project, error) {
 	return m.project, nil
 }
 
-// PrepareCodesigning ...
-func (m *Manager) PrepareCodesigning() (Result, error) {
+// PrepareCodesigning selects a suitable code signing strategy based on the step and project configuration,
+// then downloads code signing assets (profiles, certificates) and registers test devices if needed
+func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, error) {
 	strategy, reason, err := m.selectCodeSigningStrategy(m.appleAuthCredentials)
 	if err != nil {
 		m.logger.Warnf("%s", err)
@@ -130,19 +131,17 @@ func (m *Manager) PrepareCodesigning() (Result, error) {
 			m.logger.Println()
 			m.logger.Infof("Downloading certificates from Bitrise")
 			if err := m.downloadAndInstallCertificates(); err != nil {
-				return Result{}, err
+				return nil, err
 			}
 
 			needsTestDevices := autocodesign.DistributionTypeRequiresDeviceList([]autocodesign.DistributionType{m.opts.ExportMethod})
 			if needsTestDevices && m.opts.RegisterTestDevices && m.bitriseConnection != nil && len(m.bitriseConnection.TestDevices) != 0 {
 				if err := m.registerTestDevices(m.appleAuthCredentials, m.bitriseConnection.TestDevices); err != nil {
-					return Result{}, err
+					return nil, err
 				}
 			}
 
-			return Result{
-				XcodebuildAuthParams: m.appleAuthCredentials.APIKey,
-			}, nil
+			return m.appleAuthCredentials.APIKey, nil
 		}
 	case codeSigningBitriseAPIKey, codeSigningBitriseAppleID:
 		{
@@ -150,14 +149,14 @@ func (m *Manager) PrepareCodesigning() (Result, error) {
 			m.logger.Infof("Bitrise-managed code signing")
 			m.logger.Printf(reason)
 			if err := m.prepareCodeSigningWithBitrise(m.appleAuthCredentials); err != nil {
-				return Result{}, err
+				return nil, err
 			}
 
-			return Result{}, nil
+			return nil, nil
 		}
+	default:
+		return nil, fmt.Errorf("unknown code sign strategy")
 	}
-
-	return Result{}, nil
 }
 
 // SelectConnectionCredentials ...
@@ -193,9 +192,9 @@ func SelectConnectionCredentials(authType AuthType, conn *devportalservice.Apple
 
 	if authConfig.APIKey != nil {
 		authConfig.AppleID = nil
-
 		logger.Donef("Using Apple service connection with API key.")
 	} else if authConfig.AppleID != nil {
+		authConfig.APIKey = nil
 		logger.Donef("Using Apple service connection with Apple ID.")
 	} else {
 		panic("No Apple authentication credentials found.")
