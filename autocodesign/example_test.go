@@ -1,6 +1,7 @@
 package autocodesign_test
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/bitrise-io/go-steputils/stepconf"
@@ -8,12 +9,14 @@ import (
 	"github.com/bitrise-io/go-utils/env"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/certdownloader"
 	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
 	"github.com/bitrise-io/go-xcode/autocodesign/projectmanager"
+	"github.com/bitrise-io/go-xcode/codesign"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 )
 
@@ -36,16 +39,35 @@ func Example() {
 	cfg := config{
 		DistributionType: autocodesign.Development,
 	}
-	authClientType := devportalclient.APIKeyClient
+	var authClientType codesign.AuthType
 	certsWithPrivateKey := []certdownloader.CertificateAndPassphrase{}
 
-	f := devportalclient.NewClientFactory()
+	f := devportalclient.NewFactory(log.NewLogger())
 	connection, err := f.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken)
 	if err != nil {
 		panic(err)
 	}
 
-	devPortalClient, err := f.CreateClient(authClientType, cfg.TeamID, connection)
+	var authSource appleauth.Source
+	switch authClientType {
+	case codesign.APIKeyAuth:
+		authSource = &appleauth.ConnectionAPIKeySource{}
+	case codesign.AppleIDAuth:
+		authSource = &appleauth.ConnectionAppleIDFastlaneSource{}
+	default:
+		panic("missing implementation")
+	}
+
+	authConfig, err := appleauth.Select(connection, []appleauth.Source{authSource}, appleauth.Inputs{})
+	if err != nil {
+		if errors.Is(err, &appleauth.MissingAuthConfigError{}) {
+			panic("Apple Service connection is unset")
+		}
+
+		panic(fmt.Sprintf("could not select Apple authentication credentials: %s", err))
+	}
+
+	devPortalClient, err := f.Create(authConfig, cfg.TeamID)
 	if err != nil {
 		panic(err)
 	}
