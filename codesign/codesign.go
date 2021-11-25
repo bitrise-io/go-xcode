@@ -214,7 +214,7 @@ func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials) (
 
 	project, err := m.getProject()
 	if err != nil {
-		return codeSigningXcode, "Parsing project config failed.", err
+		return codeSigningXcode, "Parsing project failed.", err
 	}
 
 	isManaged, err := project.IsSigningManagedAutomatically()
