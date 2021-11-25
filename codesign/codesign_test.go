@@ -8,7 +8,6 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/autocodesign"
-	autocodesignMocks "github.com/bitrise-io/go-xcode/autocodesign/mocks"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/codesign/mocks"
 	"github.com/bitrise-io/go-xcode/devportalservice"
@@ -172,14 +171,14 @@ func generateCert(t *testing.T, commonName string) certificateutil.CertificateIn
 }
 
 func newCertDownloaderMock(certs []certificateutil.CertificateInfoModel) autocodesign.CertificateProvider {
-	mockDownloader := new(autocodesignMocks.CertificateProvider)
+	mockDownloader := new(autocodesign.MockCertificateProvider)
 	mockDownloader.On("GetCertificates").Return(certs, nil)
 
 	return mockDownloader
 }
 
 func newMockAssetWriter(mockErr error) autocodesign.AssetWriter {
-	mockWriter := new(autocodesignMocks.AssetWriter)
+	mockWriter := new(autocodesign.MockAssetWriter)
 	mockWriter.On("InstallCertificate", mock.Anything).Return(mockErr)
 
 	return mockWriter
