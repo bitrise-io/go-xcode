@@ -220,12 +220,16 @@ func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.Profi
 
 		var err error
 		profile, err = m.ensureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs, minProfileDaysValid)
-		if _, ok := err.(*ProfilesInconsistentError); ok {
-			log.Warnf("  %s", err)
-			return err, false
+		if err != nil {
+			if _, ok := err.(*ProfilesInconsistentError); ok {
+				log.Warnf("  %s", err)
+				return err, false
+			}
+
+			return err, true
 		}
 
-		return nil, true
+		return nil, false
 	}); err != nil {
 		return nil, err
 	}
