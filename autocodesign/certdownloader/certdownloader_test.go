@@ -36,7 +36,7 @@ func Test_downloader_GetCertificates_Local(t *testing.T) {
 	p12path := "file://" + p12File.Name()
 
 	d := downloader{
-		urls: []CertificateAndPassphrase{{
+		certs: []CertificateAndPassphrase{{
 			URL:        p12path,
 			Passphrase: passphrase,
 		}},
@@ -75,7 +75,7 @@ func Test_downloader_GetCertificates_Remote(t *testing.T) {
 	}))
 
 	d := downloader{
-		urls: []CertificateAndPassphrase{{
+		certs: []CertificateAndPassphrase{{
 			URL:        storage.URL,
 			Passphrase: passphrase,
 		}},
