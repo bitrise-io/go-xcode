@@ -259,9 +259,8 @@ func (m *Manager) downloadAndInstallCertificates() error {
 	if len(typeToLocalCerts[certificateType]) == 0 {
 		if certificateType == appstoreconnect.IOSDevelopment {
 			return fmt.Errorf("no valid development type certificate uploaded")
-		} else {
-			log.Warnf("no valid %s type certificate uploaded", certificateType)
 		}
+		log.Warnf("no valid %s type certificate uploaded", certificateType)
 	}
 
 	m.logger.Infof("Installing downloaded certificates:")
