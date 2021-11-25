@@ -171,10 +171,10 @@ func SelectConnectionCredentials(authType AuthType, conn *devportalservice.Apple
 
 		if errors.Is(err, &appleauth.MissingAuthConfigError{}) {
 			if authType == AppleIDAuth {
-				return appleauth.Credentials{}, fmt.Errorf("Apple ID authentication is selected in Step inputs, but Bitrise Apple service connection is unset")
+				return appleauth.Credentials{}, fmt.Errorf("Apple ID authentication is selected in Step inputs, but Bitrise Apple Service connection is unset")
 			}
 
-			return appleauth.Credentials{}, fmt.Errorf("API key authentication is selected in Step inputs, but Bitrise Apple service connection is unset")
+			return appleauth.Credentials{}, fmt.Errorf("API key authentication is selected in Step inputs, but Bitrise Apple Service connection is unset")
 		}
 
 		return appleauth.Credentials{}, fmt.Errorf("could not select Apple authentication credentials: %w", err)
@@ -182,10 +182,10 @@ func SelectConnectionCredentials(authType AuthType, conn *devportalservice.Apple
 
 	if authConfig.APIKey != nil {
 		authConfig.AppleID = nil
-		logger.Donef("Using Apple service connection with API key.")
+		logger.Donef("Using Apple Service connection with API key.")
 	} else if authConfig.AppleID != nil {
 		authConfig.APIKey = nil
-		logger.Donef("Using Apple service connection with Apple ID.")
+		logger.Donef("Using Apple Service connection with Apple ID.")
 	} else {
 		panic("No Apple authentication credentials found.")
 	}
