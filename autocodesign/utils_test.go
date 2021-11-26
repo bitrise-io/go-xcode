@@ -1,7 +1,6 @@
 package autocodesign
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
@@ -10,6 +9,14 @@ import (
 )
 
 func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) {
+	dev1Profile := profile("base", "1")
+	dev2Profile := profile("addition", "4")
+	devUITest1Profile := profile("base", "2")
+	devUITest2Profile := profile("addition-uitest", "5")
+	appStore1Profile := profile("base", "3")
+	enterprise1Profile := profile("enterprise", "1")
+	adHoc1Profile := profile("ad-hoc", "1")
+
 	certificate := certificateutil.CertificateInfoModel{}
 	tests := []struct {
 		name     string
@@ -22,26 +29,26 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 			base: map[DistributionType]AppCodesignAssets{
 				Development: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"dev-1": profile("base", "1"),
+						"dev-1": dev1Profile,
 					},
 					UITestTargetProfilesByBundleID: map[string]Profile{
-						"dev-uitest-1": profile("base", "2"),
+						"dev-uitest-1": devUITest1Profile,
 					},
 					Certificate: certificate,
 				}},
 			addition: map[DistributionType]AppCodesignAssets{
 				Development: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"dev-2": profile("addition", "4"),
+						"dev-2": dev2Profile,
 					},
 					UITestTargetProfilesByBundleID: map[string]Profile{
-						"dev-uitest-2": profile("addition-uitest", "5"),
+						"dev-uitest-2": devUITest2Profile,
 					},
 					Certificate: certificate,
 				},
 				AppStore: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"app-store-1": profile("base", "3"),
+						"app-store-1": appStore1Profile,
 					},
 					UITestTargetProfilesByBundleID: nil,
 					Certificate:                    certificate,
@@ -50,18 +57,18 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 			expected: map[DistributionType]AppCodesignAssets{
 				Development: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"dev-1": profile("base", "1"),
-						"dev-2": profile("addition", "4"),
+						"dev-1": dev1Profile,
+						"dev-2": dev2Profile,
 					},
 					UITestTargetProfilesByBundleID: map[string]Profile{
-						"dev-uitest-1": profile("base", "2"),
-						"dev-uitest-2": profile("addition-uitest", "5"),
+						"dev-uitest-1": devUITest1Profile,
+						"dev-uitest-2": devUITest2Profile,
 					},
 					Certificate: certificate,
 				},
 				AppStore: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"app-store-1": profile("base", "3"),
+						"app-store-1": appStore1Profile,
 					},
 					UITestTargetProfilesByBundleID: nil,
 					Certificate:                    certificate,
@@ -74,7 +81,7 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 			addition: map[DistributionType]AppCodesignAssets{
 				Enterprise: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"enterprise-1": profile("enterprise", "1"),
+						"enterprise-1": enterprise1Profile,
 					},
 					UITestTargetProfilesByBundleID: nil,
 					Certificate:                    certificate,
@@ -83,7 +90,7 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 			expected: map[DistributionType]AppCodesignAssets{
 				Enterprise: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"enterprise-1": profile("enterprise", "1"),
+						"enterprise-1": enterprise1Profile,
 					},
 					UITestTargetProfilesByBundleID: nil,
 					Certificate:                    certificate,
@@ -95,7 +102,7 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 			base: map[DistributionType]AppCodesignAssets{
 				AdHoc: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"ad-hoc-1": profile("ad-hoc", "1"),
+						"ad-hoc-1": adHoc1Profile,
 					},
 					UITestTargetProfilesByBundleID: nil,
 					Certificate:                    certificate,
@@ -105,7 +112,7 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 			expected: map[DistributionType]AppCodesignAssets{
 				AdHoc: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"ad-hoc-1": profile("ad-hoc", "1"),
+						"ad-hoc-1": adHoc1Profile,
 					},
 					UITestTargetProfilesByBundleID: nil,
 					Certificate:                    certificate,
@@ -126,8 +133,8 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 	}
 }
 
-func profile(name, id string) testProfile {
-	return testProfile{
+func profile(name, id string) Profile {
+	return newMockProfile(profileArgs{
 		attributes: appstoreconnect.ProfileAttributes{
 			Name:           name,
 			UUID:           id,
@@ -135,47 +142,10 @@ func profile(name, id string) testProfile {
 			Platform:       "",
 			ExpirationDate: appstoreconnect.Time{},
 		},
-		id:             id,
-		bundleID:       fmt.Sprintf("bundle-id-%s", id),
-		certificateIDs: nil,
-		deviceIDs:      nil,
-	}
-}
-
-type testProfile struct {
-	attributes     appstoreconnect.ProfileAttributes
-	id             string
-	bundleID       string
-	deviceIDs      []string
-	certificateIDs []string
-}
-
-// ID ...
-func (p testProfile) ID() string {
-	return p.id
-}
-
-// Attributes ...
-func (p testProfile) Attributes() appstoreconnect.ProfileAttributes {
-	return p.attributes
-}
-
-// CertificateIDs ...
-func (p testProfile) CertificateIDs() ([]string, error) {
-	return p.certificateIDs, nil
-}
-
-// DeviceIDs ...
-func (p testProfile) DeviceIDs() ([]string, error) {
-	return p.deviceIDs, nil
-}
-
-// BundleID ...
-func (p testProfile) BundleID() (appstoreconnect.BundleID, error) {
-	return appstoreconnect.BundleID{}, nil
-}
-
-// Entitlements ...
-func (p testProfile) Entitlements() (Entitlements, error) {
-	return Entitlements{}, nil
+		id:           id,
+		appID:        appstoreconnect.BundleID{},
+		devices:      nil,
+		certificates: nil,
+		entitlements: Entitlements{},
+	})
 }
