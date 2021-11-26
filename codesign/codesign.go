@@ -35,6 +35,7 @@ const (
 type Opts struct {
 	AuthType                   AuthType
 	ShouldConsiderXcodeSigning bool
+	TeamID                     string
 
 	ExportMethod      autocodesign.DistributionType
 	XcodeMajorVersion int
@@ -240,8 +241,7 @@ func (m *Manager) downloadAndInstallCertificates() error {
 		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", m.opts.ExportMethod))
 	}
 
-	teamID := ""
-	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates, teamID)
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates, m.opts.TeamID)
 	if err != nil {
 		return err
 	}
@@ -250,6 +250,7 @@ func (m *Manager) downloadAndInstallCertificates() error {
 		if certificateType == appstoreconnect.IOSDevelopment {
 			return fmt.Errorf("no valid development type certificate uploaded")
 		}
+
 		log.Warnf("no valid %s type certificate uploaded", certificateType)
 	}
 
@@ -301,6 +302,10 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	appLayout, err := project.GetAppLayout(m.opts.SignUITests)
 	if err != nil {
 		return err
+	}
+
+	if m.opts.TeamID != "" {
+		appLayout.TeamID = m.opts.TeamID
 	}
 
 	devPortalClient, err := m.devPortalClientFactory.Create(credentials, appLayout.TeamID)
