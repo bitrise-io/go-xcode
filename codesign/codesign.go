@@ -116,8 +116,8 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 	case codeSigningXcode:
 		{
 			m.logger.Println()
-			m.logger.Infof("Preparing for Xcode-managed code signing")
-			m.logger.Printf(reason)
+			m.logger.Infof("Code signing asset management with xcodebuild")
+			m.logger.Printf("Reason: %s", reason)
 			m.logger.Println()
 			m.logger.Infof("Downloading certificates from Bitrise")
 			if err := m.downloadAndInstallCertificates(); err != nil {
@@ -136,8 +136,8 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 	case codeSigningBitriseAPIKey, codeSigningBitriseAppleID:
 		{
 			m.logger.Println()
-			m.logger.Infof("Bitrise-managed code signing")
-			m.logger.Printf(reason)
+			m.logger.Infof("Code signing asset management by Bitrise")
+			m.logger.Printf("Reason: %s", reason)
 			if err := m.prepareCodeSigningWithBitrise(m.appleAuthCredentials); err != nil {
 				return nil, err
 			}
@@ -194,14 +194,14 @@ func SelectConnectionCredentials(authType AuthType, conn *devportalservice.Apple
 }
 
 func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials) (codeSigningStrategy, string, error) {
-	const manualProfilesReason = "Using Bitrise-managed code signing via API key, as Automatically managed signing is disabled in Xcode for the project."
+	const manualProfilesReason = "Using Bitrise-managed code signing assets with API key because Automatically managed signing is disabled in Xcode for the project."
 
 	if credentials.AppleID != nil {
-		return codeSigningBitriseAppleID, "Using Bitrise-managed code signing via Apple ID, as Apple ID is not supported by Xcode-managed code signing.", nil
+		return codeSigningBitriseAppleID, "Using Bitrise-managed code signing assets with Apple ID because Apple ID authentication is not supported by xcodebuild.", nil
 	}
 
 	if credentials.APIKey == nil {
-		panic("No Apple authentication credentials found.")
+		panic("No App Store Connect API authentication credentials found.")
 	}
 
 	if !m.opts.ShouldConsiderXcodeSigning {
@@ -209,12 +209,12 @@ func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials) (
 	}
 
 	if m.opts.XcodeMajorVersion < 13 {
-		return codeSigningBitriseAPIKey, "Using Bitrise-managed code signing via API key, as Xcode-managed code signing requires at least Xcode 13.", nil
+		return codeSigningBitriseAPIKey, "Using Bitrise-managed code signing assets with API key because 'xcodebuild -allowProvisioningUpdates' with API authentication requires Xcode 13 or higher.", nil
 	}
 
 	project, err := m.getProject()
 	if err != nil {
-		return codeSigningXcode, "Using Xcode-managed code signing, as project parsing failed.", err
+		return codeSigningXcode, "Parsing project failed.", err
 	}
 
 	isManaged, err := project.IsSigningManagedAutomatically()
@@ -223,7 +223,7 @@ func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials) (
 	}
 
 	if isManaged {
-		return codeSigningXcode, "Using Xcode-managed code signing, as Automatically managed signing is enabled in Xcode for the project", nil
+		return codeSigningXcode, "Automatically managed signing is enabled in Xcode for the project", nil
 	}
 
 	return codeSigningBitriseAPIKey, manualProfilesReason, nil
