@@ -40,10 +40,10 @@ type Opts struct {
 	ExportMethod      autocodesign.DistributionType
 	XcodeMajorVersion int
 
-	RegisterTestDevices bool
-	SignUITests         bool
-	MinProfileValidity  int
-	IsVerboseLog        bool
+	RegisterTestDevices    bool
+	SignUITests            bool
+	MinDaysProfileValidity int
+	IsVerboseLog           bool
 }
 
 // Manager ...
@@ -223,11 +223,15 @@ func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials) (
 		return codeSigningBitriseAPIKey, manualProfilesReason, err
 	}
 
-	if isManaged {
-		return codeSigningXcode, "Automatically managed signing is enabled in Xcode for the project", nil
+	if !isManaged {
+		return codeSigningBitriseAPIKey, manualProfilesReason, nil
 	}
 
-	return codeSigningBitriseAPIKey, manualProfilesReason, nil
+	if m.opts.MinDaysProfileValidity > 0 {
+		return codeSigningBitriseAPIKey, "Specifying the minimum validity period of the Provisioning Profile is not supported by xcodebuild.", nil
+	}
+
+	return codeSigningXcode, "Automatically managed signing is enabled in Xcode for the project.", nil
 }
 
 func (m *Manager) downloadAndInstallCertificates() error {
@@ -323,7 +327,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
 		DistributionType:       m.opts.ExportMethod,
 		BitriseTestDevices:     testDevices,
-		MinProfileValidityDays: m.opts.MinProfileValidity,
+		MinProfileValidityDays: m.opts.MinDaysProfileValidity,
 		VerboseLog:             m.opts.IsVerboseLog,
 	})
 	if err != nil {
