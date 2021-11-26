@@ -35,14 +35,15 @@ const (
 type Opts struct {
 	AuthType                   AuthType
 	ShouldConsiderXcodeSigning bool
+	TeamID                     string
 
 	ExportMethod      autocodesign.DistributionType
 	XcodeMajorVersion int
 
-	RegisterTestDevices bool
-	SignUITests         bool
-	MinProfileValidity  int
-	IsVerboseLog        bool
+	RegisterTestDevices    bool
+	SignUITests            bool
+	MinDaysProfileValidity int
+	IsVerboseLog           bool
 }
 
 // Manager ...
@@ -222,11 +223,15 @@ func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials) (
 		return codeSigningBitriseAPIKey, manualProfilesReason, err
 	}
 
-	if isManaged {
-		return codeSigningXcode, "Automatically managed signing is enabled in Xcode for the project", nil
+	if !isManaged {
+		return codeSigningBitriseAPIKey, manualProfilesReason, nil
 	}
 
-	return codeSigningBitriseAPIKey, manualProfilesReason, nil
+	if m.opts.MinDaysProfileValidity > 0 {
+		return codeSigningBitriseAPIKey, "Specifying the minimum validity period of the Provisioning Profile is not supported by xcodebuild.", nil
+	}
+
+	return codeSigningXcode, "Automatically managed signing is enabled in Xcode for the project.", nil
 }
 
 func (m *Manager) downloadAndInstallCertificates() error {
@@ -240,8 +245,7 @@ func (m *Manager) downloadAndInstallCertificates() error {
 		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", m.opts.ExportMethod))
 	}
 
-	teamID := ""
-	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates, teamID)
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates, m.opts.TeamID)
 	if err != nil {
 		return err
 	}
@@ -250,6 +254,7 @@ func (m *Manager) downloadAndInstallCertificates() error {
 		if certificateType == appstoreconnect.IOSDevelopment {
 			return fmt.Errorf("no valid development type certificate uploaded")
 		}
+
 		log.Warnf("no valid %s type certificate uploaded", certificateType)
 	}
 
@@ -303,6 +308,10 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		return err
 	}
 
+	if m.opts.TeamID != "" {
+		appLayout.TeamID = m.opts.TeamID
+	}
+
 	devPortalClient, err := m.devPortalClientFactory.Create(credentials, appLayout.TeamID)
 	if err != nil {
 		return err
@@ -318,7 +327,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
 		DistributionType:       m.opts.ExportMethod,
 		BitriseTestDevices:     testDevices,
-		MinProfileValidityDays: m.opts.MinProfileValidity,
+		MinProfileValidityDays: m.opts.MinDaysProfileValidity,
 		VerboseLog:             m.opts.IsVerboseLog,
 	})
 	if err != nil {
