@@ -49,11 +49,12 @@ type Opts struct {
 type Manager struct {
 	opts Opts
 
-	appleAuthCredentials   appleauth.Credentials
-	bitriseConnection      *devportalservice.AppleDeveloperConnection
-	devPortalClientFactory devportalclient.Factory
-	certDownloader         autocodesign.CertificateProvider
-	assetWriter            autocodesign.AssetWriter
+	appleAuthCredentials      appleauth.Credentials
+	bitriseConnection         *devportalservice.AppleDeveloperConnection
+	devPortalClientFactory    devportalclient.Factory
+	certDownloader            autocodesign.CertificateProvider
+	assetWriter               autocodesign.AssetWriter
+	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager
 
 	projectFactory projectmanager.Factory
 	project        Project
@@ -308,7 +309,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		return err
 	}
 
-	manager := autocodesign.NewCodesignAssetManager(devPortalClient, m.certDownloader, m.assetWriter)
+	manager := autocodesign.NewCodesignAssetManager(devPortalClient, m.certDownloader, m.assetWriter, m.localCodeSignAssetManager)
 
 	// Fetch and apply codesigning assets
 	var testDevices []devportalservice.TestDevice

@@ -8,6 +8,13 @@ import (
 )
 
 func mergeCodeSignAssets(base, addition map[DistributionType]AppCodesignAssets) map[DistributionType]AppCodesignAssets {
+	if addition == nil {
+		return base
+	}
+	if base == nil {
+		return addition
+	}
+
 	for distrType, additionalAsset := range addition {
 		baseAsset := base[distrType]
 

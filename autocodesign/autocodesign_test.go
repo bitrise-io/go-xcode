@@ -399,8 +399,6 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(validProfile, nil).Once()
 
 	assetWriter := newDefaultMockAssetWriter()
-	manager := NewCodesignAssetManager(client, certProvider, assetWriter)
-
 	appLayout := AppLayout{
 		TeamID:   teamID,
 		Platform: IOS,
@@ -408,6 +406,10 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 			"io.test": {},
 		},
 	}
+
+	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, appLayout)
+	manager := NewCodesignAssetManager(client, certProvider, assetWriter, localCodeSignAssetManager)
+
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
 	}
