@@ -76,19 +76,19 @@ func TestNewAppClipArchive(t *testing.T) {
 
 	app := archive.Application
 	require.Equal(t, 30, len(app.InfoPlist))
-	require.Equal(t, 0, len(app.Entitlements))
+	require.Equal(t, 6, len(app.Entitlements))
 	require.Equal(t, "io.bitrise.appcliptest", app.ProvisioningProfile.BundleID)
 
 	require.Equal(t, 1, len(app.Extensions))
 	extension := app.Extensions[0]
 	require.Equal(t, 24, len(extension.InfoPlist))
-	require.Equal(t, 0, len(extension.Entitlements))
+	require.Equal(t, 4, len(extension.Entitlements))
 	require.Equal(t, "io.bitrise.appcliptest.ios-widgets", extension.ProvisioningProfile.BundleID)
 
 	require.NotNil(t, app.ClipApplication)
 	clipApp := *app.ClipApplication
 	require.Equal(t, 31, len(clipApp.InfoPlist))
-	require.Equal(t, 0, len(clipApp.Entitlements))
+	require.Equal(t, 8, len(clipApp.Entitlements))
 	require.Equal(t, "io.bitrise.appcliptest.Clip", clipApp.ProvisioningProfile.BundleID)
 }
 
