@@ -81,6 +81,12 @@ func (p Project) MainTargetBundleID() (string, error) {
 
 // GetAppLayout ...
 func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error) {
+	isSigningManagedAutomatically, err := p.IsSigningManagedAutomatically()
+	if err != nil {
+		return autocodesign.AppLayout{}, fmt.Errorf("failed to check if 'Automatically manage signing' enabled: %s", err)
+	}
+	log.Printf("Automatically manage signing: %v", isSigningManagedAutomatically)
+
 	log.Printf("Configuration: %s", p.projHelper.Configuration)
 
 	teamID, err := p.projHelper.ProjectTeamID(p.projHelper.Configuration)
@@ -123,11 +129,6 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 		if err != nil {
 			return autocodesign.AppLayout{}, fmt.Errorf("failed to read UITest targets' entitlements: %s", err)
 		}
-	}
-
-	isSigningManagedAutomatically, err := p.IsSigningManagedAutomatically()
-	if err != nil {
-		return autocodesign.AppLayout{}, fmt.Errorf("failed to check if 'Automatically manage signing' enabled: %s", err)
 	}
 
 	return autocodesign.AppLayout{
