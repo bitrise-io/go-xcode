@@ -360,7 +360,7 @@ func checkProfileEntitlements(client DevPortalClient, prof Profile, appEntitleme
 		return err
 	}
 
-	missingContainers, err := findMissingContainers(appEntitlements, profileEnts)
+	missingContainers, err := FindMissingContainers(appEntitlements, profileEnts)
 	if err != nil {
 		return fmt.Errorf("failed to check missing containers: %s", err)
 	}
@@ -392,8 +392,9 @@ func ParseRawProfileEntitlements(profileContents []byte) (Entitlements, error) {
 	return Entitlements(profile.Entitlements), nil
 }
 
-func findMissingContainers(projectEnts, profileEnts Entitlements) ([]string, error) {
-	projContainerIDs, err := serialized.Object(projectEnts).StringSlice("com.apple.developer.icloud-container-identifiers")
+// FindMissingContainers ...
+func FindMissingContainers(projectEnts, profileEnts Entitlements) ([]string, error) {
+	projContainerIDs, err := serialized.Object(projectEnts).StringSlice(ICloudIdentifiersEntitlementKey)
 	if err != nil {
 		if serialized.IsKeyNotFoundError(err) {
 			return nil, nil // project has no container
@@ -403,7 +404,7 @@ func findMissingContainers(projectEnts, profileEnts Entitlements) ([]string, err
 
 	// project has containers, so the profile should have at least the same
 
-	profContainerIDs, err := serialized.Object(profileEnts).StringSlice("com.apple.developer.icloud-container-identifiers")
+	profContainerIDs, err := serialized.Object(profileEnts).StringSlice(ICloudIdentifiersEntitlementKey)
 	if err != nil {
 		if serialized.IsKeyNotFoundError(err) {
 			return projContainerIDs, nil

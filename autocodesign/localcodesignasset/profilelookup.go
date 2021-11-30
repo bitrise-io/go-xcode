@@ -75,9 +75,13 @@ func containsAllAppEntitlements(profile profileutil.ProvisioningProfileInfoModel
 		// during the archive action. It is not the best but this is also the logic used at other places. An example of
 		// what we could be comparing:
 		// 		$(AppIdentifierPrefix)${BASE_BUNDLE_ID}.ios == 72SA8V3WYL.io.bitrise.samples.fruta.los
-		if reflect.DeepEqual(profileEntitlementValue, value) == false {
-			hasMissingEntitlement = true
-			break
+		if key == autocodesign.ICloudIdentifiersEntitlementKey {
+			missingContainers, err := autocodesign.FindMissingContainers(appEntitlements, profileEntitlements)
+			if err != nil || len(missingContainers) > 0 {
+				return false
+			}
+		} else if !reflect.DeepEqual(profileEntitlementValue, value) {
+			return false
 		}
 	}
 
