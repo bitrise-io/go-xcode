@@ -35,7 +35,7 @@ func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrTypes
 
 		var asset *autocodesign.AppCodesignAssets
 		for bundleID, entitlements := range appLayout.EntitlementsByArchivableTargetBundleID {
-			profileInfo := findProfile(profiles, appLayout.Platform, distrType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs)
+			profileInfo := findProfile(profiles, appLayout.Platform, distrType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs, appLayout.IsSigningManagedAutomatically)
 			if profileInfo == nil {
 				continue
 			}
@@ -72,7 +72,7 @@ func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrTypes
 				}
 
 				// Capabilities are not supported for UITest targets.
-				profileInfo := findProfile(profiles, appLayout.Platform, distrType, wildcardBundleID, nil, minProfileDaysValid, certSerials, deviceIDs)
+				profileInfo := findProfile(profiles, appLayout.Platform, distrType, wildcardBundleID, nil, minProfileDaysValid, certSerials, deviceIDs, appLayout.IsSigningManagedAutomatically)
 				if profileInfo == nil {
 					continue
 				}

@@ -10,9 +10,9 @@ import (
 	"github.com/bitrise-io/go-xcode/profileutil"
 )
 
-func findProfile(localProfiles []profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements, minProfileDaysValid int, certSerials []string, deviceIDs []string) *profileutil.ProvisioningProfileInfoModel {
+func findProfile(localProfiles []profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements, minProfileDaysValid int, certSerials []string, deviceIDs []string, isSigningManagedAutomatically bool) *profileutil.ProvisioningProfileInfoModel {
 	for _, profile := range localProfiles {
-		if isProfileMatching(profile, platform, distributionType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs) {
+		if isProfileMatching(profile, platform, distributionType, bundleID, entitlements, minProfileDaysValid, certSerials, deviceIDs, isSigningManagedAutomatically) {
 			return &profile
 		}
 	}
@@ -20,7 +20,7 @@ func findProfile(localProfiles []profileutil.ProvisioningProfileInfoModel, platf
 	return nil
 }
 
-func isProfileMatching(profile profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements, minProfileDaysValid int, certSerials []string, deviceIDs []string) bool {
+func isProfileMatching(profile profileutil.ProvisioningProfileInfoModel, platform autocodesign.Platform, distributionType autocodesign.DistributionType, bundleID string, entitlements autocodesign.Entitlements, minProfileDaysValid int, certSerials []string, deviceIDs []string, isSigningManagedAutomatically bool) bool {
 	if !isActive(profile, minProfileDaysValid) {
 		return false
 	}
@@ -46,6 +46,10 @@ func isProfileMatching(profile profileutil.ProvisioningProfileInfoModel, platfor
 	}
 
 	if !provisionsDevices(profile, deviceIDs) {
+		return false
+	}
+
+	if !isSigningManagedAutomatically && profile.IsXcodeManaged() {
 		return false
 	}
 

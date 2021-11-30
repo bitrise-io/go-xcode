@@ -125,7 +125,13 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 		}
 	}
 
+	isSigningManagedAutomatically, err := p.IsSigningManagedAutomatically()
+	if err != nil {
+		return autocodesign.AppLayout{}, fmt.Errorf("failed to check if 'Automatically manage signing' enabled: %s", err)
+	}
+
 	return autocodesign.AppLayout{
+		IsSigningManagedAutomatically:          isSigningManagedAutomatically,
 		TeamID:                                 teamID,
 		Platform:                               platform,
 		EntitlementsByArchivableTargetBundleID: archivableTargetBundleIDToEntitlements,
