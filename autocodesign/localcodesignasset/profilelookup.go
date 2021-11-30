@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/profileutil"
 )
@@ -36,7 +37,7 @@ func isProfileMatching(profile profileutil.ProvisioningProfileInfoModel, platfor
 		return false
 	}
 
-	if !hasMatchingLocalCertificate(profile, certSerials) {
+	if !hasMatchingLocalCertificates(profile, certSerials) {
 		return false
 	}
 
@@ -55,13 +56,19 @@ func hasMatchingBundleID(profile profileutil.ProvisioningProfileInfoModel, bundl
 	return profile.BundleID == bundleID
 }
 
-func hasMatchingLocalCertificate(profile profileutil.ProvisioningProfileInfoModel, localCertificateSerials []string) bool {
+func hasMatchingLocalCertificates(profile profileutil.ProvisioningProfileInfoModel, localCertificateSerials []string) bool {
 	var profileCertificateSerials []string
 	for _, certificate := range profile.DeveloperCertificates {
 		profileCertificateSerials = append(profileCertificateSerials, certificate.Serial)
 	}
 
-	return 0 < len(intersection(localCertificateSerials, profileCertificateSerials))
+	for _, serial := range localCertificateSerials {
+		if !sliceutil.IsStringInSlice(serial, profileCertificateSerials) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func containsAllAppEntitlements(profile profileutil.ProvisioningProfileInfoModel, appEntitlements autocodesign.Entitlements) bool {

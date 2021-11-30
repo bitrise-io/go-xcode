@@ -3,10 +3,9 @@ package localcodesignasset
 import (
 	"testing"
 
+	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
-
-	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -162,6 +161,18 @@ func Test_GivenProfiles_WhenFiltersForNonExisting_ThenItIsMissing(t *testing.T) 
 				entitlements:        nil,
 				minProfileDaysValid: 3,
 				certIDs:             []string{"100"},
+				deviceIDs:           []string{"ios-device-3"},
+			},
+		},
+		{
+			name: "iOS app store 1 included, 1 missing certificate",
+			fields: fields{
+				platform:            autocodesign.IOS,
+				distributionType:    autocodesign.AppStore,
+				bundleID:            "io.ios",
+				entitlements:        nil,
+				minProfileDaysValid: 3,
+				certIDs:             []string{"2", "100"},
 				deviceIDs:           []string{"ios-device-3"},
 			},
 		},
