@@ -42,7 +42,7 @@ func Test_createWildcardBundleID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := createWildcardBundleID(tt.bundleID)
+			got, err := CreateWildcardBundleID(tt.bundleID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("createWildcardBundleID() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -192,7 +192,7 @@ func Test_findMissingContainers(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := findMissingContainers(tt.appEnts, tt.profileEnts)
+			got, err := FindMissingContainers(tt.appEnts, tt.profileEnts)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

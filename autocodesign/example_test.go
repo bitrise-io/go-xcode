@@ -15,6 +15,7 @@ import (
 	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
+	"github.com/bitrise-io/go-xcode/autocodesign/localcodesignasset"
 	"github.com/bitrise-io/go-xcode/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/codesign"
 	"github.com/bitrise-io/go-xcode/devportalservice"
@@ -78,7 +79,11 @@ func Example() {
 	}
 
 	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, retry.NewHTTPClient().StandardClient())
-	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain))
+
+	profileProvider := localcodesignasset.NewProvisioningProfileProvider()
+	profileConverter := localcodesignasset.NewProvisioningProfileConverter()
+	localCodesignAssetManager := localcodesignasset.NewManager(profileProvider, profileConverter)
+	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain), localCodesignAssetManager)
 
 	// Analyzing project
 	fmt.Println()
