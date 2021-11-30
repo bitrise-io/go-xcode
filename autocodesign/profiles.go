@@ -236,7 +236,10 @@ func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.Profi
 func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements Entitlements, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
 	fmt.Println()
 	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
-	log.Printf("  capabilities: %s", entitlements)
+	log.Printf("  capabilities:")
+	for k, v := range entitlements {
+		log.Printf("  - %s: %v", k, v)
+	}
 
 	// Search for Bitrise managed Profile
 	name := profileName(profileType, bundleIDIdentifier)
