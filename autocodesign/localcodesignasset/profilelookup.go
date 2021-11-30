@@ -49,6 +49,10 @@ func isProfileMatching(profile profileutil.ProvisioningProfileInfoModel, platfor
 		return false
 	}
 
+	if profile.IsXcodeManaged() {
+		return false
+	}
+
 	return true
 }
 
