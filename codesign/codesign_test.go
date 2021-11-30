@@ -17,12 +17,13 @@ import (
 
 func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 	tests := []struct {
-		name              string
-		project           Project
-		credentials       appleauth.Credentials
-		XcodeMajorVersion int
-		want              codeSigningStrategy
-		wantErr           bool
+		name                   string
+		project                Project
+		credentials            appleauth.Credentials
+		XcodeMajorVersion      int
+		minDaysProfileValidity int
+		want                   codeSigningStrategy
+		wantErr                bool
 	}{
 		{
 			name: "Apple ID",
@@ -51,13 +52,23 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 			want:              codeSigningBitriseAPIKey,
 		},
 		{
-			name: "API Key, Xcode 13, Xcode managed signing",
+			name: "API Key, Xcode 13, Xcode managed signing, custom features",
 			credentials: appleauth.Credentials{
 				APIKey: &devportalservice.APIKeyConnection{},
 			},
 			XcodeMajorVersion: 13,
 			project:           newMockProject(true, nil),
 			want:              codeSigningXcode,
+		},
+		{
+			name: "API Key, Xcode 13, Xcode managed signing, no custom features",
+			credentials: appleauth.Credentials{
+				APIKey: &devportalservice.APIKeyConnection{},
+			},
+			XcodeMajorVersion:      13,
+			minDaysProfileValidity: 5,
+			project:                newMockProject(true, nil),
+			want:                   codeSigningBitriseAPIKey,
 		},
 		{
 			name: "API Key, Xcode 13, can not determine if project automtic",
@@ -77,6 +88,7 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 				opts: Opts{
 					XcodeMajorVersion:          tt.XcodeMajorVersion,
 					ShouldConsiderXcodeSigning: true,
+					MinDaysProfileValidity:     tt.minDaysProfileValidity,
 				},
 			}
 
