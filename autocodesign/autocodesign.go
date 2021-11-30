@@ -97,7 +97,6 @@ type LocalCodeSignAssetManager interface {
 
 // AppLayout contains codesigning related settings that are needed to ensure codesigning files
 type AppLayout struct {
-	IsSigningManagedAutomatically          bool
 	TeamID                                 string
 	Platform                               Platform
 	EntitlementsByArchivableTargetBundleID map[string]Entitlements

@@ -132,7 +132,6 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 	}
 
 	return autocodesign.AppLayout{
-		IsSigningManagedAutomatically:          isSigningManagedAutomatically,
 		TeamID:                                 teamID,
 		Platform:                               platform,
 		EntitlementsByArchivableTargetBundleID: archivableTargetBundleIDToEntitlements,

@@ -11,14 +11,13 @@ import (
 )
 
 type fields struct {
-	platform                      autocodesign.Platform
-	distributionType              autocodesign.DistributionType
-	bundleID                      string
-	entitlements                  autocodesign.Entitlements
-	minProfileDaysValid           int
-	certIDs                       []string
-	deviceIDs                     []string
-	isSigningManagedAutomatically bool
+	platform            autocodesign.Platform
+	distributionType    autocodesign.DistributionType
+	bundleID            string
+	entitlements        autocodesign.Entitlements
+	minProfileDaysValid int
+	certIDs             []string
+	deviceIDs           []string
 }
 
 func Test_GivenProfiles_WhenSearchingForAnExisting_ThenFindsIt(t *testing.T) {
@@ -89,7 +88,7 @@ func Test_GivenProfiles_WhenSearchingForAnExisting_ThenFindsIt(t *testing.T) {
 
 	for _, test := range tests {
 		// When
-		profile := findProfile(profiles, test.fields.platform, test.fields.distributionType, test.fields.bundleID, test.fields.entitlements, test.fields.minProfileDaysValid, test.fields.certIDs, test.fields.deviceIDs, test.fields.isSigningManagedAutomatically)
+		profile := findProfile(profiles, test.fields.platform, test.fields.distributionType, test.fields.bundleID, test.fields.entitlements, test.fields.minProfileDaysValid, test.fields.certIDs, test.fields.deviceIDs)
 
 		// Then
 		assert.Equal(t, test.expectedProfile, *profile)
@@ -98,7 +97,7 @@ func Test_GivenProfiles_WhenSearchingForAnExisting_ThenFindsIt(t *testing.T) {
 
 func Test_GivenProfiles_WhenFiltersForNonExisting_ThenItIsMissing(t *testing.T) {
 	// Given
-	profiles := []profileutil.ProvisioningProfileInfoModel{iosDevelopmentProfile(t), iosAppStoreProfile(t), tvosAdHocProfile(t), tvosEnterpriseProfile(t), iosXcodeManagedDevelopmentProfile(t)}
+	profiles := []profileutil.ProvisioningProfileInfoModel{iosDevelopmentProfile(t), iosAppStoreProfile(t), tvosAdHocProfile(t), tvosEnterpriseProfile(t)}
 	tests := []struct {
 		name   string
 		fields fields
@@ -177,36 +176,11 @@ func Test_GivenProfiles_WhenFiltersForNonExisting_ThenItIsMissing(t *testing.T) 
 				deviceIDs:           []string{"ios-device-3"},
 			},
 		},
-		{
-			name: "iOS app store 1 included, 1 missing certificate",
-			fields: fields{
-				platform:            autocodesign.IOS,
-				distributionType:    autocodesign.AppStore,
-				bundleID:            "io.ios",
-				entitlements:        nil,
-				minProfileDaysValid: 3,
-				certIDs:             []string{"2", "100"},
-				deviceIDs:           []string{"ios-device-3"},
-			},
-		},
-		{
-			name: "iOS Xcode managed development profile",
-			fields: fields{
-				platform:                      autocodesign.IOS,
-				distributionType:              autocodesign.Development,
-				bundleID:                      "io.ios-managed",
-				entitlements:                  nil,
-				minProfileDaysValid:           0,
-				certIDs:                       []string{"1"},
-				deviceIDs:                     nil,
-				isSigningManagedAutomatically: false,
-			},
-		},
 	}
 
 	for _, test := range tests {
 		// When
-		profile := findProfile(profiles, test.fields.platform, test.fields.distributionType, test.fields.bundleID, test.fields.entitlements, test.fields.minProfileDaysValid, test.fields.certIDs, test.fields.deviceIDs, test.fields.isSigningManagedAutomatically)
+		profile := findProfile(profiles, test.fields.platform, test.fields.distributionType, test.fields.bundleID, test.fields.entitlements, test.fields.minProfileDaysValid, test.fields.certIDs, test.fields.deviceIDs)
 
 		// Then
 		assert.Nil(t, profile)
@@ -214,24 +188,6 @@ func Test_GivenProfiles_WhenFiltersForNonExisting_ThenItIsMissing(t *testing.T) 
 }
 
 // Helpers
-
-func iosXcodeManagedDevelopmentProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
-	return profileutil.ProvisioningProfileInfoModel{
-		UUID:                  "uuid-1",
-		Name:                  "iOS Team Provisioning Profile: io.ios-managed",
-		TeamName:              "TeamName",
-		TeamID:                "TeamID",
-		BundleID:              "io.ios-managed",
-		ExportType:            exportoptions.MethodDevelopment,
-		ProvisionedDevices:    []string{"ios-device-1", "ios-device-2", "ios-device-3"},
-		DeveloperCertificates: []certificateutil.CertificateInfoModel{devCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, 0, -1),
-		ExpirationDate:        dateRelativeToNow(0, 0, 5),
-		Entitlements:          firstSetOfEntitlements(),
-		ProvisionsAllDevices:  false,
-		Type:                  profileutil.ProfileTypeIos,
-	}
-}
 
 func iosDevelopmentProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
 	return profileutil.ProvisioningProfileInfoModel{
