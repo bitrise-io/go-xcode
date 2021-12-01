@@ -177,7 +177,7 @@ func Test_GivenProfiles_WhenFiltersForNonExisting_ThenItIsMissing(t *testing.T) 
 			},
 		},
 		{
-			name: "iOS Xcode-amanged development profile",
+			name: "iOS Xcode-managed development profile",
 			fields: fields{
 				platform:         autocodesign.IOS,
 				distributionType: autocodesign.Development,
