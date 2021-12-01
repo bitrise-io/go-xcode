@@ -54,7 +54,7 @@ func newMacosBaseApplication(path string) (macosBaseApplication, error) {
 	}
 
 	executable := filepath.Join("/Contents/MacOS/", executableNameFromInfoPlist(infoPlist))
-	entitlements, err := getEntitlements(path, "Contents/Resources/archived-expanded-entitlements.xcent", executable)
+	entitlements, err := getEntitlements(path, executable)
 	if err != nil {
 		return macosBaseApplication{}, err
 	}

@@ -1,12 +1,10 @@
 package xcarchive
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/env"
-	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-xcode/plistutil"
 )
 
@@ -17,17 +15,8 @@ func executableNameFromInfoPlist(infoPlist plistutil.PlistData) string {
 	return ""
 }
 
-func getEntitlements(basePath, entitlementsRelativePath, executableRelativePath string) (plistutil.PlistData, error) {
-	entitlements, err := entitlementsFromXcentFile(basePath, entitlementsRelativePath)
-	if err != nil {
-		return plistutil.PlistData{}, err
-	}
-
-	if entitlements != nil {
-		return *entitlements, nil
-	}
-
-	entitlements, err = entitlementsFromExecutable(basePath, executableRelativePath)
+func getEntitlements(basePath, executableRelativePath string) (plistutil.PlistData, error) {
+	entitlements, err := entitlementsFromExecutable(basePath, executableRelativePath)
 	if err != nil {
 		return plistutil.PlistData{}, err
 	}
@@ -37,25 +26,6 @@ func getEntitlements(basePath, entitlementsRelativePath, executableRelativePath 
 	}
 
 	return plistutil.PlistData{}, nil
-}
-
-func entitlementsFromXcentFile(basePath, entitlementsRelativePath string) (*plistutil.PlistData, error) {
-	entitlementsPath := filepath.Join(basePath, entitlementsRelativePath)
-	exist, err := pathutil.IsPathExists(entitlementsPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check if entitlements exists at: %s, error: %s", entitlementsPath, err)
-	}
-
-	if exist == false {
-		return nil, nil
-	}
-
-	plist, err := plistutil.NewPlistDataFromFile(entitlementsPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &plist, nil
 }
 
 func entitlementsFromExecutable(basePath, executableRelativePath string) (*plistutil.PlistData, error) {

@@ -16,7 +16,7 @@ func TestGiveniOS_WhenXcentFileIsMissing_ThenReadsEntitlementsFromTheExecutable(
 	executable := executableRelativePath(appPath, "Info.plist", "")
 
 	// When
-	entitlements, err := getEntitlements(appPath, "non-existing-entitlements-file.xcent", executable)
+	entitlements, err := getEntitlements(appPath, executable)
 
 	// Then
 	assert.NoError(t, err)
@@ -29,7 +29,7 @@ func TestGivenMacos_WhenAskingForEntitlements_ThenReadsItFromTheXcentFile(t *tes
 	executable := executableRelativePath(appPath, "Contents/Info.plist", "Contents/MacOS/")
 
 	// When
-	entitlements, err := getEntitlements(appPath, "Contents/Resources/archived-expanded-entitlements.xcent", executable)
+	entitlements, err := getEntitlements(appPath, executable)
 
 	// Then
 	assert.NoError(t, err)
@@ -42,7 +42,7 @@ func TestGivenMacos_WhenXcentFileIsMissing_ThenReadsEntitlementsFromTheExecutabl
 	executable := executableRelativePath(appPath, "Contents/Info.plist", "Contents/MacOS/")
 
 	// When
-	entitlements, err := getEntitlements(appPath, "Contents/Resources/non-existing-entitlements-file.xcent", executable)
+	entitlements, err := getEntitlements(appPath, executable)
 
 	// Then
 	assert.NoError(t, err)

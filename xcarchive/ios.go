@@ -56,7 +56,7 @@ func newIosBaseApplication(path string) (iosBaseApplication, error) {
 	}
 
 	executable := executableNameFromInfoPlist(infoPlist)
-	entitlements, err := getEntitlements(path, "archived-expanded-entitlements.xcent", executable)
+	entitlements, err := getEntitlements(path, executable)
 	if err != nil {
 		return iosBaseApplication{}, err
 	}

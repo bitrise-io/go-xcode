@@ -46,25 +46,25 @@ func TestNewIosArchive(t *testing.T) {
 
 	app := archive.Application
 	require.Equal(t, 26, len(app.InfoPlist))
-	require.Equal(t, 2, len(app.Entitlements))
+	require.Equal(t, 4, len(app.Entitlements))
 	require.Equal(t, "*", app.ProvisioningProfile.BundleID)
 
 	require.Equal(t, 1, len(app.Extensions))
 	extension := app.Extensions[0]
 	require.Equal(t, 23, len(extension.InfoPlist))
-	require.Equal(t, 2, len(extension.Entitlements))
+	require.Equal(t, 4, len(extension.Entitlements))
 	require.Equal(t, "*", extension.ProvisioningProfile.BundleID)
 
 	require.NotNil(t, app.WatchApplication)
 	watchApp := *app.WatchApplication
 	require.Equal(t, 24, len(watchApp.InfoPlist))
-	require.Equal(t, 2, len(watchApp.Entitlements))
+	require.Equal(t, 4, len(watchApp.Entitlements))
 	require.Equal(t, "*", watchApp.ProvisioningProfile.BundleID)
 
 	require.Equal(t, 1, len(watchApp.Extensions))
 	watchExtension := watchApp.Extensions[0]
 	require.Equal(t, 23, len(watchExtension.InfoPlist))
-	require.Equal(t, 2, len(watchExtension.Entitlements))
+	require.Equal(t, 4, len(watchExtension.Entitlements))
 	require.Equal(t, "*", watchExtension.ProvisioningProfile.BundleID)
 }
 
