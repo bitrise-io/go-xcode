@@ -18,7 +18,7 @@ import (
 func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 	tests := []struct {
 		name                   string
-		project                Project
+		project                DetailsProvider
 		credentials            appleauth.Credentials
 		XcodeMajorVersion      int
 		minDaysProfileValidity int
@@ -84,7 +84,7 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &Manager{
-				project: tt.project,
+				detailsProvider: tt.project,
 				opts: Opts{
 					XcodeMajorVersion:          tt.XcodeMajorVersion,
 					ShouldConsiderXcodeSigning: true,
@@ -103,8 +103,8 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 	}
 }
 
-func newMockProject(isAutoSign bool, mockErr error) Project {
-	mockProjectHelper := new(mocks.Project)
+func newMockProject(isAutoSign bool, mockErr error) DetailsProvider {
+	mockProjectHelper := new(mocks.DetailsProvider)
 	mockProjectHelper.On("IsSigningManagedAutomatically", mock.Anything).Return(isAutoSign, mockErr)
 
 	return mockProjectHelper
@@ -156,7 +156,7 @@ func TestManager_downloadAndInstallCertificates(t *testing.T) {
 					ExportMethod: tt.distributionMethod,
 				},
 				certDownloader: tt.certDownloader,
-				assetWriter:    newMockAssetWriter(nil),
+				assetInstaller: newMockAssetWriter(nil),
 				logger:         log.NewLogger(),
 			}
 
