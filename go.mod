@@ -7,8 +7,8 @@ require (
 	github.com/bitrise-io/go-steputils v0.0.0-20210929162140-866a65a1e14a
 	github.com/bitrise-io/go-utils v0.0.0-20211008161027-fa11986847a0
 	github.com/bitrise-io/pkcs12 v0.0.0-20210430063833-0da06eb56630
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
+	github.com/golang-jwt/jwt/v4 v4.1.0
 	github.com/google/go-cmp v0.5.6
 	github.com/google/go-querystring v1.1.0
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
