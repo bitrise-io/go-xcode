@@ -57,14 +57,41 @@ type Manager struct {
 	assetWriter               autocodesign.AssetWriter
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager
 
+	logger log.Logger
+
 	projectFactory projectmanager.Factory
 	project        Project
 
-	logger log.Logger
+	archive Project
 }
 
-// NewManager ...
-func NewManager(
+// NewManagerWithArchive creates a codesign manager, which reads the code signing asset requirements from an XCArchive file.
+func NewManagerWithArchive(
+	opts Opts,
+	appleAuth appleauth.Credentials,
+	connection *devportalservice.AppleDeveloperConnection,
+	clientFactory devportalclient.Factory,
+	certDownloader autocodesign.CertificateProvider,
+	assetWriter autocodesign.AssetWriter,
+	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager,
+	archive Archive,
+	logger log.Logger,
+) Manager {
+	return Manager{
+		opts:                      opts,
+		appleAuthCredentials:      appleAuth,
+		bitriseConnection:         connection,
+		devPortalClientFactory:    clientFactory,
+		certDownloader:            certDownloader,
+		assetWriter:               assetWriter,
+		localCodeSignAssetManager: localCodeSignAssetManager,
+		archive:                   archive,
+		logger:                    logger,
+	}
+}
+
+// NewManagerWithProject creates a codesign manager, which reads the code signing asset requirements from an Xcode Project.
+func NewManagerWithProject(
 	opts Opts,
 	appleAuth appleauth.Credentials,
 	connection *devportalservice.AppleDeveloperConnection,
@@ -97,6 +124,11 @@ type Project interface {
 }
 
 func (m *Manager) getProject() (Project, error) {
+	// Manager is either initialised with an XCArchive or an Xcode Project.
+	if m.archive != nil {
+		return m.archive, nil
+	}
+
 	if m.project == nil {
 		var err error
 		m.project, err = m.projectFactory.Create()
