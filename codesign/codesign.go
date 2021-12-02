@@ -121,6 +121,7 @@ type DetailsProvider interface {
 	GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error)
 }
 
+// AssetWriter ...
 type AssetWriter interface {
 	ForceCodesignAssets(distribution autocodesign.DistributionType, codesignAssetsByDistributionType map[autocodesign.DistributionType]autocodesign.AppCodesignAssets) error
 }
