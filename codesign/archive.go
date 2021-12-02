@@ -12,6 +12,13 @@ type Archive struct {
 	archive xcarchive.IosArchive
 }
 
+// NewArchive ...
+func NewArchive(archive xcarchive.IosArchive) Archive {
+	return Archive{
+		archive: archive,
+	}
+}
+
 // IsSigningManagedAutomatically ...
 func (a Archive) IsSigningManagedAutomatically() (bool, error) {
 	return a.archive.IsXcodeManaged(), nil
