@@ -384,10 +384,10 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 						},
 						ProvisioningProfile: profileutil.ProvisioningProfileInfoModel{
 							TeamID: "1234ASDF",
-							Entitlements: map[string]interface{}{
-								"get-task-allow":                        false,
-								"com.apple.security.application-groups": []string{"group.io.bitrise.app"},
-							},
+						},
+						Entitlements: map[string]interface{}{
+							"get-task-allow":                        false,
+							"com.apple.security.application-groups": []string{"group.io.bitrise.app"},
 						},
 					},
 				},
