@@ -38,8 +38,10 @@ func Test_GiveniOSAppLayoutWithUITestTargets_WhenExistingProfile_ThenFindsIt(t *
 			ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
 				"io.ios.valid": findProvProfile(t, profiles, "uuid-1"),
 			},
-			UITestTargetProfilesByBundleID: nil,
-			Certificate:                    findCert(t, certsByType, "1"),
+			UITestTargetProfilesByBundleID: map[string]autocodesign.Profile{
+				"io.ios.valid": findProvProfile(t, profiles, "uuid-4"),
+			},
+			Certificate: findCert(t, certsByType, "1"),
 		},
 	}
 
@@ -227,21 +229,6 @@ func profileFromModel(profileInfo profileutil.ProvisioningProfileInfoModel) auto
 }
 
 func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
-	iosWildcardDevProfile := profileutil.ProvisioningProfileInfoModel{
-		UUID:                  "uuid-1",
-		Name:                  "Valid wildcard development profile",
-		TeamName:              teamName,
-		TeamID:                teamID,
-		BundleID:              "io.ios.*",
-		ExportType:            exportoptions.MethodDevelopment,
-		ProvisionedDevices:    []string{"device-1", "device-2", "device-3"},
-		DeveloperCertificates: []certificateutil.CertificateInfoModel{devCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, -1, 0),
-		ExpirationDate:        dateRelativeToNow(0, 1, 0),
-		Entitlements:          entitlements(),
-		ProvisionsAllDevices:  false,
-		Type:                  profileutil.ProfileTypeIos,
-	}
 	iosDevProfile := profileutil.ProvisioningProfileInfoModel{
 		UUID:                  "uuid-1",
 		Name:                  "Valid development profile",
@@ -287,8 +274,23 @@ func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
 		ProvisionsAllDevices:  true,
 		Type:                  profileutil.ProfileTypeIos,
 	}
+	iosWildcardDevProfile := profileutil.ProvisioningProfileInfoModel{
+		UUID:                  "uuid-4",
+		Name:                  "Valid wildcard development profile",
+		TeamName:              teamName,
+		TeamID:                teamID,
+		BundleID:              "io.ios.*",
+		ExportType:            exportoptions.MethodDevelopment,
+		ProvisionedDevices:    []string{"device-1", "device-2", "device-3"},
+		DeveloperCertificates: []certificateutil.CertificateInfoModel{devCert(t, dateRelativeToNow(1, 0, 0))},
+		CreationDate:          dateRelativeToNow(0, -1, 0),
+		ExpirationDate:        dateRelativeToNow(0, 1, 0),
+		Entitlements:          entitlements(),
+		ProvisionsAllDevices:  false,
+		Type:                  profileutil.ProfileTypeIos,
+	}
 
-	return []profileutil.ProvisioningProfileInfoModel{iosWildcardDevProfile, iosDevProfile, tvosDistProfile, iosExpiredProfile}
+	return []profileutil.ProvisioningProfileInfoModel{iosDevProfile, tvosDistProfile, iosExpiredProfile, iosWildcardDevProfile}
 }
 
 func entitlements() map[string]interface{} {
