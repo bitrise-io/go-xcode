@@ -290,7 +290,6 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	assetWriter := newDefaultMockAssetWriter()
 
 	appLayout := AppLayout{
-		TeamID:   teamID,
 		Platform: IOS,
 		EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
 			"io.bitrise.appclip": {"com.apple.developer.parent-application-identifiers": []string{"io.bitrise.app"}},
@@ -324,7 +323,6 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 	assetWriter := newDefaultMockAssetWriter()
 
 	appLayout := AppLayout{
-		TeamID:   teamID,
 		Platform: IOS,
 		EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
 			appClipBundleID: {
@@ -400,7 +398,6 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 
 	assetWriter := newDefaultMockAssetWriter()
 	appLayout := AppLayout{
-		TeamID:   teamID,
 		Platform: IOS,
 		EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
 			"io.test": {},
