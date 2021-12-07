@@ -279,7 +279,6 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 				},
 			},
 			want: &autocodesign.AppLayout{
-				TeamID:   "1234ASDF",
 				Platform: autocodesign.IOS,
 				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 					"io.bitrise.app": nil,
@@ -361,7 +360,6 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 				},
 			},
 			want: &autocodesign.AppLayout{
-				TeamID:   "1234ASDF",
 				Platform: autocodesign.IOS,
 				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 					"io.bitrise.app":          nil,
@@ -393,7 +391,6 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 				},
 			},
 			want: &autocodesign.AppLayout{
-				TeamID:   "1234ASDF",
 				Platform: autocodesign.IOS,
 				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 					"io.bitrise.app": {
