@@ -25,7 +25,6 @@ func Test_GiveniOSAppLayoutWithUITestTargets_WhenExistingProfile_ThenFindsIt(t *
 	manager, profiles := createTestObjects(t)
 
 	appLayout := autocodesign.AppLayout{
-		TeamID:   teamID,
 		Platform: autocodesign.IOS,
 		EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 			"io.ios.valid": entitlements(),
@@ -60,7 +59,6 @@ func Test_GiveniOSAppLayoutWithEntitlements_WhenExistingProfile_ThenFindsIt(t *t
 	manager, profiles := createTestObjects(t)
 
 	appLayout := autocodesign.AppLayout{
-		TeamID:   teamID,
 		Platform: autocodesign.IOS,
 		EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 			"io.ios.valid": entitlements(),
@@ -92,7 +90,6 @@ func Test_GiventvOSAppLayout_WhenExistingProfile_ThenFindsIt(t *testing.T) {
 	manager, profiles := createTestObjects(t)
 
 	appLayout := autocodesign.AppLayout{
-		TeamID:   teamID,
 		Platform: autocodesign.TVOS,
 		EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 			"io.tvos.valid": nil,
@@ -124,7 +121,6 @@ func Test_GiveniOSAppLayout_WhenExpiredProfile_ThenDoesNotFindIt(t *testing.T) {
 	manager, _ := createTestObjects(t)
 
 	appLayout := autocodesign.AppLayout{
-		TeamID:   teamID,
 		Platform: autocodesign.TVOS,
 		EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 			"io.tvos.expired": nil,
@@ -149,7 +145,6 @@ func Test_GiveniOSAppLayoutWithEntitlements_WhenProfileHasMissingEntitlements_Th
 	entitlements["main"] = "$(build-setting)"
 
 	appLayout := autocodesign.AppLayout{
-		TeamID:   teamID,
 		Platform: autocodesign.IOS,
 		EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 			"io.ios.valid": entitlements,
