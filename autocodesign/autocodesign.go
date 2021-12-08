@@ -184,41 +184,48 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 
 	}
 
-	localCodesignAssets, missingCodesignAssets, err := m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrTypes, certsByType, devPortalDeviceUDIDs, opts.MinProfileValidityDays)
-	if err != nil {
-		return nil, fmt.Errorf("failed to collect local code signing assets: %w", err)
-	}
+	codesignAssetsByDistributionType := map[DistributionType]AppCodesignAssets{}
 
-	printExistingCodesignAssets(localCodesignAssets)
-
-	codesignAssetsByDistributionType := localCodesignAssets
-	if missingCodesignAssets != nil {
-		printMissingCodeSignAssets(missingCodesignAssets)
-
-		// Ensure Profiles
-		newCodesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, distrTypes, certsByType, *missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
+	for _, distr := range distrTypes {
+		localCodesignAssets, missingCodesignAssets, err := m.localCodeSignAssetManager.FindCodesignAssets(appLayout, []DistributionType{distr}, certsByType, devPortalDeviceUDIDs, opts.MinProfileValidityDays)
 		if err != nil {
-			switch {
-			case errors.As(err, &ErrAppClipAppID{}):
-				log.Warnf("Can't create Application Identifier for App Clip targets.")
-				log.Warnf("Please generate the Application Identifier manually on Apple Developer Portal, after that the Step will continue working.")
-			case errors.As(err, &ErrAppClipAppIDWithAppleSigning{}):
-				log.Warnf("Can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability.")
-				log.Warnf("Please configure Capabilities on Apple Developer Portal for App Clip target manually, after that the Step will continue working.")
+			return nil, fmt.Errorf("failed to collect local code signing assets: %w", err)
+		}
+
+		printExistingCodesignAssets(localCodesignAssets)
+
+		assets := localCodesignAssets
+
+		if missingCodesignAssets != nil {
+			printMissingCodeSignAssets(missingCodesignAssets)
+
+			// Ensure Profiles
+			newCodesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, []DistributionType{distr}, certsByType, *missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
+			if err != nil {
+				switch {
+				case errors.As(err, &ErrAppClipAppID{}):
+					log.Warnf("Can't create Application Identifier for App Clip targets.")
+					log.Warnf("Please generate the Application Identifier manually on Apple Developer Portal, after that the Step will continue working.")
+				case errors.As(err, &ErrAppClipAppIDWithAppleSigning{}):
+					log.Warnf("Can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability.")
+					log.Warnf("Please configure Capabilities on Apple Developer Portal for App Clip target manually, after that the Step will continue working.")
+				}
+
+				return nil, fmt.Errorf("failed to ensure profiles: %w", err)
 			}
 
-			return nil, fmt.Errorf("failed to ensure profiles: %w", err)
+			// Install new certificates and profiles
+			fmt.Println()
+			log.Infof("Install certificates and profiles")
+			if err := m.assetWriter.Write(newCodesignAssetsByDistributionType); err != nil {
+				return nil, fmt.Errorf("failed to install codesigning files: %w", err)
+			}
+
+			// Merge local and recently generated code signing assets
+			assets = mergeCodeSignAssets(assets, newCodesignAssetsByDistributionType)
 		}
 
-		// Install new certificates and profiles
-		fmt.Println()
-		log.Infof("Install certificates and profiles")
-		if err := m.assetWriter.Write(newCodesignAssetsByDistributionType); err != nil {
-			return nil, fmt.Errorf("failed to install codesigning files: %w", err)
-		}
-
-		// Merge local and recently generated code signing assets
-		codesignAssetsByDistributionType = mergeCodeSignAssets(codesignAssetsByDistributionType, newCodesignAssetsByDistributionType)
+		codesignAssetsByDistributionType[distr] = assets[distr]
 	}
 
 	return codesignAssetsByDistributionType, nil
