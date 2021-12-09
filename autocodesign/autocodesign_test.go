@@ -150,9 +150,17 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 		},
 	}
 
+	appIDAndProfileFoundAppLayout2 := AppLayout{
+		Platform: IOS,
+		EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
+			"io.test":             {},
+			"io.test.development": {},
+		},
+	}
+
 	localCodeSignAsset := AppCodesignAssets{
 		ArchivableTargetProfilesByBundleID: map[string]Profile{
-			"io.test.appstore": devProfile,
+			"io.test.development": devProfile,
 		},
 		UITestTargetProfilesByBundleID: map[string]Profile{},
 		Certificate:                    devCert,
@@ -226,21 +234,21 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 				devPortalClient:           checkOnlyDevportalProfile,
 				certificateProvider:       newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert}),
 				assetWriter:               newDefaultMockAssetWriter(),
-				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(map[DistributionType]AppCodesignAssets{AppStore: localCodeSignAsset}, appIDAndProfileFoundAppLayout),
+				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(map[DistributionType]AppCodesignAssets{Development: localCodeSignAsset}, appIDAndProfileFoundAppLayout),
 			},
-			appLayout: appIDAndProfileFoundAppLayout,
+			appLayout: appIDAndProfileFoundAppLayout2,
 			opts: CodesignAssetsOpts{
 				DistributionType: Development,
 			},
 			want: map[DistributionType]AppCodesignAssets{
 				Development: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"io.test": devProfile,
+						"io.test":             devProfile,
+						"io.test.development": devProfile,
 					},
 					UITestTargetProfilesByBundleID: map[string]Profile{},
 					Certificate:                    devCert,
 				},
-				AppStore: localCodeSignAsset,
 			},
 			wantErr: nil,
 		},
