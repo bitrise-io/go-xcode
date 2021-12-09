@@ -92,7 +92,7 @@ type AssetWriter interface {
 
 // LocalCodeSignAssetManager ...
 type LocalCodeSignAssetManager interface {
-	FindCodesignAssets(appLayout AppLayout, distrTypes []DistributionType, certsByType map[appstoreconnect.CertificateType][]Certificate, deviceIDs []string, minProfileDaysValid int) (map[DistributionType]AppCodesignAssets, *AppLayout, error)
+	FindCodesignAssets(appLayout AppLayout, distrType DistributionType, certsByType map[appstoreconnect.CertificateType][]Certificate, deviceIDs []string, minProfileDaysValid int) (*AppCodesignAssets, *AppLayout, error)
 }
 
 // AppLayout contains codesigning related settings that are needed to ensure codesigning files
@@ -186,21 +186,20 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 
 	codesignAssetsByDistributionType := map[DistributionType]AppCodesignAssets{}
 
-	for _, distr := range distrTypes {
-		localCodesignAssets, missingCodesignAssets, err := m.localCodeSignAssetManager.FindCodesignAssets(appLayout, []DistributionType{distr}, certsByType, devPortalDeviceUDIDs, opts.MinProfileValidityDays)
+	for _, distrType := range distrTypes {
+		localCodesignAssets, missingCodesignAssets, err := m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrType, certsByType, devPortalDeviceUDIDs, opts.MinProfileValidityDays)
 		if err != nil {
 			return nil, fmt.Errorf("failed to collect local code signing assets: %w", err)
 		}
 
-		printExistingCodesignAssets(localCodesignAssets)
+		printExistingCodesignAssets(localCodesignAssets, distrType)
 
-		assets := localCodesignAssets
-
+		finalAssets := localCodesignAssets
 		if missingCodesignAssets != nil {
 			printMissingCodeSignAssets(missingCodesignAssets)
 
 			// Ensure Profiles
-			newCodesignAssetsByDistributionType, err := ensureProfiles(m.devPortalClient, []DistributionType{distr}, certsByType, *missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
+			newCodesignAssets, err := ensureProfiles(m.devPortalClient, distrType, certsByType, *missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
 			if err != nil {
 				switch {
 				case errors.As(err, &ErrAppClipAppID{}):
@@ -217,15 +216,17 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 			// Install new certificates and profiles
 			fmt.Println()
 			log.Infof("Install certificates and profiles")
-			if err := m.assetWriter.Write(newCodesignAssetsByDistributionType); err != nil {
+			if err := m.assetWriter.Write(map[DistributionType]AppCodesignAssets{distrType: *newCodesignAssets}); err != nil {
 				return nil, fmt.Errorf("failed to install codesigning files: %w", err)
 			}
 
 			// Merge local and recently generated code signing assets
-			assets = mergeCodeSignAssets(assets, newCodesignAssetsByDistributionType)
+			finalAssets = mergeCodeSignAssets(localCodesignAssets, newCodesignAssets)
 		}
 
-		codesignAssetsByDistributionType[distr] = assets[distr]
+		if finalAssets != nil {
+			codesignAssetsByDistributionType[distrType] = *finalAssets
+		}
 	}
 
 	return codesignAssetsByDistributionType, nil
