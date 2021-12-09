@@ -33,25 +33,23 @@ func Test_GiveniOSAppLayoutWithUITestTargets_WhenExistingProfile_ThenFindsIt(t *
 		UITestTargetBundleIDs: []string{"io.ios.valid", "io.ios.valid"},
 	}
 
-	expectedAssets := map[autocodesign.DistributionType]autocodesign.AppCodesignAssets{
-		autocodesign.Development: {
-			ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
-				"io.ios.valid": findProvProfile(t, profiles, "uuid-1"),
-			},
-			UITestTargetProfilesByBundleID: map[string]autocodesign.Profile{
-				"io.ios.valid": findProvProfile(t, profiles, "uuid-4"),
-			},
-			Certificate: findCert(t, certsByType, "1"),
+	expectedAssets := autocodesign.AppCodesignAssets{
+		ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
+			"io.ios.valid": findProvProfile(t, profiles, "uuid-1"),
 		},
+		UITestTargetProfilesByBundleID: map[string]autocodesign.Profile{
+			"io.ios.valid": findProvProfile(t, profiles, "uuid-4"),
+		},
+		Certificate: findCert(t, certsByType, "1"),
 	}
 
 	// When
-	assets, missingAppLayout, err := manager.FindCodesignAssets(appLayout, []autocodesign.DistributionType{autocodesign.Development}, certsByType, []string{}, 0)
+	assets, missingAppLayout, err := manager.FindCodesignAssets(appLayout, autocodesign.Development, certsByType, []string{}, 0)
 
 	// Then
 	assert.NoError(t, err)
 	assert.Nil(t, missingAppLayout)
-	assert.Equal(t, expectedAssets, assets)
+	assert.Equal(t, expectedAssets, *assets)
 }
 
 func Test_GiveniOSAppLayoutWithEntitlements_WhenExistingProfile_ThenFindsIt(t *testing.T) {
@@ -67,23 +65,21 @@ func Test_GiveniOSAppLayoutWithEntitlements_WhenExistingProfile_ThenFindsIt(t *t
 		},
 	}
 
-	expectedAssets := map[autocodesign.DistributionType]autocodesign.AppCodesignAssets{
-		autocodesign.Development: {
-			ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
-				"io.ios.valid": findProvProfile(t, profiles, "uuid-1"),
-			},
-			UITestTargetProfilesByBundleID: nil,
-			Certificate:                    findCert(t, certsByType, "1"),
+	expectedAssets := autocodesign.AppCodesignAssets{
+		ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
+			"io.ios.valid": findProvProfile(t, profiles, "uuid-1"),
 		},
+		UITestTargetProfilesByBundleID: nil,
+		Certificate:                    findCert(t, certsByType, "1"),
 	}
 
 	// When
-	assets, missingAppLayout, err := manager.FindCodesignAssets(appLayout, []autocodesign.DistributionType{autocodesign.Development}, certsByType, []string{}, 0)
+	assets, missingAppLayout, err := manager.FindCodesignAssets(appLayout, autocodesign.Development, certsByType, []string{}, 0)
 
 	// Then
 	assert.NoError(t, err)
 	assert.Nil(t, missingAppLayout)
-	assert.Equal(t, expectedAssets, assets)
+	assert.Equal(t, expectedAssets, *assets)
 }
 
 func Test_GiventvOSAppLayout_WhenExistingProfile_ThenFindsIt(t *testing.T) {
@@ -99,23 +95,21 @@ func Test_GiventvOSAppLayout_WhenExistingProfile_ThenFindsIt(t *testing.T) {
 		},
 	}
 
-	expectedAssets := map[autocodesign.DistributionType]autocodesign.AppCodesignAssets{
-		autocodesign.AppStore: {
-			ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
-				"io.tvos.valid": findProvProfile(t, profiles, "uuid-2"),
-			},
-			UITestTargetProfilesByBundleID: nil,
-			Certificate:                    findCert(t, certsByType, "2"),
+	expectedAssets := autocodesign.AppCodesignAssets{
+		ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
+			"io.tvos.valid": findProvProfile(t, profiles, "uuid-2"),
 		},
+		UITestTargetProfilesByBundleID: nil,
+		Certificate:                    findCert(t, certsByType, "2"),
 	}
 
 	// When
-	assets, missingAppLayout, err := manager.FindCodesignAssets(appLayout, []autocodesign.DistributionType{autocodesign.AppStore}, certsByType, []string{}, 0)
+	assets, missingAppLayout, err := manager.FindCodesignAssets(appLayout, autocodesign.AppStore, certsByType, []string{}, 0)
 
 	// Then
 	assert.NoError(t, err)
 	assert.Nil(t, missingAppLayout)
-	assert.Equal(t, expectedAssets, assets)
+	assert.Equal(t, expectedAssets, *assets)
 }
 
 func Test_GiveniOSAppLayout_WhenExpiredProfile_ThenDoesNotFindIt(t *testing.T) {
@@ -132,11 +126,11 @@ func Test_GiveniOSAppLayout_WhenExpiredProfile_ThenDoesNotFindIt(t *testing.T) {
 	}
 
 	// When
-	assets, missingAppLayout, err := manager.FindCodesignAssets(appLayout, []autocodesign.DistributionType{autocodesign.AppStore}, certsByType, []string{}, 0)
+	assets, missingAppLayout, err := manager.FindCodesignAssets(appLayout, autocodesign.AppStore, certsByType, []string{}, 0)
 
 	// Then
 	assert.NoError(t, err)
-	assert.Equal(t, assets, map[autocodesign.DistributionType]autocodesign.AppCodesignAssets{})
+	assert.Nil(t, assets)
 	assert.Equal(t, appLayout, *missingAppLayout)
 }
 
@@ -157,11 +151,11 @@ func Test_GiveniOSAppLayoutWithEntitlements_WhenProfileHasMissingEntitlements_Th
 	}
 
 	// When
-	assets, missingAppLayout, err := manager.FindCodesignAssets(appLayout, []autocodesign.DistributionType{autocodesign.Development}, certsByType, []string{}, 0)
+	assets, missingAppLayout, err := manager.FindCodesignAssets(appLayout, autocodesign.Development, certsByType, []string{}, 0)
 
 	// Then
 	assert.NoError(t, err)
-	assert.Equal(t, assets, map[autocodesign.DistributionType]autocodesign.AppCodesignAssets{})
+	assert.Nil(t, assets)
 	assert.Equal(t, appLayout, *missingAppLayout)
 }
 

@@ -13,123 +13,97 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 	dev2Profile := profile("addition", "4")
 	devUITest1Profile := profile("base", "2")
 	devUITest2Profile := profile("addition-uitest", "5")
-	appStore1Profile := profile("base", "3")
 	enterprise1Profile := profile("enterprise", "1")
 	adHoc1Profile := profile("ad-hoc", "1")
 
 	certificate := certificateutil.CertificateInfoModel{}
 	tests := []struct {
 		name     string
-		base     map[DistributionType]AppCodesignAssets
-		addition map[DistributionType]AppCodesignAssets
-		expected map[DistributionType]AppCodesignAssets
+		base     *AppCodesignAssets
+		addition *AppCodesignAssets
+		expected *AppCodesignAssets
 	}{
 		{
 			name: "Two existing assets with overlapping values",
-			base: map[DistributionType]AppCodesignAssets{
-				Development: {
-					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"dev-1": dev1Profile,
-					},
-					UITestTargetProfilesByBundleID: map[string]Profile{
-						"dev-uitest-1": devUITest1Profile,
-					},
-					Certificate: certificate,
-				}},
-			addition: map[DistributionType]AppCodesignAssets{
-				Development: {
-					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"dev-2": dev2Profile,
-					},
-					UITestTargetProfilesByBundleID: map[string]Profile{
-						"dev-uitest-2": devUITest2Profile,
-					},
-					Certificate: certificate,
+			base: &AppCodesignAssets{
+				ArchivableTargetProfilesByBundleID: map[string]Profile{
+					"dev-1": dev1Profile,
 				},
-				AppStore: {
-					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"app-store-1": appStore1Profile,
-					},
-					UITestTargetProfilesByBundleID: nil,
-					Certificate:                    certificate,
+				UITestTargetProfilesByBundleID: map[string]Profile{
+					"dev-uitest-1": devUITest1Profile,
 				},
+				Certificate: certificate,
 			},
-			expected: map[DistributionType]AppCodesignAssets{
-				Development: {
-					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"dev-1": dev1Profile,
-						"dev-2": dev2Profile,
-					},
-					UITestTargetProfilesByBundleID: map[string]Profile{
-						"dev-uitest-1": devUITest1Profile,
-						"dev-uitest-2": devUITest2Profile,
-					},
-					Certificate: certificate,
+			addition: &AppCodesignAssets{
+				ArchivableTargetProfilesByBundleID: map[string]Profile{
+					"dev-2": dev2Profile,
 				},
-				AppStore: {
-					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"app-store-1": appStore1Profile,
-					},
-					UITestTargetProfilesByBundleID: nil,
-					Certificate:                    certificate,
+				UITestTargetProfilesByBundleID: map[string]Profile{
+					"dev-uitest-2": devUITest2Profile,
 				},
+				Certificate: certificate,
+			},
+			expected: &AppCodesignAssets{
+				ArchivableTargetProfilesByBundleID: map[string]Profile{
+					"dev-1": dev1Profile,
+					"dev-2": dev2Profile,
+				},
+				UITestTargetProfilesByBundleID: map[string]Profile{
+					"dev-uitest-1": devUITest1Profile,
+					"dev-uitest-2": devUITest2Profile,
+				},
+				Certificate: certificate,
 			},
 		},
 		{
 			name: "Base value is empty",
-			base: map[DistributionType]AppCodesignAssets{},
-			addition: map[DistributionType]AppCodesignAssets{
-				Enterprise: {
-					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"enterprise-1": enterprise1Profile,
-					},
-					UITestTargetProfilesByBundleID: nil,
-					Certificate:                    certificate,
+			base: nil,
+			addition: &AppCodesignAssets{
+				ArchivableTargetProfilesByBundleID: map[string]Profile{
+					"enterprise-1": enterprise1Profile,
 				},
+				UITestTargetProfilesByBundleID: nil,
+				Certificate:                    certificate,
 			},
-			expected: map[DistributionType]AppCodesignAssets{
-				Enterprise: {
-					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"enterprise-1": enterprise1Profile,
-					},
-					UITestTargetProfilesByBundleID: nil,
-					Certificate:                    certificate,
+			expected: &AppCodesignAssets{
+				ArchivableTargetProfilesByBundleID: map[string]Profile{
+					"enterprise-1": enterprise1Profile,
 				},
+				UITestTargetProfilesByBundleID: nil,
+				Certificate:                    certificate,
 			},
 		},
 		{
 			name: "Additional value is empty",
-			base: map[DistributionType]AppCodesignAssets{
-				AdHoc: {
-					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"ad-hoc-1": adHoc1Profile,
-					},
-					UITestTargetProfilesByBundleID: nil,
-					Certificate:                    certificate,
+			base: &AppCodesignAssets{
+				ArchivableTargetProfilesByBundleID: map[string]Profile{
+					"ad-hoc-1": adHoc1Profile,
 				},
+				UITestTargetProfilesByBundleID: nil,
+				Certificate:                    certificate,
 			},
-			addition: map[DistributionType]AppCodesignAssets{},
-			expected: map[DistributionType]AppCodesignAssets{
-				AdHoc: {
-					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"ad-hoc-1": adHoc1Profile,
-					},
-					UITestTargetProfilesByBundleID: nil,
-					Certificate:                    certificate,
+			addition: nil,
+			expected: &AppCodesignAssets{
+				ArchivableTargetProfilesByBundleID: map[string]Profile{
+					"ad-hoc-1": adHoc1Profile,
 				},
+				UITestTargetProfilesByBundleID: nil,
+				Certificate:                    certificate,
 			},
 		},
 		{
 			name:     "Empty values",
-			base:     map[DistributionType]AppCodesignAssets{},
-			addition: map[DistributionType]AppCodesignAssets{},
-			expected: map[DistributionType]AppCodesignAssets{},
+			base:     nil,
+			addition: nil,
+			expected: nil,
 		},
 	}
 
 	for _, test := range tests {
-		merged := mergeCodeSignAssets(test.base, test.addition)
-		assert.Equal(t, test.expected, merged)
+		t.Run(test.name, func(t *testing.T) {
+			merged := mergeCodeSignAssets(test.base, test.addition)
+			assert.Equal(t, test.expected, merged)
+		})
 	}
 }
 
