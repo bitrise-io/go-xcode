@@ -187,7 +187,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	codesignAssetsByDistributionType := map[DistributionType]AppCodesignAssets{}
 
 	for _, distrType := range distrTypes {
-		localCodesignAssets, missingCodesignAssets, err := m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrType, certsByType, devPortalDeviceUDIDs, opts.MinProfileValidityDays)
+		localCodesignAssets, missingAppLayout, err := m.localCodeSignAssetManager.FindCodesignAssets(appLayout, distrType, certsByType, devPortalDeviceUDIDs, opts.MinProfileValidityDays)
 		if err != nil {
 			return nil, fmt.Errorf("failed to collect local code signing assets: %w", err)
 		}
@@ -195,11 +195,11 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		printExistingCodesignAssets(localCodesignAssets, distrType)
 
 		finalAssets := localCodesignAssets
-		if missingCodesignAssets != nil {
-			printMissingCodeSignAssets(missingCodesignAssets)
+		if missingAppLayout != nil {
+			printMissingCodeSignAssets(missingAppLayout)
 
 			// Ensure Profiles
-			newCodesignAssets, err := ensureProfiles(m.devPortalClient, distrType, certsByType, *missingCodesignAssets, devPortalDeviceIDs, opts.MinProfileValidityDays)
+			newCodesignAssets, err := ensureProfiles(m.devPortalClient, distrType, certsByType, *missingAppLayout, devPortalDeviceIDs, opts.MinProfileValidityDays)
 			if err != nil {
 				switch {
 				case errors.As(err, &ErrAppClipAppID{}):
