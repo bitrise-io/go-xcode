@@ -29,7 +29,7 @@ func newDefaultMockAssetWriter() AssetWriter {
 	return mockAssetWriter
 }
 
-func newMockLocalCodeSignAssetManager(assets map[DistributionType]AppCodesignAssets, appLayout AppLayout) LocalCodeSignAssetManager {
+func newMockLocalCodeSignAssetManager(assets *AppCodesignAssets, appLayout AppLayout) LocalCodeSignAssetManager {
 	mockLocalCodeSignAssetManager := new(MockLocalCodeSignAssetManager)
 	mockLocalCodeSignAssetManager.On("FindCodesignAssets", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(assets, &appLayout, nil)
 
@@ -150,9 +150,17 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 		},
 	}
 
+	appIDAndProfileFoundAppLayout2 := AppLayout{
+		Platform: IOS,
+		EntitlementsByArchivableTargetBundleID: map[string]Entitlements{
+			"io.test":             {},
+			"io.test.development": {},
+		},
+	}
+
 	localCodeSignAsset := AppCodesignAssets{
 		ArchivableTargetProfilesByBundleID: map[string]Profile{
-			"io.test.appstore": devProfile,
+			"io.test.development": devProfile,
 		},
 		UITestTargetProfilesByBundleID: map[string]Profile{},
 		Certificate:                    devCert,
@@ -203,7 +211,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 				devPortalClient:           checkOnlyDevportalProfile,
 				certificateProvider:       newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert}),
 				assetWriter:               newDefaultMockAssetWriter(),
-				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(map[DistributionType]AppCodesignAssets{}, appIDAndProfileFoundAppLayout),
+				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(nil, appIDAndProfileFoundAppLayout),
 			},
 			appLayout: appIDAndProfileFoundAppLayout,
 			opts: CodesignAssetsOpts{
@@ -226,21 +234,21 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 				devPortalClient:           checkOnlyDevportalProfile,
 				certificateProvider:       newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert}),
 				assetWriter:               newDefaultMockAssetWriter(),
-				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(map[DistributionType]AppCodesignAssets{AppStore: localCodeSignAsset}, appIDAndProfileFoundAppLayout),
+				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(&localCodeSignAsset, appIDAndProfileFoundAppLayout),
 			},
-			appLayout: appIDAndProfileFoundAppLayout,
+			appLayout: appIDAndProfileFoundAppLayout2,
 			opts: CodesignAssetsOpts{
 				DistributionType: Development,
 			},
 			want: map[DistributionType]AppCodesignAssets{
 				Development: {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
-						"io.test": devProfile,
+						"io.test":             devProfile,
+						"io.test.development": devProfile,
 					},
 					UITestTargetProfilesByBundleID: map[string]Profile{},
 					Certificate:                    devCert,
 				},
-				AppStore: localCodeSignAsset,
 			},
 			wantErr: nil,
 		},
@@ -249,7 +257,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			fields: fields{
 				devPortalClient:           devportalWithNoAppID,
 				certificateProvider:       newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert}),
-				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(map[DistributionType]AppCodesignAssets{}, icloudContainerAppLayout),
+				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(nil, icloudContainerAppLayout),
 			},
 			appLayout: icloudContainerAppLayout,
 			opts: CodesignAssetsOpts{
@@ -296,7 +304,7 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 		},
 	}
 
-	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(map[DistributionType]AppCodesignAssets{}, appLayout)
+	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, appLayout)
 	manager := NewCodesignAssetManager(client, certProvider, assetWriter, localCodeSignAssetManager)
 
 	opts := CodesignAssetsOpts{
@@ -332,7 +340,7 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 		},
 	}
 
-	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(map[DistributionType]AppCodesignAssets{}, appLayout)
+	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, appLayout)
 	manager := NewCodesignAssetManager(client, certProvider, assetWriter, localCodeSignAssetManager)
 
 	opts := CodesignAssetsOpts{
