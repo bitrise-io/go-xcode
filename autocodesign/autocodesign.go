@@ -97,7 +97,6 @@ type LocalCodeSignAssetManager interface {
 
 // AppLayout contains codesigning related settings that are needed to ensure codesigning files
 type AppLayout struct {
-	TeamID                                 string
 	Platform                               Platform
 	EntitlementsByArchivableTargetBundleID map[string]Entitlements
 	UITestTargetBundleIDs                  []string
@@ -161,7 +160,6 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		m.devPortalClient,
 		certs,
 		opts.DistributionType,
-		appLayout.TeamID,
 		signUITestTargets,
 		opts.VerboseLog,
 	)

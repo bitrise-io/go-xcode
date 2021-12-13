@@ -129,7 +129,6 @@ func TestGetValidCertificates(t *testing.T) {
 		localCertificates        []certificateutil.CertificateInfoModel
 		client                   DevPortalClient
 		requiredCertificateTypes map[appstoreconnect.CertificateType]bool
-		teamID                   string
 	}
 	tests := []struct {
 		name    string
@@ -145,7 +144,6 @@ func TestGetValidCertificates(t *testing.T) {
 				},
 				client:                   newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: false},
-				teamID:                   "",
 			},
 			want:    map[appstoreconnect.CertificateType][]Certificate{},
 			wantErr: true,
@@ -165,7 +163,6 @@ func TestGetValidCertificates(t *testing.T) {
 					}},
 				}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: false},
-				teamID:                   "",
 			},
 			want: map[appstoreconnect.CertificateType][]Certificate{
 				appstoreconnect.IOSDevelopment: {{
@@ -181,7 +178,6 @@ func TestGetValidCertificates(t *testing.T) {
 				localCertificates:        []certificateutil.CertificateInfoModel{},
 				client:                   newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: true},
-				teamID:                   "",
 			},
 			want:    map[appstoreconnect.CertificateType][]Certificate{},
 			wantErr: true,
@@ -194,7 +190,6 @@ func TestGetValidCertificates(t *testing.T) {
 				},
 				client:                   newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: true},
-				teamID:                   "",
 			},
 			want:    map[appstoreconnect.CertificateType][]Certificate{},
 			wantErr: true,
@@ -212,7 +207,6 @@ func TestGetValidCertificates(t *testing.T) {
 					}},
 				}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: false},
-				teamID:                   "",
 			},
 			want: map[appstoreconnect.CertificateType][]Certificate{
 				appstoreconnect.IOSDevelopment: {{
@@ -236,7 +230,6 @@ func TestGetValidCertificates(t *testing.T) {
 					}},
 				}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: false},
-				teamID:                   "",
 			},
 			want: map[appstoreconnect.CertificateType][]Certificate{
 				appstoreconnect.IOSDevelopment: {{
@@ -265,7 +258,6 @@ func TestGetValidCertificates(t *testing.T) {
 					},
 				}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: true},
-				teamID:                   "",
 			},
 			want:    map[appstoreconnect.CertificateType][]Certificate{},
 			wantErr: true,
@@ -287,7 +279,6 @@ func TestGetValidCertificates(t *testing.T) {
 					appstoreconnect.IOSDevelopment:  true,
 					appstoreconnect.IOSDistribution: true,
 				},
-				teamID: "",
 			},
 			want:    map[appstoreconnect.CertificateType][]Certificate{},
 			wantErr: true,
@@ -314,7 +305,6 @@ func TestGetValidCertificates(t *testing.T) {
 					},
 				}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: true},
-				teamID:                   "",
 			},
 			want: map[appstoreconnect.CertificateType][]Certificate{
 				appstoreconnect.IOSDevelopment: {{
@@ -331,7 +321,7 @@ func TestGetValidCertificates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getValidCertificates(tt.args.localCertificates, tt.args.client, tt.args.requiredCertificateTypes, tt.args.teamID, true)
+			got, err := getValidCertificates(tt.args.localCertificates, tt.args.client, tt.args.requiredCertificateTypes, true)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetValidCertificates() error = %v, wantErr %v", err, tt.wantErr)
 				return
