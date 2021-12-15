@@ -7,6 +7,7 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/testhelper"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/unicode/norm"
 )
@@ -557,6 +558,7 @@ func TestXcodeProj_forceBundleID(t *testing.T) {
 		},
 		{
 			name:          "Configuration not found",
+			target:        "XcodeProj",
 			configuration: "NON_EXISTENT_CONFIGURATION",
 			wantErr:       true,
 		},
@@ -567,16 +569,14 @@ func TestXcodeProj_forceBundleID(t *testing.T) {
 
 			err := project.ForceTargetBundleID(tt.target, tt.configuration, tt.bundleID)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("got error: %s", err)
+				t.Errorf("got error: %s", err)
+			} else if tt.wantErr {
+				return
 			}
 
-			if got, err := project.TargetBundleID(tt.target, tt.configuration); (err != nil) != tt.wantErr {
-				t.Fatalf("error validating test: %s", err)
-
-			} else if err == nil && got != tt.bundleID {
-				t.Fatalf("%s, %s", got, tt.bundleID)
-			}
-
+			got, err := project.TargetBundleID(tt.target, tt.configuration)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.bundleID, got)
 		})
 	}
 }
