@@ -131,6 +131,28 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			},
 		},
 		{
+			name: "archive with authentication",
+			builder: CommandBuilder{
+				archivePath: "archive/path",
+				action:      ArchiveAction,
+				authentication: &AuthenticationParams{
+					KeyID:     "keyID",
+					IsssuerID: "issuerID",
+					KeyPath:   "/key/path",
+				},
+			},
+			want: []string{
+				"xcodebuild",
+				"archive",
+				"-archivePath",
+				"archive/path",
+				"-allowProvisioningUpdates",
+				"-authenticationKeyPath", "/key/path",
+				"-authenticationKeyID", "keyID",
+				"-authenticationKeyIssuerID", "issuerID",
+			},
+		},
+		{
 			name: "disable code signing",
 			builder: CommandBuilder{
 				disableCodesign: true,

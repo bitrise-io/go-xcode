@@ -21,6 +21,7 @@ type ExportCommandModel struct {
 	archivePath        string
 	exportDir          string
 	exportOptionsPlist string
+	authentication     *AuthenticationParams
 }
 
 // NewExportCommand ...
@@ -46,17 +47,30 @@ func (c *ExportCommandModel) SetExportOptionsPlist(exportOptionsPlist string) *E
 	return c
 }
 
+// SetAuthentication ...
+func (c *ExportCommandModel) SetAuthentication(authenticationParams AuthenticationParams) *ExportCommandModel {
+	c.authentication = &authenticationParams
+	return c
+}
+
 func (c ExportCommandModel) cmdSlice() []string {
 	slice := []string{toolName, "-exportArchive"}
 	if c.archivePath != "" {
 		slice = append(slice, "-archivePath", c.archivePath)
 	}
+
 	if c.exportDir != "" {
 		slice = append(slice, "-exportPath", c.exportDir)
 	}
+
 	if c.exportOptionsPlist != "" {
 		slice = append(slice, "-exportOptionsPlist", c.exportOptionsPlist)
 	}
+
+	if c.authentication != nil {
+		slice = append(slice, c.authentication.args()...)
+	}
+
 	return slice
 }
 
