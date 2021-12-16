@@ -1,6 +1,7 @@
 package xcarchive
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -369,4 +370,12 @@ func (archive IosArchive) BundleIDProfileInfoMap() map[string]profileutil.Provis
 // FindDSYMs ...
 func (archive IosArchive) FindDSYMs() ([]string, []string, error) {
 	return findDSYMs(archive.Path)
+}
+
+func (archive IosArchive) TeamID() (string, error) {
+	bundleIDProfileInfoMap := archive.BundleIDProfileInfoMap()
+	for _, profileInfo := range bundleIDProfileInfoMap {
+		return profileInfo.TeamID, nil
+	}
+	return "", errors.New("team id not found")
 }
