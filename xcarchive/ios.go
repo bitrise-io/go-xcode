@@ -372,6 +372,7 @@ func (archive IosArchive) FindDSYMs() ([]string, []string, error) {
 	return findDSYMs(archive.Path)
 }
 
+// TeamID ...
 func (archive IosArchive) TeamID() (string, error) {
 	bundleIDProfileInfoMap := archive.BundleIDProfileInfoMap()
 	for _, profileInfo := range bundleIDProfileInfoMap {
