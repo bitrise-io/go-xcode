@@ -36,29 +36,6 @@ func (c *ShowBuildSettingsCommandModel) SetTarget(target string) *ShowBuildSetti
 
 func (c *ShowBuildSettingsCommandModel) cmdSlice() []string {
 	slice := []string{toolName}
-	return slice
-}
-
-// SetScheme ...
-func (c *ShowBuildSettingsCommandModel) SetScheme(scheme string) *ShowBuildSettingsCommandModel {
-	c.scheme = scheme
-	return c
-}
-
-// SetConfiguration ...
-func (c *ShowBuildSettingsCommandModel) SetConfiguration(configuration string) *ShowBuildSettingsCommandModel {
-	c.configuration = configuration
-	return c
-}
-
-// SetCustomOptions ...
-func (c *ShowBuildSettingsCommandModel) SetCustomOptions(customOptions []string) *ShowBuildSettingsCommandModel {
-	c.customOptions = customOptions
-	return c
-}
-
-func (c *ShowBuildSettingsCommandModel) args() []string {
-	var slice []string
 
 	if c.projectPath != "" {
 		if filepath.Ext(c.projectPath) == ".xcworkspace" {
@@ -84,6 +61,24 @@ func (c *ShowBuildSettingsCommandModel) args() []string {
 	slice = append(slice, c.customOptions...)
 
 	return slice
+}
+
+// SetScheme ...
+func (c *ShowBuildSettingsCommandModel) SetScheme(scheme string) *ShowBuildSettingsCommandModel {
+	c.scheme = scheme
+	return c
+}
+
+// SetConfiguration ...
+func (c *ShowBuildSettingsCommandModel) SetConfiguration(configuration string) *ShowBuildSettingsCommandModel {
+	c.configuration = configuration
+	return c
+}
+
+// SetCustomOptions ...
+func (c *ShowBuildSettingsCommandModel) SetCustomOptions(customOptions []string) *ShowBuildSettingsCommandModel {
+	c.customOptions = customOptions
+	return c
 }
 
 // Command ...
