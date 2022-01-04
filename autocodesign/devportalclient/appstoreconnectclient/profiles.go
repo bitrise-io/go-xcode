@@ -145,7 +145,7 @@ func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.Pro
 // DeleteProfile ...
 func (c *ProfileClient) DeleteProfile(id string) error {
 	if err := c.client.Provisioning.DeleteProfile(id); err != nil {
-		var respErr appstoreconnect.ErrorResponse
+		var respErr *appstoreconnect.ErrorResponse
 		if ok := errors.As(err, &respErr); ok {
 			if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
 				return nil
@@ -344,7 +344,7 @@ func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, appEntit
 }
 
 func wrapInProfileError(err error) error {
-	respErr := &appstoreconnect.ErrorResponse{}
+	var respErr *appstoreconnect.ErrorResponse
 	if ok := errors.As(err, &respErr); ok {
 		if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
 			return autocodesign.NewProfilesInconsistentError(err)
