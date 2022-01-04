@@ -64,7 +64,7 @@ func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*
 
 	registeredDevice, err := d.client.Provisioning.RegisterNewDevice(req)
 	if err != nil {
-		rerr := appstoreconnect.ErrorResponse{}
+		rerr := &appstoreconnect.ErrorResponse{}
 		if ok := errors.As(err, &rerr); ok {
 			if rerr.Response != nil && rerr.Response.StatusCode == http.StatusConflict {
 				return nil, appstoreconnect.DeviceRegistrationError{

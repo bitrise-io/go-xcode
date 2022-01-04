@@ -344,7 +344,7 @@ func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, appEntit
 }
 
 func wrapInProfileError(err error) error {
-	respErr := appstoreconnect.ErrorResponse{}
+	respErr := &appstoreconnect.ErrorResponse{}
 	if ok := errors.As(err, &respErr); ok {
 		if respErr.Response != nil && respErr.Response.StatusCode == http.StatusNotFound {
 			return autocodesign.NewProfilesInconsistentError(err)
