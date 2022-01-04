@@ -60,20 +60,21 @@ func Test_registerMissingDevices_invalidUDID(t *testing.T) {
 		DeviceID:   "invalid-udid",
 		DeviceType: "models.IOS",
 	}
-	bitriseDevices := []devportalservice.TestDevice{bitriseDevice, bitriseInvalidDevice}
+	bitriseDevices := []devportalservice.TestDevice{bitriseInvalidDevice, bitriseDevice}
 
-	devportalDevice := appstoreconnect.Device{
+	registeredDevice := appstoreconnect.Device{
 		Attributes: appstoreconnect.DeviceAttributes{
 			UDID: "71153a920968f2842d360",
 		},
 		ID: "12",
 	}
-	devportalDevices := []appstoreconnect.Device{devportalDevice}
+	devportalDevices := []appstoreconnect.Device{}
 
-	want := []appstoreconnect.Device(nil)
+	want := []appstoreconnect.Device{registeredDevice}
 
 	client := new(MockDevPortalClient)
 	client.On("RegisterDevice", bitriseInvalidDevice).Return(nil, appstoreconnect.DeviceRegistrationError{}).Once()
+	client.On("RegisterDevice", bitriseDevice).Return(&registeredDevice, nil).Once()
 
 	got, err := registerMissingTestDevices(client, bitriseDevices, devportalDevices)
 
