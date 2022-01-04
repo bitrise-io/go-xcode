@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/env"
+	"github.com/bitrise-io/go-utils/pathutil"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/command/git"
@@ -189,8 +190,14 @@ func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir stri
 	if err != nil {
 		t.Fatalf("failed to get project DerivedData path, error: %s", err)
 	}
+	t.Logf("Per-project DerivedData path: %s", projectDerivedData)
+
 	if err := os.RemoveAll(projectDerivedData); err != nil {
 		t.Fatalf("setup: failed to remove project DerivedData dir, err: %s", err)
+	}
+	// Remove per-user swift cache
+	if err := os.RemoveAll(filepath.Join(pathutil.UserHomeDir(), "Library", "Caches", "org.swift.swiftpm")); err != nil {
+		t.Fatalf("setup: failed to remove per-user Swift cache dir, err: %s", err)
 	}
 
 	// Simulate the cache-pull step by restoring cached folder
