@@ -100,7 +100,7 @@ func (p APIProfile) DeviceIDs() ([]string, error) {
 func (p APIProfile) BundleID() (appstoreconnect.BundleID, error) {
 	bundleIDresp, err := p.client.Provisioning.BundleID(p.profile.Relationships.BundleID.Links.Related)
 	if err != nil {
-		return appstoreconnect.BundleID{}, err
+		return appstoreconnect.BundleID{}, wrapInProfileError(err)
 	}
 
 	return bundleIDresp.Data, nil
