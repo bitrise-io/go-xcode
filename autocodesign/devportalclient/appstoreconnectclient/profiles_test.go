@@ -215,11 +215,7 @@ func Test_wrapInProfileError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := wrapInProfileError(tt.err)
-			if tt.wantErrType == nil {
-				require.NoError(t, err)
-			} else {
-				require.IsType(t, tt.wantErrType, err)
-			}
+			require.IsType(t, tt.wantErrType, err)
 		})
 	}
 }
