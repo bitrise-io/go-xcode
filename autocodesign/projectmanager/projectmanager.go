@@ -9,7 +9,7 @@ import (
 	"fmt"
 
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 )
 
 // Project ...

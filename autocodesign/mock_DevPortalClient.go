@@ -5,7 +5,7 @@ package autocodesign
 import (
 	big "math/big"
 
-	appstoreconnect "github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
+	appstoreconnect "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 
 	devportalservice "github.com/bitrise-io/go-xcode/devportalservice"
 

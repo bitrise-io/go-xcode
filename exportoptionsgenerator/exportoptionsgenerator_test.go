@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/profileutil"
@@ -104,7 +104,6 @@ const (
 )
 
 func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
-	log.SetEnableDebugLog(true)
 	const (
 		bundleID     = "io.bundle.id"
 		bundleIDClip = "io.bundle.id.AppClipID"
@@ -153,6 +152,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget, appClipTarget})
 			scheme := givenScheme(applicationTarget)
 			logger := log.NewLogger()
+			logger.EnableDebugLog(true)
 			g := New(&xcodeProj, &scheme, "", logger)
 			g.certificateProvider = MockCodesignIdentityProvider{
 				[]certificateutil.CertificateInfoModel{certificate},

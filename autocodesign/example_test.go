@@ -5,20 +5,20 @@ import (
 	"fmt"
 
 	"github.com/bitrise-io/go-steputils/stepconf"
-	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/env"
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
-	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/autocodesign/certdownloader"
-	"github.com/bitrise-io/go-xcode/autocodesign/codesignasset"
-	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient"
-	"github.com/bitrise-io/go-xcode/autocodesign/keychain"
-	"github.com/bitrise-io/go-xcode/autocodesign/localcodesignasset"
-	"github.com/bitrise-io/go-xcode/autocodesign/projectmanager"
-	"github.com/bitrise-io/go-xcode/codesign"
 	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/codesignasset"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/keychain"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
+	"github.com/bitrise-io/go-xcode/v2/codesign"
 )
 
 type config struct {
@@ -43,7 +43,8 @@ func Example() {
 	var authClientType codesign.AuthType
 	certsWithPrivateKey := []certdownloader.CertificateAndPassphrase{}
 
-	f := devportalclient.NewFactory(log.NewLogger())
+	logger := log.NewLogger()
+	f := devportalclient.NewFactory(logger)
 	connection, err := f.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken)
 	if err != nil {
 		panic(err)
@@ -87,7 +88,7 @@ func Example() {
 
 	// Analyzing project
 	fmt.Println()
-	log.Infof("Analyzing project")
+	logger.Infof("Analyzing project")
 	project, err := projectmanager.NewProject(projectmanager.InitParams{
 		ProjectOrWorkspacePath: cfg.ProjectPath,
 		SchemeName:             cfg.Scheme,

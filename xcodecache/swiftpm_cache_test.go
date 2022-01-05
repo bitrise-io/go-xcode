@@ -11,11 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bitrise-io/go-utils/env"
+	"github.com/bitrise-io/go-utils/v2/env"
 
-	"github.com/bitrise-io/go-utils/command"
+	v1command "github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/command"
 )
 
 // fileContentHash returns file's md5 content hash.
@@ -174,7 +175,7 @@ func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir stri
 	if err := os.Mkdir(projectPath, os.ModePerm); err != nil {
 		t.Fatalf("failed to create project dir: %s", err)
 	}
-	if err := command.CopyDir(projectPath, xcodeProjSourceDir, true); err != nil {
+	if err := v1command.CopyDir(projectPath, xcodeProjSourceDir, true); err != nil {
 		t.Fatalf("setup: failed to copy sample project: %s", err)
 	}
 
@@ -197,7 +198,7 @@ func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir stri
 	if err := os.MkdirAll(packagesPath, 0770); err != nil {
 		t.Fatalf("failed to create directory, error: %s", err)
 	}
-	if err := command.CopyDir(cacheDir, packagesPath, true); err != nil {
+	if err := v1command.CopyDir(cacheDir, packagesPath, true); err != nil {
 		t.Fatalf("failed to sync directory, error: %s", err)
 	}
 
@@ -234,7 +235,7 @@ func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir stri
 	if err := os.Mkdir(cacheDir, os.ModePerm); err != nil {
 		t.Fatalf("failed to create cache dir: %s", err)
 	}
-	if err := command.CopyDir(packagesPath, cacheDir, true); err != nil {
+	if err := v1command.CopyDir(packagesPath, cacheDir, true); err != nil {
 		t.Fatalf("failed to sync directory, error: %s", err)
 	}
 

@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/export"
 	"github.com/bitrise-io/go-xcode/exportoptions"
@@ -252,7 +252,7 @@ func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap m
 	for bundleID, entitlements := range bundleIDEntitlementsMap {
 		bundleIDs = append(bundleIDs, bundleID)
 
-		entitlementKeys := []string{}
+		var entitlementKeys []string
 		for key := range entitlements {
 			entitlementKeys = append(entitlementKeys, key)
 		}
@@ -339,7 +339,7 @@ func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap m
 
 	defaultProfileURL := os.Getenv("BITRISE_DEFAULT_PROVISION_URL")
 	if teamID == "" && defaultProfileURL != "" {
-		if defaultProfile, err := GetDefaultProvisioningProfile(); err == nil {
+		if defaultProfile, err := g.GetDefaultProvisioningProfile(); err == nil {
 			g.logger.Debugf("\ndefault profile: %v\n", defaultProfile)
 			filteredCodeSignGroups := export.FilterSelectableCodeSignGroups(codeSignGroups,
 				export.CreateExcludeProfileNameSelectableCodeSignGroupFilter(defaultProfile.Name))
@@ -490,7 +490,7 @@ func (g ExportOptionsGenerator) generateExportOptions(exportMethod exportoptions
 }
 
 // GetDefaultProvisioningProfile ...
-func GetDefaultProvisioningProfile() (profileutil.ProvisioningProfileInfoModel, error) {
+func (g ExportOptionsGenerator) GetDefaultProvisioningProfile() (profileutil.ProvisioningProfileInfoModel, error) {
 	defaultProfileURL := os.Getenv("BITRISE_DEFAULT_PROVISION_URL")
 	if defaultProfileURL == "" {
 		return profileutil.ProvisioningProfileInfoModel{}, nil
@@ -508,7 +508,7 @@ func GetDefaultProvisioningProfile() (profileutil.ProvisioningProfileInfoModel, 
 	}
 	defer func() {
 		if err := tmpDstFile.Close(); err != nil {
-			log.Errorf("Failed to close file (%s), error: %s", tmpDst, err)
+			g.logger.Errorf("Failed to close file (%s), error: %s", tmpDst, err)
 		}
 	}()
 
@@ -518,7 +518,7 @@ func GetDefaultProvisioningProfile() (profileutil.ProvisioningProfileInfoModel, 
 	}
 	defer func() {
 		if err := response.Body.Close(); err != nil {
-			log.Errorf("Failed to close response body, error: %s", err)
+			g.logger.Errorf("Failed to close response body, error: %s", err)
 		}
 	}()
 

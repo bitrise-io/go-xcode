@@ -2,8 +2,8 @@ package xcconfig
 
 import (
 	"fmt"
-	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"path/filepath"
 )
 

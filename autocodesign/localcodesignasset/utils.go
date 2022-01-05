@@ -1,8 +1,8 @@
 package localcodesignasset
 
 import (
-	"github.com/bitrise-io/go-xcode/autocodesign"
-	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 )
 
 func certificateSerials(certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, distrType autocodesign.DistributionType) []string {

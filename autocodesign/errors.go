@@ -3,7 +3,7 @@ package autocodesign
 import (
 	"fmt"
 
-	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 )
 
 // DetailedError ...

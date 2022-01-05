@@ -2,15 +2,15 @@ package codesign
 
 import (
 	"errors"
+	"github.com/bitrise-io/go-xcode/v2/codesign/mocks"
 	"testing"
 	"time"
 
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
-	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-io/go-xcode/codesign/mocks"
 	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )

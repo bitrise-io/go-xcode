@@ -3,7 +3,7 @@ package projectmanager
 import (
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 )
 
 func TestCanGenerateProfileWithEntitlements(t *testing.T) {

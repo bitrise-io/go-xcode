@@ -6,12 +6,12 @@ import (
 	"io"
 	"os"
 
-	"github.com/bitrise-io/go-steputils/ruby"
-	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/env"
+	"github.com/bitrise-io/go-steputils/v2/ruby"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/xcodebuild"
-	version "github.com/hashicorp/go-version"
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
+	"github.com/hashicorp/go-version"
 )
 
 const (

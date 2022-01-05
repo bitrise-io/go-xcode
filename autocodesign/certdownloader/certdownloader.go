@@ -10,8 +10,8 @@ import (
 	"github.com/bitrise-io/go-steputils/input"
 	"github.com/bitrise-io/go-utils/filedownloader"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 )
 
 // CertificateAndPassphrase contains a p12 file URL and passphrase
