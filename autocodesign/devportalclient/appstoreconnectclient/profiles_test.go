@@ -8,11 +8,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-
 	"github.com/bitrise-io/go-xcode/autocodesign"
 	"github.com/bitrise-io/go-xcode/autocodesign/devportalclient/appstoreconnect"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_checkBundleIDEntitlements(t *testing.T) {
@@ -190,4 +189,33 @@ func newResponse(t *testing.T, status int, body map[string]interface{}) *http.Re
 	}
 
 	return &resp
+}
+
+func Test_wrapInProfileError(t *testing.T) {
+	tests := []struct {
+		name        string
+		err         error
+		wantErrType error
+	}{
+		{
+			err: appstoreconnect.ErrorResponse{
+				Errors: []appstoreconnect.ErrorResponseError{{}},
+			},
+			wantErrType: appstoreconnect.ErrorResponse{},
+		},
+		{
+			err: &appstoreconnect.ErrorResponse{
+				Response: &http.Response{
+					StatusCode: http.StatusNotFound,
+				},
+			},
+			wantErrType: autocodesign.ProfilesInconsistentError{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := wrapInProfileError(tt.err)
+			require.IsType(t, tt.wantErrType, err)
+		})
+	}
 }
