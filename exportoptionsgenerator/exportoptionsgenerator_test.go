@@ -15,6 +15,25 @@ import (
 )
 
 const (
+	expectedDevelopementXcode11ExportOptions = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>iCloudContainerEnvironment</key>
+		<string>Production</string>
+		<key>method</key>
+		<string>development</string>
+		<key>provisioningProfiles</key>
+		<dict>
+			<key>io.bundle.id</key>
+			<string>Development Application Profile</string>
+		</dict>
+		<key>signingCertificate</key>
+		<string>Development Certificate</string>
+		<key>teamID</key>
+		<string>TEAM123</string>
+	</dict>
+</plist>`
 	expectedDevelopementExportOptions = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -101,6 +120,40 @@ const (
 		<string>TEAM123</string>
 	</dict>
 </plist>`
+	expectedNoProfilesDevelopementXcode11ExportOptions = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>iCloudContainerEnvironment</key>
+		<string>Production</string>
+		<key>method</key>
+		<string>development</string>
+	</dict>
+</plist>`
+	expectedNoProfilesXcode13AppStorExportOptions = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>iCloudContainerEnvironment</key>
+		<string>Production</string>
+		<key>manageAppVersionAndBuildNumber</key>
+		<false/>
+		<key>method</key>
+		<string>app-store</string>
+	</dict>
+</plist>`
+	expectedNoProfilesAdHocExportOptions = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>distributionBundleIdentifier</key>
+		<string>io.bundle.id</string>
+		<key>iCloudContainerEnvironment</key>
+		<string>Production</string>
+		<key>method</key>
+		<string>ad-hoc</string>
+	</dict>
+</plist>`
 )
 
 func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
@@ -120,7 +173,13 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name:         "Development",
+			name:         "Development Xcode 11",
+			exportMethod: exportoptions.MethodDevelopment,
+			xcodeVersion: 11,
+			want:         expectedDevelopementXcode11ExportOptions,
+		},
+		{
+			name:         "Development Xcode > 12",
 			exportMethod: exportoptions.MethodDevelopment,
 			xcodeVersion: 13,
 			want:         expectedDevelopementExportOptions,
@@ -178,6 +237,76 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 					profileForClip,
 				},
 			}
+
+			cloudKitEntitlement := map[string]interface{}{"com.apple.developer.icloud-services": []string{"CloudKit"}}
+			g.targetInfoProvider = MockTargetInfoProvider{
+				bundleID:             map[string]string{"Application": bundleID, "App Clip": bundleIDClip},
+				codesignEntitlements: map[string]serialized.Object{"Application": cloudKitEntitlement},
+			}
+
+			// Act
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, tt.xcodeVersion)
+
+			// Assert
+			require.NoError(t, err)
+
+			got, err := gotOpts.String()
+			require.NoError(t, err)
+			fmt.Println(got)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFound(t *testing.T) {
+	const (
+		bundleID     = "io.bundle.id"
+		bundleIDClip = "io.bundle.id.AppClipID"
+		teamID       = "TEAM123"
+	)
+
+	certificate := certificateutil.CertificateInfoModel{Serial: "serial", CommonName: "Development Certificate", TeamID: teamID}
+
+	tests := []struct {
+		name         string
+		exportMethod exportoptions.Method
+		xcodeVersion int64
+		want         string
+		wantErr      bool
+	}{
+		{
+			name:         "When no profiles found, Xcode 13, then manageAppVersionAndBuildNumber is included",
+			exportMethod: exportoptions.MethodAppStore,
+			xcodeVersion: 13,
+			want:         expectedNoProfilesXcode13AppStorExportOptions,
+		},
+		{
+			name:         "When no profiles found, Xcode > 12, distributionBundleIdentifier included",
+			exportMethod: exportoptions.MethodAdHoc,
+			xcodeVersion: 13,
+			want:         expectedNoProfilesAdHocExportOptions,
+		},
+		{
+			name:         "When no profiles found, Xcode 11",
+			exportMethod: exportoptions.MethodDevelopment,
+			xcodeVersion: 11,
+			want:         expectedNoProfilesDevelopementXcode11ExportOptions,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			appClipTarget := givenAppClipTarget()
+			applicationTarget := givenApplicationTarget([]xcodeproj.Target{appClipTarget})
+			xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget, appClipTarget})
+			scheme := givenScheme(applicationTarget)
+			logger := log.NewLogger()
+			logger.EnableDebugLog(true)
+			g := New(&xcodeProj, &scheme, "", logger)
+			g.certificateProvider = MockCodesignIdentityProvider{
+				[]certificateutil.CertificateInfoModel{certificate},
+			}
+			g.profileProvider = MockProvisioningProfileProvider{}
 
 			cloudKitEntitlement := map[string]interface{}{"com.apple.developer.icloud-services": []string{"CloudKit"}}
 			g.targetInfoProvider = MockTargetInfoProvider{
