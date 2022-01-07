@@ -422,6 +422,12 @@ func (g ExportOptionsGenerator) generateExportOptions(exportMethod exportoptions
 	}
 
 	exportOpts := generateBaseExportOptions(exportMethod, uploadBitcode, compileBitcode, iCloudContainerEnvironment)
+	if xcodeMajorVersion >= 12 {
+		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, distributionBundleIdentifier)
+	}
+	if xcodeMajorVersion >= 13 {
+		exportOpts = disableManagedBuildNumberFromXcode13(exportOpts)
+	}
 
 	codeSignGroup, err := g.determineCodesignGroup(bundleIDEntitlementsMap, exportMethod, teamID, xcodeManaged)
 	if err != nil {
@@ -476,14 +482,6 @@ func (g ExportOptionsGenerator) generateExportOptions(exportMethod exportoptions
 			options.SigningStyle = manualSigningStyle
 		}
 		exportOpts = options
-	}
-
-	if xcodeMajorVersion >= 12 {
-		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, distributionBundleIdentifier)
-	}
-
-	if xcodeMajorVersion >= 13 {
-		exportOpts = disableManagedBuildNumberFromXcode13(exportOpts)
 	}
 
 	return exportOpts, nil
