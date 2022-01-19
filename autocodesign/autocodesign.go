@@ -191,6 +191,14 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		}
 
 		printExistingCodesignAssets(localCodesignAssets, distrType)
+		if localCodesignAssets != nil {
+			// Did not check if selected certificate is installed yet
+			fmt.Println()
+			log.Infof("Installing certificate")
+			if err := m.assetWriter.InstallCertificate(localCodesignAssets.Certificate); err != nil {
+				return nil, fmt.Errorf("failed to install certificate: %w", err)
+			}
+		}
 
 		finalAssets := localCodesignAssets
 		if missingAppLayout != nil {
@@ -213,7 +221,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 
 			// Install new certificates and profiles
 			fmt.Println()
-			log.Infof("Install certificates and profiles")
+			log.Infof("Installing certificates and profiles")
 			if err := m.assetWriter.Write(map[DistributionType]AppCodesignAssets{distrType: *newCodesignAssets}); err != nil {
 				return nil, fmt.Errorf("failed to install codesigning files: %w", err)
 			}
