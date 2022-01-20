@@ -179,7 +179,6 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 			devPortalDeviceIDs = append(devPortalDeviceIDs, devPortalDevice.ID)
 			devPortalDeviceUDIDs = append(devPortalDeviceUDIDs, devPortalDevice.Attributes.UDID)
 		}
-
 	}
 
 	codesignAssetsByDistributionType := map[DistributionType]AppCodesignAssets{}
@@ -195,6 +194,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 			// Did not check if selected certificate is installed yet
 			fmt.Println()
 			log.Infof("Installing certificate")
+			log.Printf("certificate: %s", localCodesignAssets.Certificate.CommonName)
 			if err := m.assetWriter.InstallCertificate(localCodesignAssets.Certificate); err != nil {
 				return nil, fmt.Errorf("failed to install certificate: %w", err)
 			}
