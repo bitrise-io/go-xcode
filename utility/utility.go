@@ -15,8 +15,20 @@ func getXcodeVersionFromXcodebuildOutput(outStr string) (models.XcodebuildVersio
 		return models.XcodebuildVersionModel{}, fmt.Errorf("failed to parse xcodebuild version output (%s)", outStr)
 	}
 
-	xcodebuildVersion := split[0]
-	buildVersion := split[1]
+	firstLineIndex := -1
+	for i, line := range split {
+		if strings.HasPrefix(line, "Xcode ") {
+			firstLineIndex = i
+			break
+		}
+	}
+
+	if firstLineIndex < 0 {
+		return models.XcodebuildVersionModel{}, fmt.Errorf("couldn't find Xcode version in output: %s", outStr)
+	}
+
+	xcodebuildVersion := split[firstLineIndex]
+	buildVersion := split[firstLineIndex+1]
 
 	split = strings.Split(xcodebuildVersion, " ")
 	if len(split) != 2 {
