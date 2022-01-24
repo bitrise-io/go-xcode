@@ -24,7 +24,10 @@ func sampleRepoPath(t *testing.T) string {
 		require.NoError(t, err)
 		sampleArtifactsGitURI := "https://github.com/bitrise-samples/sample-artifacts.git"
 		cmd := command.New("git", "clone", sampleArtifactsGitURI, dir)
-		require.NoError(t, cmd.Run())
+		_, err = cmd.RunAndReturnTrimmedCombinedOutput()
+		if err != nil {
+			t.Errorf("git clone failed: %s", err)
+		}
 		tmpDir = dir
 	}
 	t.Logf("sample artifcats dir: %s\n", dir)
