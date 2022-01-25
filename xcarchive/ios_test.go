@@ -22,9 +22,13 @@ func sampleRepoPath(t *testing.T) string {
 		var err error
 		dir, err = pathutil.NormalizedOSTempDirPath(tempDirName)
 		require.NoError(t, err)
-		sampleArtifactsGitURI := "https://github.com/bitrise-samples/sample-artifacts.git"
+		sampleArtifactsGitURI := "https://github.com/bitrise-io/sample-artifacts.git"
 		cmd := command.New("git", "clone", sampleArtifactsGitURI, dir)
-		require.NoError(t, cmd.Run())
+		output, err := cmd.RunAndReturnTrimmedCombinedOutput()
+		if err != nil {
+			t.Log(output)
+			t.Errorf("git clone failed: %s", err)
+		}
 		tmpDir = dir
 	}
 	t.Logf("sample artifcats dir: %s\n", dir)
