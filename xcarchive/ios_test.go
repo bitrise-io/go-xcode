@@ -22,7 +22,7 @@ func sampleRepoPath(t *testing.T) string {
 		var err error
 		dir, err = pathutil.NormalizedOSTempDirPath(tempDirName)
 		require.NoError(t, err)
-		sampleArtifactsGitURI := "https://github.com/bitrise-samples/sample-artifacts.git"
+		sampleArtifactsGitURI := "https://github.com/bitrise-io/sample-artifacts.git"
 		cmd := command.New("git", "clone", sampleArtifactsGitURI, dir)
 		_, err = cmd.RunAndReturnTrimmedCombinedOutput()
 		if err != nil {
