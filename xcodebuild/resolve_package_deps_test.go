@@ -9,6 +9,8 @@ import (
 func TestResolvePackagesCommandModel_cmdSlice(t *testing.T) {
 	type fields struct {
 		projectPath   string
+		scheme        string
+		configuration string
 		customOptions []string
 	}
 	tests := []struct {
@@ -30,11 +32,15 @@ func TestResolvePackagesCommandModel_cmdSlice(t *testing.T) {
 		{
 			name: "project",
 			fields: fields{
-				projectPath: "test.xcodeproj",
+				projectPath:   "test.xcodeproj",
+				scheme:        "Test",
+				configuration: "Debug",
 			},
 			want: []string{
 				"xcodebuild",
 				"-project", "test.xcodeproj",
+				"-scheme", "Test",
+				"-configuration", "Debug",
 				"-resolvePackageDependencies",
 			},
 		},
@@ -43,6 +49,8 @@ func TestResolvePackagesCommandModel_cmdSlice(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &ResolvePackagesCommandModel{
 				projectPath:   tt.fields.projectPath,
+				scheme:        tt.fields.scheme,
+				configuration: tt.fields.configuration,
 				customOptions: tt.fields.customOptions,
 			}
 
