@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/v2/codesign/mocks"
 
 	"github.com/bitrise-io/go-utils/v2/log"
@@ -119,40 +118,40 @@ func TestManager_checkXcodeManagedCertificates(t *testing.T) {
 	tests := []struct {
 		name               string
 		distributionMethod autocodesign.DistributionType
-		typeToLocalCerts   localCertificates
+		certificates       []certificateutil.CertificateInfoModel
 		wantErr            bool
 	}{
 		{
 			name:               "no certs uploaded, development",
 			distributionMethod: autocodesign.Development,
-			typeToLocalCerts:   localCertificates{},
+			certificates:       []certificateutil.CertificateInfoModel{},
 			wantErr:            true,
 		},
 		{
 			name:               "development, no matching cert",
 			distributionMethod: autocodesign.Development,
-			typeToLocalCerts: localCertificates{
-				appstoreconnect.IOSDistribution: {distCert},
+			certificates: []certificateutil.CertificateInfoModel{
+				distCert,
 			},
 			wantErr: true,
 		},
 		{
 			name:               "no certs uploaded, distribution",
 			distributionMethod: autocodesign.AppStore,
-			typeToLocalCerts:   localCertificates{},
+			certificates:       []certificateutil.CertificateInfoModel{},
 		},
 		{
 			name:               "1 certs uploaded, development",
 			distributionMethod: autocodesign.Development,
-			typeToLocalCerts: localCertificates{
-				appstoreconnect.IOSDevelopment: {devCert},
+			certificates: []certificateutil.CertificateInfoModel{
+				devCert,
 			},
 		},
 		{
 			name:               "1 certs uploaded, distribution",
 			distributionMethod: autocodesign.AdHoc,
-			typeToLocalCerts: localCertificates{
-				appstoreconnect.IOSDistribution: {distCert},
+			certificates: []certificateutil.CertificateInfoModel{
+				distCert,
 			},
 		},
 	}
@@ -165,7 +164,7 @@ func TestManager_checkXcodeManagedCertificates(t *testing.T) {
 				logger: log.NewLogger(),
 			}
 
-			if err := m.checkXcodeManagedCertificates(tt.typeToLocalCerts); (err != nil) != tt.wantErr {
+			if err := m.checkXcodeManagedCertificates(tt.certificates); (err != nil) != tt.wantErr {
 				t.Errorf("Manager.downloadAndInstallCertificates() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
