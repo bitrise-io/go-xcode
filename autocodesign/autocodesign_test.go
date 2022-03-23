@@ -273,7 +273,6 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			m := codesignAssetManager{
 				devPortalClient:           tt.fields.devPortalClient,
-				certificateProvider:       tt.fields.certificateProvider,
 				assetWriter:               tt.fields.assetWriter,
 				localCodeSignAssetManager: tt.fields.localCodeSignAssetManager,
 			}
@@ -296,7 +295,6 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	expiry := time.Now().AddDate(1, 0, 0)
 	devCert := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test", expiry)
 
-	certProvider := newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert})
 	client := newClientWithoutAppIDAndProfile(devCert)
 	assetWriter := newDefaultMockAssetWriter()
 
@@ -308,10 +306,13 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	}
 
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, &appLayout)
-	manager := NewCodesignAssetManager(client, certProvider, assetWriter, localCodeSignAssetManager)
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager)
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
+		TypeToBitriseCertificates: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+			appstoreconnect.IOSDevelopment: {devCert},
+		},
 	}
 
 	// When
@@ -329,7 +330,6 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 	expiry := time.Now().AddDate(1, 0, 0)
 	devCert := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test", expiry)
 
-	certProvider := newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert})
 	client := newClientWithAppIDWithoutAppleSignIn(devCert, appClipBundleID)
 	assetWriter := newDefaultMockAssetWriter()
 
@@ -344,10 +344,13 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 	}
 
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, &appLayout)
-	manager := NewCodesignAssetManager(client, certProvider, assetWriter, localCodeSignAssetManager)
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager)
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
+		TypeToBitriseCertificates: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+			appstoreconnect.IOSDevelopment: {devCert},
+		},
 	}
 
 	// When
@@ -380,7 +383,6 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 		certificates: []string{"dev1"},
 	})
 
-	certProvider := newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert})
 	client := newMockDevportalClient(devportalArgs{
 		certs: map[appstoreconnect.CertificateType][]Certificate{
 			appstoreconnect.IOSDevelopment: {{
@@ -416,10 +418,13 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 	}
 
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, &appLayout)
-	manager := NewCodesignAssetManager(client, certProvider, assetWriter, localCodeSignAssetManager)
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager)
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
+		TypeToBitriseCertificates: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+			appstoreconnect.IOSDevelopment: {devCert},
+		},
 	}
 
 	// When
@@ -479,17 +484,19 @@ func Test_GivenLocalProfile_WhenCertificateIsMissing_ThenInstalled(t *testing.T)
 		},
 	}
 
-	certProvider := newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert1})
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(&AppCodesignAssets{
 		ArchivableTargetProfilesByBundleID: map[string]Profile{
 			"io.test": validProfile,
 		},
 		Certificate: devCert2,
 	}, nil)
-	manager := NewCodesignAssetManager(client, certProvider, assetWriter, localCodeSignAssetManager)
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager)
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
+		TypeToBitriseCertificates: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+			appstoreconnect.IOSDevelopment: {devCert1},
+		},
 	}
 
 	wantAssets := map[DistributionType]AppCodesignAssets{

@@ -319,7 +319,29 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		return err
 	}
 
-	manager := autocodesign.NewCodesignAssetManager(devPortalClient, m.certDownloader, m.assetInstaller, m.localCodeSignAssetManager)
+	fmt.Println()
+	m.logger.Infof("Downloading certificates")
+
+	certs, err := m.certDownloader.GetCertificates()
+	if err != nil {
+		return fmt.Errorf("failed to download certificates: %w", err)
+	}
+
+	if len(certs) > 0 {
+		m.logger.Printf("%d certificates downloaded:", len(certs))
+		for _, cert := range certs {
+			m.logger.Printf("- %s", cert.String())
+		}
+	} else {
+		m.logger.Warnf("No certificates are uploaded on Bitrise.")
+	}
+
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs)
+	if err != nil {
+		return err
+	}
+
+	manager := autocodesign.NewCodesignAssetManager(devPortalClient, m.assetInstaller, m.localCodeSignAssetManager)
 
 	// Fetch and apply codesigning assets
 	var testDevices []devportalservice.TestDevice
@@ -327,10 +349,11 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		testDevices = m.bitriseConnection.TestDevices
 	}
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
-		DistributionType:       m.opts.ExportMethod,
-		BitriseTestDevices:     testDevices,
-		MinProfileValidityDays: m.opts.MinDaysProfileValidity,
-		VerboseLog:             m.opts.IsVerboseLog,
+		DistributionType:          m.opts.ExportMethod,
+		TypeToBitriseCertificates: typeToLocalCerts,
+		BitriseTestDevices:        testDevices,
+		MinProfileValidityDays:    m.opts.MinDaysProfileValidity,
+		VerboseLog:                m.opts.IsVerboseLog,
 	})
 	if err != nil {
 		return err
