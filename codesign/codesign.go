@@ -146,12 +146,16 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 			m.logger.Printf("Reason: %s", reason)
 			m.logger.Println()
 			m.logger.Infof("Downloading certificates from Bitrise")
-			typeToLocalCerts, err := m.downloadAndInstallCertificates()
+			certificates, err := m.downloadCertificates()
 			if err != nil {
 				return nil, err
 			}
 
-			if err := m.checkXcodeManagedCertificates(typeToLocalCerts); err != nil {
+			if err := m.checkXcodeManagedCertificates(certificates); err != nil {
+				return nil, err
+			}
+
+			if err := m.installCertificates(certificates); err != nil {
 				return nil, err
 			}
 
@@ -259,15 +263,10 @@ func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials) (
 	return codeSigningXcode, "Automatically managed signing is enabled in Xcode for the project.", nil
 }
 
-func (m *Manager) downloadAndInstallCertificates() (localCertificates, error) {
+func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfoModel, error) {
 	certificates, err := m.certDownloader.GetCertificates()
 	if err != nil {
 		return nil, fmt.Errorf("failed to download certificates: %s", err)
-	}
-
-	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates)
-	if err != nil {
-		return nil, err
 	}
 
 	if len(certificates) == 0 {
@@ -276,19 +275,28 @@ func (m *Manager) downloadAndInstallCertificates() (localCertificates, error) {
 		return nil, nil
 	}
 
-	m.logger.Infof("Installing downloaded certificates:")
+	return certificates, nil
+}
+
+func (m *Manager) installCertificates(certificates []certificateutil.CertificateInfoModel) error {
+	m.logger.Infof("Installing certificates:")
 	for _, cert := range certificates {
 		m.logger.Printf("- %s", cert)
 		// Empty passphrase provided, as already parsed certificate + private key
 		if err := m.assetInstaller.InstallCertificate(cert); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return typeToLocalCerts, nil
+	return nil
 }
 
-func (m *Manager) checkXcodeManagedCertificates(typeToLocalCerts localCertificates) error {
+func (m *Manager) checkXcodeManagedCertificates(certificates []certificateutil.CertificateInfoModel) error {
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates)
+	if err != nil {
+		return err
+	}
+
 	certificateType, ok := autocodesign.CertificateTypeByDistribution[m.opts.ExportMethod]
 	if !ok {
 		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", m.opts.ExportMethod))
@@ -383,7 +391,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		m.logger.Warnf("Error: %s", err)
 		m.logger.Infof("Falling back to manually managed codesigning assets.")
 
-		return m.prepareManualAssets()
+		return m.prepareManualAssets(certs)
 	}
 
 	if m.assetWriter != nil {
@@ -395,8 +403,8 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	return nil
 }
 
-func (m *Manager) prepareManualAssets() error {
-	if _, err := m.downloadAndInstallCertificates(); err != nil {
+func (m *Manager) prepareManualAssets(certificates []certificateutil.CertificateInfoModel) error {
+	if err := m.installCertificates(certificates); err != nil {
 		return err
 	}
 
