@@ -6,6 +6,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
+	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient"
@@ -23,6 +24,8 @@ const (
 	AppleIDAuth
 )
 
+type localCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
+
 type codeSigningStrategy int
 
 const (
@@ -33,9 +36,10 @@ const (
 
 // Opts ...
 type Opts struct {
-	AuthType                   AuthType
-	ShouldConsiderXcodeSigning bool
-	TeamID                     string
+	AuthType                          AuthType
+	FallbackToLocalAssetsOnAPIFailure bool
+	ShouldConsiderXcodeSigning        bool
+	TeamID                            string
 
 	ExportMethod      autocodesign.DistributionType
 	XcodeMajorVersion int
@@ -142,7 +146,12 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 			m.logger.Printf("Reason: %s", reason)
 			m.logger.Println()
 			m.logger.Infof("Downloading certificates from Bitrise")
-			if err := m.downloadAndInstallCertificates(); err != nil {
+			typeToLocalCerts, err := m.downloadAndInstallCertificates()
+			if err != nil {
+				return nil, err
+			}
+
+			if err := m.checkXcodeManagedCertificates(typeToLocalCerts); err != nil {
 				return nil, err
 			}
 
@@ -250,20 +259,39 @@ func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials) (
 	return codeSigningXcode, "Automatically managed signing is enabled in Xcode for the project.", nil
 }
 
-func (m *Manager) downloadAndInstallCertificates() error {
+func (m *Manager) downloadAndInstallCertificates() (localCertificates, error) {
 	certificates, err := m.certDownloader.GetCertificates()
 	if err != nil {
-		return fmt.Errorf("failed to download certificates: %s", err)
-	}
-
-	certificateType, ok := autocodesign.CertificateTypeByDistribution[m.opts.ExportMethod]
-	if !ok {
-		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", m.opts.ExportMethod))
+		return nil, fmt.Errorf("failed to download certificates: %s", err)
 	}
 
 	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	if len(certificates) == 0 {
+		m.logger.Warnf("No certificates are uploaded to Bitrise.")
+
+		return nil, nil
+	}
+
+	m.logger.Infof("Installing downloaded certificates:")
+	for _, cert := range certificates {
+		m.logger.Printf("- %s", cert)
+		// Empty passphrase provided, as already parsed certificate + private key
+		if err := m.assetInstaller.InstallCertificate(cert); err != nil {
+			return nil, err
+		}
+	}
+
+	return typeToLocalCerts, nil
+}
+
+func (m *Manager) checkXcodeManagedCertificates(typeToLocalCerts localCertificates) error {
+	certificateType, ok := autocodesign.CertificateTypeByDistribution[m.opts.ExportMethod]
+	if !ok {
+		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", m.opts.ExportMethod))
 	}
 
 	if len(typeToLocalCerts[certificateType]) == 0 {
@@ -272,15 +300,6 @@ func (m *Manager) downloadAndInstallCertificates() error {
 		}
 
 		m.logger.Warnf("no valid %s type certificate uploaded", certificateType)
-	}
-
-	m.logger.Infof("Installing downloaded certificates:")
-	for _, cert := range certificates {
-		m.logger.Printf("- %s", cert)
-		// Empty passphrase provided, as already parsed certificate + private key
-		if err := m.assetInstaller.InstallCertificate(cert); err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -333,7 +352,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 			m.logger.Printf("- %s", cert.String())
 		}
 	} else {
-		m.logger.Warnf("No certificates are uploaded on Bitrise.")
+		m.logger.Warnf("No certificates are uploaded to Bitrise.")
 	}
 
 	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs)
@@ -348,6 +367,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	if m.opts.RegisterTestDevices && m.bitriseConnection != nil {
 		testDevices = m.bitriseConnection.TestDevices
 	}
+
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
 		DistributionType:          m.opts.ExportMethod,
 		TypeToBitriseCertificates: typeToLocalCerts,
@@ -356,13 +376,28 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		VerboseLog:                m.opts.IsVerboseLog,
 	})
 	if err != nil {
-		return err
+		if !m.opts.FallbackToLocalAssetsOnAPIFailure {
+			return err
+		}
+
+		m.logger.Warnf("Error: %s", err)
+		m.logger.Infof("Falling back to manually managed codesigning assets.")
+
+		return m.prepareManualAssets()
 	}
 
 	if m.assetWriter != nil {
 		if err := m.assetWriter.ForceCodesignAssets(m.opts.ExportMethod, codesignAssetsByDistributionType); err != nil {
 			return fmt.Errorf("failed to force codesign settings: %s", err)
 		}
+	}
+
+	return nil
+}
+
+func (m *Manager) prepareManualAssets() error {
+	if _, err := m.downloadAndInstallCertificates(); err != nil {
+		return err
 	}
 
 	return nil
