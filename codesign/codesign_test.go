@@ -2,9 +2,11 @@ package codesign
 
 import (
 	"errors"
-	"github.com/bitrise-io/go-xcode/v2/codesign/mocks"
 	"testing"
 	"time"
+
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/codesign/mocks"
 
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
@@ -110,43 +112,48 @@ func newMockProject(isAutoSign bool, mockErr error) DetailsProvider {
 	return mockProjectHelper
 }
 
-func TestManager_downloadAndInstallCertificates(t *testing.T) {
+func TestManager_checkXcodeManagedCertificates(t *testing.T) {
 	devCert := generateCert(t, "Apple Development: test")
 	distCert := generateCert(t, "Apple Distribution: test")
 
 	tests := []struct {
 		name               string
 		distributionMethod autocodesign.DistributionType
-		certDownloader     autocodesign.CertificateProvider
-		assetWriter        autocodesign.AssetWriter
+		typeToLocalCerts   localCertificates
 		wantErr            bool
 	}{
 		{
 			name:               "no certs uploaded, development",
 			distributionMethod: autocodesign.Development,
-			certDownloader:     newCertDownloaderMock([]certificateutil.CertificateInfoModel{}),
+			typeToLocalCerts:   localCertificates{},
 			wantErr:            true,
 		},
 		{
 			name:               "development, no matching cert",
 			distributionMethod: autocodesign.Development,
-			certDownloader:     newCertDownloaderMock([]certificateutil.CertificateInfoModel{distCert}),
-			wantErr:            true,
+			typeToLocalCerts: localCertificates{
+				appstoreconnect.IOSDistribution: {distCert},
+			},
+			wantErr: true,
 		},
 		{
 			name:               "no certs uploaded, distribution",
 			distributionMethod: autocodesign.AppStore,
-			certDownloader:     newCertDownloaderMock([]certificateutil.CertificateInfoModel{}),
+			typeToLocalCerts:   localCertificates{},
 		},
 		{
 			name:               "1 certs uploaded, development",
 			distributionMethod: autocodesign.Development,
-			certDownloader:     newCertDownloaderMock([]certificateutil.CertificateInfoModel{devCert}),
+			typeToLocalCerts: localCertificates{
+				appstoreconnect.IOSDevelopment: {devCert},
+			},
 		},
 		{
 			name:               "1 certs uploaded, distribution",
 			distributionMethod: autocodesign.AdHoc,
-			certDownloader:     newCertDownloaderMock([]certificateutil.CertificateInfoModel{distCert}),
+			typeToLocalCerts: localCertificates{
+				appstoreconnect.IOSDistribution: {distCert},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -155,12 +162,10 @@ func TestManager_downloadAndInstallCertificates(t *testing.T) {
 				opts: Opts{
 					ExportMethod: tt.distributionMethod,
 				},
-				certDownloader: tt.certDownloader,
-				assetInstaller: newMockAssetWriter(nil),
-				logger:         log.NewLogger(),
+				logger: log.NewLogger(),
 			}
 
-			if err := m.downloadAndInstallCertificates(); (err != nil) != tt.wantErr {
+			if err := m.checkXcodeManagedCertificates(tt.typeToLocalCerts); (err != nil) != tt.wantErr {
 				t.Errorf("Manager.downloadAndInstallCertificates() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
