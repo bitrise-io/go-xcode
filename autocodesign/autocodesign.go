@@ -109,10 +109,11 @@ type CertificateProvider interface {
 
 // CodesignAssetsOpts are codesigning related paramters that are not specified by the project (or archive)
 type CodesignAssetsOpts struct {
-	DistributionType       DistributionType
-	BitriseTestDevices     []devportalservice.TestDevice
-	MinProfileValidityDays int
-	VerboseLog             bool
+	DistributionType                  DistributionType
+	BitriseTestDevices                []devportalservice.TestDevice
+	MinProfileValidityDays            int
+	FallbackToLocalAssetsOnAPIFailure bool
+	VerboseLog                        bool
 }
 
 // CodesignAssetManager ...
@@ -146,19 +147,25 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	if err != nil {
 		return nil, fmt.Errorf("failed to download certificates: %w", err)
 	}
+
 	if len(certs) > 0 {
 		log.Printf("%d certificates downloaded:", len(certs))
 		for _, cert := range certs {
 			log.Printf("- %s", cert.String())
 		}
 	} else {
-		log.Warnf("No certificates found")
+		log.Warnf("No certificates are uploaded on Bitrise.")
+	}
+
+	typeToLocalCerts, err := GetValidLocalCertificates(certs)
+	if err != nil {
+		return nil, err
 	}
 
 	signUITestTargets := len(appLayout.UITestTargetBundleIDs) > 0
 	certsByType, distrTypes, err := selectCertificatesAndDistributionTypes(
 		m.devPortalClient,
-		certs,
+		typeToLocalCerts,
 		opts.DistributionType,
 		signUITestTargets,
 		opts.VerboseLog,
