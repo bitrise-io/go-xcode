@@ -42,5 +42,6 @@ func timeFormats() []string {
 		time.RFC3339,
 		"2006-01-02T15:04:05.000-0700",
 		"2006-01-02T15:04:05.000-07",
+		"2006-01-02 15:04:05 UTC", // Returned by Spaceship with SPACESHIP_AVOID_XCODE_API=true
 	}
 }

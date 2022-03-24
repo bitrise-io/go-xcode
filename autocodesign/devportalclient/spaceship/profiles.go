@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
@@ -83,7 +82,7 @@ type ProfileInfo struct {
 	UUID         string                           `json:"uuid"`
 	Name         string                           `json:"name"`
 	Status       appstoreconnect.ProfileState     `json:"status"`
-	Expiry       time.Time                        `json:"expiry"`
+	Expiry       appstoreconnect.Time             `json:"expiry"`
 	Platform     appstoreconnect.BundleIDPlatform `json:"platform"`
 	Content      string                           `json:"content"`
 	AppID        string                           `json:"app_id"`
