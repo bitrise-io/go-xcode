@@ -9,6 +9,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
 )
 
 const (
@@ -82,7 +83,7 @@ type ProfileInfo struct {
 	UUID         string                           `json:"uuid"`
 	Name         string                           `json:"name"`
 	Status       appstoreconnect.ProfileState     `json:"status"`
-	Expiry       appstoreconnect.Time             `json:"expiry"`
+	Expiry       time.Time                        `json:"expiry"`
 	Platform     appstoreconnect.BundleIDPlatform `json:"platform"`
 	Content      string                           `json:"content"`
 	AppID        string                           `json:"app_id"`
@@ -104,7 +105,7 @@ func newProfile(p ProfileInfo) (autocodesign.Profile, error) {
 			ProfileState:   appstoreconnect.ProfileState(p.Status),
 			ProfileContent: contents,
 			Platform:       p.Platform,
-			ExpirationDate: appstoreconnect.Time(p.Expiry),
+			ExpirationDate: time.Time(p.Expiry),
 		},
 		id:             p.ID,
 		bundleID:       p.BundleID,
