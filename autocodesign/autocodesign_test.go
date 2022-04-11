@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
+
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
@@ -93,7 +95,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 		attributes: appstoreconnect.ProfileAttributes{
 			Name:           profileName(appstoreconnect.IOSAppDevelopment, "io.test"),
 			ProfileState:   appstoreconnect.Active,
-			ExpirationDate: appstoreconnect.Time(expiry),
+			ExpirationDate: devportaltime.Time(expiry),
 		},
 		certificates: []string{"dev1"},
 	})
@@ -365,7 +367,7 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 		attributes: appstoreconnect.ProfileAttributes{
 			Name:           profileName(appstoreconnect.IOSAppDevelopment, "io.test"),
 			ProfileState:   appstoreconnect.Active,
-			ExpirationDate: appstoreconnect.Time(time.Now().AddDate(0, -1, 0)),
+			ExpirationDate: devportaltime.Time(time.Now().AddDate(0, -1, 0)),
 		},
 		certificates: []string{"dev1"},
 	})
@@ -373,7 +375,7 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 		attributes: appstoreconnect.ProfileAttributes{
 			Name:           profileName(appstoreconnect.IOSAppDevelopment, "io.test"),
 			ProfileState:   appstoreconnect.Active,
-			ExpirationDate: appstoreconnect.Time(expiry),
+			ExpirationDate: devportaltime.Time(expiry),
 		},
 		certificates: []string{"dev1"},
 	})
@@ -438,7 +440,7 @@ func Test_GivenLocalProfile_WhenCertificateIsMissing_ThenInstalled(t *testing.T)
 		attributes: appstoreconnect.ProfileAttributes{
 			Name:           profileName(appstoreconnect.IOSAppDevelopment, "io.test"),
 			ProfileState:   appstoreconnect.Active,
-			ExpirationDate: appstoreconnect.Time(expiry),
+			ExpirationDate: devportaltime.Time(expiry),
 		},
 		certificates: []string{"dev1", "dev2"},
 	})
