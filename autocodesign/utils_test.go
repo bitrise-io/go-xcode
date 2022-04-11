@@ -5,6 +5,7 @@ import (
 
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -114,7 +115,7 @@ func profile(name, id string) Profile {
 			UUID:           id,
 			ProfileContent: []byte{},
 			Platform:       "",
-			ExpirationDate: appstoreconnect.Time{},
+			ExpirationDate: time.Time{},
 		},
 		id:           id,
 		appID:        appstoreconnect.BundleID{},

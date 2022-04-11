@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
+
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/stretchr/testify/require"
 )
@@ -213,25 +215,25 @@ func Test_IsProfileExpired(t *testing.T) {
 		{
 			name:                "no days set - profile expiry date after current time",
 			minProfileDaysValid: 0,
-			prof:                newMockProfile(profileArgs{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(5 * time.Hour))}}),
+			prof:                newMockProfile(profileArgs{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: devportaltime.Time(time.Now().Add(5 * time.Hour))}}),
 			want:                false,
 		},
 		{
 			name:                "no days set - profile expiry date before current time",
 			minProfileDaysValid: 0,
-			prof:                newMockProfile(profileArgs{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(-5 * time.Hour))}}),
+			prof:                newMockProfile(profileArgs{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: devportaltime.Time(time.Now().Add(-5 * time.Hour))}}),
 			want:                true,
 		},
 		{
 			name:                "days set - profile expiry date after current time + days set",
 			minProfileDaysValid: 2,
-			prof:                newMockProfile(profileArgs{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(5 * 24 * time.Hour))}}),
+			prof:                newMockProfile(profileArgs{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: devportaltime.Time(time.Now().Add(5 * 24 * time.Hour))}}),
 			want:                false,
 		},
 		{
 			name:                "days set - profile expiry date before current time + days set",
 			minProfileDaysValid: 2,
-			prof:                newMockProfile(profileArgs{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: appstoreconnect.Time(time.Now().Add(1 * 24 * time.Hour))}}),
+			prof:                newMockProfile(profileArgs{attributes: appstoreconnect.ProfileAttributes{ExpirationDate: devportaltime.Time(time.Now().Add(1 * 24 * time.Hour))}}),
 			want:                true,
 		},
 	}

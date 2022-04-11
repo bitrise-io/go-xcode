@@ -1,15 +1,17 @@
 package localcodesignasset
 
 import (
-	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset/mocks"
 	"testing"
 	"time"
+
+	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
 
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -208,7 +210,7 @@ func profileFromModel(profileInfo profileutil.ProvisioningProfileInfoModel) auto
 			UUID:           profileInfo.UUID,
 			ProfileContent: []byte{},
 			Platform:       getBundleIDPlatform(profileInfo.Type),
-			ExpirationDate: appstoreconnect.Time(profileInfo.ExpirationDate),
+			ExpirationDate: devportaltime.Time(profileInfo.ExpirationDate),
 		},
 		id:             "",
 		bundleID:       profileInfo.BundleID,
