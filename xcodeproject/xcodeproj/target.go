@@ -10,6 +10,9 @@ import (
 // TargetType ...
 type TargetType string
 
+// ProductType ...
+type ProductType string
+
 // TargetTypes
 const (
 	NativeTargetType    TargetType = "PBXNativeTarget"
@@ -17,7 +20,57 @@ const (
 	LegacyTargetType    TargetType = "PBXLegacyTarget"
 )
 
-const appClipProductType = "com.apple.product-type.application.on-demand-install-capable"
+// ProductType
+const (
+	StaticLibraryProductType                ProductType = "com.apple.product-type.library.static"
+	DynamicLibraryProductType               ProductType = "com.apple.product-type.library.dynamic"
+	CommandLineToolProductType              ProductType = "com.apple.product-type.tool"
+	BundleProductType                       ProductType = "com.apple.product-type.bundle"
+	FrameworkProductType                    ProductType = "com.apple.product-type.framework"
+	StaticFrameworkProductType              ProductType = "com.apple.product-type.framework.static"
+	XCFrameworkProductType                  ProductType = "com.apple.product-type.xcframework"
+	ApplicationProductType                  ProductType = "com.apple.product-type.application"
+	UnitTestProductType                     ProductType = "com.apple.product-type.bundle.unit-test"
+	UIUnitTestProductType                   ProductType = "com.apple.product-type.bundle.ui-testing"
+	OCUnitTestBundleProductType             ProductType = "com.apple.product-type.bundle.ocunit-test"
+	InAppPurchaseContentProductType         ProductType = "com.apple.product-type.in-app-purchase-content"
+	AppExtensionProductType                 ProductType = "com.apple.product-type.app-extension"
+	XPCServiceProductType                   ProductType = "com.apple.product-type.xpc-service"
+	Watch1AppProductType                    ProductType = "com.apple.product-type.application.watchapp"
+	Watch2AppProductType                    ProductType = "com.apple.product-type.application.watchapp2"
+	Watch1ExtensionProductType              ProductType = "com.apple.product-type.watchkit-extension"
+	Watch2ExtensionProductType              ProductType = "com.apple.product-type.watchkit2-extension"
+	Watch2AppContainerProductType           ProductType = "com.apple.product-type.application.watchapp2-container"
+	TVAppExtensionProductType               ProductType = "com.apple.product-type.tv-app-extension"
+	TVAppBroadcastExtensionProductType      ProductType = "com.apple.product-type.tv-broadcast-extension"
+	IMessageExtensionProductType            ProductType = "com.apple.product-type.app-extension.messages"
+	MessagesStickerPackExtensionProductType ProductType = "com.apple.product-type.app-extension.messages-sticker-pack"
+	MessagesApplicationProductType          ProductType = "com.apple.product-type.application.messages"
+	AppClipProductType                      ProductType = "com.apple.product-type.application.on-demand-install-capable"
+	XcodeExtensionProductType               ProductType = "com.apple.product-type.xcode-extension"
+	InstrumentsPackageProductType           ProductType = "com.apple.product-type.instruments-package"
+	IntentsServiceExtensionProductType      ProductType = "com.apple.product-type.app-extension.intents-service"
+	MetalLibraryProductType                 ProductType = "com.apple.product-type.metal-library"
+	DriverExtensionProductType              ProductType = "com.apple.product-type.driver-extension"
+	SystemExtensionProductType              ProductType = "com.apple.product-type.system-extension"
+)
+
+func (p ProductType) String() string {
+	return string(p)
+}
+
+func (p ProductType) IsApplicationOrApplicationExtensions() bool {
+	switch p {
+	case ApplicationProductType, Watch1AppProductType, Watch2AppProductType, MessagesApplicationProductType, AppClipProductType:
+		return true
+	case Watch2AppContainerProductType:
+		return true
+	case Watch1ExtensionProductType, Watch2ExtensionProductType, AppExtensionProductType, IMessageExtensionProductType, MessagesStickerPackExtensionProductType, IntentsServiceExtensionProductType:
+		return true
+	default:
+		return false
+	}
+}
 
 // Target ...
 type Target struct {
@@ -108,7 +161,7 @@ func (t Target) IsUITestProduct() bool {
 }
 
 func (t Target) isAppClipProduct() bool {
-	return t.ProductType == appClipProductType
+	return t.ProductType == AppClipProductType.String()
 }
 
 // CanExportAppClip ...
@@ -166,25 +219,29 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 		return Target{}, err
 	}
 
-	dependencyIDs, err := rawTarget.StringSlice("dependencies")
-	if err != nil {
-		return Target{}, err
-	}
-
 	var dependencies []TargetDependency
-	for _, dependencyID := range dependencyIDs {
-		dependency, err := parseTargetDependency(dependencyID, objects)
+
+	// Filter for applications and extensions product type only
+	if ProductType(productType).IsApplicationOrApplicationExtensions() {
+		dependencyIDs, err := rawTarget.StringSlice("dependencies")
 		if err != nil {
-			// KeyNotFoundError can be only raised if the 'target' property not found on the raw target dependency object
-			// we only care about target dependency, which points to a target
-			if serialized.IsKeyNotFoundError(err) {
-				continue
-			} else {
-				return Target{}, err
-			}
+			return Target{}, err
 		}
 
-		dependencies = append(dependencies, dependency)
+		for _, dependencyID := range dependencyIDs {
+			dependency, err := parseTargetDependency(dependencyID, objects)
+			if err != nil {
+				// KeyNotFoundError can be only raised if the 'target' property not found on the raw target dependency object
+				// we only care about target dependency, which points to a target
+				if serialized.IsKeyNotFoundError(err) {
+					continue
+				} else {
+					return Target{}, err
+				}
+			}
+
+			dependencies = append(dependencies, dependency)
+		}
 	}
 
 	var productReference ProductReference

@@ -10,6 +10,50 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestProductTypeMatchesString(t *testing.T) {
+	require.Equal(t, StaticFrameworkProductType.String(), "com.apple.product-type.framework.static")
+	require.Equal(t, AppClipProductType.String(), "com.apple.product-type.application.on-demand-install-capable")
+	require.Equal(t, XcodeExtensionProductType.String(), "com.apple.product-type.xcode-extension")
+	require.Equal(t, ApplicationProductType.String(), "com.apple.product-type.application")
+}
+
+func TestProductTypeIsApplication(t *testing.T) {
+	require.True(t, ApplicationProductType.IsApplicationOrApplicationExtensions())
+	require.True(t, AppClipProductType.IsApplicationOrApplicationExtensions())
+}
+
+func TestProductTypeIsExtension(t *testing.T) {
+	require.True(t, Watch1ExtensionProductType.IsApplicationOrApplicationExtensions())
+	require.True(t, AppExtensionProductType.IsApplicationOrApplicationExtensions())
+}
+
+func TestProductTypeIsNotExtension(t *testing.T) {
+	require.False(t, MetalLibraryProductType.IsApplicationOrApplicationExtensions())
+}
+
+func TestTargetMatchesAppClip(t *testing.T) {
+	productReference := ProductReference{
+		Path: "path",
+	}
+	configurationList := ConfigurationList{
+		ID:                       "id",
+		DefaultConfigurationName: "name",
+		BuildConfigurations:      nil,
+	}
+	target := Target{
+		Type:                   NativeTargetType,
+		ID:                     "id",
+		Name:                   "name",
+		BuildConfigurationList: configurationList,
+		Dependencies:           nil,
+		ProductReference:       productReference,
+		ProductType:            "com.apple.product-type.application.on-demand-install-capable",
+		buildPhaseIDs:          nil,
+	}
+
+	require.True(t, target.isAppClipProduct())
+}
+
 func TestTarget_DependentExecutableProductTargets(t *testing.T) {
 	notExecutableTarget := Target{
 		Type:         NativeTargetType,
