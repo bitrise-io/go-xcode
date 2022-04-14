@@ -18,8 +18,8 @@ workflows:
       - integration-test
     steps:
       - go-list:
-      # - golint:
-      # - errcheck:
+      - golint:
+      - errcheck:
       - go-test:
 
   integration-test:
@@ -124,8 +124,8 @@ workflows:
                 echo "Installing tuist ..."
                 set -ex
 
-                # bash <(curl -Ls https://install.tuist.io)
-                # tuist version
+                bash <(curl -Ls https://install.tuist.io)
+                tuist version
 
       - script-runner:
           run_if: not .IsCI
