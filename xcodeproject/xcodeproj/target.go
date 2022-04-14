@@ -7,13 +7,13 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
-// TargetType ...
+// TargetType
 type TargetType string
 
-// ProductType ...
+// ProductType i.e com.apple.product-type.application ...
 type ProductType string
 
-// ProductTypeSlice ...
+// ProductTypeSlice i.e com.apple.product-type.application ...
 type ProductTypeSlice []ProductType
 
 // TargetTypes
@@ -58,14 +58,17 @@ const (
 	SystemExtensionProductType              ProductType = "com.apple.product-type.system-extension"
 )
 
+// ProductType to string
 func (p ProductType) String() string {
 	return string(p)
 }
 
+// List of known product types that requires code-signing as part of xcode archive.
 var ApplicationOrApplicationExtensionsProductType = ProductTypeSlice{
 	ApplicationProductType, Watch1AppProductType, Watch2AppProductType, MessagesApplicationProductType, AppClipProductType, Watch2AppContainerProductType, Watch1ExtensionProductType, Watch2ExtensionProductType, AppExtensionProductType, IMessageExtensionProductType, MessagesStickerPackExtensionProductType, IntentsServiceExtensionProductType,
 }
 
+// Check if product type is in known application and extension type list
 func (list ProductTypeSlice) Contains(productType ProductType) bool {
 	for _, b := range list {
 		if b == productType {
@@ -76,6 +79,7 @@ func (list ProductTypeSlice) Contains(productType ProductType) bool {
 	return false
 }
 
+// Check if product type is in known application and extension type list
 func (p ProductType) IsApplicationOrApplicationExtensions() bool {
 	var result bool = false
 
@@ -193,6 +197,8 @@ func (t Target) CanExportAppClip() bool {
 	return false
 }
 
+// Parse a target, use filterDependencies to limit what dependency are parsed in the process.
+// It's useful when you do not need to access or make use of dependencies i.e when looking up scheme etc..
 func parseTarget(id string, objects serialized.Object, filterDependencies ProductTypeSlice) (Target, error) {
 	rawTarget, err := objects.Object(id)
 	if err != nil {
