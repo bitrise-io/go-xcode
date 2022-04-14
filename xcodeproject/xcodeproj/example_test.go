@@ -5,7 +5,7 @@ import (
 )
 
 func Example() {
-	project, err := Open("project.xcodeproj")
+	project, err := Open("project.xcodeproj", nil)
 	if err != nil {
 		panic(err)
 	}

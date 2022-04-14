@@ -14,7 +14,7 @@ type Proj struct {
 	Attributes             ProjectAtributes
 }
 
-func parseProj(id string, objects serialized.Object) (Proj, error) {
+func parseProj(id string, objects serialized.Object, filterDependencies ProductTypeSlice) (Proj, error) {
 	rawPBXProj, err := objects.Object(id)
 	if err != nil {
 		return Proj{}, fmt.Errorf("failed to access object with id %s: %s", id, err)
@@ -52,7 +52,7 @@ func parseProj(id string, objects serialized.Object) (Proj, error) {
 			continue
 		}
 
-		target, err := parseTarget(targetID, objects)
+		target, err := parseTarget(targetID, objects, filterDependencies)
 		if err != nil {
 			return Proj{}, fmt.Errorf("failed to parse target with id: %s: %s", targetID, err)
 		}

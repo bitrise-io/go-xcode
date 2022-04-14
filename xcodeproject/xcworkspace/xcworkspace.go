@@ -82,7 +82,7 @@ func (w Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
 			continue
 		}
 
-		project, err := xcodeproj.Open(projectLocation)
+		project, err := xcodeproj.Open(projectLocation, nil)
 		if err != nil {
 			return nil, err
 		}

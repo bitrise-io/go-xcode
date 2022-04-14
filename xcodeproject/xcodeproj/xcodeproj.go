@@ -329,7 +329,7 @@ func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 }
 
 // Open ...
-func Open(pth string) (XcodeProj, error) {
+func Open(pth string, filterDependencies ProductTypeSlice) (XcodeProj, error) {
 	absPth, err := pathutil.AbsPath(pth)
 	if err != nil {
 		return XcodeProj{}, err
@@ -342,7 +342,7 @@ func Open(pth string) (XcodeProj, error) {
 		return XcodeProj{}, err
 	}
 
-	p, err := parsePBXProjContent(content)
+	p, err := parsePBXProjContent(content, filterDependencies)
 	if err != nil {
 		return XcodeProj{}, err
 	}
@@ -353,7 +353,7 @@ func Open(pth string) (XcodeProj, error) {
 	return *p, nil
 }
 
-func parsePBXProjContent(content []byte) (*XcodeProj, error) {
+func parsePBXProjContent(content []byte, filterDependencies ProductTypeSlice) (*XcodeProj, error) {
 	var rawPbxProj serialized.Object
 	format, err := plist.UnmarshalWithCustomAnnotation(content, &rawPbxProj)
 	if err != nil {
@@ -393,7 +393,7 @@ func parsePBXProjContent(content []byte) (*XcodeProj, error) {
 		return nil, fmt.Errorf("failed to find PBXProject's id in project.pbxproj")
 	}
 
-	proj, err := parseProj(projectID, objects)
+	proj, err := parseProj(projectID, objects, filterDependencies)
 	if err != nil {
 		return nil, err
 	}

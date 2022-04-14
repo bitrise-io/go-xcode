@@ -16,7 +16,7 @@ func Scheme(pth string, name string) (*xcscheme.Scheme, string, error) {
 	var p HasScheme
 	var err error
 	if xcodeproj.IsXcodeProj(pth) {
-		p, err = xcodeproj.Open(pth)
+		p, err = xcodeproj.Open(pth, nil)
 	} else {
 		p, err = xcworkspace.Open(pth)
 	}

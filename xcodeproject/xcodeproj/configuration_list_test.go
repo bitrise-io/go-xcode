@@ -116,7 +116,7 @@ const expectedConfigurationList = `{
 
 func TestXcodeProjBuildConfigurationList(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"), nil)
 	if err != nil {
 		t.Fatalf("Failed to init project for test case, error: %s", err)
 	}
@@ -162,7 +162,7 @@ func TestXcodeProjBuildConfigurationList(t *testing.T) {
 
 func TestXcodeProjBuildConfigurations(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"), nil)
 	if err != nil {
 		t.Fatalf("Failed to init project for test case, error: %s", err)
 	}

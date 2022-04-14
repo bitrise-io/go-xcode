@@ -13,6 +13,9 @@ type TargetType string
 // ProductType ...
 type ProductType string
 
+// ProductTypeSlice ...
+type ProductTypeSlice []ProductType
+
 // TargetTypes
 const (
 	NativeTargetType    TargetType = "PBXNativeTarget"
@@ -59,17 +62,31 @@ func (p ProductType) String() string {
 	return string(p)
 }
 
-func (p ProductType) IsApplicationOrApplicationExtensions() bool {
-	switch p {
-	case ApplicationProductType, Watch1AppProductType, Watch2AppProductType, MessagesApplicationProductType, AppClipProductType:
-		return true
-	case Watch2AppContainerProductType:
-		return true
-	case Watch1ExtensionProductType, Watch2ExtensionProductType, AppExtensionProductType, IMessageExtensionProductType, MessagesStickerPackExtensionProductType, IntentsServiceExtensionProductType:
-		return true
-	default:
-		return false
+var ApplicationOrApplicationExtensionsProductType = ProductTypeSlice{
+	ApplicationProductType, Watch1AppProductType, Watch2AppProductType, MessagesApplicationProductType, AppClipProductType, Watch2AppContainerProductType, Watch1ExtensionProductType, Watch2ExtensionProductType, AppExtensionProductType, IMessageExtensionProductType, MessagesStickerPackExtensionProductType, IntentsServiceExtensionProductType,
+}
+
+func (list ProductTypeSlice) Contains(productType ProductType) bool {
+	for _, b := range list {
+		if b == productType {
+			return true
+		}
 	}
+
+	return false
+}
+
+func (p ProductType) IsApplicationOrApplicationExtensions() bool {
+	var result bool = false
+
+	for _, x := range ApplicationOrApplicationExtensionsProductType {
+		if x == p {
+			result = true
+			break
+		}
+	}
+
+	return result
 }
 
 // Target ...
@@ -176,7 +193,7 @@ func (t Target) CanExportAppClip() bool {
 	return false
 }
 
-func parseTarget(id string, objects serialized.Object) (Target, error) {
+func parseTarget(id string, objects serialized.Object, filterDependencies ProductTypeSlice) (Target, error) {
 	rawTarget, err := objects.Object(id)
 	if err != nil {
 		return Target{}, err
@@ -222,14 +239,14 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 	var dependencies []TargetDependency
 
 	// Filter for applications and extensions product type only
-	if ProductType(productType).IsApplicationOrApplicationExtensions() {
+	if len(filterDependencies) == 0 || filterDependencies.Contains(ProductType(productType)) {
 		dependencyIDs, err := rawTarget.StringSlice("dependencies")
 		if err != nil {
 			return Target{}, err
 		}
 
 		for _, dependencyID := range dependencyIDs {
-			dependency, err := parseTargetDependency(dependencyID, objects)
+			dependency, err := parseTargetDependency(dependencyID, objects, filterDependencies)
 			if err != nil {
 				// KeyNotFoundError can be only raised if the 'target' property not found on the raw target dependency object
 				// we only care about target dependency, which points to a target

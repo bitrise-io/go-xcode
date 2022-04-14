@@ -18,7 +18,7 @@ func Test_assetCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("setup: failed to unmarshal project")
 	}
-	proj, err := parseProj("BA3CBE6D19F7A93800CED4D5", objects)
+	proj, err := parseProj("BA3CBE6D19F7A93800CED4D5", objects, nil)
 	if err != nil {
 		t.Fatalf("setup: failed to parse project")
 	}
@@ -74,7 +74,7 @@ func createDummyProject(rawProj string, rootObjectID string, projectPath string,
 		return internalProject{}, fmt.Errorf("failed to unmarshal project, %v", err)
 	}
 	// PBXProject object ID
-	proj, err := parseProj(rootObjectID, objects)
+	proj, err := parseProj(rootObjectID, objects, nil)
 	if err != nil {
 		return internalProject{}, fmt.Errorf("failed to parse project, %v", err)
 	}

@@ -31,6 +31,20 @@ func TestProductTypeIsNotExtension(t *testing.T) {
 	require.False(t, MetalLibraryProductType.IsApplicationOrApplicationExtensions())
 }
 
+func TestContainsProductTypeMatches(t *testing.T) {
+	lists := ApplicationOrApplicationExtensionsProductType
+
+	require.True(t, lists.Contains(ApplicationProductType))
+	require.True(t, lists.Contains(AppClipProductType))
+}
+
+func TestContainsProductTypeNotMatch(t *testing.T) {
+	lists := ApplicationOrApplicationExtensionsProductType
+
+	require.False(t, lists.Contains(StaticFrameworkProductType))
+	require.False(t, lists.Contains(DynamicLibraryProductType))
+}
+
 func TestTargetMatchesAppClip(t *testing.T) {
 	productReference := ProductReference{
 		Path: "path",
@@ -131,7 +145,7 @@ func TestIsExecutableProduct(t *testing.T) {
 	require.NoError(t, err)
 
 	{
-		target, err := parseTarget("13E76E0D1F4AC90A0028096E", raw)
+		target, err := parseTarget("13E76E0D1F4AC90A0028096E", raw, nil)
 		require.NoError(t, err)
 
 		require.True(t, target.IsAppProduct())
@@ -141,7 +155,7 @@ func TestIsExecutableProduct(t *testing.T) {
 
 	{
 
-		target, err := parseTarget("13E76E461F4AC94F0028096E", raw)
+		target, err := parseTarget("13E76E461F4AC94F0028096E", raw, nil)
 		require.NoError(t, err)
 
 		require.False(t, target.IsAppProduct())
@@ -158,7 +172,7 @@ func TestParseTarget(t *testing.T) {
 		_, err := plist.Unmarshal([]byte(rawNativeTarget), &raw)
 		require.NoError(t, err)
 
-		target, err := parseTarget("13E76E0D1F4AC90A0028096E", raw)
+		target, err := parseTarget("13E76E0D1F4AC90A0028096E", raw, nil)
 		require.NoError(t, err)
 		// fmt.Printf("target:\n%s\n", pretty.Object(target))
 		require.Equal(t, expectedNativeTarget, pretty.Object(target))
@@ -170,7 +184,7 @@ func TestParseTarget(t *testing.T) {
 		_, err := plist.Unmarshal([]byte(rawAggregateTarget), &raw)
 		require.NoError(t, err)
 
-		target, err := parseTarget("FD55DAD914CE0B0000F84D24", raw)
+		target, err := parseTarget("FD55DAD914CE0B0000F84D24", raw, nil)
 		require.NoError(t, err)
 		// fmt.Printf("target:\n%s\n", pretty.Object(target))
 		require.Equal(t, expectedAggregateTarget, pretty.Object(target))
@@ -182,7 +196,7 @@ func TestParseTarget(t *testing.T) {
 		_, err := plist.Unmarshal([]byte(rawLegacyTarget), &raw)
 		require.NoError(t, err)
 
-		target, err := parseTarget("407952600CEA391500E202DC", raw)
+		target, err := parseTarget("407952600CEA391500E202DC", raw, nil)
 		require.NoError(t, err)
 		// fmt.Printf("target:\n%s\n", pretty.Object(target))
 		require.Equal(t, expectedLegacyTarget, pretty.Object(target))
@@ -194,7 +208,7 @@ func TestParseTarget(t *testing.T) {
 		_, err := plist.Unmarshal([]byte(rawLegacyTarget), &raw)
 		require.NoError(t, err)
 
-		target, err := parseTarget("INVALID_TARGET_ID", raw)
+		target, err := parseTarget("INVALID_TARGET_ID", raw, nil)
 		require.Error(t, err)
 		require.Equal(t, Target{}, target)
 	}

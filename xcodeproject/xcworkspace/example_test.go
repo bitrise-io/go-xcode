@@ -39,7 +39,7 @@ func Example() {
 			continue
 		}
 
-		project, err := xcodeproj.Open(fileRefLocation)
+		project, err := xcodeproj.Open(fileRefLocation, nil)
 		if err != nil {
 			panic(err)
 		}

@@ -10,20 +10,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParseProj(t *testing.T) {
+func TestParseProjWithoutUnitTestProductType(t *testing.T) {
 	var raw serialized.Object
 	_, err := plist.Unmarshal([]byte(rawProj), &raw)
 	require.NoError(t, err)
 
 	{
-		proj, err := parseProj("BA3CBE6D19F7A93800CED4D5", raw)
+		proj, err := parseProj("BA3CBE6D19F7A93800CED4D5", raw, nil)
 		require.NoError(t, err)
 		fmt.Printf("proj:\n%s\n", pretty.Object(proj))
 		require.Equal(t, expectedProj, pretty.Object(proj))
 	}
 
 	{
-		proj, err := parseProj("INVALID_TARGET_ID", raw)
+		proj, err := parseProj("INVALID_TARGET_ID", raw, nil)
 		require.Error(t, err)
 		require.Equal(t, Proj{}, proj)
 	}

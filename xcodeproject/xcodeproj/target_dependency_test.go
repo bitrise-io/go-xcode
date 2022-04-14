@@ -14,7 +14,7 @@ func TestParseTargetDependency(t *testing.T) {
 	_, err := plist.Unmarshal([]byte(rawTargetDependency), &raw)
 	require.NoError(t, err)
 
-	targetDependency, err := parseTargetDependency("13E76E511F4AC94F0028096E", raw)
+	targetDependency, err := parseTargetDependency("13E76E511F4AC94F0028096E", raw, nil)
 	require.NoError(t, err)
 	// fmt.Printf("targetDependency:\n%s\n", pretty.Object(targetDependency))
 	require.Equal(t, expectedTargetDependency, pretty.Object(targetDependency))

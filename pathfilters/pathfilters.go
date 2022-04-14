@@ -108,7 +108,7 @@ func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
 
 		sdkMap := map[string]bool{}
 		for _, projectFile := range projectFiles {
-			project, err := xcodeproj.Open(projectFile)
+			project, err := xcodeproj.Open(projectFile, nil)
 			if err != nil {
 				return false, err
 			}

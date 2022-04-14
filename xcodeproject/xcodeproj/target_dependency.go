@@ -8,7 +8,7 @@ type TargetDependency struct {
 	Target Target
 }
 
-func parseTargetDependency(id string, objects serialized.Object) (TargetDependency, error) {
+func parseTargetDependency(id string, objects serialized.Object, filterDependencies ProductTypeSlice) (TargetDependency, error) {
 	rawTargetDependency, err := objects.Object(id)
 	if err != nil {
 		return TargetDependency{}, err
@@ -19,7 +19,7 @@ func parseTargetDependency(id string, objects serialized.Object) (TargetDependen
 		return TargetDependency{}, err
 	}
 
-	target, err := parseTarget(targetID, objects)
+	target, err := parseTarget(targetID, objects, filterDependencies)
 	if err != nil {
 		return TargetDependency{}, err
 	}

@@ -382,7 +382,7 @@ func TestExpandSimpleEnv(t *testing.T) {
 
 func TestTargets(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"))
+	project, err := Open(filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"), nil)
 	require.NoError(t, err)
 
 	{
@@ -450,7 +450,7 @@ func TestTargets(t *testing.T) {
 func TestScheme(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
 	pth := filepath.Join(dir, "XcodeProj.xcodeproj")
-	project, err := Open(pth)
+	project, err := Open(pth, nil)
 	require.NoError(t, err)
 
 	{
@@ -488,7 +488,7 @@ func TestScheme(t *testing.T) {
 
 func TestSchemes(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"), nil)
 	require.NoError(t, err)
 
 	schemes, err := project.Schemes()
@@ -510,7 +510,7 @@ func TestOpenXcodeproj(t *testing.T) {
 	t.Log("Opening Pods.xcodeproj in sample-apps-ios-workspace-swift.git")
 	{
 		dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/sample-apps-ios-workspace-swift.git")
-		project, err := Open(filepath.Join(dir, "Pods", "Pods.xcodeproj"))
+		project, err := Open(filepath.Join(dir, "Pods", "Pods.xcodeproj"), nil)
 		require.NoError(t, err)
 		require.Equal(t, filepath.Join(dir, "Pods", "Pods.xcodeproj"), project.Path)
 		require.Equal(t, "Pods", project.Name)
@@ -518,7 +518,7 @@ func TestOpenXcodeproj(t *testing.T) {
 	t.Log("Opening XcodeProj.xcodeproj in xcode-project-test.git")
 	{
 		dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-		project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+		project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"), nil)
 		require.NoError(t, err)
 		require.Equal(t, filepath.Join(dir, "XcodeProj.xcodeproj"), project.Path)
 		require.Equal(t, "XcodeProj", project.Name)
@@ -532,7 +532,7 @@ func TestIsXcodeProj(t *testing.T) {
 
 func TestXcodeProj_forceBundleID(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"), nil)
 	if err != nil {
 		t.Fatalf("Failed to init project for test case, error: %s", err)
 	}
@@ -583,7 +583,7 @@ func TestXcodeProj_forceBundleID(t *testing.T) {
 
 func TestXcodePrj_forceTargetCodeSignEntitlement(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"), nil)
 	if err != nil {
 		t.Fatalf("Failed to init project for test case, error: %s", err)
 	}
@@ -635,7 +635,7 @@ func TestXcodePrj_forceTargetCodeSignEntitlement(t *testing.T) {
 
 func TestXcodeProj_ForceCodeSign(t *testing.T) {
 	// arrange
-	proj, err := parsePBXProjContent([]byte(pbxprojWithouthTargetAttributes))
+	proj, err := parsePBXProjContent([]byte(pbxprojWithouthTargetAttributes), nil)
 	require.NoError(t, err)
 
 	configurationName := "Debug"
@@ -668,7 +668,7 @@ func TestXcodeProj_ForceCodeSign(t *testing.T) {
 
 func TestXcodeProj_ForceCodeSign_WithouthTargetAttributes(t *testing.T) {
 	// arrange
-	proj, err := parsePBXProjContent([]byte(pbxprojWithouthTargetAttributes))
+	proj, err := parsePBXProjContent([]byte(pbxprojWithouthTargetAttributes), nil)
 	require.NoError(t, err)
 
 	configurationName := "Debug"
@@ -695,7 +695,7 @@ func TestXcodeProj_ForceCodeSign_WithouthTargetAttributes(t *testing.T) {
 
 func TestXcodeProj_ForceCodeSign_OverridesSigningBuildSettingsOnly(t *testing.T) {
 	// arrange
-	proj, err := parsePBXProjContent([]byte(pbxprojWithouthTargetAttributes))
+	proj, err := parsePBXProjContent([]byte(pbxprojWithouthTargetAttributes), nil)
 	require.NoError(t, err)
 
 	configurationName := "Debug"
@@ -754,7 +754,7 @@ func findBuildConfiguration(t *testing.T, target Target, name string) BuildConfi
 func TestXcodeProjOpen_AposthropeSupported(t *testing.T) {
 	// Arrange
 	dir := testhelper.GitCloneBranchIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git", "special-character")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"), nil)
 	if err != nil {
 		t.Fatalf("Failed to init project for test case, error: %s", err)
 	}
@@ -780,7 +780,7 @@ func TestXcodeProjOpen_AposthropeSupported(t *testing.T) {
 	if err := project.Save(); err != nil {
 		t.Errorf("Failed to save project, error: %s", err)
 	}
-	_, err = Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	_, err = Open(filepath.Join(dir, "XcodeProj.xcodeproj"), nil)
 	if err != nil {
 		t.Fatalf("Failed to reopen project after saving it, error: %s", err)
 	}
@@ -811,7 +811,7 @@ func TestXcodeProj_perObjectModify(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			proj, err := parsePBXProjContent([]byte(tt.projContent))
+			proj, err := parsePBXProjContent([]byte(tt.projContent), nil)
 			require.NoError(t, err)
 
 			team := "ABCD1234"

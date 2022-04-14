@@ -14,7 +14,7 @@ func TestXcodeProj_ReCreateSchemes(t *testing.T) {
 	_, err := plist.Unmarshal([]byte(rawProj), &raw)
 	require.NoError(t, err)
 
-	proj, err := parseProj("BA3CBE6D19F7A93800CED4D5", raw)
+	proj, err := parseProj("BA3CBE6D19F7A93800CED4D5", raw, nil)
 	require.NoError(t, err)
 
 	tests := []struct {
