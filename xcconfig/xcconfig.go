@@ -2,14 +2,16 @@ package xcconfig
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
-	"path/filepath"
 )
 
 // Writer ...
 type Writer interface {
-	Write(content string) (string, error)
+	Write(input string) (string, error)
 }
 
 type writer struct {
@@ -23,6 +25,14 @@ func NewWriter(pathProvider pathutil.PathProvider, fileManager fileutil.FileMana
 }
 
 func (w writer) Write(content string) (string, error) {
+	if w.isPath(content) {
+		if pathutil.NewPathChecker().IsPathExists(content) { // TODO: err handling
+			return content, nil
+		} else {
+			return "", fmt.Errorf("provided xcconfig file path doesn't exist")
+		}
+	}
+
 	dir, err := w.pathProvider.CreateTempDir("")
 	if err != nil {
 		return "", fmt.Errorf("unable to create temp dir for writing XCConfig: %v", err)
@@ -32,4 +42,9 @@ func (w writer) Write(content string) (string, error) {
 		return "", fmt.Errorf("unable to write XCConfig content into file: %v", err)
 	}
 	return xcconfigPath, nil
+}
+
+func (w writer) isPath(input string) bool {
+	// TODO
+	return strings.HasSuffix(input, ".xcconfig")
 }
