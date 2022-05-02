@@ -31,48 +31,33 @@ type Target struct {
 	buildPhaseIDs          []string
 }
 
-// DependentTargets ...
-func (t Target) DependentTargets() []Target {
-	var targets []Target
+// DependsOn ...
+func (t Target) DependsOn(targetID string) bool {
 	for _, targetDependency := range t.Dependencies {
-		childTarget := targetDependency.Target
-		targets = append(targets, childTarget)
-
-		childDependentTargets := childTarget.DependentTargets()
-		targets = append(targets, childDependentTargets...)
-	}
-
-	return targets
-}
-
-// DependesOn ...
-func (t Target) DependesOn(targetID string) bool {
-	for _, targetDependency := range t.Dependencies {
-		childTarget := targetDependency.Target
-		if childTarget.ID == targetID {
+		if targetDependency.TargetID == targetID {
 			return true
 		}
 	}
 	return false
 }
 
-// DependentExecutableProductTargets ...
-func (t Target) DependentExecutableProductTargets() []Target {
-	var targets []Target
-	for _, targetDependency := range t.Dependencies {
-		childTarget := targetDependency.Target
-		if !childTarget.IsExecutableProduct() {
-			continue
-		}
-
-		targets = append(targets, childTarget)
-
-		childDependentTargets := childTarget.DependentExecutableProductTargets()
-		targets = append(targets, childDependentTargets...)
-	}
-
-	return targets
-}
+//// DependentExecutableProductTargets ...
+//func (t Target) DependentExecutableProductTargets() []Target {
+//	var targets []Target
+//	for _, targetDependency := range t.Dependencies {
+//		childTarget := targetDependency.Target
+//		if !childTarget.IsExecutableProduct() {
+//			continue
+//		}
+//
+//		targets = append(targets, childTarget)
+//
+//		childDependentTargets := childTarget.DependentExecutableProductTargets()
+//		targets = append(targets, childDependentTargets...)
+//	}
+//
+//	return targets
+//}
 
 // IsAppProduct ...
 func (t Target) IsAppProduct() bool {
@@ -112,16 +97,17 @@ func (t Target) isAppClipProduct() bool {
 }
 
 // CanExportAppClip ...
-func (t Target) CanExportAppClip() bool {
-	deps := t.DependentTargets()
-	for _, target := range deps {
-		if target.isAppClipProduct() {
-			return true
-		}
-	}
-
-	return false
-}
+// TODO: bitrise-init is the only usage: https://cs.github.com/bitrise-io/bitrise-init/blob/6df2455ae686fc67aea9eeffb06999ae37a71b97/scanners/ios/appclip.go?q=org%3Abitrise-io+CanExportAppClip%28#L20
+//func (t Target) CanExportAppClip() bool {
+//	deps := t.DependentTargets()
+//	for _, target := range deps {
+//		if target.isAppClipProduct() {
+//			return true
+//		}
+//	}
+//
+//	return false
+//}
 
 func parseTarget(id string, objects serialized.Object) (Target, error) {
 	rawTarget, err := objects.Object(id)

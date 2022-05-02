@@ -1,24 +1,15 @@
 package xcodeproj
 
-import (
-	"testing"
-
-	plist "github.com/bitrise-io/go-plist"
-	"github.com/bitrise-io/go-utils/pretty"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/stretchr/testify/require"
-)
-
-func TestParseTargetDependency(t *testing.T) {
-	var raw serialized.Object
-	_, err := plist.Unmarshal([]byte(rawTargetDependency), &raw)
-	require.NoError(t, err)
-
-	targetDependency, err := parseTargetDependency("13E76E511F4AC94F0028096E", raw)
-	require.NoError(t, err)
-	// fmt.Printf("targetDependency:\n%s\n", pretty.Object(targetDependency))
-	require.Equal(t, expectedTargetDependency, pretty.Object(targetDependency))
-}
+//func TestParseTargetDependency(t *testing.T) {
+//	var raw serialized.Object
+//	_, err := plist.Unmarshal([]byte(rawTargetDependency), &raw)
+//	require.NoError(t, err)
+//
+//	targetDependency, err := parseTargetDependency("13E76E511F4AC94F0028096E", raw)
+//	require.NoError(t, err)
+//	// fmt.Printf("targetDependency:\n%s\n", pretty.Object(targetDependency))
+//	require.Equal(t, expectedTargetDependency, pretty.Object(targetDependency))
+//}
 
 const rawTargetDependency = `
 {

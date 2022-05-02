@@ -4,8 +4,9 @@ import "github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 
 // TargetDependency ...
 type TargetDependency struct {
-	ID     string
-	Target Target
+	ID string
+	//Target Target
+	TargetID string
 }
 
 func parseTargetDependency(id string, objects serialized.Object) (TargetDependency, error) {
@@ -19,13 +20,14 @@ func parseTargetDependency(id string, objects serialized.Object) (TargetDependen
 		return TargetDependency{}, err
 	}
 
-	target, err := parseTarget(targetID, objects)
-	if err != nil {
-		return TargetDependency{}, err
-	}
+	//target, err := parseTarget(targetID, objects)
+	//if err != nil {
+	//	return TargetDependency{}, err
+	//}
 
 	return TargetDependency{
-		ID:     id,
-		Target: target,
+		ID: id,
+		//Target: target,
+		TargetID: targetID,
 	}, nil
 }
