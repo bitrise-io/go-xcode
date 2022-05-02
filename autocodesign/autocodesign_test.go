@@ -185,7 +185,6 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 
 	type fields struct {
 		devPortalClient           DevPortalClient
-		certificateProvider       CertificateProvider
 		assetWriter               AssetWriter
 		localCodeSignAssetManager LocalCodeSignAssetManager
 	}
@@ -200,11 +199,11 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 		{
 			name: "no valid certs found",
 			fields: fields{
-				devPortalClient:     newMockDevportalClient(devportalArgs{}),
-				certificateProvider: newMockCertificateProvider([]certificateutil.CertificateInfoModel{}),
+				devPortalClient: newMockDevportalClient(devportalArgs{}),
 			},
 			opts: CodesignAssetsOpts{
-				DistributionType: Development,
+				DistributionType:          Development,
+				TypeToBitriseCertificates: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{},
 			},
 			wantErr: &DetailedError{},
 		},
@@ -212,13 +211,15 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			name: "App ID and Profile found, valid",
 			fields: fields{
 				devPortalClient:           checkOnlyDevportalProfile,
-				certificateProvider:       newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert}),
 				assetWriter:               newDefaultMockAssetWriter(),
 				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(nil, &appIDAndProfileFoundAppLayout),
 			},
 			appLayout: appIDAndProfileFoundAppLayout,
 			opts: CodesignAssetsOpts{
 				DistributionType: Development,
+				TypeToBitriseCertificates: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+					appstoreconnect.IOSDevelopment: {devCert},
+				},
 			},
 			want: map[DistributionType]AppCodesignAssets{
 				Development: {
@@ -235,13 +236,15 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			name: "Codesign assets are merged",
 			fields: fields{
 				devPortalClient:           checkOnlyDevportalProfile,
-				certificateProvider:       newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert}),
 				assetWriter:               newDefaultMockAssetWriter(),
 				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(&localCodeSignAsset, &appIDAndProfileFoundAppLayout),
 			},
 			appLayout: appIDAndProfileFoundAppLayout2,
 			opts: CodesignAssetsOpts{
 				DistributionType: Development,
+				TypeToBitriseCertificates: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+					appstoreconnect.IOSDevelopment: {devCert},
+				},
 			},
 			want: map[DistributionType]AppCodesignAssets{
 				Development: {
@@ -259,12 +262,14 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			name: "can not create iCloud containers",
 			fields: fields{
 				devPortalClient:           devportalWithNoAppID,
-				certificateProvider:       newMockCertificateProvider([]certificateutil.CertificateInfoModel{devCert}),
 				localCodeSignAssetManager: newMockLocalCodeSignAssetManager(nil, &icloudContainerAppLayout),
 			},
 			appLayout: icloudContainerAppLayout,
 			opts: CodesignAssetsOpts{
 				DistributionType: Development,
+				TypeToBitriseCertificates: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+					appstoreconnect.IOSDevelopment: {devCert},
+				},
 			},
 			wantErr: &DetailedError{},
 		},
