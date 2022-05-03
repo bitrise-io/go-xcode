@@ -41,24 +41,6 @@ func (t Target) DependsOn(targetID string) bool {
 	return false
 }
 
-//// DependentExecutableProductTargets ...
-//func (t Target) DependentExecutableProductTargets() []Target {
-//	var targets []Target
-//	for _, targetDependency := range t.Dependencies {
-//		childTarget := targetDependency.Target
-//		if !childTarget.IsExecutableProduct() {
-//			continue
-//		}
-//
-//		targets = append(targets, childTarget)
-//
-//		childDependentTargets := childTarget.DependentExecutableProductTargets()
-//		targets = append(targets, childDependentTargets...)
-//	}
-//
-//	return targets
-//}
-
 // IsAppProduct ...
 func (t Target) IsAppProduct() bool {
 	return filepath.Ext(t.ProductReference.Path) == ".app"
@@ -92,22 +74,10 @@ func (t Target) IsUITestProduct() bool {
 	return filepath.Ext(t.ProductType) == ".ui-testing"
 }
 
-func (t Target) isAppClipProduct() bool {
+// IsAppClipProduct ...
+func (t Target) IsAppClipProduct() bool {
 	return t.ProductType == appClipProductType
 }
-
-// CanExportAppClip ...
-// TODO: bitrise-init is the only usage: https://cs.github.com/bitrise-io/bitrise-init/blob/6df2455ae686fc67aea9eeffb06999ae37a71b97/scanners/ios/appclip.go?q=org%3Abitrise-io+CanExportAppClip%28#L20
-//func (t Target) CanExportAppClip() bool {
-//	deps := t.DependentTargets()
-//	for _, target := range deps {
-//		if target.isAppClipProduct() {
-//			return true
-//		}
-//	}
-//
-//	return false
-//}
 
 func parseTarget(id string, objects serialized.Object) (Target, error) {
 	rawTarget, err := objects.Object(id)
