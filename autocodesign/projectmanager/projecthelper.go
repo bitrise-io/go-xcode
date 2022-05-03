@@ -54,8 +54,12 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 		return nil, fmt.Errorf("failed to find the main target of the scheme (%s): %s", schemeName, err)
 	}
 
-	//dependentTargets := mainTarget.DependentExecutableProductTargets()
-	dependentTargets := xcproj.DependentTargetsOfTarget(mainTarget) // TODO: filtering
+	var dependentTargets []xcodeproj.Target
+	for _, target := range xcproj.DependentTargetsOfTarget(mainTarget) {
+		if target.IsExecutableProduct() {
+			dependentTargets = append(dependentTargets, target)
+		}
+	}
 
 	var uiTestTargets []xcodeproj.Target
 	for _, target := range xcproj.Proj.Targets {
