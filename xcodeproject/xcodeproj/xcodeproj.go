@@ -106,6 +106,8 @@ func (p XcodeProj) TargetInfoplistPath(target, configuration string) (string, er
 	return p.buildSettingsFilePath(target, configuration, "INFOPLIST_FILE")
 }
 
+// DependentTargetsOfTarget returns with all dependencies of a given target, including the transitive dependencies.
+// The returned list contains each target only once, using the target ID for uniqueness.
 func (p XcodeProj) DependentTargetsOfTarget(target Target) []Target {
 	var dependentTargets []Target
 	for _, dependency := range target.Dependencies {
@@ -119,7 +121,7 @@ func (p XcodeProj) DependentTargetsOfTarget(target Target) []Target {
 		dependentTargets = append(dependentTargets, childDependentTargets...)
 	}
 
-	return dependentTargets
+	return deduplicateTargetList(dependentTargets)
 }
 
 // ReadTargetInfoplist ...
@@ -724,4 +726,16 @@ func (p XcodeProj) perObjectModify() ([]byte, error) {
 	}
 
 	return contentsMod, nil
+}
+
+func deduplicateTargetList(targets []Target) []Target {
+	lookupMap := map[string]Target{}
+	for _, target := range targets {
+		lookupMap[target.ID] = target
+	}
+	uniqueTargets := []Target{}
+	for _, target := range lookupMap {
+		uniqueTargets = append(uniqueTargets, target)
+	}
+	return uniqueTargets
 }

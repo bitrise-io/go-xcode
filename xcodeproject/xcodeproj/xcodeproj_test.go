@@ -924,3 +924,51 @@ func Test_deepCopyObject(t *testing.T) {
 
 	require.NotEqual(t, object, got, "deepCopyObject() changing copied object does not change original")
 }
+
+func Test_deduplicateTargetList(t *testing.T) {
+	tests := []struct {
+		name    string
+		targets []Target
+		want    []Target
+	}{
+		{
+			"Empty slice",
+			[]Target{},
+			[]Target{},
+		},
+		{
+			"Single item",
+			[]Target{{ID: "610F554E26158E0A001D3AA0"}},
+			[]Target{{ID: "610F554E26158E0A001D3AA0"}},
+		},
+		{
+			"Multiple unique items",
+			[]Target{
+				{ID: "610F554E26158E0A001D3AA0"},
+				{ID: "612F3D832615A2F400137D77"},
+			},
+			[]Target{
+				{ID: "610F554E26158E0A001D3AA0"},
+				{ID: "612F3D832615A2F400137D77"},
+			},
+		},
+		{
+			"Duplicated items",
+			[]Target{
+				{ID: "610F554E26158E0A001D3AA0"},
+				{ID: "612F3D832615A2F400137D77"},
+				{ID: "610F554E26158E0A001D3AA0"},
+				{ID: "612F3D832615A2F400137D77"},
+			},
+			[]Target{
+				{ID: "610F554E26158E0A001D3AA0"},
+				{ID: "612F3D832615A2F400137D77"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, deduplicateTargetList(tt.targets), "deduplicateTargetList(%v)", tt.targets)
+		})
+	}
+}
