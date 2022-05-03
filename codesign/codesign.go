@@ -388,6 +388,8 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 			return err
 		}
 
+		// Export error as output
+
 		m.logger.Warnf("Error: %s", err)
 		m.logger.Infof("Falling back to manually managed codesigning assets.")
 
@@ -407,6 +409,11 @@ func (m *Manager) prepareManualAssets(certificates []certificateutil.Certificate
 	if err := m.installCertificates(certificates); err != nil {
 		return err
 	}
+
+	// fetch manual profiles
+	//
+
+	// install profiles
 
 	return nil
 }
