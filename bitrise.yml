@@ -12,8 +12,6 @@ workflows:
       - swiftpm_cache
 
   test:
-    before_run:
-      - resolve-tuist
     after_run:
       - integration-test
     steps:
@@ -113,22 +111,3 @@ workflows:
       - _swiftpm_step5
       - _swiftpm_step7
 
-  resolve-tuist:
-    steps:
-      - script:
-          run_if: .IsCI
-          title: Install Tuist
-          inputs:
-            - content: |-
-                #!/bin/bash
-                echo "Installing tuist ..."
-                set -ex
-
-                bash <(curl -Ls https://install.tuist.io)
-                tuist version
-
-      - script-runner:
-          run_if: not .IsCI
-          title: Install or update Tuist
-          inputs:
-            - file_path: tuistupdater.sh
