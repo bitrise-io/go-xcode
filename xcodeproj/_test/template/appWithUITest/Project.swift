@@ -16,7 +16,7 @@ let project = Project(name: "MyApp",
                                bundleId: "io.bitrise.MyAppUITests",
                                infoPlist: .extendingDefault(with: [:]),
                                dependencies: [
-                                    .sdk(name: "XCTest.framework", status: .required),
+                                    .sdk(name: "XCTest", type: .framework, status: .required),
                                     .target(name: "MyApp")
                                 ]),
                       ])

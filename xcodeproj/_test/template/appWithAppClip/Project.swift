@@ -18,6 +18,6 @@ let project = Project(name: "MyApp",
                                infoPlist: .extendingDefault(with: [:]),
                                entitlements: "AppClip.entitlements",
                                dependencies: [
-                                    .sdk(name: "AppClip.framework", status: .required),
+                                    .sdk(name: "AppClip", type: .framework, status: .required),
                                 ]),
                       ])

@@ -684,55 +684,7 @@ const expectedProj = `{
 			},
 			"Dependencies": [
 				{
-					"ID": "BA3CBE9319F7A93900CED4D5",
-					"Target": {
-						"Type": "PBXNativeTarget",
-						"ID": "BA3CBE7419F7A93800CED4D5",
-						"Name": "ios-simple-objc",
-						"BuildConfigurationList": {
-							"ID": "BA3CBE9B19F7A93900CED4D5",
-							"DefaultConfigurationName": "Release",
-							"BuildConfigurations": [
-								{
-									"ID": "BA3CBE9C19F7A93900CED4D5",
-									"Name": "Debug",
-									"BuildSettings": {
-										"ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
-										"CODE_SIGN_IDENTITY": "iPhone Developer",
-										"CODE_SIGN_IDENTITY[sdk=iphoneos*]": "iPhone Developer",
-										"DEVELOPMENT_TEAM": "72SA8V3WYL",
-										"INFOPLIST_FILE": "ios-simple-objc/Info.plist",
-										"LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks",
-										"PRODUCT_BUNDLE_IDENTIFIER": "Bitrise.$(PRODUCT_NAME:rfc1034identifier)",
-										"PRODUCT_NAME": "$(TARGET_NAME)",
-										"PROVISIONING_PROFILE": "",
-										"PROVISIONING_PROFILE_SPECIFIER": "BitriseBot-Wildcard"
-									}
-								},
-								{
-									"ID": "BA3CBE9D19F7A93900CED4D5",
-									"Name": "Release",
-									"BuildSettings": {
-										"ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
-										"CODE_SIGN_IDENTITY": "iPhone Developer",
-										"CODE_SIGN_IDENTITY[sdk=iphoneos*]": "iPhone Developer",
-										"DEVELOPMENT_TEAM": "72SA8V3WYL",
-										"INFOPLIST_FILE": "ios-simple-objc/Info.plist",
-										"LD_RUNPATH_SEARCH_PATHS": "$(inherited) @executable_path/Frameworks",
-										"PRODUCT_BUNDLE_IDENTIFIER": "Bitrise.$(PRODUCT_NAME:rfc1034identifier)",
-										"PRODUCT_NAME": "$(TARGET_NAME)",
-										"PROVISIONING_PROFILE": "",
-										"PROVISIONING_PROFILE_SPECIFIER": "BitriseBot-Wildcard"
-									}
-								}
-							]
-						},
-						"Dependencies": null,
-						"ProductReference": {
-							"Path": "ios-simple-objc.app"
-						},
-						"ProductType": "com.apple.product-type.application"
-					}
+					"TargetID": "BA3CBE7419F7A93800CED4D5"
 				}
 			],
 			"ProductReference": {

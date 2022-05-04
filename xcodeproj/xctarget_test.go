@@ -164,7 +164,7 @@ func givenGeneratedProject(t *testing.T, template string) string {
 
 	destDir := filepath.Join(temporaryDir, template)
 
-	cmd := command.New("tuist", "generate", "--path", destDir, "--project-only")
+	cmd := command.New("tuist", "generate", "--path", destDir, "--no-open")
 
 	output, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	fmt.Println(output)
