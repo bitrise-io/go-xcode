@@ -17,22 +17,24 @@ type Writer interface {
 type writer struct {
 	pathProvider pathutil.PathProvider
 	fileManager  fileutil.FileManager
+	pathChecker  pathutil.PathChecker
 }
 
 // NewWriter ...
-func NewWriter(pathProvider pathutil.PathProvider, fileManager fileutil.FileManager) Writer {
-	return &writer{pathProvider: pathProvider, fileManager: fileManager}
+func NewWriter(pathProvider pathutil.PathProvider, fileManager fileutil.FileManager, pathChecker pathutil.PathChecker) Writer {
+	return &writer{pathProvider: pathProvider, fileManager: fileManager, pathChecker: pathChecker}
 }
 
-func (w writer) Write(content string) (string, error) {
-	if w.isPath(content) {
-		pathExists, err := pathutil.NewPathChecker().IsPathExists(content)
+func (w writer) Write(input string) (string, error) {
+	if w.isPath(input) {
+		pathExists, err := w.pathChecker.IsPathExists(input)
 		if err != nil {
 			return "", fmt.Errorf(err.Error())
 		}
 		if !pathExists {
 			return "", fmt.Errorf("provided xcconfig file path doesn't exist")
 		}
+		return input, nil
 	}
 
 	dir, err := w.pathProvider.CreateTempDir("")
@@ -40,7 +42,7 @@ func (w writer) Write(content string) (string, error) {
 		return "", fmt.Errorf("unable to create temp dir for writing XCConfig: %v", err)
 	}
 	xcconfigPath := filepath.Join(dir, "temp.xcconfig")
-	if err = w.fileManager.Write(xcconfigPath, content, 0644); err != nil {
+	if err = w.fileManager.Write(xcconfigPath, input, 0644); err != nil {
 		return "", fmt.Errorf("unable to write XCConfig content into file: %v", err)
 	}
 	return xcconfigPath, nil

@@ -1,6 +1,7 @@
 package xcconfig
 
 import (
+	"errors"
 	"github.com/bitrise-io/go-xcode/v2/xcconfig/mocks"
 	"github.com/stretchr/testify/assert"
 	"io/fs"
@@ -16,8 +17,9 @@ func Test_WhenWritingXCConfigContent_ThenItShouldReturnFilePath(t *testing.T) {
 	mockPathProvider := new(mocks.PathProvider)
 	mockPathProvider.On("CreateTempDir", "").Return(testTempDir, nil)
 	mockFileManager := new(mocks.FileManager)
+	mockPathChecker := new(mocks.PathChecker)
 	mockFileManager.On("Write", expectedPath, testContent, fs.FileMode(0644)).Return(nil)
-	xcconfigWriter := NewWriter(mockPathProvider, mockFileManager)
+	xcconfigWriter := NewWriter(mockPathProvider, mockFileManager, mockPathChecker)
 
 	// When
 	path, err := xcconfigWriter.Write(testContent)
@@ -28,7 +30,7 @@ func Test_WhenWritingXCConfigContent_ThenItShouldReturnFilePath(t *testing.T) {
 	}
 }
 
-func Test_XCConfigInput_CanBePath(t *testing.T) {
+func Test_XCConfigInput_NonExistentPathErrors(t *testing.T) {
 	testContent := "TEST.xcconfig"
 	testTempDir := "temp_dir"
 	expectedPath := filepath.Join(testTempDir, "temp.xcconfig")
@@ -36,8 +38,24 @@ func Test_XCConfigInput_CanBePath(t *testing.T) {
 	mockPathProvider.On("CreateTempDir", "").Return(testTempDir, nil)
 	mockFileManager := new(mocks.FileManager)
 	mockFileManager.On("Write", expectedPath, testContent, fs.FileMode(0644)).Return(nil)
-	xcconfigWriter := NewWriter(mockPathProvider, mockFileManager)
+	mockPathChecker := new(mocks.PathChecker)
+	mockPathChecker.On("IsPathExists", testContent).Return(false, errors.New("path does not exist"))
+	xcconfigWriter := NewWriter(mockPathProvider, mockFileManager, mockPathChecker)
 	path, err := xcconfigWriter.Write(testContent)
 	assert.Error(t, err)
 	assert.Equal(t, path, "")
+}
+
+func Test_XCConfigInput_CorrectInputPathReturnSamePath(t *testing.T) {
+	input := "TEST.xcconfig"
+	mockPathChecker := new(mocks.PathChecker)
+	mockPathChecker.On("IsPathExists", input).Return(true, nil)
+	mockPathProvider := new(mocks.PathProvider)
+	mockFileManager := new(mocks.FileManager)
+	xcconfigWriter := NewWriter(mockPathProvider, mockFileManager, mockPathChecker)
+	path, err := xcconfigWriter.Write(input)
+
+	if assert.NoError(t, err) {
+		assert.Equal(t, path, input)
+	}
 }
