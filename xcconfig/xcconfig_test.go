@@ -27,3 +27,17 @@ func Test_WhenWritingXCConfigContent_ThenItShouldReturnFilePath(t *testing.T) {
 		assert.Equal(t, expectedPath, path)
 	}
 }
+
+func Test_XCConfigInput_CanBePath(t *testing.T) {
+	testContent := "TEST.xcconfig"
+	testTempDir := "temp_dir"
+	expectedPath := filepath.Join(testTempDir, "temp.xcconfig")
+	mockPathProvider := new(mocks.PathProvider)
+	mockPathProvider.On("CreateTempDir", "").Return(testTempDir, nil)
+	mockFileManager := new(mocks.FileManager)
+	mockFileManager.On("Write", expectedPath, testContent, fs.FileMode(0644)).Return(nil)
+	xcconfigWriter := NewWriter(mockPathProvider, mockFileManager)
+	path, err := xcconfigWriter.Write(testContent)
+	assert.Error(t, err)
+	assert.Equal(t, path, "")
+}

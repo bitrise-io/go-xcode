@@ -26,9 +26,11 @@ func NewWriter(pathProvider pathutil.PathProvider, fileManager fileutil.FileMana
 
 func (w writer) Write(content string) (string, error) {
 	if w.isPath(content) {
-		if pathutil.NewPathChecker().IsPathExists(content) { // TODO: err handling
-			return content, nil
-		} else {
+		pathExists, err := pathutil.NewPathChecker().IsPathExists(content)
+		if err != nil {
+			return "", fmt.Errorf(err.Error())
+		}
+		if !pathExists {
 			return "", fmt.Errorf("provided xcconfig file path doesn't exist")
 		}
 	}
@@ -45,6 +47,5 @@ func (w writer) Write(content string) (string, error) {
 }
 
 func (w writer) isPath(input string) bool {
-	// TODO
 	return strings.HasSuffix(input, ".xcconfig")
 }
