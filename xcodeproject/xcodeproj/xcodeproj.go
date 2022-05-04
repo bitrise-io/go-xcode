@@ -114,6 +114,7 @@ func (p XcodeProj) DependentTargetsOfTarget(target Target) []Target {
 		childTarget, ok := p.Proj.Target(dependency.TargetID)
 		if !ok {
 			log.Warnf("couldn't find dependency %s of target %s (%s), skipping", dependency.TargetID, target.Name, target.ID)
+			continue
 		}
 		dependentTargets = append(dependentTargets, childTarget)
 
