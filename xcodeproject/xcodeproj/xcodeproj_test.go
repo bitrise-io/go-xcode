@@ -386,6 +386,7 @@ func TestTargets(t *testing.T) {
 	require.NoError(t, err)
 
 	{
+		// Target with dependencies
 		target, ok := project.Proj.Target("7D0342D720F4B5AD0050B6A6")
 		require.True(t, ok)
 
@@ -393,6 +394,15 @@ func TestTargets(t *testing.T) {
 		require.Equal(t, 2, len(dependentTargets))
 		require.Equal(t, "WatchKitApp", dependentTargets[0].Name)
 		require.Equal(t, "WatchKitApp Extension", dependentTargets[1].Name)
+	}
+
+	{
+		// Target with no dependencies
+		target, ok := project.Proj.Target("7D03432F20F4BBBD0050B6A6")
+		require.True(t, ok)
+
+		dependentTargets := project.DependentTargetsOfTarget(target)
+		require.Empty(t, dependentTargets)
 	}
 
 	{
