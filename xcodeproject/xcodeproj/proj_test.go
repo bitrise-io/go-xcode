@@ -684,7 +684,6 @@ const expectedProj = `{
 			},
 			"Dependencies": [
 				{
-					"ID": "BA3CBE9319F7A93900CED4D5",
 					"TargetID": "BA3CBE7419F7A93800CED4D5"
 				}
 			],

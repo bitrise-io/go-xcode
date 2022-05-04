@@ -344,7 +344,6 @@ const expectedNativeTarget = `{
 	},
 	"Dependencies": [
 		{
-			"ID": "13E76E511F4AC94F0028096E",
 			"TargetID": "13E76E461F4AC94F0028096E"
 		}
 	],
