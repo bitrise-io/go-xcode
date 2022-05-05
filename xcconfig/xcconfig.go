@@ -25,14 +25,11 @@ func NewWriter(pathProvider pathutil.PathProvider, fileManager fileutil.FileMana
 	return &writer{pathProvider: pathProvider, fileManager: fileManager, pathChecker: pathChecker}
 }
 
-/***
- * This function writes the contents of `input` into a xcconfig file
- * if the provided content is not already a path to xcconfig file
- * If the content is a valid path to xcconfig, it will validate the path,
- * and return the path.
- * Method returns path, or error if it could not finalize a xcconfig
- * file and/or its path.
- */
+// Write writes the contents of input into a xcconfig file if
+// the provided content is not already a path to xcconfig file.
+// If the content is a valid path to xcconfig, it will validate the path,
+// and return the path. It returns error if it cannot finalize a xcconfig
+// file and/or its path.
 func (w writer) Write(input string) (string, error) {
 	if w.isPath(input) {
 		pathExists, err := w.pathChecker.IsPathExists(input)
