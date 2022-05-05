@@ -36,10 +36,9 @@ const (
 
 // Opts ...
 type Opts struct {
-	AuthType                          AuthType
-	FallbackToLocalAssetsOnAPIFailure bool
-	ShouldConsiderXcodeSigning        bool
-	TeamID                            string
+	AuthType                   AuthType
+	ShouldConsiderXcodeSigning bool
+	TeamID                     string
 
 	ExportMethod      autocodesign.DistributionType
 	XcodeMajorVersion int
@@ -384,28 +383,13 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		VerboseLog:                m.opts.IsVerboseLog,
 	})
 	if err != nil {
-		if !m.opts.FallbackToLocalAssetsOnAPIFailure {
-			return err
-		}
-
-		m.logger.Warnf("Error: %s", err)
-		m.logger.Infof("Falling back to manually managed codesigning assets.")
-
-		return m.prepareManualAssets(certs)
+		return err
 	}
 
 	if m.assetWriter != nil {
 		if err := m.assetWriter.ForceCodesignAssets(m.opts.ExportMethod, codesignAssetsByDistributionType); err != nil {
 			return fmt.Errorf("failed to force codesign settings: %s", err)
 		}
-	}
-
-	return nil
-}
-
-func (m *Manager) prepareManualAssets(certificates []certificateutil.CertificateInfoModel) error {
-	if err := m.installCertificates(certificates); err != nil {
-		return err
 	}
 
 	return nil
