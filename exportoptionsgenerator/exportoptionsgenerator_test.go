@@ -369,7 +369,7 @@ func givenAppClipTarget() xcodeproj.Target {
 func givenApplicationTarget(dependentTargets []xcodeproj.Target) xcodeproj.Target {
 	var dependencies []xcodeproj.TargetDependency
 	for _, target := range dependentTargets {
-		dependencies = append(dependencies, xcodeproj.TargetDependency{Target: target})
+		dependencies = append(dependencies, xcodeproj.TargetDependency{TargetID: target.ID})
 	}
 
 	return xcodeproj.Target{
