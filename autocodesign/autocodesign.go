@@ -88,6 +88,7 @@ type DevPortalClient interface {
 type AssetWriter interface {
 	Write(codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets) error
 	InstallCertificate(certificate certificateutil.CertificateInfoModel) error
+	InstallProfile(profile Profile) error
 }
 
 // LocalCodeSignAssetManager ...
@@ -105,6 +106,11 @@ type AppLayout struct {
 // CertificateProvider returns codesigning certificates (with private key)
 type CertificateProvider interface {
 	GetCertificates() ([]certificateutil.CertificateInfoModel, error)
+}
+
+// ProfileProvider returns manually generated profiles, used as a fallback
+type ProfileProvider interface {
+	GetProfiles() ([]Profile, error)
 }
 
 // CodesignAssetsOpts are codesigning related parameters that are not specified by the project (or archive)
