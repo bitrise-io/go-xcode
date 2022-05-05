@@ -107,6 +107,7 @@ type CertificateProvider interface {
 	GetCertificates() ([]certificateutil.CertificateInfoModel, error)
 }
 
+// LocalCertificates is a map from the certificate type (development, distribution) to an array of installed certs
 type LocalCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
 
 // CodesignAssetsOpts are codesigning related parameters that are not specified by the project (or archive)
