@@ -58,6 +58,7 @@ type Manager struct {
 	bitriseConnection         *devportalservice.AppleDeveloperConnection
 	devPortalClientFactory    devportalclient.Factory
 	certDownloader            autocodesign.CertificateProvider
+	profileDownloader         autocodesign.ProfileProvider
 	assetInstaller            autocodesign.AssetWriter
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager
 
@@ -99,6 +100,7 @@ func NewManagerWithProject(
 	connection *devportalservice.AppleDeveloperConnection,
 	clientFactory devportalclient.Factory,
 	certDownloader autocodesign.CertificateProvider,
+	profileDownloader autocodesign.ProfileProvider,
 	assetInstaller autocodesign.AssetWriter,
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager,
 	project projectmanager.Project,
@@ -110,6 +112,7 @@ func NewManagerWithProject(
 		bitriseConnection:         connection,
 		devPortalClientFactory:    clientFactory,
 		certDownloader:            certDownloader,
+		profileDownloader:         profileDownloader,
 		assetInstaller:            assetInstaller,
 		localCodeSignAssetManager: localCodeSignAssetManager,
 		detailsProvider:           project,
@@ -388,7 +391,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 			return err
 		}
 
-		// Export error as output
+		// ToDo: Export error as env output
 
 		m.logger.Warnf("Error: %s", err)
 		m.logger.Infof("Falling back to manually managed codesigning assets.")
@@ -410,10 +413,16 @@ func (m *Manager) prepareManualAssets(certificates []certificateutil.Certificate
 		return err
 	}
 
-	// fetch manual profiles
-	//
+	profiles, err := m.profileDownloader.GetProfiles()
+	if err != nil {
+		return fmt.Errorf("failed to fetch profiles: %w", err)
+	}
 
-	// install profiles
+	for _, profile := range profiles {
+		if err := m.assetInstaller.InstallProfile(profile); err != nil {
+			return fmt.Errorf("failed to install profile: %w", err)
+		}
+	}
 
 	return nil
 }
