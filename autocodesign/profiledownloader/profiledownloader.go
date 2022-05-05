@@ -18,6 +18,7 @@ type downloader struct {
 	client *http.Client
 }
 
+// New returns an implementation that can download from remote, local file paths
 func New(profileURLs []string, client *http.Client) autocodesign.ProfileProvider {
 	return downloader{
 		urls:   profileURLs,

@@ -16,6 +16,7 @@ type Profile struct {
 	certificateIDs []string
 }
 
+// NewProfile wraps a local profile in the autocodesign.Profile interface
 func NewProfile(info profileutil.ProvisioningProfileInfoModel, content []byte) autocodesign.Profile {
 	return Profile{
 		attributes: appstoreconnect.ProfileAttributes{
