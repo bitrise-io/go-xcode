@@ -24,8 +24,6 @@ const (
 	AppleIDAuth
 )
 
-type localCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
-
 type codeSigningStrategy int
 
 const (

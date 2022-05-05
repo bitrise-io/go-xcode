@@ -5,24 +5,14 @@ import (
 	"testing"
 	"time"
 
-	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
-
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-func newMockCertificateProvider(certs []certificateutil.CertificateInfoModel) CertificateProvider {
-	mockCertProvider := new(MockCertificateProvider)
-	mockCertProvider.On("GetCertificates").Return(func() []certificateutil.CertificateInfoModel {
-		return certs
-	}, nil)
-
-	return mockCertProvider
-}
 
 func newDefaultMockAssetWriter() AssetWriter {
 	mockAssetWriter := new(MockAssetWriter)

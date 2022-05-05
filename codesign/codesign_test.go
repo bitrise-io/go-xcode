@@ -185,17 +185,3 @@ func generateCert(t *testing.T, commonName string) certificateutil.CertificateIn
 
 	return certificateutil.NewCertificateInfo(*cert, privateKey)
 }
-
-func newCertDownloaderMock(certs []certificateutil.CertificateInfoModel) autocodesign.CertificateProvider {
-	mockDownloader := new(autocodesign.MockCertificateProvider)
-	mockDownloader.On("GetCertificates").Return(certs, nil)
-
-	return mockDownloader
-}
-
-func newMockAssetWriter(mockErr error) autocodesign.AssetWriter {
-	mockWriter := new(autocodesign.MockAssetWriter)
-	mockWriter.On("InstallCertificate", mock.Anything).Return(mockErr)
-
-	return mockWriter
-}
