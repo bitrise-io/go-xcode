@@ -119,7 +119,7 @@ func Test_getValidCertificates(t *testing.T) {
 	t.Logf("Test certificate generated. %s", distributionCert)
 
 	type args struct {
-		typeToLocalCerts         map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
+		typeToLocalCerts         LocalCertificates
 		client                   DevPortalClient
 		requiredCertificateTypes map[appstoreconnect.CertificateType]bool
 	}
@@ -132,7 +132,7 @@ func Test_getValidCertificates(t *testing.T) {
 		{
 			name: "dev local; no API; dev required",
 			args: args{
-				typeToLocalCerts: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+				typeToLocalCerts: LocalCertificates{
 					appstoreconnect.IOSDevelopment: {devCert},
 				},
 				client:                   newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{}),
@@ -144,7 +144,7 @@ func Test_getValidCertificates(t *testing.T) {
 		{
 			name: "2 dev local with same name; 1 dev API; dev required",
 			args: args{
-				typeToLocalCerts: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+				typeToLocalCerts: LocalCertificates{
 					appstoreconnect.IOSDevelopment: {
 						devCert,
 						devCert,
@@ -176,7 +176,7 @@ func Test_getValidCertificates(t *testing.T) {
 		{
 			name: "no local; no API; dev+dist required",
 			args: args{
-				typeToLocalCerts:         map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{},
+				typeToLocalCerts:         LocalCertificates{},
 				client:                   newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{}),
 				requiredCertificateTypes: map[appstoreconnect.CertificateType]bool{appstoreconnect.IOSDevelopment: true, appstoreconnect.IOSDistribution: true},
 			},
@@ -186,7 +186,7 @@ func Test_getValidCertificates(t *testing.T) {
 		{
 			name: "dev local; none API; dev+dist required",
 			args: args{
-				typeToLocalCerts: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+				typeToLocalCerts: LocalCertificates{
 					appstoreconnect.IOSDevelopment: {devCert},
 				},
 				client:                   newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{}),
@@ -198,7 +198,7 @@ func Test_getValidCertificates(t *testing.T) {
 		{
 			name: "dev local; dev API; dev required",
 			args: args{
-				typeToLocalCerts: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+				typeToLocalCerts: LocalCertificates{
 					appstoreconnect.IOSDevelopment: {devCert},
 				},
 				client: newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{
@@ -220,7 +220,7 @@ func Test_getValidCertificates(t *testing.T) {
 		{
 			name: "2 dev local; 1 dev API; dev required",
 			args: args{
-				typeToLocalCerts: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+				typeToLocalCerts: LocalCertificates{
 					appstoreconnect.IOSDevelopment: {
 						devCert,
 						devCert2,
@@ -245,7 +245,7 @@ func Test_getValidCertificates(t *testing.T) {
 		{
 			name: "dev local; dev+dist API; both required",
 			args: args{
-				typeToLocalCerts: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+				typeToLocalCerts: LocalCertificates{
 					appstoreconnect.IOSDevelopment: {devCert},
 				},
 				client: newMockCertClient(map[appstoreconnect.CertificateType][]Certificate{
@@ -268,7 +268,7 @@ func Test_getValidCertificates(t *testing.T) {
 		{
 			name: "dev+dist local; dist API; dev+dist required",
 			args: args{
-				typeToLocalCerts: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+				typeToLocalCerts: LocalCertificates{
 					appstoreconnect.IOSDevelopment:  {devCert},
 					appstoreconnect.IOSDistribution: {distributionCert},
 				},
@@ -289,7 +289,7 @@ func Test_getValidCertificates(t *testing.T) {
 		{
 			name: "dev+dist local; dev+dist API; dev+dist required",
 			args: args{
-				typeToLocalCerts: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+				typeToLocalCerts: LocalCertificates{
 					appstoreconnect.IOSDevelopment:  {devCert},
 					appstoreconnect.IOSDistribution: {distributionCert},
 				},
@@ -365,7 +365,7 @@ func TestGetValidLocalCertificates(t *testing.T) {
 	tests := []struct {
 		name         string
 		certificates []certificateutil.CertificateInfoModel
-		want         map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
+		want         LocalCertificates
 		wantErr      bool
 	}{
 		{
@@ -375,7 +375,7 @@ func TestGetValidLocalCertificates(t *testing.T) {
 				devCert,
 				devCert2,
 			},
-			want: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+			want: LocalCertificates{
 				appstoreconnect.IOSDevelopment: {
 					devCert,
 					devCert2,
@@ -389,7 +389,7 @@ func TestGetValidLocalCertificates(t *testing.T) {
 				distributionCert,
 				devCert,
 			},
-			want: map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel{
+			want: LocalCertificates{
 				appstoreconnect.IOSDevelopment: {
 					devCert,
 				},

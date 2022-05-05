@@ -107,10 +107,12 @@ type CertificateProvider interface {
 	GetCertificates() ([]certificateutil.CertificateInfoModel, error)
 }
 
+type LocalCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
+
 // CodesignAssetsOpts are codesigning related parameters that are not specified by the project (or archive)
 type CodesignAssetsOpts struct {
 	DistributionType                  DistributionType
-	TypeToBitriseCertificates         map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
+	TypeToBitriseCertificates         LocalCertificates
 	BitriseTestDevices                []devportalservice.TestDevice
 	MinProfileValidityDays            int
 	FallbackToLocalAssetsOnAPIFailure bool
