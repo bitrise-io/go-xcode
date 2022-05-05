@@ -142,7 +142,7 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 			m.logger.Infof("Code signing asset management with xcodebuild")
 			m.logger.Printf("Reason: %s", reason)
 			m.logger.Println()
-			m.logger.Infof("Downloading certificates from Bitrise")
+			m.logger.Infof("Downloading certificates...")
 			certificates, err := m.downloadCertificates()
 			if err != nil {
 				return nil, err
@@ -152,6 +152,7 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 				return nil, err
 			}
 
+			m.logger.Infof("Installing certificates...")
 			if err := m.installCertificates(certificates); err != nil {
 				return nil, err
 			}
@@ -272,13 +273,16 @@ func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfoModel
 		return nil, nil
 	}
 
+	m.logger.Printf("%d certificates downloaded:", len(certificates))
+	for _, cert := range certificates {
+		m.logger.Printf("- %s", cert)
+	}
+
 	return certificates, nil
 }
 
 func (m *Manager) installCertificates(certificates []certificateutil.CertificateInfoModel) error {
-	m.logger.Infof("Installing certificates:")
 	for _, cert := range certificates {
-		m.logger.Printf("- %s", cert)
 		// Empty passphrase provided, as already parsed certificate + private key
 		if err := m.assetInstaller.InstallCertificate(cert); err != nil {
 			return err
@@ -345,17 +349,9 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 
 	fmt.Println()
 	m.logger.Infof("Downloading certificates")
-
 	certs, err := m.downloadCertificates()
 	if err != nil {
 		return err
-	}
-
-	if len(certs) > 0 {
-		m.logger.Printf("%d certificates downloaded:", len(certs))
-		for _, cert := range certs {
-			m.logger.Printf("- %s", cert.String())
-		}
 	}
 
 	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs)

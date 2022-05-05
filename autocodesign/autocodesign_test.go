@@ -192,8 +192,8 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 				devPortalClient: newMockDevportalClient(devportalArgs{}),
 			},
 			opts: CodesignAssetsOpts{
-				DistributionType:          Development,
-				TypeToBitriseCertificates: LocalCertificates{},
+				DistributionType:        Development,
+				TypeToLocalCertificates: LocalCertificates{},
 			},
 			wantErr: &DetailedError{},
 		},
@@ -207,7 +207,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			appLayout: appIDAndProfileFoundAppLayout,
 			opts: CodesignAssetsOpts{
 				DistributionType: Development,
-				TypeToBitriseCertificates: LocalCertificates{
+				TypeToLocalCertificates: LocalCertificates{
 					appstoreconnect.IOSDevelopment: {devCert},
 				},
 			},
@@ -232,7 +232,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			appLayout: appIDAndProfileFoundAppLayout2,
 			opts: CodesignAssetsOpts{
 				DistributionType: Development,
-				TypeToBitriseCertificates: LocalCertificates{
+				TypeToLocalCertificates: LocalCertificates{
 					appstoreconnect.IOSDevelopment: {devCert},
 				},
 			},
@@ -257,7 +257,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 			appLayout: icloudContainerAppLayout,
 			opts: CodesignAssetsOpts{
 				DistributionType: Development,
-				TypeToBitriseCertificates: LocalCertificates{
+				TypeToLocalCertificates: LocalCertificates{
 					appstoreconnect.IOSDevelopment: {devCert},
 				},
 			},
@@ -305,7 +305,7 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
-		TypeToBitriseCertificates: LocalCertificates{
+		TypeToLocalCertificates: LocalCertificates{
 			appstoreconnect.IOSDevelopment: {devCert},
 		},
 	}
@@ -343,7 +343,7 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
-		TypeToBitriseCertificates: LocalCertificates{
+		TypeToLocalCertificates: LocalCertificates{
 			appstoreconnect.IOSDevelopment: {devCert},
 		},
 	}
@@ -417,7 +417,7 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
-		TypeToBitriseCertificates: LocalCertificates{
+		TypeToLocalCertificates: LocalCertificates{
 			appstoreconnect.IOSDevelopment: {devCert},
 		},
 	}
@@ -489,7 +489,7 @@ func Test_GivenLocalProfile_WhenCertificateIsMissing_ThenInstalled(t *testing.T)
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
-		TypeToBitriseCertificates: LocalCertificates{
+		TypeToLocalCertificates: LocalCertificates{
 			appstoreconnect.IOSDevelopment: {devCert1},
 		},
 	}

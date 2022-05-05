@@ -118,11 +118,11 @@ func Example() {
 		testDevices = connection.TestDevices
 	}
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
-		DistributionType:          distribution,
-		TypeToBitriseCertificates: typeToLocalCerts,
-		BitriseTestDevices:        testDevices,
-		MinProfileValidityDays:    cfg.MinProfileDaysValid,
-		VerboseLog:                cfg.VerboseLog,
+		DistributionType:        distribution,
+		TypeToLocalCertificates: typeToLocalCerts,
+		BitriseTestDevices:      testDevices,
+		MinProfileValidityDays:  cfg.MinProfileDaysValid,
+		VerboseLog:              cfg.VerboseLog,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Automatic code signing failed: %s", err))

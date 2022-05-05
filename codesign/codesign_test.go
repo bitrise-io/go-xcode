@@ -163,7 +163,7 @@ func TestManager_checkXcodeManagedCertificates(t *testing.T) {
 				logger: log.NewLogger(),
 			}
 
-			if err := m.checkXcodeManagedCertificates(tt.certificates); (err != nil) != tt.wantErr {
+			if err := m.validateCertificatesForXcodeManagedSigning(tt.certificates); (err != nil) != tt.wantErr {
 				t.Errorf("Manager.downloadAndInstallCertificates() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
