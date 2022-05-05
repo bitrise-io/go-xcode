@@ -152,6 +152,7 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 				return nil, err
 			}
 
+			m.logger.Println()
 			m.logger.Infof("Installing certificates...")
 			if err := m.installCertificates(certificates); err != nil {
 				return nil, err
