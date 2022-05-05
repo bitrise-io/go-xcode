@@ -12,6 +12,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
@@ -108,9 +109,15 @@ type CertificateProvider interface {
 	GetCertificates() ([]certificateutil.CertificateInfoModel, error)
 }
 
+// LocalProfile ...
+type LocalProfile struct {
+	APIProfile Profile
+	Info       profileutil.ProvisioningProfileInfoModel
+}
+
 // ProfileProvider returns manually generated profiles, used as a fallback
 type ProfileProvider interface {
-	GetProfiles() ([]Profile, error)
+	GetProfiles() ([]LocalProfile, error)
 }
 
 // CodesignAssetsOpts are codesigning related parameters that are not specified by the project (or archive)

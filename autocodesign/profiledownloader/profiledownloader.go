@@ -26,8 +26,8 @@ func New(profileURLs []string, client *http.Client) autocodesign.ProfileProvider
 	}
 }
 
-func (d downloader) GetProfiles() ([]autocodesign.Profile, error) {
-	var profiles []autocodesign.Profile
+func (d downloader) GetProfiles() ([]autocodesign.LocalProfile, error) {
+	var profiles []autocodesign.LocalProfile
 
 	for _, url := range d.urls {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -53,7 +53,10 @@ func (d downloader) GetProfiles() ([]autocodesign.Profile, error) {
 			return nil, fmt.Errorf("unknown provisioning profile format: %w", err)
 		}
 
-		profiles = append(profiles, localcodesignasset.NewProfile(profileInfo, content))
+		profiles = append(profiles, autocodesign.LocalProfile{
+			APIProfile: localcodesignasset.NewProfile(profileInfo, content),
+			Info:       profileInfo,
+		})
 	}
 
 	return profiles, nil

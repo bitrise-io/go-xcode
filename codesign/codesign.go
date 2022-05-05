@@ -418,8 +418,11 @@ func (m *Manager) prepareManualAssets(certificates []certificateutil.Certificate
 		return fmt.Errorf("failed to fetch profiles: %w", err)
 	}
 
+	m.logger.Printf("Installing manual profiles:")
 	for _, profile := range profiles {
-		if err := m.assetInstaller.InstallProfile(profile); err != nil {
+		m.logger.Printf("%s", profile.Info.String(certificates...))
+
+		if err := m.assetInstaller.InstallProfile(profile.APIProfile); err != nil {
 			return fmt.Errorf("failed to install profile: %w", err)
 		}
 	}
