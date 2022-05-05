@@ -40,7 +40,7 @@ func (w writer) Write(input string) (string, error) {
 			return "", fmt.Errorf(err.Error())
 		}
 		if !pathExists {
-			return "", fmt.Errorf("provided xcconfig file path doesn't exist")
+			return "", fmt.Errorf("provided xcconfig file path doesn't exist: %s", input)
 		}
 		return input, nil
 	}
