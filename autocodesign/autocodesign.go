@@ -113,7 +113,7 @@ type LocalCertificates map[appstoreconnect.CertificateType][]certificateutil.Cer
 // CodesignAssetsOpts are codesigning related parameters that are not specified by the project (or archive)
 type CodesignAssetsOpts struct {
 	DistributionType                  DistributionType
-	TypeToBitriseCertificates         LocalCertificates
+	TypeToLocalCertificates           LocalCertificates
 	BitriseTestDevices                []devportalservice.TestDevice
 	MinProfileValidityDays            int
 	FallbackToLocalAssetsOnAPIFailure bool
@@ -145,7 +145,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	signUITestTargets := len(appLayout.UITestTargetBundleIDs) > 0
 	certsByType, distrTypes, err := selectCertificatesAndDistributionTypes(
 		m.devPortalClient,
-		opts.TypeToBitriseCertificates,
+		opts.TypeToLocalCertificates,
 		opts.DistributionType,
 		signUITestTargets,
 		opts.VerboseLog,

@@ -148,7 +148,7 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 				return nil, err
 			}
 
-			if err := m.checkXcodeManagedCertificates(certificates); err != nil {
+			if err := m.validateCertificatesForXcodeManagedSigning(certificates); err != nil {
 				return nil, err
 			}
 
@@ -267,7 +267,7 @@ func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfoModel
 	}
 
 	if len(certificates) == 0 {
-		m.logger.Warnf("No certificates are uploaded to Bitrise.")
+		m.logger.Warnf("No certificates are uploaded.")
 
 		return nil, nil
 	}
@@ -288,7 +288,7 @@ func (m *Manager) installCertificates(certificates []certificateutil.Certificate
 	return nil
 }
 
-func (m *Manager) checkXcodeManagedCertificates(certificates []certificateutil.CertificateInfoModel) error {
+func (m *Manager) validateCertificatesForXcodeManagedSigning(certificates []certificateutil.CertificateInfoModel) error {
 	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates)
 	if err != nil {
 		return err
@@ -346,9 +346,9 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	fmt.Println()
 	m.logger.Infof("Downloading certificates")
 
-	certs, err := m.certDownloader.GetCertificates()
+	certs, err := m.downloadCertificates()
 	if err != nil {
-		return fmt.Errorf("failed to download certificates: %w", err)
+		return err
 	}
 
 	if len(certs) > 0 {
@@ -356,8 +356,6 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		for _, cert := range certs {
 			m.logger.Printf("- %s", cert.String())
 		}
-	} else {
-		m.logger.Warnf("No certificates are uploaded to Bitrise.")
 	}
 
 	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs)
@@ -374,11 +372,11 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	}
 
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
-		DistributionType:          m.opts.ExportMethod,
-		TypeToBitriseCertificates: typeToLocalCerts,
-		BitriseTestDevices:        testDevices,
-		MinProfileValidityDays:    m.opts.MinDaysProfileValidity,
-		VerboseLog:                m.opts.IsVerboseLog,
+		DistributionType:        m.opts.ExportMethod,
+		TypeToLocalCertificates: typeToLocalCerts,
+		BitriseTestDevices:      testDevices,
+		MinProfileValidityDays:  m.opts.MinDaysProfileValidity,
+		VerboseLog:              m.opts.IsVerboseLog,
 	})
 	if err != nil {
 		return err
