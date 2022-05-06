@@ -24,6 +24,8 @@ const (
 	AppleIDAuth
 )
 
+type localCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
+
 type codeSigningStrategy int
 
 const (
@@ -34,9 +36,10 @@ const (
 
 // Opts ...
 type Opts struct {
-	AuthType                   AuthType
-	ShouldConsiderXcodeSigning bool
-	TeamID                     string
+	AuthType                          AuthType
+	FallbackToLocalAssetsOnAPIFailure bool
+	ShouldConsiderXcodeSigning        bool
+	TeamID                            string
 
 	ExportMethod      autocodesign.DistributionType
 	XcodeMajorVersion int
@@ -55,6 +58,7 @@ type Manager struct {
 	bitriseConnection         *devportalservice.AppleDeveloperConnection
 	devPortalClientFactory    devportalclient.Factory
 	certDownloader            autocodesign.CertificateProvider
+	profileDownloader         autocodesign.ProfileProvider
 	assetInstaller            autocodesign.AssetWriter
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager
 
@@ -96,6 +100,7 @@ func NewManagerWithProject(
 	connection *devportalservice.AppleDeveloperConnection,
 	clientFactory devportalclient.Factory,
 	certDownloader autocodesign.CertificateProvider,
+	profileDownloader autocodesign.ProfileProvider,
 	assetInstaller autocodesign.AssetWriter,
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager,
 	project projectmanager.Project,
@@ -107,6 +112,7 @@ func NewManagerWithProject(
 		bitriseConnection:         connection,
 		devPortalClientFactory:    clientFactory,
 		certDownloader:            certDownloader,
+		profileDownloader:         profileDownloader,
 		assetInstaller:            assetInstaller,
 		localCodeSignAssetManager: localCodeSignAssetManager,
 		detailsProvider:           project,
@@ -376,12 +382,43 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		VerboseLog:              m.opts.IsVerboseLog,
 	})
 	if err != nil {
-		return err
+		if !m.opts.FallbackToLocalAssetsOnAPIFailure {
+			return err
+		}
+
+		// ToDo: Export error as env output
+
+		m.logger.Warnf("Error: %s", err)
+		m.logger.Infof("Falling back to manually managed codesigning assets.")
+
+		return m.prepareManualAssets(certs)
 	}
 
 	if m.assetWriter != nil {
 		if err := m.assetWriter.ForceCodesignAssets(m.opts.ExportMethod, codesignAssetsByDistributionType); err != nil {
 			return fmt.Errorf("failed to force codesign settings: %s", err)
+		}
+	}
+
+	return nil
+}
+
+func (m *Manager) prepareManualAssets(certificates []certificateutil.CertificateInfoModel) error {
+	if err := m.installCertificates(certificates); err != nil {
+		return err
+	}
+
+	profiles, err := m.profileDownloader.GetProfiles()
+	if err != nil {
+		return fmt.Errorf("failed to fetch profiles: %w", err)
+	}
+
+	m.logger.Printf("Installing manual profiles:")
+	for _, profile := range profiles {
+		m.logger.Printf("%s", profile.Info.String(certificates...))
+
+		if err := m.assetInstaller.InstallProfile(profile.APIProfile); err != nil {
+			return fmt.Errorf("failed to install profile: %w", err)
 		}
 	}
 

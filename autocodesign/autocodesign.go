@@ -88,6 +88,7 @@ type DevPortalClient interface {
 type AssetWriter interface {
 	Write(codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets) error
 	InstallCertificate(certificate certificateutil.CertificateInfoModel) error
+	InstallProfile(profile Profile) error
 }
 
 // LocalCodeSignAssetManager ...
