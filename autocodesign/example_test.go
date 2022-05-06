@@ -80,11 +80,20 @@ func Example() {
 	}
 
 	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, retry.NewHTTPClient().StandardClient())
+	certs, err := certDownloader.GetCertificates()
+	if err != nil {
+		panic(fmt.Errorf("failed to download certificates: %w", err))
+	}
+
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs)
+	if err != nil {
+		panic(err)
+	}
 
 	profileProvider := localcodesignasset.NewProvisioningProfileProvider()
 	profileConverter := localcodesignasset.NewProvisioningProfileConverter()
 	localCodesignAssetManager := localcodesignasset.NewManager(profileProvider, profileConverter)
-	manager := autocodesign.NewCodesignAssetManager(devPortalClient, certDownloader, codesignasset.NewWriter(*keychain), localCodesignAssetManager)
+	manager := autocodesign.NewCodesignAssetManager(devPortalClient, codesignasset.NewWriter(*keychain), localCodesignAssetManager)
 
 	// Analyzing project
 	fmt.Println()
@@ -109,10 +118,11 @@ func Example() {
 		testDevices = connection.TestDevices
 	}
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
-		DistributionType:       distribution,
-		BitriseTestDevices:     testDevices,
-		MinProfileValidityDays: cfg.MinProfileDaysValid,
-		VerboseLog:             cfg.VerboseLog,
+		DistributionType:        distribution,
+		TypeToLocalCertificates: typeToLocalCerts,
+		BitriseTestDevices:      testDevices,
+		MinProfileValidityDays:  cfg.MinProfileDaysValid,
+		VerboseLog:              cfg.VerboseLog,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("Automatic code signing failed: %s", err))
