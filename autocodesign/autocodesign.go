@@ -12,6 +12,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/devportalservice"
+	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
@@ -110,6 +111,17 @@ type CertificateProvider interface {
 
 // LocalCertificates is a map from the certificate type (development, distribution) to an array of installed certs
 type LocalCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
+
+// LocalProfile ...
+type LocalProfile struct {
+	APIProfile Profile
+	Info       profileutil.ProvisioningProfileInfoModel
+}
+
+// ProfileProvider returns manually generated profiles, used as a fallback
+type ProfileProvider interface {
+	GetProfiles() ([]LocalProfile, error)
+}
 
 // CodesignAssetsOpts are codesigning related parameters that are not specified by the project (or archive)
 type CodesignAssetsOpts struct {
