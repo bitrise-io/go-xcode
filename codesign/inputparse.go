@@ -2,31 +2,38 @@ package codesign
 
 import (
 	"fmt"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
+	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/codesignasset"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/keychain"
 )
 
 // Input ...
 type Input struct {
-	AuthType                  AuthType
-	DistributionMethod        string
-	CertificateURLList        string
-	CertificatePassphraseList stepconf.Secret
-	KeychainPath              string
-	KeychainPassword          stepconf.Secret
+	AuthType                     AuthType
+	DistributionMethod           string
+	CertificateURLList           string
+	CertificatePassphraseList    stepconf.Secret
+	KeychainPath                 string
+	KeychainPassword             stepconf.Secret
+	FallbackProvisioningProfiles string
 }
 
 // Config ...
 type Config struct {
-	CertificatesAndPassphrases []certdownloader.CertificateAndPassphrase
-	Keychain                   keychain.Keychain
-	DistributionMethod         autocodesign.DistributionType
+	CertificatesAndPassphrases   []certdownloader.CertificateAndPassphrase
+	Keychain                     keychain.Keychain
+	DistributionMethod           autocodesign.DistributionType
+	FallbackProvisioningProfiles []string
 }
 
 // ParseConfig validates and parses step inputs related to code signing and returns with a Config
@@ -41,10 +48,16 @@ func ParseConfig(input Input, cmdFactory command.Factory) (Config, error) {
 		return Config{}, fmt.Errorf("failed to open keychain: %s", err)
 	}
 
+	fallbackProfiles, err := parseFallbackProvisioningProfiles(input.FallbackProvisioningProfiles)
+	if err != nil {
+		return Config{}, fmt.Errorf("failed to parse provisioning profiles: %w", err)
+	}
+
 	return Config{
-		CertificatesAndPassphrases: certificatesAndPassphrases,
-		Keychain:                   *keychainWriter,
-		DistributionMethod:         autocodesign.DistributionType(input.DistributionMethod),
+		CertificatesAndPassphrases:   certificatesAndPassphrases,
+		Keychain:                     *keychainWriter,
+		DistributionMethod:           autocodesign.DistributionType(input.DistributionMethod),
+		FallbackProvisioningProfiles: fallbackProfiles,
 	}, nil
 }
 
@@ -91,4 +104,51 @@ func validateCertificates(certURLList string, certPassphraseList string) ([]stri
 // SplitAndClean ...
 func splitAndClean(list string, sep string, omitEmpty bool) (items []string) {
 	return sliceutil.CleanWhitespace(strings.Split(list, sep), omitEmpty)
+}
+
+func parseFallbackProvisioningProfiles(profilesList string) ([]string, error) {
+	profiles := splitAndClean(profilesList, `\n`, true)
+	if len(profiles) == 1 {
+		profiles = splitAndClean(profiles[0], "|", true)
+	}
+
+	var validProfiles []string
+	for _, profile := range profiles {
+		profileURL, err := url.Parse(profile)
+		if err != nil {
+			return nil, fmt.Errorf("invalid provisioning profile URL (%s): %w", profile, err)
+		}
+
+		if profileURL.Scheme != "file" {
+			validProfiles = append(validProfiles, profile)
+
+			continue
+		}
+
+		exists, err := pathutil.IsDirExists(profile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check if provisioning profile path (%s) exists: %w", profile, err)
+		} else if !exists {
+			validProfiles = append(validProfiles, profile)
+
+			continue
+		}
+
+		dirEntries, err := os.ReadDir(profile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list profile directory: %w", err)
+		}
+
+		for _, dirEntry := range dirEntries {
+			if dirEntry.Type().IsDir() || !dirEntry.Type().IsRegular() {
+				continue
+			}
+
+			if strings.HasSuffix(dirEntry.Name(), codesignasset.ProfileIOSExtension) {
+				validProfiles = append(validProfiles, filepath.Join(profile, dirEntry.Name()))
+			}
+		}
+	}
+
+	return validProfiles, nil
 }
