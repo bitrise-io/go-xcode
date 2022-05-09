@@ -41,11 +41,10 @@ type Opts struct {
 	ExportMethod      autocodesign.DistributionType
 	XcodeMajorVersion int
 
-	FallbackToLocalAssetsOnAPIFailure bool
-	RegisterTestDevices               bool
-	SignUITests                       bool
-	MinDaysProfileValidity            int
-	IsVerboseLog                      bool
+	RegisterTestDevices    bool
+	SignUITests            bool
+	MinDaysProfileValidity int
+	IsVerboseLog           bool
 }
 
 // Manager ...
@@ -382,7 +381,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		VerboseLog:              m.opts.IsVerboseLog,
 	})
 	if err != nil {
-		if !m.opts.FallbackToLocalAssetsOnAPIFailure {
+		if !m.fallbackProfileDownloader.IsAvailable() {
 			return err
 		}
 

@@ -26,6 +26,10 @@ func New(profileURLs []string, client *http.Client) autocodesign.ProfileProvider
 	}
 }
 
+func (d downloader) IsAvailable() bool {
+	return len(d.urls) != 0
+}
+
 func (d downloader) GetProfiles() ([]autocodesign.LocalProfile, error) {
 	var profiles []autocodesign.LocalProfile
 

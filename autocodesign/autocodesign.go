@@ -120,6 +120,7 @@ type LocalProfile struct {
 
 // ProfileProvider returns manually generated profiles, used as a fallback
 type ProfileProvider interface {
+	IsAvailable() bool
 	GetProfiles() ([]LocalProfile, error)
 }
 
