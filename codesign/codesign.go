@@ -142,7 +142,7 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 			m.logger.Infof("Code signing asset management with xcodebuild")
 			m.logger.Printf("Reason: %s", reason)
 			m.logger.Println()
-			m.logger.Infof("Downloading certificates...")
+			m.logger.TInfof("Downloading certificates...")
 			certificates, err := m.downloadCertificates()
 			if err != nil {
 				return nil, err
@@ -153,7 +153,7 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 			}
 
 			m.logger.Println()
-			m.logger.Infof("Installing certificates...")
+			m.logger.TInfof("Installing certificates...")
 			if err := m.installCertificates(certificates); err != nil {
 				return nil, err
 			}
@@ -337,7 +337,7 @@ func (m *Manager) registerTestDevices(credentials appleauth.Credentials, devices
 func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credentials) error {
 	// Analyze project
 	fmt.Println()
-	m.logger.Infof("Analyzing project")
+	m.logger.TInfof("Analyzing project")
 	appLayout, err := m.detailsProvider.GetAppLayout(m.opts.SignUITests)
 	if err != nil {
 		return err
@@ -349,7 +349,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	}
 
 	fmt.Println()
-	m.logger.Infof("Downloading certificates")
+	m.logger.TInfof("Downloading certificates")
 	certs, err := m.downloadCertificates()
 	if err != nil {
 		return err
