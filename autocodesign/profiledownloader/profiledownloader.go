@@ -58,8 +58,8 @@ func (d downloader) GetProfiles() ([]autocodesign.LocalProfile, error) {
 		}
 
 		profiles = append(profiles, autocodesign.LocalProfile{
-			APIProfile: localcodesignasset.NewProfile(profileInfo, content),
-			Info:       profileInfo,
+			Profile: localcodesignasset.NewProfile(profileInfo, content),
+			Info:    profileInfo,
 		})
 	}
 

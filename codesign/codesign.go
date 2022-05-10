@@ -416,7 +416,7 @@ func (m *Manager) prepareManualAssets(certificates []certificateutil.Certificate
 	for _, profile := range profiles {
 		m.logger.Printf("%s", profile.Info.String(certificates...))
 
-		if err := m.assetInstaller.InstallProfile(profile.APIProfile); err != nil {
+		if err := m.assetInstaller.InstallProfile(profile.Profile); err != nil {
 			return fmt.Errorf("failed to install profile: %w", err)
 		}
 	}

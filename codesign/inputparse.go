@@ -142,15 +142,15 @@ func validateAndExpandProfilePaths(profilesList string) ([]string, error) {
 	return validProfiles, nil
 }
 
-func listProfilesInDirectory(profilesDir string) ([]string, error) {
-	exists, err := pathutil.IsDirExists(profilesDir)
+func listProfilesInDirectory(dir string) ([]string, error) {
+	exists, err := pathutil.IsDirExists(dir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check if provisioning profile path (%s) exists: %w", profilesDir, err)
+		return nil, fmt.Errorf("failed to check if provisioning profile path (%s) exists: %w", dir, err)
 	} else if !exists {
-		return nil, fmt.Errorf("please provide remote (https://) or local (file://) provisioning profile file paths with a scheme, or a local directory without a scheme: profile directory (%s) does not exist", profilesDir)
+		return nil, fmt.Errorf("please provide remote (https://) or local (file://) provisioning profile file paths with a scheme, or a local directory without a scheme: profile directory (%s) does not exist", dir)
 	}
 
-	dirEntries, err := os.ReadDir(profilesDir)
+	dirEntries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list profile directory: %w", err)
 	}
@@ -162,7 +162,7 @@ func listProfilesInDirectory(profilesDir string) ([]string, error) {
 		}
 
 		if strings.HasSuffix(dirEntry.Name(), codesignasset.ProfileIOSExtension) {
-			profileURL := fmt.Sprintf("file://%s", filepath.Join(profilesDir, dirEntry.Name()))
+			profileURL := fmt.Sprintf("file://%s", filepath.Join(dir, dirEntry.Name()))
 			profiles = append(profiles, profileURL)
 		}
 	}

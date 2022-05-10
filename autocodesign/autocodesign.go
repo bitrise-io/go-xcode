@@ -114,8 +114,8 @@ type LocalCertificates map[appstoreconnect.CertificateType][]certificateutil.Cer
 
 // LocalProfile ...
 type LocalProfile struct {
-	APIProfile Profile
-	Info       profileutil.ProvisioningProfileInfoModel
+	Profile Profile
+	Info    profileutil.ProvisioningProfileInfoModel
 }
 
 // ProfileProvider returns provisioning profiles
