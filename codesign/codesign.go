@@ -385,7 +385,9 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 			return err
 		}
 
-		m.logger.Warnf("Automatic code signing failed: %s", err)
+		m.logger.Println()
+		m.logger.Errorf("Automatic code signing failed: %s", err)
+		m.logger.Println()
 		m.logger.Infof("Falling back to manually managed codesigning assets.")
 
 		return m.prepareManualAssets(certs)
