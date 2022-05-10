@@ -48,7 +48,7 @@ func ParseConfig(input Input, cmdFactory command.Factory) (Config, error) {
 		return Config{}, fmt.Errorf("failed to open keychain: %s", err)
 	}
 
-	fallbackProfiles, err := parseFallbackProvisioningProfiles(input.FallbackProvisioningProfiles)
+	fallbackProfiles, err := validateAndExpandProfilePaths(input.FallbackProvisioningProfiles)
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to parse provisioning profiles: %w", err)
 	}
@@ -106,7 +106,9 @@ func splitAndClean(list string, sep string, omitEmpty bool) (items []string) {
 	return sliceutil.CleanWhitespace(strings.Split(list, sep), omitEmpty)
 }
 
-func parseFallbackProvisioningProfiles(profilesList string) ([]string, error) {
+// validateAndExpandProfilePaths validates and expands profilesList.
+// For directory list items, the contained profiles' path will be returned.
+func validateAndExpandProfilePaths(profilesList string) ([]string, error) {
 	profiles := splitAndClean(profilesList, "\n", true)
 	if len(profiles) == 1 {
 		profiles = splitAndClean(profiles[0], "|", true)
@@ -116,41 +118,51 @@ func parseFallbackProvisioningProfiles(profilesList string) ([]string, error) {
 	for _, profile := range profiles {
 		profileURL, err := url.Parse(profile)
 		if err != nil {
-			return nil, fmt.Errorf("invalid provisioning profile URL (%s): %w", profile, err)
+			return []string{}, fmt.Errorf("invalid provisioning profile URL (%s): %w", profile, err)
 		}
 
-		if profileURL.Scheme == "file" {
+		// When file or https scheme provided, will fetch as a file
+		if profileURL.Scheme != "" {
 			validProfiles = append(validProfiles, profile)
-
 			continue
 		}
 
-		profilesDir := profile
-		exists, err := pathutil.IsDirExists(profilesDir)
+		// If no scheme is provided, assuming it is a local directory
+		profilesInDir, err := listProfilesInDirectory(profile)
 		if err != nil {
-			return nil, fmt.Errorf("failed to check if provisioning profile path (%s) exists: %w", profile, err)
-		} else if !exists {
-			validProfiles = append(validProfiles, profile)
-
-			continue
+			return []string{}, err
 		}
 
-		dirEntries, err := os.ReadDir(profilesDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list profile directory: %w", err)
-		}
-
-		for _, dirEntry := range dirEntries {
-			if dirEntry.Type().IsDir() || !dirEntry.Type().IsRegular() {
-				continue
-			}
-
-			if strings.HasSuffix(dirEntry.Name(), codesignasset.ProfileIOSExtension) {
-				profileURL := fmt.Sprintf("file://%s", filepath.Join(profilesDir, dirEntry.Name()))
-				validProfiles = append(validProfiles, profileURL)
-			}
-		}
+		validProfiles = append(validProfiles, profilesInDir...)
 	}
 
 	return validProfiles, nil
+}
+
+func listProfilesInDirectory(profilesDir string) ([]string, error) {
+	exists, err := pathutil.IsDirExists(profilesDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check if provisioning profile path (%s) exists: %w", profilesDir, err)
+	} else if !exists {
+		return nil, fmt.Errorf("please provide remote (https://) or local (file://) provisioning profile file paths with a scheme, or a local directory without a scheme: profile directory (%s) does not exist", profilesDir)
+	}
+
+	dirEntries, err := os.ReadDir(profilesDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list profile directory: %w", err)
+	}
+
+	var profiles []string
+	for _, dirEntry := range dirEntries {
+		if dirEntry.Type().IsDir() || !dirEntry.Type().IsRegular() {
+			continue
+		}
+
+		if strings.HasSuffix(dirEntry.Name(), codesignasset.ProfileIOSExtension) {
+			profileURL := fmt.Sprintf("file://%s", filepath.Join(profilesDir, dirEntry.Name()))
+			profiles = append(profiles, profileURL)
+		}
+	}
+
+	return profiles, nil
 }

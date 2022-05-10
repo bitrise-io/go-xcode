@@ -118,7 +118,7 @@ type LocalProfile struct {
 	Info       profileutil.ProvisioningProfileInfoModel
 }
 
-// ProfileProvider returns manually generated profiles, used as a fallback
+// ProfileProvider returns provisioning profiles
 type ProfileProvider interface {
 	IsAvailable() bool
 	GetProfiles() ([]LocalProfile, error)

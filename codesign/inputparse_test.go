@@ -131,7 +131,7 @@ func TestParseCertificates(t *testing.T) {
 	}
 }
 
-func Test_parseFallbackProvisioningProfiles(t *testing.T) {
+func Test_validateAndExpandProfilePaths(t *testing.T) {
 	dir := t.TempDir()
 
 	err := os.WriteFile(filepath.Join(dir, "file.mobileprovision"), []byte{}, 0600)
@@ -143,31 +143,33 @@ func Test_parseFallbackProvisioningProfiles(t *testing.T) {
 		name         string
 		profilesList string
 		want         []string
+		wantErr      bool
 	}{
 		{
 			name:         "Single profile",
-			profilesList: "file",
-			want:         []string{"file"},
+			profilesList: "https://file",
+			want:         []string{"https://file"},
 		},
 		{
 			name:         "Multiple profiles pipe separated",
-			profilesList: "file1| file2 ",
-			want:         []string{"file1", "file2"},
+			profilesList: "file://file1| https://file2 ",
+			want:         []string{"file://file1", "https://file2"},
 		},
 		{
 			name:         "Multiple profiles newline separated",
-			profilesList: "file1\nfile2\n",
-			want:         []string{"file1", "file2"},
+			profilesList: "file://file1\nfile://file2\n",
+			want:         []string{"file://file1", "file://file2"},
 		},
 		{
 			name:         "Multiple profiles newline at the end",
-			profilesList: "file1|file2|file3\n",
-			want:         []string{"file1", "file2", "file3"},
+			profilesList: "https://file1|https://file2|https://file3\n",
+			want:         []string{"https://file1", "https://file2", "https://file3"},
 		},
 		{
 			name:         "Multiple profiles mixed (not supported)",
-			profilesList: "file1\nfile2|file3",
-			want:         []string{"file1", "file2|file3"},
+			profilesList: "file://file1\nfile://file2 | file://file3",
+			want:         []string{},
+			wantErr:      true,
 		},
 		{
 			name:         "Directory",
@@ -180,9 +182,13 @@ func Test_parseFallbackProvisioningProfiles(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseFallbackProvisioningProfiles(tt.profilesList)
+			got, err := validateAndExpandProfilePaths(tt.profilesList)
 
-			require.NoError(t, err)
+			if !tt.wantErr {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+			}
 			require.Equal(t, tt.want, got)
 		})
 	}
