@@ -55,6 +55,7 @@ type Manager struct {
 	bitriseConnection         *devportalservice.AppleDeveloperConnection
 	devPortalClientFactory    devportalclient.Factory
 	certDownloader            autocodesign.CertificateProvider
+	fallbackProfileDownloader autocodesign.ProfileProvider
 	assetInstaller            autocodesign.AssetWriter
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager
 
@@ -71,6 +72,7 @@ func NewManagerWithArchive(
 	connection *devportalservice.AppleDeveloperConnection,
 	clientFactory devportalclient.Factory,
 	certDownloader autocodesign.CertificateProvider,
+	fallbackProfileDownloader autocodesign.ProfileProvider,
 	assetInstaller autocodesign.AssetWriter,
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager,
 	archive Archive,
@@ -82,6 +84,7 @@ func NewManagerWithArchive(
 		bitriseConnection:         connection,
 		devPortalClientFactory:    clientFactory,
 		certDownloader:            certDownloader,
+		fallbackProfileDownloader: fallbackProfileDownloader,
 		assetInstaller:            assetInstaller,
 		localCodeSignAssetManager: localCodeSignAssetManager,
 		detailsProvider:           archive,
@@ -96,6 +99,7 @@ func NewManagerWithProject(
 	connection *devportalservice.AppleDeveloperConnection,
 	clientFactory devportalclient.Factory,
 	certDownloader autocodesign.CertificateProvider,
+	fallbackProfileDownloader autocodesign.ProfileProvider,
 	assetInstaller autocodesign.AssetWriter,
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager,
 	project projectmanager.Project,
@@ -107,6 +111,7 @@ func NewManagerWithProject(
 		bitriseConnection:         connection,
 		devPortalClientFactory:    clientFactory,
 		certDownloader:            certDownloader,
+		fallbackProfileDownloader: fallbackProfileDownloader,
 		assetInstaller:            assetInstaller,
 		localCodeSignAssetManager: localCodeSignAssetManager,
 		detailsProvider:           project,
@@ -376,12 +381,43 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		VerboseLog:              m.opts.IsVerboseLog,
 	})
 	if err != nil {
-		return err
+		if !m.fallbackProfileDownloader.IsAvailable() {
+			return err
+		}
+
+		m.logger.Println()
+		m.logger.Errorf("Automatic code signing failed: %s", err)
+		m.logger.Println()
+		m.logger.Infof("Falling back to manually managed codesigning assets.")
+
+		return m.prepareManualAssets(certs)
 	}
 
 	if m.assetWriter != nil {
 		if err := m.assetWriter.ForceCodesignAssets(m.opts.ExportMethod, codesignAssetsByDistributionType); err != nil {
 			return fmt.Errorf("failed to force codesign settings: %s", err)
+		}
+	}
+
+	return nil
+}
+
+func (m *Manager) prepareManualAssets(certificates []certificateutil.CertificateInfoModel) error {
+	if err := m.installCertificates(certificates); err != nil {
+		return err
+	}
+
+	profiles, err := m.fallbackProfileDownloader.GetProfiles()
+	if err != nil {
+		return fmt.Errorf("failed to fetch profiles: %w", err)
+	}
+
+	m.logger.Printf("Installing manual profiles:")
+	for _, profile := range profiles {
+		m.logger.Printf("%s", profile.Info.String(certificates...))
+
+		if err := m.assetInstaller.InstallProfile(profile.Profile); err != nil {
+			return fmt.Errorf("failed to install profile: %w", err)
 		}
 	}
 
