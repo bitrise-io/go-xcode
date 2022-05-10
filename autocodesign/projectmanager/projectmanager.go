@@ -165,7 +165,7 @@ func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType,
 			return fmt.Errorf("failed to apply code sign settings for target (%s): %s", target.Name, err)
 		}
 
-		archivableTargetsCounter += 1
+		archivableTargetsCounter++
 	}
 
 	log.TInfof("Applied Bitrise managed codesigning on up to %s targets", archivableTargetsCounter)
