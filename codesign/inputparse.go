@@ -107,6 +107,9 @@ func splitAndClean(list string, sep string, omitEmpty bool) (items []string) {
 }
 
 // validateAndExpandProfilePaths validates and expands profilesList.
+// profilesList must be a list of paths separated either by `|` or `\n`.
+// List items must be a remote (https://) or local (file://) file paths,
+// or a local directory (with no scheme).
 // For directory list items, the contained profiles' path will be returned.
 func validateAndExpandProfilePaths(profilesList string) ([]string, error) {
 	profiles := splitAndClean(profilesList, "\n", true)
