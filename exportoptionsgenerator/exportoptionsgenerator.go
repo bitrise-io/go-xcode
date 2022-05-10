@@ -56,7 +56,7 @@ func New(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration 
 func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod exportoptions.Method, containerEnvironment string, teamID string, uploadBitcode bool, compileBitcode bool, xcodeManaged bool,
 	xcodeMajorVersion int64) (exportoptions.ExportOptions, error) {
 
-	g.logger.TPrintf("Generating application export options for: %s", exportMethod)
+	g.logger.TDebugf("Generating application export options for: %s", exportMethod)
 
 	mainTarget, err := ArchivableApplicationTarget(g.xcodeProj, g.scheme)
 	if err != nil {
@@ -89,7 +89,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod ex
 		}
 	}
 
-	g.logger.TPrintf("Generated application export options entitlements for: %s", exportMethod)
+	g.logger.TDebugf("Generated application export options entitlements for: %s", exportMethod)
 
 	return g.generateExportOptions(exportMethod, containerEnvironment, teamID, uploadBitcode, compileBitcode,
 		xcodeManaged, entitlementsByBundleID, xcodeMajorVersion, mainTargetBundleID)
@@ -435,7 +435,7 @@ func disableManagedBuildNumberFromXcode13(exportOpts exportoptions.ExportOptions
 // generateExportOptions generates an exportOptions based on the provided conditions.
 func (g ExportOptionsGenerator) generateExportOptions(exportMethod exportoptions.Method, containerEnvironment string, teamID string, uploadBitcode bool, compileBitcode bool, xcodeManaged bool,
 	bundleIDEntitlementsMap map[string]plistutil.PlistData, xcodeMajorVersion int64, distributionBundleIdentifier string) (exportoptions.ExportOptions, error) {
-	g.logger.TPrintf("Generating export options")
+	g.logger.TDebugf("Generating export options")
 
 	iCloudContainerEnvironment, err := determineIcloudContainerEnvironment(containerEnvironment, bundleIDEntitlementsMap, exportMethod, xcodeMajorVersion)
 	if err != nil {
@@ -452,7 +452,7 @@ func (g ExportOptionsGenerator) generateExportOptions(exportMethod exportoptions
 		exportOpts = disableManagedBuildNumberFromXcode13(exportOpts)
 	}
 
-	g.logger.TPrintf("Determining code signing group")
+	g.logger.TDebugf("Determining code signing group")
 
 	codeSignGroup, err := g.determineCodesignGroup(bundleIDEntitlementsMap, exportMethod, teamID, xcodeManaged)
 	if err != nil {
@@ -465,7 +465,7 @@ func (g ExportOptionsGenerator) generateExportOptions(exportMethod exportoptions
 	exportCodeSignStyle := ""
 	exportProfileMapping := map[string]string{}
 
-	g.logger.TPrintf("Determining code signing style")
+	g.logger.TDebugf("Determining code signing style")
 
 	for bundleID, profileInfo := range codeSignGroup.BundleIDProfileMap() {
 		exportProfileMapping[bundleID] = profileInfo.Name
@@ -491,7 +491,7 @@ func (g ExportOptionsGenerator) generateExportOptions(exportMethod exportoptions
 		g.logger.Warnf(`Setting "signingStyle" to "manual".`)
 	}
 
-	g.logger.TPrintf("Determined code signing style")
+	g.logger.TDebugf("Determined code signing style")
 
 	switch options := exportOpts.(type) {
 	case exportoptions.AppStoreOptionsModel:

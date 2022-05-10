@@ -337,7 +337,7 @@ func (m *Manager) registerTestDevices(credentials appleauth.Credentials, devices
 func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credentials) error {
 	// Analyze project
 	fmt.Println()
-	m.logger.TInfof("Analyzing project")
+	m.logger.TDebugf("Analyzing project")
 	appLayout, err := m.detailsProvider.GetAppLayout(m.opts.SignUITests)
 	if err != nil {
 		return err
@@ -349,7 +349,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	}
 
 	fmt.Println()
-	m.logger.TInfof("Downloading certificates")
+	m.logger.TDebugf("Downloading certificates")
 	certs, err := m.downloadCertificates()
 	if err != nil {
 		return err
