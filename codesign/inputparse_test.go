@@ -1,10 +1,14 @@
 package codesign
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseCertificates(t *testing.T) {
@@ -115,7 +119,6 @@ func TestParseCertificates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			got, err := parseCertificates(tt.input)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseConfig() error = %v, wantErr %v", err, tt.wantErr)
@@ -124,6 +127,63 @@ func TestParseCertificates(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ParseConfig() got = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_parseFallbackProvisioningProfiles(t *testing.T) {
+	dir := t.TempDir()
+
+	err := os.WriteFile(filepath.Join(dir, "file.mobileprovision"), []byte{}, 0600)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(dir, "file2.mobileprovision"), []byte{}, 0600)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name         string
+		profilesList string
+		want         []string
+	}{
+		{
+			name:         "Single profile",
+			profilesList: "file",
+			want:         []string{"file"},
+		},
+		{
+			name:         "Multiple profiles pipe separated",
+			profilesList: "file1| file2 ",
+			want:         []string{"file1", "file2"},
+		},
+		{
+			name:         "Multiple profiles newline separated",
+			profilesList: "file1\nfile2\n",
+			want:         []string{"file1", "file2"},
+		},
+		{
+			name:         "Multiple profiles newline at the end",
+			profilesList: "file1|file2|file3\n",
+			want:         []string{"file1", "file2", "file3"},
+		},
+		{
+			name:         "Multiple profiles mixed (not supported)",
+			profilesList: "file1\nfile2|file3",
+			want:         []string{"file1", "file2|file3"},
+		},
+		{
+			name:         "Directory",
+			profilesList: dir,
+			want: []string{
+				fmt.Sprintf("file://%s", filepath.Join("", dir, "file.mobileprovision")),
+				fmt.Sprintf("file://%s", filepath.Join("", dir, "file2.mobileprovision")),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseFallbackProvisioningProfiles(tt.profilesList)
+
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

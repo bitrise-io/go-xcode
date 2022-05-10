@@ -107,7 +107,7 @@ func splitAndClean(list string, sep string, omitEmpty bool) (items []string) {
 }
 
 func parseFallbackProvisioningProfiles(profilesList string) ([]string, error) {
-	profiles := splitAndClean(profilesList, `\n`, true)
+	profiles := splitAndClean(profilesList, "\n", true)
 	if len(profiles) == 1 {
 		profiles = splitAndClean(profiles[0], "|", true)
 	}
@@ -119,13 +119,14 @@ func parseFallbackProvisioningProfiles(profilesList string) ([]string, error) {
 			return nil, fmt.Errorf("invalid provisioning profile URL (%s): %w", profile, err)
 		}
 
-		if profileURL.Scheme != "file" {
+		if profileURL.Scheme == "file" {
 			validProfiles = append(validProfiles, profile)
 
 			continue
 		}
 
-		exists, err := pathutil.IsDirExists(profile)
+		profilesDir := profile
+		exists, err := pathutil.IsDirExists(profilesDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check if provisioning profile path (%s) exists: %w", profile, err)
 		} else if !exists {
@@ -134,7 +135,7 @@ func parseFallbackProvisioningProfiles(profilesList string) ([]string, error) {
 			continue
 		}
 
-		dirEntries, err := os.ReadDir(profile)
+		dirEntries, err := os.ReadDir(profilesDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to list profile directory: %w", err)
 		}
@@ -145,7 +146,8 @@ func parseFallbackProvisioningProfiles(profilesList string) ([]string, error) {
 			}
 
 			if strings.HasSuffix(dirEntry.Name(), codesignasset.ProfileIOSExtension) {
-				validProfiles = append(validProfiles, filepath.Join(profile, dirEntry.Name()))
+				profileURL := fmt.Sprintf("file://%s", filepath.Join(profilesDir, dirEntry.Name()))
+				validProfiles = append(validProfiles, profileURL)
 			}
 		}
 	}
