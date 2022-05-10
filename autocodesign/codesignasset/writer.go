@@ -16,7 +16,9 @@ import (
 )
 
 const (
+	// ProfileIOSExtension is the iOS provisioning profile extension
 	ProfileIOSExtension = ".mobileprovision"
+	// ProfileMacExtension is the macOS provisioning profile extension
 	ProfileMacExtension = ".provisionprofile"
 )
 
