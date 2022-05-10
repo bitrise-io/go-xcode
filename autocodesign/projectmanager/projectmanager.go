@@ -64,7 +64,7 @@ func (p Project) Platform() (autocodesign.Platform, error) {
 		return "", fmt.Errorf("failed to read project platform: %s", err)
 	}
 
-	log.Printf("Platform: %s", platform)
+	log.Debugf("Platform: %s", platform)
 
 	return platform, nil
 }
@@ -88,7 +88,7 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 		return autocodesign.AppLayout{}, fmt.Errorf("failed to read project platform: %s", err)
 	}
 
-	log.Printf("Platform: %s", platform)
+	log.Debugf("Platform: %s", platform)
 
 	log.Printf("Application and App Extension targets:")
 	for _, target := range p.projHelper.ArchivableTargets() {
@@ -206,7 +206,7 @@ func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType,
 		return fmt.Errorf("failed to save project: %s", err)
 	}
 
-	log.Printf("Xcode project saved.")
+	log.Debugf("Xcode project saved.")
 
 	return nil
 }

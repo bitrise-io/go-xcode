@@ -123,7 +123,7 @@ type AppInfo struct {
 
 // FindProfile ...
 func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (autocodesign.Profile, error) {
-	fmt.Printf("Locating provision profile")
+	log.Debugf("Locating provision profile")
 
 	cmd, err := c.client.createRequestCommand("list_profiles",
 		profileNameArgKey, name,
@@ -162,7 +162,7 @@ func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.Pro
 
 // DeleteProfile ...
 func (c *ProfileClient) DeleteProfile(id string) error {
-	fmt.Printf("Deleting provisioning profile: %s", id)
+	log.Debugf("Deleting provisioning profile: %s", id)
 
 	cmd, err := c.client.createRequestCommand("delete_profile", "--id", id)
 	if err != nil {
@@ -179,7 +179,7 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 
 // CreateProfile ...
 func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
-	fmt.Printf("Creating provisioning profile with name: %s", name)
+	log.Debugf("Creating provisioning profile with name: %s", name)
 
 	cmd, err := c.client.createRequestCommand("create_profile",
 		bundleIDIdentifierArgKey, bundleID.Attributes.Identifier,
@@ -217,7 +217,7 @@ func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.P
 
 // FindBundleID ...
 func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
-	fmt.Printf("Locating bundle id: %s", bundleIDIdentifier)
+	log.Debugf("Locating bundle id: %s", bundleIDIdentifier)
 
 	cmd, err := c.client.createRequestCommand("get_app",
 		bundleIDIdentifierArgKey, bundleIDIdentifier,
@@ -254,7 +254,7 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 
 // CreateBundleID ...
 func (c *ProfileClient) CreateBundleID(bundleIDIdentifier, appIDName string) (*appstoreconnect.BundleID, error) {
-	fmt.Printf("Creating new bundle id with name: %s", bundleIDIdentifier)
+	log.Debugf("Creating new bundle id with name: %s", bundleIDIdentifier)
 
 	cmd, err := c.client.createRequestCommand("create_app",
 		bundleIDIdentifierArgKey, bundleIDIdentifier,
@@ -287,7 +287,7 @@ func (c *ProfileClient) CreateBundleID(bundleIDIdentifier, appIDName string) (*a
 
 // CheckBundleIDEntitlements ...
 func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, appEntitlements autocodesign.Entitlements) error {
-	fmt.Printf("Vaildating bundle id entitlements: %s", bundleID.ID)
+	log.Debugf("Vaildating bundle id entitlements: %s", bundleID.ID)
 
 	entitlementsBytes, err := json.Marshal(appEntitlements)
 	if err != nil {
@@ -313,7 +313,7 @@ func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.Bundl
 
 // SyncBundleID ...
 func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, appEntitlements autocodesign.Entitlements) error {
-	fmt.Printf("Syncing bundle id for: %s", bundleID.ID)
+	log.Debugf("Syncing bundle id for: %s", bundleID.ID)
 
 	entitlementsBytes, err := json.Marshal(appEntitlements)
 	if err != nil {
