@@ -444,7 +444,7 @@ func mainTargetOfScheme(proj xcodeproj.XcodeProj, scheme xcscheme.Scheme) (xcode
 // findBuiltProject returns the Xcode project which will be built for the provided scheme, plus the scheme.
 // The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the XcodeProj would fail.
 func findBuiltProject(pth, schemeName string) (xcodeproj.XcodeProj, xcscheme.Scheme, error) {
-	log.TInfof("Location built project for xcode project: %s, scheme: %s", pth, schemeName)
+	log.TInfof("Locating built project for xcode project: %s, scheme: %s", pth, schemeName)
 
 	scheme, schemeContainerDir, err := schemeint.Scheme(pth, schemeName)
 	if err != nil {
