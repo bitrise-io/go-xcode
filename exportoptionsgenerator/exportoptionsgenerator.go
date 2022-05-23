@@ -89,7 +89,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod ex
 		}
 	}
 
-	g.logger.TDebugf("Generated application export options entitlements for: %s", exportMethod)
+	g.logger.TDebugf("Generated application export options plist for: %s", exportMethod)
 
 	return g.generateExportOptions(exportMethod, containerEnvironment, teamID, uploadBitcode, compileBitcode,
 		xcodeManaged, entitlementsByBundleID, xcodeMajorVersion, mainTargetBundleID)
