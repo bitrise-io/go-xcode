@@ -7,9 +7,9 @@ import (
 	"os"
 
 	"github.com/bitrise-io/go-steputils/v2/ruby"
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/hashicorp/go-version"
 )
@@ -84,11 +84,11 @@ func (c CommandModel) Run() (string, error) {
 	// Always close xcpretty outputs
 	defer func() {
 		if err := pipeWriter.Close(); err != nil {
-			log.Warnf("Failed to close xcodebuild-xcpretty pipe, error: %s", err)
+			fmt.Printf("Failed to close xcodebuild-xcpretty pipe, error: %s", err)
 		}
 
 		if err := prettyCmd.Wait(); err != nil {
-			log.Warnf("xcpretty command failed, error: %s", err)
+			fmt.Printf("xcpretty command failed, error: %s", err)
 		}
 	}()
 
@@ -122,7 +122,9 @@ func (x xcpretty) IsInstalled() (bool, error) {
 		return false, err
 	}
 
-	return ruby.NewEnvironment(factory, locator).IsGemInstalled("xcpretty", "")
+	logger := log.NewLogger()
+
+	return ruby.NewEnvironment(factory, locator, logger).IsGemInstalled("xcpretty", "")
 }
 
 // Install ...
