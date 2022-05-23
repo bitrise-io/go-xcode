@@ -54,3 +54,16 @@ func (_m *FileManager) Write(path string, value string, mode fs.FileMode) error 
 
 	return r0
 }
+
+func (_m *FileManager) WriteBytes(path string, value []byte) error {
+	ret := _m.Called(path)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string) error); ok {
+		r0 = rf(path)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
