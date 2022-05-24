@@ -108,11 +108,14 @@ type Xcpretty interface {
 }
 
 type xcpretty struct {
+	logger log.Logger
 }
 
 // NewXcpretty ...
-func NewXcpretty() Xcpretty {
-	return &xcpretty{}
+func NewXcpretty(logger log.Logger) Xcpretty {
+	return &xcpretty{
+		logger: logger,
+	}
 }
 
 func (x xcpretty) IsInstalled() (bool, error) {
@@ -122,9 +125,7 @@ func (x xcpretty) IsInstalled() (bool, error) {
 		return false, err
 	}
 
-	logger := log.NewLogger()
-
-	return ruby.NewEnvironment(factory, locator, logger).IsGemInstalled("xcpretty", "")
+	return ruby.NewEnvironment(factory, locator, x.logger).IsGemInstalled("xcpretty", "")
 }
 
 // Install ...
