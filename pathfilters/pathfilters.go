@@ -134,6 +134,8 @@ func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
 			}
 		}
 
+		fmt.Printf("Found %v SDK's from %v project files.", len(sdkMap), len(projectFiles))
+
 		return (allowed == found), nil
 	}
 }
