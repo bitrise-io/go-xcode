@@ -8,9 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/log"
-
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/log"
 	version "github.com/hashicorp/go-version"
 )
 
