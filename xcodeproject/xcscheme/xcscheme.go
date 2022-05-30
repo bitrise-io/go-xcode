@@ -3,11 +3,12 @@ package xcscheme
 import (
 	"encoding/xml"
 	"fmt"
-	"log"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/bitrise-io/go-utils/log"
 
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"

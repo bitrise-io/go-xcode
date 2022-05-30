@@ -68,12 +68,9 @@ func (m *ResolvePackagesCommandModel) command() command.Model {
 
 // Run runs the command and logs elapsed time
 func (m *ResolvePackagesCommandModel) Run() error {
-	var (
-		cmd   = m.command()
-		start = time.Now()
-	)
+	var cmd = m.command()
 
-	log.Printf("Resolving package dependencies...")
+	log.TPrintf("Resolving package dependencies...")
 
 	log.TDonef("$ %s", cmd.PrintableCommandArgs())
 	if err := cmd.Run(); err != nil {
@@ -83,7 +80,7 @@ func (m *ResolvePackagesCommandModel) Run() error {
 		return fmt.Errorf("failed to run command: %s", err)
 	}
 
-	log.Printf("Resolved package dependencies in %s.", time.Since(start).Round(time.Second))
+	log.TPrintf("Resolved package dependencies."))
 
 	return nil
 }

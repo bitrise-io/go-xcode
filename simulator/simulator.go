@@ -3,11 +3,12 @@ package simulator
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/bitrise-io/go-utils/log"
 
 	"github.com/bitrise-io/go-utils/command"
 	version "github.com/hashicorp/go-version"
