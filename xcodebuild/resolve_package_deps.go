@@ -3,7 +3,6 @@ package xcodebuild
 import (
 	"fmt"
 	"path/filepath"
-	"time"
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/errorutil"
@@ -80,7 +79,7 @@ func (m *ResolvePackagesCommandModel) Run() error {
 		return fmt.Errorf("failed to run command: %s", err)
 	}
 
-	log.TPrintf("Resolved package dependencies."))
+	log.TPrintf("Resolved package dependencies.")
 
 	return nil
 }
