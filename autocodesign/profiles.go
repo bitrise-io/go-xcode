@@ -25,7 +25,7 @@ func appIDName(bundleID string) string {
 
 func ensureProfiles(profileClient DevPortalClient, distrType DistributionType,
 	certsByType map[appstoreconnect.CertificateType][]Certificate, app AppLayout,
-	devPortalDeviceIDs []string, minProfileDaysValid int) (*AppCodesignAssets, error) {
+	devPortalDeviceIDs []string, minProfileDaysValid int, templateName string) (*AppCodesignAssets, error) {
 	// Ensure Profiles
 
 	bundleIDByBundleIDIdentifer := map[string]*appstoreconnect.BundleID{}
@@ -73,7 +73,7 @@ func ensureProfiles(profileClient DevPortalClient, distrType DistributionType,
 			profileDeviceIDs = devPortalDeviceIDs
 		}
 
-		profile, err := profileManager.ensureProfileWithRetry(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, minProfileDaysValid)
+		profile, err := profileManager.ensureProfileWithRetry(profileType, bundleIDIdentifier, entitlements, certIDs, profileDeviceIDs, minProfileDaysValid, templateName)
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +90,7 @@ func ensureProfiles(profileClient DevPortalClient, distrType DistributionType,
 			}
 
 			// Capabilities are not supported for UITest targets.
-			profile, err := profileManager.ensureProfileWithRetry(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid)
+			profile, err := profileManager.ensureProfileWithRetry(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid, templateName)
 			if err != nil {
 				return nil, err
 			}
@@ -199,7 +199,7 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 	return bundleID, nil
 }
 
-func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements Entitlements, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
+func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements Entitlements, certIDs, deviceIDs []string, minProfileDaysValid int, templateName string) (*Profile, error) {
 	var profile *Profile
 	// Accessing the same Apple Developer Portal team can cause race conditions (parallel CI runs for example).
 	// Between the time of finding and downloading a profile, it could have been deleted for example.
@@ -210,7 +210,7 @@ func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.Profi
 		}
 
 		var err error
-		profile, err = m.ensureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs, minProfileDaysValid)
+		profile, err = m.ensureProfile(profileType, bundleIDIdentifier, entitlements, certIDs, deviceIDs, minProfileDaysValid, templateName)
 		if err != nil {
 			if ok := errors.As(err, &ProfilesInconsistentError{}); ok {
 				log.Warnf("  %s", err)
@@ -228,7 +228,7 @@ func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.Profi
 	return profile, nil
 }
 
-func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements Entitlements, certIDs, deviceIDs []string, minProfileDaysValid int) (*Profile, error) {
+func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, bundleIDIdentifier string, entitlements Entitlements, certIDs, deviceIDs []string, minProfileDaysValid int, templateName string) (*Profile, error) {
 	fmt.Println()
 	log.Infof("  Checking bundle id: %s", bundleIDIdentifier)
 	log.Printf("  capabilities:")
@@ -283,7 +283,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 	fmt.Println()
 	log.Infof("  Creating profile for bundle id: %s", bundleID.Attributes.Name)
 
-	profile, err = m.client.CreateProfile(name, profileType, *bundleID, certIDs, deviceIDs)
+	profile, err = m.client.CreateProfile(name, profileType, *bundleID, certIDs, deviceIDs, templateName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create profile: %w", err)
 	}
