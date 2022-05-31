@@ -88,4 +88,9 @@ func Test_XCConfigInput_CorrectInputPathReturnSamePath(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, path, input)
 	}
+
+	mockPathProvider.AssertExpectations(t)
+	mockFileManager.AssertExpectations(t)
+	mockPathModifier.AssertExpectations(t)
+	mockPathChecker.AssertExpectations(t)
 }
