@@ -404,7 +404,9 @@ func TestGetValidLocalCertificates(t *testing.T) {
 			got, err := GetValidLocalCertificates(tt.certificates)
 
 			require.NoError(t, err)
-			require.Equal(t, tt.want, got, "GetValidLocalCertificates() = %v, want %v", got, tt.want)
+			for _, certType := range []appstoreconnect.CertificateType{appstoreconnect.IOSDevelopment, appstoreconnect.IOSDistribution} {
+				require.ElementsMatch(t, tt.want[certType], got[certType])
+			}
 		})
 	}
 }
