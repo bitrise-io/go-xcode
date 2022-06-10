@@ -9,53 +9,43 @@ import (
 func TestCommandBuilder_cmdSlice(t *testing.T) {
 	tests := []struct {
 		name    string
-		builder CommandBuilder
+		builder func() *CommandBuilder
 		want    []string
 	}{
 		{
-			name: "simulator",
-			builder: CommandBuilder{
-				destination: "id=3222ioocsdcsa1",
-				action:      BuildAction,
+			name: "Set destination on build action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("", "build")
+				cmdBuilder.SetDestination("id=3222ioocsdcsa1")
+				return
 			},
 			want: []string{
 				"xcodebuild",
+				"build",
 				"-destination",
 				"id=3222ioocsdcsa1",
-				"build",
 			},
 		},
 		{
-			name: "generic iOS",
-			builder: CommandBuilder{
-				destination: "generic/platform=iOS",
-				action:      BuildAction,
+			name: "Set scheme on build action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("", "build")
+				cmdBuilder.SetScheme("project_scheme")
+				return
 			},
 			want: []string{
 				"xcodebuild",
-				"-destination",
-				"generic/platform=iOS",
 				"build",
-			},
-		},
-		{
-			name: "scheme",
-			builder: CommandBuilder{
-				scheme: "project_scheme",
-				action: BuildAction,
-			},
-			want: []string{
-				"xcodebuild",
 				"-scheme",
 				"project_scheme",
-				"build",
 			},
 		},
 		{
-			name: "iphone simulator sdk",
-			builder: CommandBuilder{
-				sdk:    "iphonesimulator12",
-				action: BuildAction,
+			name: "Set SDK on build action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("", "build")
+				cmdBuilder.SetSDK("iphonesimulator12")
+				return
 			},
 			want: []string{
 				"xcodebuild",
@@ -65,10 +55,11 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			},
 		},
 		{
-			name: "analyze",
-			builder: CommandBuilder{
-				resultBundlePath: "/tmp/Analyze.xcresult",
-				action:           AnalyzeAction,
+			name: "Set result bundle path on analyse action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("", "analyze")
+				cmdBuilder.SetResultBundlePath("/tmp/Analyze.xcresult")
+				return
 			},
 			want: []string{
 				"xcodebuild",
@@ -78,50 +69,51 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			},
 		},
 		{
-			name: "project",
-			builder: CommandBuilder{
-				projectPath: "project.xcodeproj",
-				action:      BuildAction,
+			name: "Set project path on build action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("project.xcodeproj", "build")
+				return
 			},
 			want: []string{
 				"xcodebuild",
+				"build",
 				"-project",
 				"project.xcodeproj",
-				"build",
 			},
 		},
 		{
-			name: "workspace",
-			builder: CommandBuilder{
-				projectPath: "project.xcworkspace",
-				isWorkspace: true,
-				action:      BuildAction,
+			name: "Set workspace path on build action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("project.xcworkspace", "build")
+				return
 			},
 			want: []string{
 				"xcodebuild",
+				"build",
 				"-workspace",
 				"project.xcworkspace",
-				"build",
 			},
 		},
 		{
-			name: "debug configuration",
-			builder: CommandBuilder{
-				configuration: "debug",
-				action:        BuildAction,
+			name: "Set configuration on build action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("", "build")
+				cmdBuilder.SetConfiguration("Debug")
+				return
 			},
 			want: []string{
 				"xcodebuild",
-				"-configuration",
-				"debug",
 				"build",
+				"-configuration",
+				"Debug",
 			},
 		},
 		{
-			name: "archive",
-			builder: CommandBuilder{
-				archivePath: "archive/path",
-				action:      ArchiveAction,
+			name: "Set archive path on archive action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("", "archive")
+				cmdBuilder.SetArchivePath("archive/path")
+				return
 			},
 			want: []string{
 				"xcodebuild",
@@ -131,21 +123,19 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			},
 		},
 		{
-			name: "archive with authentication",
-			builder: CommandBuilder{
-				archivePath: "archive/path",
-				action:      ArchiveAction,
-				authentication: &AuthenticationParams{
+			name: "Set authentication on archive action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("", "archive")
+				cmdBuilder.SetAuthentication(AuthenticationParams{
 					KeyID:     "keyID",
 					IsssuerID: "issuerID",
 					KeyPath:   "/key/path",
-				},
+				})
+				return
 			},
 			want: []string{
 				"xcodebuild",
 				"archive",
-				"-archivePath",
-				"archive/path",
 				"-allowProvisioningUpdates",
 				"-authenticationKeyPath", "/key/path",
 				"-authenticationKeyID", "keyID",
@@ -153,34 +143,50 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			},
 		},
 		{
-			name: "disable code signing",
-			builder: CommandBuilder{
-				disableCodesign: true,
-				action:          BuildAction,
+			name: "Disable code signing on build action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("", "build")
+				cmdBuilder.SetDisableCodesign(true)
+				return
 			},
 			want: []string{
 				"xcodebuild",
-				"CODE_SIGNING_ALLOWED=NO",
 				"build",
+				"CODE_SIGNING_ALLOWED=NO",
 			},
 		},
 		{
-			name: "xcconfig",
-			builder: CommandBuilder{
-				xcconfigPath: "temp.xcconfig",
-				action:       BuildAction,
+			name: "Set xcconfig on build action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("", "build")
+				cmdBuilder.SetXCConfigPath("temp.xcconfig")
+				return
 			},
 			want: []string{
 				"xcodebuild",
+				"build",
 				"-xcconfig",
 				"temp.xcconfig",
-				"build",
+			},
+		},
+		{
+			name: "Set test plan on build-for-testing action",
+			builder: func() (cmdBuilder *CommandBuilder) {
+				cmdBuilder = NewCommandBuilder("", "build-for-testing")
+				cmdBuilder.SetTestPlan("FullTests")
+				return
+			},
+			want: []string{
+				"xcodebuild",
+				"build-for-testing",
+				"-testPlan",
+				"FullTests",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.builder.cmdSlice()
+			got := tt.builder().cmdSlice()
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CommandBuilder.cmdSlice() = %v\nwant %v", strings.Join(got, "\n"), strings.Join(tt.want, "\n"))
 			}
