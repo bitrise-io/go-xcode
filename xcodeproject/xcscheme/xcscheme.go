@@ -3,12 +3,13 @@ package xcscheme
 import (
 	"encoding/xml"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
 )
@@ -183,14 +184,19 @@ type Scheme struct {
 func Open(pth string) (Scheme, error) {
 	var start = time.Now()
 
-	b, err := fileutil.ReadBytesFromFile(pth)
+	f, err := os.Open(pth)
 	if err != nil {
 		return Scheme{}, err
 	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Warnf("Failed to close scheme: %s: %s", pth, err)
+		}
+	}()
 
-	var scheme Scheme
-	if err := xml.Unmarshal(b, &scheme); err != nil {
-		return Scheme{}, fmt.Errorf("failed to unmarshal scheme file: %s, error: %s", pth, err)
+	scheme, err := parse(f)
+	if err != nil {
+		return Scheme{}, fmt.Errorf("failed to unmarshal scheme file: %s: %s", pth, err)
 	}
 
 	scheme.Name = strings.TrimSuffix(filepath.Base(pth), filepath.Ext(pth))
@@ -199,6 +205,11 @@ func Open(pth string) (Scheme, error) {
 	log.Printf("Read %s scheme in %s.", scheme.Name, time.Since(start).Round(time.Second))
 
 	return scheme, nil
+}
+
+func parse(reader io.Reader) (scheme Scheme, err error) {
+	err = xml.NewDecoder(reader).Decode(&scheme)
+	return
 }
 
 // XMLToken ...

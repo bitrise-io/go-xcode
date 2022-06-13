@@ -1,12 +1,39 @@
 package xcscheme
 
 import (
+	"io"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func Test_GivenSchemeWithTestPlan_WhenOpens_ThenDefaultTestPlanSet(t *testing.T) {
+func Test_GivenScheme_WhenMarshal_ThenContentRemain(t *testing.T) {
+	// Given
+	schemePth := "testdata/ios-simple-objc.xcscheme"
+
+	f, err := os.Open(schemePth)
+	require.NoError(t, err)
+
+	scheme, err := parse(f)
+	require.NoError(t, err)
+
+	// When
+	content, err := scheme.Marshal()
+
+	// Then
+	require.NoError(t, err)
+
+	_, err = f.Seek(0, io.SeekStart)
+	require.NoError(t, err)
+
+	schemeContent, err := ioutil.ReadAll(f)
+	require.NoError(t, err)
+	require.Equal(t, schemeContent, content)
+}
+
+func Test_GivenSchemeWithTestPlan_WhenOpen_ThenDefaultTestPlanSet(t *testing.T) {
 	// Given
 	schemePth := "testdata/BullsEye.xcscheme"
 
@@ -21,7 +48,7 @@ func Test_GivenSchemeWithTestPlan_WhenOpens_ThenDefaultTestPlanSet(t *testing.T)
 	require.Equal(t, "FullTests", testPlan.Name())
 }
 
-func Test_GivenSimpleScheme_WhenOpens(t *testing.T) {
+func Test_GivenSimpleScheme_WhenOpen(t *testing.T) {
 	// Given
 	schemePth := "testdata/ios-simple-objc.xcscheme"
 
