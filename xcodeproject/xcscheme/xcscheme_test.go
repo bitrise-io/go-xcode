@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOpenTestPlanEnabledScheme(t *testing.T) {
+func Test_GivenSchemeWithTestPlan_WhenOpens_ThenDefaultTestPlanSet(t *testing.T) {
 	// Given
 	schemePth := "testdata/BullsEye.xcscheme"
 
@@ -21,7 +21,7 @@ func TestOpenTestPlanEnabledScheme(t *testing.T) {
 	require.Equal(t, "FullTests", testPlan.Name())
 }
 
-func TestOpenSimpleCScheme(t *testing.T) {
+func Test_GivenSimpleScheme_WhenOpens(t *testing.T) {
 	// Given
 	schemePth := "testdata/ios-simple-objc.xcscheme"
 
