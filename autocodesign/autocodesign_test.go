@@ -155,8 +155,8 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 		ArchivableTargetProfilesByBundleID: map[string]Profile{
 			"io.test.development": devProfile,
 		},
-		UITestTargetProfilesByBundleID: map[string]Profile{},
-		Certificate:                    devCert,
+		TestTargetProfilesByBundleID: map[string]Profile{},
+		Certificate:                  devCert,
 	}
 
 	icloudContainerAppLayout := AppLayout{
@@ -216,8 +216,8 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 					ArchivableTargetProfilesByBundleID: map[string]Profile{
 						"io.test": devProfile,
 					},
-					UITestTargetProfilesByBundleID: map[string]Profile{},
-					Certificate:                    devCert,
+					TestTargetProfilesByBundleID: map[string]Profile{},
+					Certificate:                  devCert,
 				},
 			},
 			wantErr: nil,
@@ -242,8 +242,8 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 						"io.test":             devProfile,
 						"io.test.development": devProfile,
 					},
-					UITestTargetProfilesByBundleID: map[string]Profile{},
-					Certificate:                    devCert,
+					TestTargetProfilesByBundleID: map[string]Profile{},
+					Certificate:                  devCert,
 				},
 			},
 			wantErr: nil,

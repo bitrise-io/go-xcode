@@ -24,11 +24,11 @@ func mergeCodeSignAssets(base, additional *AppCodesignAssets) *AppCodesignAssets
 		}
 	}
 
-	if additional.UITestTargetProfilesByBundleID == nil {
-		additional.UITestTargetProfilesByBundleID = base.UITestTargetProfilesByBundleID
+	if additional.TestTargetProfilesByBundleID == nil {
+		additional.TestTargetProfilesByBundleID = base.TestTargetProfilesByBundleID
 	} else {
-		for bundleID, profile := range base.UITestTargetProfilesByBundleID {
-			additional.UITestTargetProfilesByBundleID[bundleID] = profile
+		for bundleID, profile := range base.TestTargetProfilesByBundleID {
+			additional.TestTargetProfilesByBundleID[bundleID] = profile
 		}
 	}
 
@@ -44,8 +44,8 @@ func printMissingCodeSignAssets(missingCodesignAssets *AppLayout) {
 	for bundleID := range missingCodesignAssets.EntitlementsByArchivableTargetBundleID {
 		log.Printf("- %s", bundleID)
 	}
-	log.Printf("UITest targets (%d)", len(missingCodesignAssets.UITestTargetBundleIDs))
-	for _, bundleID := range missingCodesignAssets.UITestTargetBundleIDs {
+	log.Printf("Test targets (%d)", len(missingCodesignAssets.TestTargetBundleIDs))
+	for _, bundleID := range missingCodesignAssets.TestTargetBundleIDs {
 		log.Printf("- %s", bundleID)
 	}
 }
@@ -63,8 +63,8 @@ func printExistingCodesignAssets(assets *AppCodesignAssets, distrType Distributi
 		log.Printf("- %s: %s (ID: %s UUID: %s Expiry: %s)", bundleID, profile.Attributes().Name, profile.ID(), profile.Attributes().UUID, time.Time(profile.Attributes().ExpirationDate))
 	}
 
-	log.Printf("UITest targets (%d)", len(assets.UITestTargetProfilesByBundleID))
-	for bundleID, profile := range assets.UITestTargetProfilesByBundleID {
+	log.Printf("Test targets (%d)", len(assets.TestTargetProfilesByBundleID))
+	for bundleID, profile := range assets.TestTargetProfilesByBundleID {
 		log.Printf("- %s: %s (ID: %s UUID: %s Expiry: %s)", bundleID, profile.Attributes().Name, profile.ID(), profile.Attributes().UUID, time.Time(profile.Attributes().ExpirationDate))
 	}
 }

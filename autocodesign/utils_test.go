@@ -30,7 +30,7 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 				ArchivableTargetProfilesByBundleID: map[string]Profile{
 					"dev-1": dev1Profile,
 				},
-				UITestTargetProfilesByBundleID: map[string]Profile{
+				TestTargetProfilesByBundleID: map[string]Profile{
 					"dev-uitest-1": devUITest1Profile,
 				},
 				Certificate: certificate,
@@ -39,7 +39,7 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 				ArchivableTargetProfilesByBundleID: map[string]Profile{
 					"dev-2": dev2Profile,
 				},
-				UITestTargetProfilesByBundleID: map[string]Profile{
+				TestTargetProfilesByBundleID: map[string]Profile{
 					"dev-uitest-2": devUITest2Profile,
 				},
 				Certificate: certificate,
@@ -49,7 +49,7 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 					"dev-1": dev1Profile,
 					"dev-2": dev2Profile,
 				},
-				UITestTargetProfilesByBundleID: map[string]Profile{
+				TestTargetProfilesByBundleID: map[string]Profile{
 					"dev-uitest-1": devUITest1Profile,
 					"dev-uitest-2": devUITest2Profile,
 				},
@@ -63,15 +63,15 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 				ArchivableTargetProfilesByBundleID: map[string]Profile{
 					"enterprise-1": enterprise1Profile,
 				},
-				UITestTargetProfilesByBundleID: nil,
-				Certificate:                    certificate,
+				TestTargetProfilesByBundleID: nil,
+				Certificate:                  certificate,
 			},
 			expected: &AppCodesignAssets{
 				ArchivableTargetProfilesByBundleID: map[string]Profile{
 					"enterprise-1": enterprise1Profile,
 				},
-				UITestTargetProfilesByBundleID: nil,
-				Certificate:                    certificate,
+				TestTargetProfilesByBundleID: nil,
+				Certificate:                  certificate,
 			},
 		},
 		{
@@ -80,16 +80,16 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 				ArchivableTargetProfilesByBundleID: map[string]Profile{
 					"ad-hoc-1": adHoc1Profile,
 				},
-				UITestTargetProfilesByBundleID: nil,
-				Certificate:                    certificate,
+				TestTargetProfilesByBundleID: nil,
+				Certificate:                  certificate,
 			},
 			addition: nil,
 			expected: &AppCodesignAssets{
 				ArchivableTargetProfilesByBundleID: map[string]Profile{
 					"ad-hoc-1": adHoc1Profile,
 				},
-				UITestTargetProfilesByBundleID: nil,
-				Certificate:                    certificate,
+				TestTargetProfilesByBundleID: nil,
+				Certificate:                  certificate,
 			},
 		},
 		{

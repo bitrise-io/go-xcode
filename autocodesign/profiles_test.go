@@ -4,9 +4,8 @@ import (
 	"testing"
 	"time"
 
-	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
-
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
 	"github.com/stretchr/testify/require"
 )
 

@@ -42,7 +42,7 @@ type Opts struct {
 	XcodeMajorVersion int
 
 	RegisterTestDevices    bool
-	SignUITests            bool
+	SignTestTargets        bool
 	MinDaysProfileValidity int
 	IsVerboseLog           bool
 }
@@ -124,7 +124,7 @@ func NewManagerWithProject(
 type DetailsProvider interface {
 	IsSigningManagedAutomatically() (bool, error)
 	Platform() (autocodesign.Platform, error)
-	GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error)
+	GetAppLayout(considerTestTargets bool) (autocodesign.AppLayout, error)
 }
 
 // AssetWriter ...
@@ -343,7 +343,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	// Analyze project
 	fmt.Println()
 	m.logger.TDebugf("Analyzing project")
-	appLayout, err := m.detailsProvider.GetAppLayout(m.opts.SignUITests)
+	appLayout, err := m.detailsProvider.GetAppLayout(m.opts.SignTestTargets)
 	if err != nil {
 		return err
 	}

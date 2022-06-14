@@ -30,7 +30,7 @@ type Profile interface {
 // AppCodesignAssets is the result of ensuring codesigning assets
 type AppCodesignAssets struct {
 	ArchivableTargetProfilesByBundleID map[string]Profile
-	UITestTargetProfilesByBundleID     map[string]Profile
+	TestTargetProfilesByBundleID       map[string]Profile
 	Certificate                        certificateutil.CertificateInfoModel
 }
 
@@ -101,7 +101,7 @@ type LocalCodeSignAssetManager interface {
 type AppLayout struct {
 	Platform                               Platform
 	EntitlementsByArchivableTargetBundleID map[string]Entitlements
-	UITestTargetBundleIDs                  []string
+	TestTargetBundleIDs                    []string
 }
 
 // CertificateProvider returns codesigning certificates (with private key)
@@ -156,12 +156,12 @@ func NewCodesignAssetManager(devPortalClient DevPortalClient, assetWriter AssetW
 
 // EnsureCodesignAssets is the main entry point of the codesigning logic
 func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts CodesignAssetsOpts) (map[DistributionType]AppCodesignAssets, error) {
-	signUITestTargets := len(appLayout.UITestTargetBundleIDs) > 0
+	signTestTargets := len(appLayout.TestTargetBundleIDs) > 0
 	certsByType, distrTypes, err := selectCertificatesAndDistributionTypes(
 		m.devPortalClient,
 		opts.TypeToLocalCertificates,
 		opts.DistributionType,
-		signUITestTargets,
+		signTestTargets,
 		opts.VerboseLog,
 	)
 	if err != nil {

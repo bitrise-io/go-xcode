@@ -9,7 +9,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 )
 
-func selectCertificatesAndDistributionTypes(certificateSource DevPortalClient, typeToLocalCerts LocalCertificates, distribution DistributionType, signUITestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]Certificate, []DistributionType, error) {
+func selectCertificatesAndDistributionTypes(certificateSource DevPortalClient, typeToLocalCerts LocalCertificates, distribution DistributionType, signTestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]Certificate, []DistributionType, error) {
 	certType, ok := CertificateTypeByDistribution[distribution]
 	if !ok {
 		panic(fmt.Sprintf("no valid certificate provided for distribution type: %s", distribution))
@@ -20,8 +20,8 @@ func selectCertificatesAndDistributionTypes(certificateSource DevPortalClient, t
 	if distribution != Development {
 		distrTypes = append(distrTypes, Development)
 
-		if signUITestTargets {
-			log.Warnf("UITest target requires development code signing in addition to the specified %s code signing", distribution)
+		if signTestTargets {
+			log.Warnf("Test target requires development code signing in addition to the specified %s code signing", distribution)
 			requiredCertTypes[appstoreconnect.IOSDevelopment] = true
 		} else {
 			requiredCertTypes[appstoreconnect.IOSDevelopment] = false

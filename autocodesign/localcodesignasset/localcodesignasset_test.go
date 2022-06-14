@@ -21,7 +21,7 @@ const (
 	teamName = "Testing team"
 )
 
-func Test_GiveniOSAppLayoutWithUITestTargets_WhenExistingProfile_ThenFindsIt(t *testing.T) {
+func Test_GiveniOSAppLayoutWithTestTargets_WhenExistingProfile_ThenFindsIt(t *testing.T) {
 	// Given
 	certsByType := certsByType(t)
 	manager, profiles := createTestObjects(t)
@@ -31,14 +31,14 @@ func Test_GiveniOSAppLayoutWithUITestTargets_WhenExistingProfile_ThenFindsIt(t *
 		EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 			"io.ios.valid": entitlements(),
 		},
-		UITestTargetBundleIDs: []string{"io.ios.valid", "io.ios.valid"},
+		TestTargetBundleIDs: []string{"io.ios.valid", "io.ios.valid"},
 	}
 
 	expectedAssets := autocodesign.AppCodesignAssets{
 		ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
 			"io.ios.valid": findProvProfile(t, profiles, "uuid-1"),
 		},
-		UITestTargetProfilesByBundleID: map[string]autocodesign.Profile{
+		TestTargetProfilesByBundleID: map[string]autocodesign.Profile{
 			"io.ios.valid": findProvProfile(t, profiles, "uuid-4"),
 		},
 		Certificate: findCert(t, certsByType, "1"),
@@ -69,8 +69,8 @@ func Test_GiveniOSAppLayoutWithEntitlements_WhenExistingProfile_ThenFindsIt(t *t
 		ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
 			"io.ios.valid": findProvProfile(t, profiles, "uuid-1"),
 		},
-		UITestTargetProfilesByBundleID: nil,
-		Certificate:                    findCert(t, certsByType, "1"),
+		TestTargetProfilesByBundleID: nil,
+		Certificate:                  findCert(t, certsByType, "1"),
 	}
 
 	// When
@@ -98,8 +98,8 @@ func Test_GiventvOSAppLayout_WhenExistingProfile_ThenFindsIt(t *testing.T) {
 		ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
 			"io.tvos.valid": findProvProfile(t, profiles, "uuid-2"),
 		},
-		UITestTargetProfilesByBundleID: nil,
-		Certificate:                    findCert(t, certsByType, "2"),
+		TestTargetProfilesByBundleID: nil,
+		Certificate:                  findCert(t, certsByType, "2"),
 	}
 
 	// When

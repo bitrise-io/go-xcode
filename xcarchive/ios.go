@@ -53,6 +53,6 @@ func (archive IosArchive) ReadCodesignParameters() (*autocodesign.AppLayout, err
 	return &autocodesign.AppLayout{
 		Platform:                               platform,
 		EntitlementsByArchivableTargetBundleID: entitlementsMap,
-		UITestTargetBundleIDs:                  nil,
+		TestTargetBundleIDs:                    nil,
 	}, nil
 }

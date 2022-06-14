@@ -63,7 +63,7 @@ func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrType 
 
 	if distrType == autocodesign.Development {
 		bundleIDs := map[string]bool{}
-		for _, bundleID := range appLayout.UITestTargetBundleIDs {
+		for _, bundleID := range appLayout.TestTargetBundleIDs {
 			bundleIDs[bundleID] = true // profile missing?
 		}
 
@@ -73,7 +73,7 @@ func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrType 
 				return nil, nil, fmt.Errorf("could not create wildcard bundle id: %s", err)
 			}
 
-			// Capabilities are not supported for UITest targets.
+			// Capabilities are not supported for Test targets.
 			profileInfo := findProfile(profiles, appLayout.Platform, distrType, wildcardBundleID, nil, minProfileDaysValid, certSerials, deviceIDs)
 			if profileInfo == nil {
 				continue
@@ -86,31 +86,31 @@ func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrType 
 
 			if asset == nil {
 				asset = &autocodesign.AppCodesignAssets{
-					UITestTargetProfilesByBundleID: map[string]autocodesign.Profile{
+					TestTargetProfilesByBundleID: map[string]autocodesign.Profile{
 						bundleID: profile,
 					},
 				}
 			} else {
-				profileByUITestTargetBundleID := asset.UITestTargetProfilesByBundleID
-				if profileByUITestTargetBundleID == nil {
-					profileByUITestTargetBundleID = map[string]autocodesign.Profile{}
+				profileByTestTargetBundleID := asset.TestTargetProfilesByBundleID
+				if profileByTestTargetBundleID == nil {
+					profileByTestTargetBundleID = map[string]autocodesign.Profile{}
 				}
 
-				profileByUITestTargetBundleID[bundleID] = profile
-				asset.UITestTargetProfilesByBundleID = profileByUITestTargetBundleID
+				profileByTestTargetBundleID[bundleID] = profile
+				asset.TestTargetProfilesByBundleID = profileByTestTargetBundleID
 			}
 
 			bundleIDs[bundleID] = false
 		}
 
-		var uiTestTargetBundleIDs []string
+		var testTargetBundleIDs []string
 		for bundleID, missing := range bundleIDs {
 			if missing {
-				uiTestTargetBundleIDs = append(uiTestTargetBundleIDs, bundleID)
+				testTargetBundleIDs = append(testTargetBundleIDs, bundleID)
 			}
 		}
 
-		appLayout.UITestTargetBundleIDs = uiTestTargetBundleIDs
+		appLayout.TestTargetBundleIDs = testTargetBundleIDs
 	}
 
 	if asset != nil {
@@ -124,7 +124,7 @@ func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrType 
 		asset.Certificate = certificate.CertificateInfo
 	}
 
-	if len(appLayout.EntitlementsByArchivableTargetBundleID) == 0 && len(appLayout.UITestTargetBundleIDs) == 0 {
+	if len(appLayout.EntitlementsByArchivableTargetBundleID) == 0 && len(appLayout.TestTargetBundleIDs) == 0 {
 		return asset, nil, nil
 	}
 

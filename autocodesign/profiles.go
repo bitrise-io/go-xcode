@@ -48,7 +48,7 @@ func ensureProfiles(profileClient DevPortalClient, distrType DistributionType,
 
 	codesignAssets := AppCodesignAssets{
 		ArchivableTargetProfilesByBundleID: map[string]Profile{},
-		UITestTargetProfilesByBundleID:     map[string]Profile{},
+		TestTargetProfilesByBundleID:       map[string]Profile{},
 		Certificate:                        certificate.CertificateInfo,
 	}
 
@@ -80,21 +80,21 @@ func ensureProfiles(profileClient DevPortalClient, distrType DistributionType,
 		codesignAssets.ArchivableTargetProfilesByBundleID[bundleIDIdentifier] = *profile
 	}
 
-	if len(app.UITestTargetBundleIDs) > 0 && distrType == Development {
-		// Capabilities are not supported for UITest targets.
-		// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
-		for _, bundleIDIdentifier := range app.UITestTargetBundleIDs {
+	if len(app.TestTargetBundleIDs) > 0 && distrType == Development {
+		// Capabilities are not supported for Test targets.
+		// Xcode managed signing uses Wildcard Provisioning Profiles for Test target signing.
+		for _, bundleIDIdentifier := range app.TestTargetBundleIDs {
 			wildcardBundleID, err := CreateWildcardBundleID(bundleIDIdentifier)
 			if err != nil {
 				return nil, fmt.Errorf("could not create wildcard bundle id: %s", err)
 			}
 
-			// Capabilities are not supported for UITest targets.
+			// Capabilities are not supported for Test targets.
 			profile, err := profileManager.ensureProfileWithRetry(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid)
 			if err != nil {
 				return nil, err
 			}
-			codesignAssets.UITestTargetProfilesByBundleID[bundleIDIdentifier] = *profile
+			codesignAssets.TestTargetProfilesByBundleID[bundleIDIdentifier] = *profile
 		}
 	}
 

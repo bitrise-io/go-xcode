@@ -28,7 +28,7 @@ func (a Archive) Platform() (autocodesign.Platform, error) {
 }
 
 // GetAppLayout ...
-func (a Archive) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error) {
+func (a Archive) GetAppLayout(_ bool) (autocodesign.AppLayout, error) {
 	params, err := a.archive.ReadCodesignParameters()
 	if err != nil {
 		return autocodesign.AppLayout{}, err
