@@ -27,6 +27,7 @@ type InitParams struct {
 	ProjectOrWorkspacePath string
 	SchemeName             string
 	ConfigurationName      string
+	XcodeMajorVersion      int
 }
 
 // NewFactory ...
@@ -41,7 +42,7 @@ func (f *Factory) Create() (Project, error) {
 
 // NewProject ...
 func NewProject(params InitParams) (Project, error) {
-	projectHelper, err := NewProjectHelper(params.ProjectOrWorkspacePath, params.SchemeName, params.ConfigurationName)
+	projectHelper, err := NewProjectHelper(params.ProjectOrWorkspacePath, params.SchemeName, params.ConfigurationName, params.XcodeMajorVersion)
 	if err != nil {
 		return Project{}, err
 	}
@@ -108,11 +109,11 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 	var uiTestTargetBundleIDs []string
 	if uiTestTargets {
 		log.Printf("UITest targets:")
-		for _, target := range p.projHelper.UITestTargets {
+		for _, target := range p.projHelper.TestTargets {
 			log.Printf("- %s", target.Name)
 		}
 
-		uiTestTargetBundleIDs, err = p.projHelper.UITestTargetBundleIDs()
+		uiTestTargetBundleIDs, err = p.projHelper.TestTargetBundleIDs()
 		if err != nil {
 			return autocodesign.AppLayout{}, fmt.Errorf("failed to read UITest targets' entitlements: %s", err)
 		}
@@ -173,9 +174,9 @@ func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType,
 	devCodesignAssets, isDevelopmentAvailable := codesignAssetsByDistributionType[autocodesign.Development]
 	if isDevelopmentAvailable && len(devCodesignAssets.UITestTargetProfilesByBundleID) != 0 {
 		fmt.Println()
-		log.TInfof("Apply Bitrise managed codesigning on the UITest targets (%d)", len(p.projHelper.UITestTargets))
+		log.TInfof("Apply Bitrise managed codesigning on the UITest targets (%d)", len(p.projHelper.TestTargets))
 
-		for _, uiTestTarget := range p.projHelper.UITestTargets {
+		for _, uiTestTarget := range p.projHelper.TestTargets {
 			fmt.Println()
 			log.Infof("  Target: %s", uiTestTarget.Name)
 
