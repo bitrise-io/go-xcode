@@ -2,6 +2,7 @@ package projectmanager
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
@@ -21,13 +22,51 @@ var projectCases []string
 var projHelpCases []ProjectHelper
 var configCases []string
 
-func TestNew(t *testing.T) {
+func TestMain(m *testing.M) {
 	var err error
 	schemeCases, _, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases()
 	if err != nil {
-		t.Fatalf("Failed to initialize test cases: %s", err)
+		fmt.Printf("Failed to initialize test cases: %s\n", err)
+		os.Exit(1)
 	}
 
+	os.Exit(m.Run())
+}
+
+func Test_GivenXcode13_WhenProjectHelperInitialised_ThenUITestTargetsConsidered(t *testing.T) {
+	// ios_project_files/Xcode-10_default.xcworkspace
+	project := projectCases[0]
+	scheme := "Xcode-10_default"
+	configuration := "Debug"
+
+	projectHelper, err := NewProjectHelper(project, scheme, configuration, 13)
+	require.NoError(t, err)
+
+	require.Equal(t, 1, len(projectHelper.TestTargets))
+
+	testTarget := projectHelper.TestTargets[0]
+	require.Equal(t, "Xcode-10_defaultUITests", testTarget.Name)
+}
+
+func Test_GivenXcode14_WhenProjectHelperInitialised_ThenUnitAndUITestTargetsConsidered(t *testing.T) {
+	// ios_project_files/Xcode-10_default.xcworkspace
+	project := projectCases[0]
+	scheme := "Xcode-10_default"
+	configuration := "Debug"
+
+	projectHelper, err := NewProjectHelper(project, scheme, configuration, 14)
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(projectHelper.TestTargets))
+
+	testTarget := projectHelper.TestTargets[0]
+	require.Equal(t, "Xcode-10_defaultTests", testTarget.Name)
+
+	testTarget = projectHelper.TestTargets[1]
+	require.Equal(t, "Xcode-10_defaultUITests", testTarget.Name)
+}
+
+func TestNew(t *testing.T) {
 	tests := []struct {
 		name              string
 		projOrWSPath      string
@@ -95,7 +134,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projHelp, err := NewProjectHelper(tt.projOrWSPath, tt.schemeName, tt.configurationName)
+			projHelp, err := NewProjectHelper(tt.projOrWSPath, tt.schemeName, tt.configurationName, 13)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -110,7 +149,7 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
+func TestProjectHelper_ProjectTeamID_withoutTargetAttributes(t *testing.T) {
 	log.SetEnableDebugLog(true)
 
 	helper := ProjectHelper{
@@ -126,12 +165,6 @@ func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
 
 func TestProjectHelper_ProjectTeamID(t *testing.T) {
 	log.SetEnableDebugLog(true)
-
-	var err error
-	schemeCases, _, _, projHelpCases, configCases, projectCases, err = initTestCases()
-	if err != nil {
-		t.Fatalf("Failed to initialize test cases: %s", err)
-	}
 
 	tests := []struct {
 		name    string
@@ -304,12 +337,6 @@ func Test_expandTargetSetting(t *testing.T) {
 }
 
 func TestProjectHelper_TargetBundleID(t *testing.T) {
-	var err error
-	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases()
-	if err != nil {
-		t.Fatalf("Failed to initialize test cases: %s", err)
-	}
-
 	for i, schemeCase := range schemeCases {
 		xcProj, _, err := findBuiltProject(
 			projectCases[i],
@@ -324,6 +351,7 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 			projectCases[i],
 			schemeCase,
 			configCases[i],
+			13,
 		)
 		if err != nil {
 			t.Fatalf("Failed to generate projectHelper for test case: %s", err)
@@ -397,101 +425,7 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 	}
 }
 
-func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper, []string, []string, error) {
-	//
-	// If the test cases already initialized return them
-	if schemeCases != nil {
-		return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, nil
-	}
-
-	p, err := pathutil.NormalizedOSTempDirPath("_autoprov")
-	if err != nil {
-		log.Errorf("Failed to create tmp dir error: %s", err)
-	}
-
-	gitRepo, err := git.New(p)
-	if err != nil {
-		log.Errorf("failed to init git repo: %w", err)
-	}
-
-	branch := "project"
-	cmd := gitRepo.CloneTagOrBranch("https://github.com/bitrise-io/sample-artifacts.git", branch)
-	if err := cmd.Run(); err != nil {
-		log.Errorf("Failed to git clone the sample project files error: %s", err)
-	}
-	//
-	// Init test cases
-	targetCases = []string{
-		"Xcode-10_default",
-		"Xcode-10_default",
-		"Xcode-10_mac",
-		"Xcode-10_mac",
-		"TV_OS",
-		"TV_OS",
-		"Xcode-10-default",
-	}
-
-	schemeCases = []string{
-		"Xcode-10_default",
-		"Xcode-10_default",
-		"Xcode-10_mac",
-		"Xcode-10_mac",
-		"TV_OS",
-		"TV_OS",
-		"Xcode-10_default",
-	}
-	configCases = []string{
-		"Debug",
-		"Release",
-		"Debug",
-		"Release",
-		"Debug",
-		"Release",
-		"Debug",
-	}
-	projectCases = []string{
-		p + "/ios_project_files/Xcode-10_default.xcworkspace",
-		p + "/ios_project_files/Xcode-10_default.xcworkspace",
-		p + "/ios_project_files/Xcode-10_mac.xcodeproj",
-		p + "/ios_project_files/Xcode-10_mac.xcodeproj",
-		p + "/ios_project_files/TV_OS.xcodeproj",
-		p + "/ios_project_files/TV_OS.xcodeproj",
-		p + "/ios_project_files/Xcode-10_with_scheme.xcworkspace",
-	}
-	var xcProjCases []xcodeproj.XcodeProj
-	var projHelpCases []ProjectHelper
-
-	for i, schemeCase := range schemeCases {
-		xcProj, _, err := findBuiltProject(
-			projectCases[i],
-			schemeCase,
-		)
-		if err != nil {
-			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate XcodeProj for test case: %s", err)
-		}
-		xcProjCases = append(xcProjCases, xcProj)
-
-		projHelp, err := NewProjectHelper(
-			projectCases[i],
-			schemeCase,
-			configCases[i],
-		)
-		if err != nil {
-			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate projectHelper for test case: %s", err)
-		}
-		projHelpCases = append(projHelpCases, *projHelp)
-	}
-
-	return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, nil
-}
-
 func TestProjectHelper_targetEntitlements(t *testing.T) {
-	var err error
-	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases()
-	if err != nil {
-		t.Fatalf("Failed to initialize test cases: %s", err)
-	}
-
 	tests := []struct {
 		name          string
 		targetName    string
@@ -645,4 +579,93 @@ func Test_resolveEntitlementVariables(t *testing.T) {
 			}
 		})
 	}
+}
+
+func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper, []string, []string, error) {
+	//
+	// If the test cases already initialized return them
+	if schemeCases != nil {
+		return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, nil
+	}
+
+	p, err := pathutil.NormalizedOSTempDirPath("_autoprov")
+	if err != nil {
+		log.Errorf("Failed to create tmp dir error: %s", err)
+	}
+
+	gitRepo, err := git.New(p)
+	if err != nil {
+		log.Errorf("failed to init git repo: %w", err)
+	}
+
+	branch := "project"
+	cmd := gitRepo.CloneTagOrBranch("https://github.com/bitrise-io/sample-artifacts.git", branch)
+	if err := cmd.Run(); err != nil {
+		log.Errorf("Failed to git clone the sample project files error: %s", err)
+	}
+	//
+	// Init test cases
+	targetCases = []string{
+		"Xcode-10_default",
+		"Xcode-10_default",
+		"Xcode-10_mac",
+		"Xcode-10_mac",
+		"TV_OS",
+		"TV_OS",
+		"Xcode-10-default",
+	}
+
+	schemeCases = []string{
+		"Xcode-10_default",
+		"Xcode-10_default",
+		"Xcode-10_mac",
+		"Xcode-10_mac",
+		"TV_OS",
+		"TV_OS",
+		"Xcode-10_default",
+	}
+	configCases = []string{
+		"Debug",
+		"Release",
+		"Debug",
+		"Release",
+		"Debug",
+		"Release",
+		"Debug",
+	}
+	projectCases = []string{
+		p + "/ios_project_files/Xcode-10_default.xcworkspace",
+		p + "/ios_project_files/Xcode-10_default.xcworkspace",
+		p + "/ios_project_files/Xcode-10_mac.xcodeproj",
+		p + "/ios_project_files/Xcode-10_mac.xcodeproj",
+		p + "/ios_project_files/TV_OS.xcodeproj",
+		p + "/ios_project_files/TV_OS.xcodeproj",
+		p + "/ios_project_files/Xcode-10_with_scheme.xcworkspace",
+	}
+	var xcProjCases []xcodeproj.XcodeProj
+	var projHelpCases []ProjectHelper
+
+	for i, schemeCase := range schemeCases {
+		xcProj, _, err := findBuiltProject(
+			projectCases[i],
+			schemeCase,
+		)
+		if err != nil {
+			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate XcodeProj for test case: %s", err)
+		}
+		xcProjCases = append(xcProjCases, xcProj)
+
+		projHelp, err := NewProjectHelper(
+			projectCases[i],
+			schemeCase,
+			configCases[i],
+			13,
+		)
+		if err != nil {
+			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate projectHelper for test case: %s", err)
+		}
+		projHelpCases = append(projHelpCases, *projHelp)
+	}
+
+	return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, nil
 }
