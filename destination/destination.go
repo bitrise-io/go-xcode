@@ -15,13 +15,13 @@ const (
 type Platform string
 
 const (
-	macOS            Platform = "macOS"
-	iOS              Platform = "iOS"
-	iOSSimulator     Platform = "iOS Simulator"
-	watchOS          Platform = "watchOS"
-	watchOSSimulator Platform = "watchOS Simulator"
-	tvOS             Platform = "tvOS"
-	tvOSSimulator    Platform = "tvOS Simulator"
+	MacOS            Platform = "macOS"
+	IOS              Platform = "iOS"
+	IOSSimulator     Platform = "iOS Simulator"
+	WatchOS          Platform = "watchOS"
+	WatchOSSimulator Platform = "watchOS Simulator"
+	TvOS             Platform = "tvOS"
+	TvOSSimulator    Platform = "tvOS Simulator"
 	DriverKit        Platform = "DriverKit"
 )
 
