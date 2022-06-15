@@ -6,57 +6,60 @@ import (
 )
 
 const (
-	platform = "platform"
-	name     = "name"
-	os       = "OS"
+	genericPlatformKey = "generic/platform"
+	platformKey        = "platform"
+	nameKey            = "name"
+	osKey              = "OS"
 )
 
-// Simulator ...
-type Simulator struct {
-	Platform string
-	Name     string
-	OS       string
-}
+type Platform string
 
-// NewSimulator ...
-func NewSimulator(destination string) (*Simulator, error) {
-	simulator := Simulator{}
-	destinationParts := strings.Split(destination, ",")
+const (
+	macOS            Platform = "macOS"
+	iOS              Platform = "iOS"
+	iOSSimulator     Platform = "iOS Simulator"
+	watchOS          Platform = "watchOS"
+	watchOSSimulator Platform = "watchOS Simulator"
+	tvOS             Platform = "tvOS"
+	tvOSSimulator    Platform = "tvOS Simulator"
+	DriverKit        Platform = "DriverKit"
+)
 
-	for _, part := range destinationParts {
+type Specifier map[string]string
+
+func NewSpecifier(destination string) (Specifier, error) {
+	specifier := Specifier{}
+
+	parts := strings.Split(destination, ",")
+	for _, part := range parts {
 		keyAndValue := strings.Split(part, "=")
 
 		if len(keyAndValue) != 2 {
-			return nil, fmt.Errorf(`could not parse "%s" because it is not a valid key=value pair in destination: %s`, keyAndValue, destination)
+			return nil, fmt.Errorf(`could not parse "%s" because it is not a valid key=value pair in destination: %s`, part, destination)
 		}
 
 		key := keyAndValue[0]
 		value := keyAndValue[1]
 
-		switch key {
-		case platform:
-			simulator.Platform = value
-		case name:
-			simulator.Name = value
-		case os:
-			simulator.OS = value
-		default:
-			return nil, fmt.Errorf(`could not parse key "%s" with value "%s" in destination: %s`, key, value, destination)
-		}
+		specifier[key] = value
 	}
 
-	if simulator.Platform == "" {
-		return nil, fmt.Errorf(`missing key "platform" in destination: %s`, destination)
+	return specifier, nil
+}
+
+func (s Specifier) Platform() (Platform, bool) {
+	p, ok := s[genericPlatformKey]
+	if ok {
+		return Platform(p), true
 	}
 
-	if simulator.Name == "" {
-		return nil, fmt.Errorf(`missing key "name" in destination: %s`, destination)
-	}
+	return Platform(s[platformKey]), false
+}
 
-	if simulator.OS == "" {
-		// OS=latest can be omitted in the destination specifier, because it's the default value.
-		simulator.OS = "latest"
-	}
+func (s Specifier) Name() string {
+	return s[nameKey]
+}
 
-	return &simulator, nil
+func (s Specifier) OS() string {
+	return s[osKey]
 }

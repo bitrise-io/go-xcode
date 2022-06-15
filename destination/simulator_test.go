@@ -1,8 +1,9 @@
 package destination
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_GivenDestinationIsCorrect_WhenSimulatorIsCreated_ThenItReturnsCorrectSimulator(t *testing.T) {
