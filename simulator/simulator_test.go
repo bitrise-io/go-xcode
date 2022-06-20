@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/bitrise-io/go-utils/v2/log"
 	mockcommand "github.com/bitrise-io/go-xcode/v2/simulator/mocks"
@@ -48,6 +49,23 @@ func Test_GivenSimulator_WhenBoot_ThenBootsTheRequestedSimulator(t *testing.T) {
 
 	// Then
 	assert.NoError(t, err)
+
+	mocks.commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
+}
+
+func Test_GivenSimulator_WhenWaitForBootFinishedTimesOut_ThenFails(t *testing.T) {
+	// Given
+	manager, mocks := createSimulatorAndMocks()
+
+	const identifier = "test-identifier"
+	parameters := []string{"simctl", "launch", identifier, "com.apple.Preferences"}
+	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createTimeoutCommand(time.Hour))
+
+	// When
+	err := manager.WaitForBootFinished(identifier, 3*time.Second)
+
+	// Then
+	assert.ErrorContains(t, err, "failed to boot Simulator in")
 
 	mocks.commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
 }
@@ -141,6 +159,17 @@ func createCommand(output string) *mockcommand.Command {
 	command.On("Run").Return(nil)
 	command.On("RunAndReturnExitCode").Return(0, nil)
 	command.On("RunAndReturnTrimmedCombinedOutput").Return(output, nil)
+
+	return command
+}
+
+func createTimeoutCommand(timeout time.Duration) *mockcommand.Command {
+	command := new(mockcommand.Command)
+	command.On("PrintableCommandArgs").Return("")
+	command.On("Run").Return(func() error {
+		time.Sleep(timeout)
+		return nil
+	})
 
 	return command
 }
