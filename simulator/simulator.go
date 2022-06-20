@@ -37,21 +37,23 @@ func NewManager(commandFactory command.Factory) Manager {
 	}
 }
 
-func (m manager) getXcodeDeveloperDirPath() (string, error) {
+func (m manager) getSimulatorAppAbsolutePath() (string, error) {
 	cmd := m.commandFactory.Create("xcode-select", []string{"--print-path"}, nil)
-	return cmd.RunAndReturnTrimmedCombinedOutput()
+	xcodeDevDirPath, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to get Xcode Developer Directory - most likely Xcode.app is not installed: %w", err)
+	}
+
+	return filepath.Join(xcodeDevDirPath, "Applications", "Simulator.app"), nil
 }
 
 // LaunchSimulator ...
 func (m manager) LaunchSimulator(simulatorID string) error {
-	const simulatorApp = "Simulator"
-
-	xcodeDevDirPth, err := m.getXcodeDeveloperDirPath()
+	simulatorAppFullPath, err := m.getSimulatorAppAbsolutePath()
 	if err != nil {
-		return fmt.Errorf("failed to get Xcode Developer Directory - most likely Xcode.app is not installed")
+		return err
 	}
 
-	simulatorAppFullPath := filepath.Join(xcodeDevDirPth, "Applications", simulatorApp+".app")
 	openCmd := m.commandFactory.Create("open", []string{simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
 
 	log.Printf("$ %s", openCmd.PrintableCommandArgs())
@@ -77,13 +79,10 @@ func (m manager) ResetLaunchServices() error {
 	}
 
 	if strings.HasPrefix(macOSVersion, "11.") { // It's Big Sur
-		cmd := m.commandFactory.Create("xcode-select", []string{"--print-path"}, nil)
-		xcodeDevDirPath, err := cmd.RunAndReturnTrimmedCombinedOutput()
+		simulatorAppPath, err := m.getSimulatorAppAbsolutePath()
 		if err != nil {
 			return err
 		}
-
-		simulatorAppPath := filepath.Join(xcodeDevDirPath, "Applications", "Simulator.app")
 
 		cmdString := "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 		cmd = m.commandFactory.Create(cmdString, []string{"-f", simulatorAppPath}, nil)
