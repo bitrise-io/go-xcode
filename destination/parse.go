@@ -122,6 +122,7 @@ func (d deviceFinder) parseDeviceList() (deviceList, error) {
 	var list deviceList
 
 	// Retry gathering device information since xcrun simctl list can fail to show the complete device list
+	// Originally added in https://github.com/bitrise-steplib/steps-xcode-test/pull/155
 	if err := retry.Times(3).Wait(10 * time.Second).Try(func(attempt uint) error {
 		listCmd := d.commandFactory.Create("xcrun", []string{"simctl", "list", "--json"}, &command.Opts{
 			Stderr: os.Stderr,
@@ -159,7 +160,7 @@ func (d deviceFinder) parseDeviceList() (deviceList, error) {
 
 func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 	if d.list == nil {
-		panic("device list not parsed")
+		return Device{}, fmt.Errorf("inconsistent state in filterDeviceList: device list should be parsed")
 	}
 
 	wantedDevice.Platform = strings.TrimSuffix(wantedDevice.Platform, " Simulator")
