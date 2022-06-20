@@ -38,6 +38,7 @@ func Test_deviceFinder_parseDeviceList(t *testing.T) {
 		Platform:    "iOS",
 		Version:     "16.0",
 		IsAvailable: true,
+		Name:        "iOS 16.0",
 	}}
 	wantDevices := map[string][]device{
 		"com.apple.CoreSimulator.SimRuntime.iOS-16-0": {{
