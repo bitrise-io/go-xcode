@@ -10,13 +10,13 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/errorutil"
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/log"
 )
 
-// Manager ...
+// Manager provides methods for issuing Simualtor lifecycle commands
 type Manager interface {
-	LaunchSimulator(simulatorID string) error
+	LaunchSimulatorGUI(simulatorID string) error
 
 	ResetLaunchServices() error
 	SimulatorBoot(id string) error
@@ -28,11 +28,13 @@ type Manager interface {
 
 type manager struct {
 	commandFactory command.Factory
+	logger         log.Logger
 }
 
 // NewManager ...
-func NewManager(commandFactory command.Factory) Manager {
+func NewManager(logger log.Logger, commandFactory command.Factory) Manager {
 	return manager{
+		logger:         logger,
 		commandFactory: commandFactory,
 	}
 }
@@ -47,8 +49,8 @@ func (m manager) getSimulatorAppAbsolutePath() (string, error) {
 	return filepath.Join(xcodeDevDirPath, "Applications", "Simulator.app"), nil
 }
 
-// LaunchSimulator ...
-func (m manager) LaunchSimulator(simulatorID string) error {
+// LaunchSimulatorGUI can be used to run in non-headless mode (with the Simulator visible).
+func (m manager) LaunchSimulatorGUI(simulatorID string) error {
 	simulatorAppFullPath, err := m.getSimulatorAppAbsolutePath()
 	if err != nil {
 		return err
@@ -56,7 +58,7 @@ func (m manager) LaunchSimulator(simulatorID string) error {
 
 	openCmd := m.commandFactory.Create("open", []string{simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
 
-	log.Printf("$ %s", openCmd.PrintableCommandArgs())
+	m.logger.Printf("$ %s", openCmd.PrintableCommandArgs())
 	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to start simulators (%s), output: %s, error: %s", simulatorID, outStr, err)
@@ -87,7 +89,7 @@ func (m manager) ResetLaunchServices() error {
 		cmdString := "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
 		cmd = m.commandFactory.Create(cmdString, []string{"-f", simulatorAppPath}, nil)
 
-		log.Infof("Applying launch services reset workaround before booting simulator")
+		m.logger.Infof("Applying launch services reset workaround before booting simulator")
 		_, err = cmd.RunAndReturnTrimmedCombinedOutput()
 		if err != nil {
 			return err
@@ -103,14 +105,14 @@ func (m manager) SimulatorBoot(id string) error {
 		Stderr: os.Stderr,
 	})
 
-	log.Donef("$ %s", cmd.PrintableCommandArgs())
+	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
 			if exitCode == 149 { // Simulator already booted
 				return nil
 			}
-			log.Warnf("Failed to boot Simulator, command exited with code %d", exitCode)
+			m.logger.Warnf("Failed to boot Simulator, command exited with code %d", exitCode)
 			return nil
 		}
 		return fmt.Errorf("failed to boot Simulator, command execution failed: %v", err)
@@ -126,10 +128,10 @@ func (m manager) SimulatorEnableVerboseLog(id string) error {
 		Stderr: os.Stderr,
 	})
 
-	log.Donef("$ %s", cmd.PrintableCommandArgs())
+	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
 	if err := cmd.Run(); err != nil {
 		if errorutil.IsExitStatusError(err) {
-			log.Warnf("Failed to enable Simulator verbose logging, command exited with code %d", err)
+			m.logger.Warnf("Failed to enable Simulator verbose logging, command exited with code %d", err)
 			return nil
 		}
 
@@ -155,7 +157,7 @@ func (m manager) SimulatorCollectDiagnostics() (string, error) {
 		Stdin:  bytes.NewReader([]byte("\n")),
 	})
 
-	log.Donef("$ %s", cmd.PrintableCommandArgs())
+	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
 	if err := cmd.Run(); err != nil {
 		if errorutil.IsExitStatusError(err) {
 			return "", fmt.Errorf("failed to collect Simulator diagnostics: %v", err)
@@ -173,14 +175,14 @@ func (m manager) SimulatorShutdown(id string) error {
 		Stderr: os.Stderr,
 	})
 
-	log.Donef("$ %s", cmd.PrintableCommandArgs())
+	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
 			if exitCode == 149 { // Simulator already shut down
 				return nil
 			}
-			log.Warnf("Failed to shutdown Simulator, command exited with code %d", exitCode)
+			m.logger.Warnf("Failed to shutdown Simulator, command exited with code %d", exitCode)
 			return nil
 		}
 		return fmt.Errorf("failed to shutdown Simulator, command execution failed: %v", err)
