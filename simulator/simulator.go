@@ -17,7 +17,6 @@ import (
 // Manager provides methods for issuing Simulator commands
 type Manager interface {
 	LaunchWithGUI(simulatorID string) error
-
 	ResetLaunchServices() error
 	Boot(id string) error
 	WaitForBootFinished(id string, timeout time.Duration) error
@@ -185,6 +184,7 @@ func (m manager) CollectDiagnostics() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	diagnosticsOutDir, err := ioutil.TempDir("", diagnosticsName)
 	if err != nil {
 		return "", fmt.Errorf("failed to collect Simulator diagnostics, could not create temporary directory: %v", err)
@@ -242,8 +242,7 @@ func (m manager) Erase(id string) error {
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
-			m.logger.Warnf("Failed to erase Simulator, command exited with code %d", exitCode)
-			return nil
+			return fmt.Errorf("Failed to erase Simulator, command exited with code %d", exitCode)
 		}
 		return fmt.Errorf("failed to erase Simulator, command execution failed: %v", err)
 	}

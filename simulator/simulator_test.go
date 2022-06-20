@@ -2,7 +2,6 @@ package simulator
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -95,10 +94,6 @@ func Test_GivenSimulator_WhenCollectDiagnostics_ThenCollectsIt(t *testing.T) {
 
 	// When
 	diagnosticsOutDir, err := manager.CollectDiagnostics()
-	defer func() {
-		// Do not forget to clen up the temp dir
-		_ = os.RemoveAll(diagnosticsOutDir)
-	}()
 
 	// Then
 	assert.NoError(t, err)
