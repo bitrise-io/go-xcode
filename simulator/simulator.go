@@ -14,15 +14,17 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
-// Manager provides methods for issuing Simualtor lifecycle commands
+// Manager provides methods for issuing Simulator commands
 type Manager interface {
 	LaunchSimulatorGUI(simulatorID string) error
 
 	ResetLaunchServices() error
 	SimulatorBoot(id string) error
+	WaitForBootFinished(id string, timeout time.Duration) error
 	SimulatorEnableVerboseLog(id string) error
 	SimulatorCollectDiagnostics() (string, error)
 	SimulatorShutdown(id string) error
+	Erase(id string) error
 	SimulatorDiagnosticsName() (string, error)
 }
 
@@ -61,7 +63,7 @@ func (m manager) LaunchSimulatorGUI(simulatorID string) error {
 	m.logger.Printf("$ %s", openCmd.PrintableCommandArgs())
 	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to start simulators (%s), output: %s, error: %s", simulatorID, outStr, err)
+		return fmt.Errorf("failed to start simulators (%s), error: %s, output: %s", simulatorID, err, outStr)
 	}
 
 	return nil
@@ -119,6 +121,42 @@ func (m manager) SimulatorBoot(id string) error {
 	}
 
 	return nil
+}
+
+// WaitForBootFinished
+func (m manager) WaitForBootFinished(id string, timeout time.Duration) error {
+	timer := time.NewTimer(timeout)
+	defer func() {
+		timer.Stop()
+	}()
+
+	launchDoneCh := make(chan error, 1)
+	doWait := func() {
+		waitCmd := m.commandFactory.Create("xcrun", []string{"simctl", "launch", id, "com.apple.Preferences"}, &command.Opts{
+			Stdout: os.Stderr,
+			Stderr: os.Stderr,
+		})
+
+		m.logger.Println()
+		m.logger.TDonef("$ %s", waitCmd.PrintableCommandArgs())
+		launchDoneCh <- waitCmd.Run()
+	}
+
+	go doWait()
+
+	for {
+		select {
+		case err := <-launchDoneCh:
+			{
+				if err != nil {
+					return fmt.Errorf("failed to wait for simulator boot: %w", err)
+				}
+				return nil // launch succeeded
+			}
+		case <-timer.C:
+			return fmt.Errorf("failed to boot Simulator in %s", timeout)
+		}
+	}
 }
 
 // Simulator needs to be booted to enable verbose log
@@ -186,6 +224,25 @@ func (m manager) SimulatorShutdown(id string) error {
 			return nil
 		}
 		return fmt.Errorf("failed to shutdown Simulator, command execution failed: %v", err)
+	}
+
+	return nil
+}
+
+func (m manager) Erase(id string) error {
+	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "erase", id}, &command.Opts{
+		Stdout: os.Stdout,
+		Stderr: os.Stderr,
+	})
+
+	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
+	exitCode, err := cmd.RunAndReturnExitCode()
+	if err != nil {
+		if errorutil.IsExitStatusError(err) {
+			m.logger.Warnf("Failed to erase Simulator, command exited with code %d", exitCode)
+			return nil
+		}
+		return fmt.Errorf("failed to erase Simulator, command execution failed: %v", err)
 	}
 
 	return nil

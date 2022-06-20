@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	mockcommand "github.com/bitrise-io/go-xcode/v2/simulator/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -38,7 +39,7 @@ func Test_GivenSimulator_WhenBoot_ThenBootsTheRequestedSimulator(t *testing.T) {
 	// Given
 	manager, mocks := createSimulatorAndMocks()
 
-	identifier := "test-identifier"
+	const identifier = "test-identifier"
 	parameters := []string{"simctl", "boot", identifier}
 	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
 
@@ -55,7 +56,7 @@ func Test_GivenSimulator_WhenEnableVerboseLog_ThenEnablesIt(t *testing.T) {
 	// Given
 	manager, mocks := createSimulatorAndMocks()
 
-	identifier := "test-identifier"
+	const identifier = "test-identifier"
 	parameters := []string{"simctl", "logverbose", identifier, "enable"}
 	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
 
@@ -92,7 +93,7 @@ func Test_GivenSimulator_WhenShutdown_ThenShutsItDown(t *testing.T) {
 	// Given
 	manager, mocks := createSimulatorAndMocks()
 
-	identifier := "test-identifier"
+	const identifier = "test-identifier"
 	parameters := []string{"simctl", "shutdown", identifier}
 	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
 
@@ -105,11 +106,29 @@ func Test_GivenSimulator_WhenShutdown_ThenShutsItDown(t *testing.T) {
 	mocks.commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
 }
 
+func Test_GivenSimulator_WhenErase_ThenErases(t *testing.T) {
+	// Given
+	manager, mocks := createSimulatorAndMocks()
+
+	const identifier = "test-identifier"
+	parameters := []string{"simctl", "erase", identifier}
+	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
+
+	// When
+	err := manager.Erase(identifier)
+
+	// Then
+	assert.NoError(t, err)
+
+	mocks.commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
+}
+
 // Helpers
 
 func createSimulatorAndMocks() (Manager, testingMocks) {
 	commandFactory := new(mockcommand.CommandFactory)
-	manager := NewManager(commandFactory)
+	logger := log.NewLogger()
+	manager := NewManager(logger, commandFactory)
 
 	return manager, testingMocks{
 		commandFactory: commandFactory,
