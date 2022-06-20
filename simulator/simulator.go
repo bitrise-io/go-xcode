@@ -12,16 +12,10 @@ import (
 	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/v2/command"
-	sim "github.com/bitrise-io/go-xcode/simulator"
 )
-
-// Simulator ...
-type Simulator sim.InfoModel
 
 // Manager ...
 type Manager interface {
-	GetLatestSimulatorAndVersion(osName, deviceName string) (Simulator, string, error)
-	GetSimulator(osNameAndVersion, deviceName string) (Simulator, error)
 	LaunchSimulator(simulatorID string) error
 
 	ResetLaunchServices() error
@@ -43,18 +37,30 @@ func NewManager(commandFactory command.Factory) Manager {
 	}
 }
 
-func (m manager) GetLatestSimulatorAndVersion(osName, deviceName string) (Simulator, string, error) {
-	info, ver, err := sim.GetLatestSimulatorInfoAndVersion(osName, deviceName)
-	return Simulator(info), ver, err
+func (m manager) getXcodeDeveloperDirPath() (string, error) {
+	cmd := m.commandFactory.Create("xcode-select", []string{"--print-path"}, nil)
+	return cmd.RunAndReturnTrimmedCombinedOutput()
 }
 
-func (m manager) GetSimulator(osNameAndVersion, deviceName string) (Simulator, error) {
-	info, err := sim.GetSimulatorInfo(osNameAndVersion, deviceName)
-	return Simulator(info), err
-}
-
+// LaunchSimulator ...
 func (m manager) LaunchSimulator(simulatorID string) error {
-	return sim.BootSimulator(simulatorID)
+	const simulatorApp = "Simulator"
+
+	xcodeDevDirPth, err := m.getXcodeDeveloperDirPath()
+	if err != nil {
+		return fmt.Errorf("failed to get Xcode Developer Directory - most likely Xcode.app is not installed")
+	}
+
+	simulatorAppFullPath := filepath.Join(xcodeDevDirPth, "Applications", simulatorApp+".app")
+	openCmd := m.commandFactory.Create("open", []string{simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
+
+	log.Printf("$ %s", openCmd.PrintableCommandArgs())
+	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return fmt.Errorf("failed to start simulators (%s), output: %s, error: %s", simulatorID, outStr, err)
+	}
+
+	return nil
 }
 
 // Reset launch services database to avoid Big Sur's sporadic failure to find the Simulator App
