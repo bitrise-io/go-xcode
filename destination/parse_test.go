@@ -15,7 +15,7 @@ func Test_deviceFinder_parseDeviceList(t *testing.T) {
 	command := new(mocks.Command)
 
 	command.On("PrintableCommandArgs").Return("xcrun simctl list")
-	command.On("RunAndReturnTrimmedOutput").Once().Return(testdata.ReducedList, nil)
+	command.On("RunAndReturnTrimmedOutput").Once().Return(testdata.DeviceList, nil)
 	commandFactory.On("Create", "xcrun", []string{"simctl", "list", "--json"}, mock.Anything).Return(command)
 
 	d := deviceFinder{

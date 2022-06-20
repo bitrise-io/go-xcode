@@ -15,7 +15,7 @@ import (
 func Test_deviceFinder_FindDevice(t *testing.T) {
 	command := new(mocks.Command)
 	command.On("PrintableCommandArgs").Return("xcrun simctl list --json")
-	command.On("RunAndReturnTrimmedOutput").Return(testdata.ReducedList, nil)
+	command.On("RunAndReturnTrimmedOutput").Return(testdata.DeviceList, nil)
 
 	debugCmd := new(mocks.Command)
 	debugCmd.On("PrintableCommandArgs").Return("xcrun simctl list")

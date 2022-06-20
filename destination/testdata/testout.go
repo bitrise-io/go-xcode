@@ -1,6 +1,6 @@
 package testdata
 
-const ReducedList = `
+const DeviceList = `
 {
 	"devicetypes" : [
 	  {
