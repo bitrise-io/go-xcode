@@ -62,7 +62,7 @@ func (m manager) LaunchWithGUI(simulatorID string) error {
 	}
 
 	openCmd := m.commandFactory.Create("open", []string{simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
-	m.logger.Printf("$ %s", openCmd.PrintableCommandArgs())
+	m.logger.TDonef("$ %s", openCmd.PrintableCommandArgs())
 
 	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -110,7 +110,7 @@ func (m manager) Boot(id string) error {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
-	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
+	m.logger.TDonef("$ %s", cmd.PrintableCommandArgs())
 
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
@@ -142,7 +142,6 @@ func (m manager) WaitForBootFinished(id string, timeout time.Duration) error {
 			Stderr: os.Stderr,
 		})
 
-		m.logger.Println()
 		m.logger.TDonef("$ %s", waitCmd.PrintableCommandArgs())
 		launchDoneCh <- waitCmd.Run()
 	}
@@ -170,8 +169,8 @@ func (m manager) EnableVerboseLog(id string) error {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
+	m.logger.TDonef("$ %s", cmd.PrintableCommandArgs())
 
-	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
 	if err := cmd.Run(); err != nil {
 		if errorutil.IsExitStatusError(err) {
 			m.logger.Warnf("Failed to enable Simulator verbose logging, command exited with code %d", err)
@@ -201,7 +200,7 @@ func (m manager) CollectDiagnostics() (string, error) {
 		Stderr: os.Stderr,
 		Stdin:  bytes.NewReader([]byte("\n")),
 	})
-	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
+	m.logger.TDonef("$ %s", cmd.PrintableCommandArgs())
 
 	if err := cmd.Run(); err != nil {
 		if errorutil.IsExitStatusError(err) {
@@ -220,7 +219,7 @@ func (m manager) Shutdown(id string) error {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
-	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
+	m.logger.TDonef("$ %s", cmd.PrintableCommandArgs())
 
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
@@ -244,7 +243,7 @@ func (m manager) Erase(id string) error {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
-	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
+	m.logger.TDonef("$ %s", cmd.PrintableCommandArgs())
 
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
