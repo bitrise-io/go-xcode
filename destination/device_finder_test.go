@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_deviceFinder_GetSimulator(t *testing.T) {
+func Test_deviceFinder_FindDevice(t *testing.T) {
 	command := new(mocks.Command)
 	command.On("PrintableCommandArgs").Return("xcrun simctl list --json")
 	command.On("RunAndReturnTrimmedOutput").Return(testdata.ReducedList, nil)
@@ -115,7 +115,7 @@ func Test_deviceFinder_GetSimulator(t *testing.T) {
 				commandFactory: commandFactory,
 			}
 
-			got, err := d.GetSimulator(tt.wantedDevice)
+			got, err := d.FindDevice(tt.wantedDevice)
 
 			if tt.wantErr {
 				require.Error(t, err)
@@ -128,7 +128,7 @@ func Test_deviceFinder_GetSimulator(t *testing.T) {
 	}
 }
 
-func Test_deviceFinder_GetSimulator_realXcrun(t *testing.T) {
+func Test_deviceFinder_FindDevice_realXcrun(t *testing.T) {
 	commandFactory := command.NewFactory(env.NewRepository())
 	logger := log.NewLogger()
 
@@ -137,7 +137,7 @@ func Test_deviceFinder_GetSimulator_realXcrun(t *testing.T) {
 		commandFactory: commandFactory,
 	}
 
-	got, err := d.GetSimulator(Simulator{
+	got, err := d.FindDevice(Simulator{
 		Platform: "iOS Simulator",
 		OS:       "latest",
 		Name:     "iPhone 8",

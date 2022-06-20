@@ -17,7 +17,7 @@ type Device struct {
 
 // DeviceFinder is an interface that find a matching device for a given destination
 type DeviceFinder interface {
-	GetSimulator(destination Simulator) (Device, error)
+	FindDevice(destination Simulator) (Device, error)
 }
 
 type deviceFinder struct {
@@ -36,7 +36,7 @@ func NewDeviceFinder(log log.Logger, commandFactory command.Factory) DeviceFinde
 }
 
 // GetSimulator returns a Simulator matching the destination
-func (d deviceFinder) GetSimulator(destination Simulator) (Device, error) {
+func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 	if d.list == nil {
 		list, err := d.parseDeviceList()
 		if err != nil {
