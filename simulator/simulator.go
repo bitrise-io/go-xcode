@@ -16,16 +16,15 @@ import (
 
 // Manager provides methods for issuing Simulator commands
 type Manager interface {
-	LaunchSimulatorGUI(simulatorID string) error
+	LaunchWithGUI(simulatorID string) error
 
 	ResetLaunchServices() error
-	SimulatorBoot(id string) error
+	Boot(id string) error
 	WaitForBootFinished(id string, timeout time.Duration) error
-	SimulatorEnableVerboseLog(id string) error
-	SimulatorCollectDiagnostics() (string, error)
-	SimulatorShutdown(id string) error
+	EnableVerboseLog(id string) error
+	CollectDiagnostics() (string, error)
+	Shutdown(id string) error
 	Erase(id string) error
-	SimulatorDiagnosticsName() (string, error)
 }
 
 type manager struct {
@@ -51,8 +50,8 @@ func (m manager) getSimulatorAppAbsolutePath() (string, error) {
 	return filepath.Join(xcodeDevDirPath, "Applications", "Simulator.app"), nil
 }
 
-// LaunchSimulatorGUI can be used to run in non-headless mode (with the Simulator visible).
-func (m manager) LaunchSimulatorGUI(simulatorID string) error {
+// LaunchWithGUI can be used to run in non-headless mode (with the Simulator visible).
+func (m manager) LaunchWithGUI(simulatorID string) error {
 	simulatorAppFullPath, err := m.getSimulatorAppAbsolutePath()
 	if err != nil {
 		return err
@@ -69,7 +68,7 @@ func (m manager) LaunchSimulatorGUI(simulatorID string) error {
 	return nil
 }
 
-// Reset launch services database to avoid Big Sur's sporadic failure to find the Simulator App
+// ResetLaunchServices resets launch services database to avoid Big Sur's sporadic failure to find the Simulator App
 // The following error is printed when this happens: "kLSNoExecutableErr: The executable is missing"
 // Details:
 // - https://stackoverflow.com/questions/2182040/the-application-cannot-be-opened-because-its-executable-is-missing/16546673#16546673
@@ -101,7 +100,8 @@ func (m manager) ResetLaunchServices() error {
 	return nil
 }
 
-func (m manager) SimulatorBoot(id string) error {
+// Boot boots Simulator in headless mode
+func (m manager) Boot(id string) error {
 	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "boot", id}, &command.Opts{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
@@ -123,7 +123,7 @@ func (m manager) SimulatorBoot(id string) error {
 	return nil
 }
 
-// WaitForBootFinished
+// WaitForBootFinished waits until simulator finsihed boot
 func (m manager) WaitForBootFinished(id string, timeout time.Duration) error {
 	timer := time.NewTimer(timeout)
 	defer func() {
@@ -159,8 +159,8 @@ func (m manager) WaitForBootFinished(id string, timeout time.Duration) error {
 	}
 }
 
-// Simulator needs to be booted to enable verbose log
-func (m manager) SimulatorEnableVerboseLog(id string) error {
+// EnableVerboseLog enables verbose log. Simulator needs to be booted.
+func (m manager) EnableVerboseLog(id string) error {
 	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "logverbose", id, "enable"}, &command.Opts{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
@@ -179,8 +179,9 @@ func (m manager) SimulatorEnableVerboseLog(id string) error {
 	return nil
 }
 
-func (m manager) SimulatorCollectDiagnostics() (string, error) {
-	diagnosticsName, err := m.SimulatorDiagnosticsName()
+// CollectDiagnostics collects Simulator diagnostics
+func (m manager) CollectDiagnostics() (string, error) {
+	diagnosticsName, err := m.diagnosticsName()
 	if err != nil {
 		return "", err
 	}
@@ -207,7 +208,8 @@ func (m manager) SimulatorCollectDiagnostics() (string, error) {
 	return diagnosticsOutDir, nil
 }
 
-func (m manager) SimulatorShutdown(id string) error {
+// Shutdown shuts down the Simulator
+func (m manager) Shutdown(id string) error {
 	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "shutdown", id}, &command.Opts{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
@@ -229,6 +231,7 @@ func (m manager) SimulatorShutdown(id string) error {
 	return nil
 }
 
+// Erase erases Simulator content
 func (m manager) Erase(id string) error {
 	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "erase", id}, &command.Opts{
 		Stdout: os.Stdout,
@@ -248,7 +251,7 @@ func (m manager) Erase(id string) error {
 	return nil
 }
 
-func (m manager) SimulatorDiagnosticsName() (string, error) {
+func (m manager) diagnosticsName() (string, error) {
 	timestamp, err := time.Now().MarshalText()
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal timestamp: %w", err)

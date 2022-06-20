@@ -45,7 +45,7 @@ func Test_GivenSimulator_WhenBoot_ThenBootsTheRequestedSimulator(t *testing.T) {
 	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
 
 	// When
-	err := manager.SimulatorBoot(identifier)
+	err := manager.Boot(identifier)
 
 	// Then
 	assert.NoError(t, err)
@@ -79,7 +79,7 @@ func Test_GivenSimulator_WhenEnableVerboseLog_ThenEnablesIt(t *testing.T) {
 	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
 
 	// When
-	err := manager.SimulatorEnableVerboseLog(identifier)
+	err := manager.EnableVerboseLog(identifier)
 
 	// Then
 	assert.NoError(t, err)
@@ -94,7 +94,7 @@ func Test_GivenSimulator_WhenCollectDiagnostics_ThenCollectsIt(t *testing.T) {
 	mocks.commandFactory.On("Create", "xcrun", mock.Anything, mock.Anything).Return(createCommand(""))
 
 	// When
-	diagnosticsOutDir, err := manager.SimulatorCollectDiagnostics()
+	diagnosticsOutDir, err := manager.CollectDiagnostics()
 	defer func() {
 		// Do not forget to clen up the temp dir
 		_ = os.RemoveAll(diagnosticsOutDir)
@@ -116,7 +116,7 @@ func Test_GivenSimulator_WhenShutdown_ThenShutsItDown(t *testing.T) {
 	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
 
 	// When
-	err := manager.SimulatorShutdown(identifier)
+	err := manager.Shutdown(identifier)
 
 	// Then
 	assert.NoError(t, err)
