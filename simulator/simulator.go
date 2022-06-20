@@ -14,6 +14,10 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
+const (
+	exitCodeAlreadyDone = 149 // Simulator already shutdown/booted
+)
+
 // Manager provides methods for issuing Simulator commands
 type Manager interface {
 	LaunchWithGUI(simulatorID string) error
@@ -41,6 +45,7 @@ func NewManager(logger log.Logger, commandFactory command.Factory) Manager {
 
 func (m manager) getSimulatorAppAbsolutePath() (string, error) {
 	cmd := m.commandFactory.Create("xcode-select", []string{"--print-path"}, nil)
+
 	xcodeDevDirPath, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("failed to get Xcode Developer Directory - most likely Xcode.app is not installed: %w", err)
@@ -57,8 +62,8 @@ func (m manager) LaunchWithGUI(simulatorID string) error {
 	}
 
 	openCmd := m.commandFactory.Create("open", []string{simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
-
 	m.logger.Printf("$ %s", openCmd.PrintableCommandArgs())
+
 	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to start simulators (%s), error: %s, output: %s", simulatorID, err, outStr)
@@ -105,17 +110,18 @@ func (m manager) Boot(id string) error {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
-
 	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
+
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
-			if exitCode == 149 { // Simulator already booted
+			if exitCode == exitCodeAlreadyDone { // Simulator already booted
 				return nil
 			}
-			m.logger.Warnf("Failed to boot Simulator, command exited with code %d", exitCode)
-			return nil
+
+			return fmt.Errorf("Failed to boot Simulator, command exited with code %d", exitCode)
 		}
+
 		return fmt.Errorf("failed to boot Simulator, command execution failed: %v", err)
 	}
 
@@ -195,13 +201,13 @@ func (m manager) CollectDiagnostics() (string, error) {
 		Stderr: os.Stderr,
 		Stdin:  bytes.NewReader([]byte("\n")),
 	})
-
 	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
+
 	if err := cmd.Run(); err != nil {
 		if errorutil.IsExitStatusError(err) {
 			return "", fmt.Errorf("failed to collect Simulator diagnostics: %v", err)
-
 		}
+
 		return "", fmt.Errorf("failed to collect Simulator diagnostics, command execution failed: %v", err)
 	}
 
@@ -214,17 +220,18 @@ func (m manager) Shutdown(id string) error {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
-
 	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
+
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
-			if exitCode == 149 { // Simulator already shut down
+			if exitCode == exitCodeAlreadyDone { // Simulator already shut down
 				return nil
 			}
 			m.logger.Warnf("Failed to shutdown Simulator, command exited with code %d", exitCode)
 			return nil
 		}
+
 		return fmt.Errorf("failed to shutdown Simulator, command execution failed: %v", err)
 	}
 
@@ -237,13 +244,14 @@ func (m manager) Erase(id string) error {
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
-
 	m.logger.Donef("$ %s", cmd.PrintableCommandArgs())
+
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
 			return fmt.Errorf("Failed to erase Simulator, command exited with code %d", exitCode)
 		}
+
 		return fmt.Errorf("failed to erase Simulator, command execution failed: %v", err)
 	}
 
