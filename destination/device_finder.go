@@ -1,8 +1,6 @@
 package destination
 
 import (
-	"strings"
-
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
 )
@@ -44,11 +42,6 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 		}
 
 		d.list = &list
-	}
-
-	osVersionSplit := strings.Split(destination.OS, ".")
-	if len(osVersionSplit) > 2 {
-		destination.OS = strings.Join(osVersionSplit[0:2], ".")
 	}
 
 	device, err := d.filterDeviceList(destination)

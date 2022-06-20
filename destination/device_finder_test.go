@@ -80,7 +80,21 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			},
 		},
 		{
-			name: "explicit OS version with extra version",
+			name: "explicit OS version (only major)",
+			wantedDevice: Simulator{
+				Platform: "iOS Simulator",
+				OS:       "16",
+				Name:     "iPhone 8",
+			},
+			want: Device{
+				Name:   "iPhone 8",
+				ID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				Status: "Shutdown",
+				OS:     "16.0",
+			},
+		},
+		{
+			name: "explicit OS version with unused bugfix version",
 			wantedDevice: Simulator{
 				Platform: "iOS Simulator",
 				OS:       "16.0.1",

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/errorutil"
+	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/hashicorp/go-version"
@@ -57,7 +58,8 @@ type deviceRuntime struct {
 	Identifier  string `json:"identifier"`
 	Platform    string `json:"platform"`
 	Version     string `json:"version"`
-	IsAvailable bool   `json:"isAvailable,omitempty"`
+	IsAvailable bool   `json:"isAvailable"`
+	Name        string `json:"name"`
 }
 
 /*
@@ -191,11 +193,45 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 	return Device{}, fmt.Errorf("device type (%s) with runtime OS (%s) is unavailable", wantedDevice.Name, runtime.Version)
 }
 
+func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Version) bool {
+	wantVersionSegments := wantVersion.Segments()
+	runtimeVersionSegments := runtimeVersion.Segments()
+
+	for i := 0; i < 2 && i < len(wantVersionSegments); i++ {
+		if wantVersionSegments[i] != runtimeVersionSegments[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 	var allVersions []deviceRuntime
 
 	for _, runtime := range d.list.Runtimes {
-		if runtime.Platform == wanted.Platform && runtime.IsAvailable {
+
+		if !runtime.IsAvailable {
+			continue
+		}
+
+		if runtime.Platform != "" && runtime.Platform == wanted.Platform {
+			allVersions = append(allVersions, runtime)
+
+			continue
+		}
+
+		// using HasPrefix to ignore version in the name added by Xcode 11
+		/*{
+			"bundlePath" : "\/Library\/Developer\/CoreSimulator\/Profiles\/Runtimes\/iOS 13.1.simruntime",
+			"buildversion" : "17A844",
+			"runtimeRoot" : "\/Library\/Developer\/CoreSimulator\/Profiles\/Runtimes\/iOS 13.1.simruntime\/Contents\/Resources\/RuntimeRoot",
+			"identifier" : "com.apple.CoreSimulator.SimRuntime.iOS-13-1",
+			"version" : "13.1",
+			"isAvailable" : true,
+			"name" : "iOS 13.1"
+		},*/
+		if runtime.Platform == "" && strings.HasPrefix(runtime.Name, wanted.Platform) {
 			allVersions = append(allVersions, runtime)
 		}
 	}
@@ -205,31 +241,49 @@ func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 	}
 
 	wantLatest := wanted.OS == "latest"
-	if !wantLatest {
+	if wantLatest {
+		var (
+			latestVersion *version.Version
+			latestRuntime deviceRuntime = allVersions[0]
+		)
+
 		for _, runtime := range allVersions {
-			if runtime.Version == wanted.OS {
-				return runtime, nil
+			version, err := version.NewVersion(runtime.Version)
+			if err != nil {
+				return deviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", version, err)
+			}
+
+			if latestVersion == nil || version.GreaterThan(latestVersion) {
+				latestVersion = version
+				latestRuntime = runtime
 			}
 		}
 
-		return deviceRuntime{}, fmt.Errorf("runtime OS (%s) on platform (%s) is unavailable", wanted.OS, wanted.Platform)
+		return latestRuntime, nil
 	}
 
-	var (
-		latestVersion *version.Version
-		latestRuntime deviceRuntime
-	)
+	wantVersion, err := version.NewVersion(wanted.OS)
+	if err != nil {
+		return deviceRuntime{}, fmt.Errorf("invalid Simulator version (%s) provided: %w", wanted.OS, err)
+	}
+
 	for _, runtime := range allVersions {
-		version, err := version.NewVersion(runtime.Version)
+		runtimeVersion, err := version.NewVersion(runtime.Version)
 		if err != nil {
-			return deviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", version, err)
+			return deviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
 		}
 
-		if latestVersion == nil || version.GreaterThan(latestVersion) {
-			latestVersion = version
-			latestRuntime = runtime
+		runtimeSegments := runtimeVersion.Segments()
+		if len(runtimeSegments) < 2 {
+			log.Warnf("no minor version found in Simulator version (%s)", runtime.Version)
+			continue
+		}
+
+		isEqualVersion := isEqualVersion(wantVersion, runtimeVersion)
+		if isEqualVersion {
+			return runtime, nil
 		}
 	}
 
-	return latestRuntime, nil
+	return deviceRuntime{}, fmt.Errorf("runtime OS (%s) on platform (%s) is unavailable", wanted.OS, wanted.Platform)
 }
