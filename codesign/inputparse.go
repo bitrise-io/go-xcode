@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bitrise-io/go-utils/log"
+
 	"github.com/bitrise-io/go-xcode/devportalservice"
 
 	"github.com/bitrise-io/go-utils/retry"
@@ -77,7 +79,12 @@ func ParseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 			return nil, fmt.Errorf("API key download error: %s", err)
 		}
 
-		defer resp.Body.Close()
+		defer func(Body io.ReadCloser) {
+			err := Body.Close()
+			if err != nil {
+				log.Errorf(err.Error())
+			}
+		}(resp.Body)
 		if resp.StatusCode != http.StatusOK {
 			return nil, fmt.Errorf("API key HTTP response %d: %s", resp.StatusCode, resp.Body)
 		}
