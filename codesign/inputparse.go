@@ -68,6 +68,7 @@ func ParseConfig(input Input, cmdFactory command.Factory) (Config, error) {
 	}, nil
 }
 
+// ParseConnectionOverrideConfig validates and parses the step input-level connection parameters
 func ParseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssuerID string) (*devportalservice.APIKeyConnection, error) {
 	var key []byte
 	if strings.HasPrefix(string(keyPathOrURL), "https://") {
