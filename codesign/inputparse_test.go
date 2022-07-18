@@ -211,7 +211,7 @@ func Test_ParseConnectionOverrideConfig(t *testing.T) {
 	keyIssuerID := "   ABC456 "
 
 	// When
-	connection, err := ParseConnectionOverrideConfig(stepconf.Secret(path), keyID, keyIssuerID)
+	connection, err := parseConnectionOverrideConfig(stepconf.Secret(path), keyID, keyIssuerID)
 	if err != nil {
 		t.Errorf(err.Error())
 	}

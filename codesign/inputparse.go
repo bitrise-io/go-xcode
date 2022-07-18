@@ -37,6 +37,14 @@ type Input struct {
 	FallbackProvisioningProfiles string
 }
 
+// ConnectionOverrideInputs are used in steps to control the API key based auth credentials
+// This overrides the global API connection defined on Bitrise.io
+type ConnectionOverrideInputs struct {
+	APIKeyPath     stepconf.Secret
+	APIKeyID       string
+	APIKeyIssuerID string
+}
+
 // Config ...
 type Config struct {
 	CertificatesAndPassphrases   []certdownloader.CertificateAndPassphrase
@@ -70,8 +78,8 @@ func ParseConfig(input Input, cmdFactory command.Factory) (Config, error) {
 	}, nil
 }
 
-// ParseConnectionOverrideConfig validates and parses the step input-level connection parameters
-func ParseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssuerID string) (*devportalservice.APIKeyConnection, error) {
+// parseConnectionOverrideConfig validates and parses the step input-level connection parameters
+func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssuerID string) (*devportalservice.APIKeyConnection, error) {
 	var key []byte
 	if strings.HasPrefix(string(keyPathOrURL), "https://") {
 		resp, err := retry.NewHTTPClient().Get(string(keyPathOrURL))

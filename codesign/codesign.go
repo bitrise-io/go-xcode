@@ -52,6 +52,7 @@ type Manager struct {
 	opts Opts
 
 	appleAuthCredentials      appleauth.Credentials
+	bitriseTestDevices        []devportalservice.TestDevice
 	devPortalClientFactory    devportalclient.Factory
 	certDownloader            autocodesign.CertificateProvider
 	fallbackProfileDownloader autocodesign.ProfileProvider
@@ -68,6 +69,7 @@ type Manager struct {
 func NewManagerWithArchive(
 	opts Opts,
 	appleAuth appleauth.Credentials,
+	bitriseTestDevices []devportalservice.TestDevice,
 	clientFactory devportalclient.Factory,
 	certDownloader autocodesign.CertificateProvider,
 	fallbackProfileDownloader autocodesign.ProfileProvider,
@@ -79,6 +81,7 @@ func NewManagerWithArchive(
 	return Manager{
 		opts:                      opts,
 		appleAuthCredentials:      appleAuth,
+		bitriseTestDevices:        bitriseTestDevices,
 		devPortalClientFactory:    clientFactory,
 		certDownloader:            certDownloader,
 		fallbackProfileDownloader: fallbackProfileDownloader,
@@ -93,6 +96,7 @@ func NewManagerWithArchive(
 func NewManagerWithProject(
 	opts Opts,
 	appleAuth appleauth.Credentials,
+	bitriseTestDevices []devportalservice.TestDevice,
 	clientFactory devportalclient.Factory,
 	certDownloader autocodesign.CertificateProvider,
 	fallbackProfileDownloader autocodesign.ProfileProvider,
@@ -104,6 +108,7 @@ func NewManagerWithProject(
 	return Manager{
 		opts:                      opts,
 		appleAuthCredentials:      appleAuth,
+		bitriseTestDevices:        bitriseTestDevices,
 		devPortalClientFactory:    clientFactory,
 		certDownloader:            certDownloader,
 		fallbackProfileDownloader: fallbackProfileDownloader,
@@ -129,7 +134,7 @@ type AssetWriter interface {
 
 // PrepareCodesigning selects a suitable code signing strategy based on the step and project configuration,
 // then downloads code signing assets (profiles, certificates) and registers test devices if needed
-func (m *Manager) PrepareCodesigning(testDevices []devportalservice.TestDevice) (*devportalservice.APIKeyConnection, error) {
+func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, error) {
 	strategy, reason, err := m.selectCodeSigningStrategy(m.appleAuthCredentials)
 	if err != nil {
 		m.logger.Warnf("%s", err)
@@ -159,8 +164,8 @@ func (m *Manager) PrepareCodesigning(testDevices []devportalservice.TestDevice) 
 			}
 
 			needsTestDevices := autocodesign.DistributionTypeRequiresDeviceList([]autocodesign.DistributionType{m.opts.ExportMethod})
-			if needsTestDevices && m.opts.RegisterTestDevices && len(testDevices) != 0 {
-				if err := m.registerTestDevices(m.appleAuthCredentials, testDevices); err != nil {
+			if needsTestDevices && m.opts.RegisterTestDevices && len(m.bitriseTestDevices) != 0 {
+				if err := m.registerTestDevices(m.appleAuthCredentials, m.bitriseTestDevices); err != nil {
 					return nil, err
 				}
 			}
@@ -172,7 +177,7 @@ func (m *Manager) PrepareCodesigning(testDevices []devportalservice.TestDevice) 
 			m.logger.Println()
 			m.logger.Infof("Code signing asset management by Bitrise")
 			m.logger.Printf("Reason: %s", reason)
-			if err := m.prepareCodeSigningWithBitrise(m.appleAuthCredentials, testDevices); err != nil {
+			if err := m.prepareCodeSigningWithBitrise(m.appleAuthCredentials, m.bitriseTestDevices); err != nil {
 				return nil, err
 			}
 
@@ -183,48 +188,61 @@ func (m *Manager) PrepareCodesigning(testDevices []devportalservice.TestDevice) 
 	}
 }
 
-// SelectConnectionCredentials ...
-func SelectConnectionCredentials(authType AuthType, conn *devportalservice.AppleDeveloperConnection, logger log.Logger) (appleauth.Credentials, error) {
-	var authSource appleauth.Source
+// SelectConnectionCredentials selects the final credentials for Apple services based on:
+// - connections set up on Bitrise.io (globally for app)
+// - step inputs for overriding the global config
+func SelectConnectionCredentials(
+	authType AuthType,
+	bitriseConnection *devportalservice.AppleDeveloperConnection,
+	inputs ConnectionOverrideInputs, logger log.Logger) (appleauth.Credentials, error) {
+	if authType == APIKeyAuth && inputs.APIKeyPath != "" && inputs.APIKeyIssuerID != "" && inputs.APIKeyID != "" {
+		logger.Infof("Overriding App Store Connect API connection with step-provided credentials (api_key_path, api_key_id, api_key_issuer_id)")
 
-	switch authType {
-	case APIKeyAuth:
-		authSource = &appleauth.ConnectionAPIKeySource{}
-	case AppleIDAuth:
-		authSource = &appleauth.ConnectionAppleIDFastlaneSource{}
-	default:
-		panic("missing implementation")
+		config, err := parseConnectionOverrideConfig(inputs.APIKeyPath, inputs.APIKeyID, inputs.APIKeyIssuerID)
+		if err != nil {
+			return appleauth.Credentials{}, err
+		}
+		return appleauth.Credentials{
+			APIKey:  config,
+			AppleID: nil,
+		}, nil
 	}
 
-	authConfig, err := appleauth.Select(conn, []appleauth.Source{authSource}, appleauth.Inputs{})
-	if err != nil {
-		if conn != nil && conn.APIKeyConnection == nil && conn.AppleIDConnection == nil {
-			fmt.Println()
-			logger.Warnf("%s", devportalclient.NotConnectedWarning)
-		}
-
-		if errors.Is(err, &appleauth.MissingAuthConfigError{}) {
-			if authType == AppleIDAuth {
-				return appleauth.Credentials{}, fmt.Errorf("Apple ID authentication is selected in Step inputs, but Bitrise Apple Service connection is unset")
-			}
-
+	if authType == APIKeyAuth {
+		if bitriseConnection.APIKeyConnection == nil {
 			return appleauth.Credentials{}, fmt.Errorf("API key authentication is selected in Step inputs, but Bitrise Apple Service connection is unset")
 		}
 
-		return appleauth.Credentials{}, fmt.Errorf("could not select Apple authentication credentials: %w", err)
-	}
-
-	if authConfig.APIKey != nil {
-		authConfig.AppleID = nil
 		logger.Donef("Using Apple Service connection with API key.")
-	} else if authConfig.AppleID != nil {
-		authConfig.APIKey = nil
-		logger.Donef("Using Apple Service connection with Apple ID.")
-	} else {
-		panic("No Apple authentication credentials found.")
+		return appleauth.Credentials{
+			APIKey:  bitriseConnection.APIKeyConnection,
+			AppleID: nil,
+		}, nil
 	}
 
-	return authConfig, nil
+	if authType == AppleIDAuth {
+		if bitriseConnection.AppleIDConnection == nil {
+			return appleauth.Credentials{}, fmt.Errorf("Apple ID authentication is selected in Step inputs, but Bitrise Apple Service connection is unset")
+		}
+
+		session, err := bitriseConnection.AppleIDConnection.FastlaneLoginSession()
+		if err != nil {
+			return appleauth.Credentials{}, err
+		}
+
+		logger.Donef("Using Apple Service connection with Apple ID.")
+		return appleauth.Credentials{
+			AppleID: &appleauth.AppleID{
+				Username:            bitriseConnection.AppleIDConnection.AppleID,
+				Password:            bitriseConnection.AppleIDConnection.Password,
+				Session:             session,
+				AppSpecificPassword: bitriseConnection.AppleIDConnection.AppSpecificPassword,
+			},
+			APIKey: nil,
+		}, nil
+	}
+
+	return appleauth.Credentials{}, errors.New(devportalclient.NotConnectedWarning)
 }
 
 func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials) (codeSigningStrategy, string, error) {
