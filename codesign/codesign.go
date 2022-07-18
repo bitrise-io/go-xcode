@@ -52,7 +52,6 @@ type Manager struct {
 	opts Opts
 
 	appleAuthCredentials      appleauth.Credentials
-	bitriseConnection         *devportalservice.AppleDeveloperConnection
 	devPortalClientFactory    devportalclient.Factory
 	certDownloader            autocodesign.CertificateProvider
 	fallbackProfileDownloader autocodesign.ProfileProvider
@@ -69,7 +68,6 @@ type Manager struct {
 func NewManagerWithArchive(
 	opts Opts,
 	appleAuth appleauth.Credentials,
-	connection *devportalservice.AppleDeveloperConnection,
 	clientFactory devportalclient.Factory,
 	certDownloader autocodesign.CertificateProvider,
 	fallbackProfileDownloader autocodesign.ProfileProvider,
@@ -81,7 +79,6 @@ func NewManagerWithArchive(
 	return Manager{
 		opts:                      opts,
 		appleAuthCredentials:      appleAuth,
-		bitriseConnection:         connection,
 		devPortalClientFactory:    clientFactory,
 		certDownloader:            certDownloader,
 		fallbackProfileDownloader: fallbackProfileDownloader,
@@ -108,7 +105,6 @@ func NewManagerWithProject(
 	return Manager{
 		opts:                      opts,
 		appleAuthCredentials:      appleAuth,
-		bitriseConnection:         connection,
 		devPortalClientFactory:    clientFactory,
 		certDownloader:            certDownloader,
 		fallbackProfileDownloader: fallbackProfileDownloader,
@@ -134,7 +130,7 @@ type AssetWriter interface {
 
 // PrepareCodesigning selects a suitable code signing strategy based on the step and project configuration,
 // then downloads code signing assets (profiles, certificates) and registers test devices if needed
-func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, error) {
+func (m *Manager) PrepareCodesigning(testDevices []devportalservice.TestDevice) (*devportalservice.APIKeyConnection, error) {
 	strategy, reason, err := m.selectCodeSigningStrategy(m.appleAuthCredentials)
 	if err != nil {
 		m.logger.Warnf("%s", err)
@@ -164,8 +160,8 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 			}
 
 			needsTestDevices := autocodesign.DistributionTypeRequiresDeviceList([]autocodesign.DistributionType{m.opts.ExportMethod})
-			if needsTestDevices && m.opts.RegisterTestDevices && m.bitriseConnection != nil && len(m.bitriseConnection.TestDevices) != 0 {
-				if err := m.registerTestDevices(m.appleAuthCredentials, m.bitriseConnection.TestDevices); err != nil {
+			if needsTestDevices && m.opts.RegisterTestDevices && len(testDevices) != 0 {
+				if err := m.registerTestDevices(m.appleAuthCredentials, testDevices); err != nil {
 					return nil, err
 				}
 			}
@@ -177,7 +173,7 @@ func (m *Manager) PrepareCodesigning() (*devportalservice.APIKeyConnection, erro
 			m.logger.Println()
 			m.logger.Infof("Code signing asset management by Bitrise")
 			m.logger.Printf("Reason: %s", reason)
-			if err := m.prepareCodeSigningWithBitrise(m.appleAuthCredentials); err != nil {
+			if err := m.prepareCodeSigningWithBitrise(m.appleAuthCredentials, testDevices); err != nil {
 				return nil, err
 			}
 
@@ -339,7 +335,7 @@ func (m *Manager) registerTestDevices(credentials appleauth.Credentials, devices
 	return nil
 }
 
-func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credentials) error {
+func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credentials, testDevices []devportalservice.TestDevice) error {
 	// Analyze project
 	fmt.Println()
 	m.logger.TDebugf("Analyzing project")
@@ -368,15 +364,15 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 	manager := autocodesign.NewCodesignAssetManager(devPortalClient, m.assetInstaller, m.localCodeSignAssetManager)
 
 	// Fetch and apply codesigning assets
-	var testDevices []devportalservice.TestDevice
-	if m.opts.RegisterTestDevices && m.bitriseConnection != nil {
-		testDevices = m.bitriseConnection.TestDevices
+	var testDevicesToRegister []devportalservice.TestDevice
+	if m.opts.RegisterTestDevices {
+		testDevicesToRegister = testDevices
 	}
 
 	codesignAssetsByDistributionType, err := manager.EnsureCodesignAssets(appLayout, autocodesign.CodesignAssetsOpts{
 		DistributionType:        m.opts.ExportMethod,
 		TypeToLocalCertificates: typeToLocalCerts,
-		BitriseTestDevices:      testDevices,
+		BitriseTestDevices:      testDevicesToRegister,
 		MinProfileValidityDays:  m.opts.MinDaysProfileValidity,
 		VerboseLog:              m.opts.IsVerboseLog,
 	})
