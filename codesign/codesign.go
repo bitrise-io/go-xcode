@@ -93,7 +93,6 @@ func NewManagerWithArchive(
 func NewManagerWithProject(
 	opts Opts,
 	appleAuth appleauth.Credentials,
-	connection *devportalservice.AppleDeveloperConnection,
 	clientFactory devportalclient.Factory,
 	certDownloader autocodesign.CertificateProvider,
 	fallbackProfileDownloader autocodesign.ProfileProvider,
