@@ -1,7 +1,6 @@
 package codesign
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/bitrise-io/go-utils/v2/log"
@@ -198,7 +197,7 @@ func SelectConnectionCredentials(
 	if authType == APIKeyAuth && inputs.APIKeyPath != "" && inputs.APIKeyIssuerID != "" && inputs.APIKeyID != "" {
 		logger.Infof("Overriding App Store Connect API connection with step-provided credentials (api_key_path, api_key_id, api_key_issuer_id)")
 
-		config, err := parseConnectionOverrideConfig(inputs.APIKeyPath, inputs.APIKeyID, inputs.APIKeyIssuerID)
+		config, err := parseConnectionOverrideConfig(inputs.APIKeyPath, inputs.APIKeyID, inputs.APIKeyIssuerID, logger)
 		if err != nil {
 			return appleauth.Credentials{}, err
 		}
