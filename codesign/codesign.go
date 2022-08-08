@@ -244,7 +244,7 @@ func SelectConnectionCredentials(
 		}, nil
 	}
 
-	return appleauth.Credentials{}, errors.New(devportalclient.NotConnectedWarning)
+	panic("Unexpected AuthType")
 }
 
 func (m *Manager) selectCodeSigningStrategy(credentials appleauth.Credentials) (codeSigningStrategy, string, error) {
