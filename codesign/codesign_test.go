@@ -2,9 +2,13 @@ package codesign
 
 import (
 	"errors"
+	"io/ioutil"
+	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
+	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/certificateutil"
@@ -183,4 +187,196 @@ func generateCert(t *testing.T, commonName string) certificateutil.CertificateIn
 	}
 
 	return certificateutil.NewCertificateInfo(*cert, privateKey)
+}
+
+func TestSelectConnectionCredentials(t *testing.T) {
+	testApiKeyConnection := devportalservice.APIKeyConnection{
+		KeyID:      "TestKeyID",
+		IssuerID:   "TestIssuerID",
+		PrivateKey: "test private key contents",
+	}
+	testAppleIDConnection := devportalservice.AppleIDConnection{
+		AppleID:             "test@bitrise.io",
+		Password:            "testpw",
+		AppSpecificPassword: "testapppw",
+		SessionExpiryDate:   nil,
+		SessionCookies:      nil,
+	}
+
+	localKeyPath := filepath.Join(t.TempDir(), "key.p8")
+	err := ioutil.WriteFile(localKeyPath, []byte("private key contents"), 0700)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	testInputs := ConnectionOverrideInputs{
+		APIKeyPath:     stepconf.Secret(localKeyPath),
+		APIKeyID:       "TestKeyIDFromInput",
+		APIKeyIssuerID: "TestKeyIssuerIDFromInput",
+	}
+	testNoInputs := ConnectionOverrideInputs{}
+
+	tests := []struct {
+		name              string
+		authType          AuthType
+		bitriseConnection *devportalservice.AppleDeveloperConnection
+		inputs            ConnectionOverrideInputs
+		want              appleauth.Credentials
+		wantErr           bool
+	}{
+		{
+			name:              "API key auth with nil Bitrise connection",
+			authType:          APIKeyAuth,
+			bitriseConnection: nil,
+			inputs:            testNoInputs,
+			wantErr:           true,
+		},
+		{
+			name:     "API key auth type with valid Bitrise connection",
+			authType: APIKeyAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     nil,
+				APIKeyConnection:      &testApiKeyConnection,
+				TestDevices:           []devportalservice.TestDevice{},
+				DuplicatedTestDevices: []devportalservice.TestDevice{},
+			},
+			inputs: testNoInputs,
+			want: appleauth.Credentials{
+				AppleID: nil,
+				APIKey:  &testApiKeyConnection,
+			},
+		},
+		{
+			name:     "API key auth type without valid Bitrise connection",
+			authType: APIKeyAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     nil,
+				APIKeyConnection:      nil,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs:  testNoInputs,
+			wantErr: true,
+		},
+		{
+			name:     "API key auth type without valid Bitrise connection but input overrides",
+			authType: APIKeyAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     nil,
+				APIKeyConnection:      nil,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs: testInputs,
+			want: appleauth.Credentials{
+				AppleID: nil,
+				APIKey: &devportalservice.APIKeyConnection{
+					KeyID:      "TestKeyIDFromInput",
+					IssuerID:   "TestKeyIssuerIDFromInput",
+					PrivateKey: "private key contents",
+				},
+			},
+		},
+		{
+			name:     "API key auth type with valid Bitrise connection and input overrides",
+			authType: APIKeyAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     nil,
+				APIKeyConnection:      &testApiKeyConnection,
+				TestDevices:           []devportalservice.TestDevice{},
+				DuplicatedTestDevices: []devportalservice.TestDevice{},
+			},
+			inputs: testInputs,
+			want: appleauth.Credentials{
+				AppleID: nil,
+				APIKey: &devportalservice.APIKeyConnection{
+					KeyID:      "TestKeyIDFromInput",
+					IssuerID:   "TestKeyIssuerIDFromInput",
+					PrivateKey: "private key contents",
+				},
+			},
+		},
+		{
+			name:              "Apple ID auth type with nil Bitrise connection",
+			authType:          AppleIDAuth,
+			bitriseConnection: nil,
+			inputs:            testNoInputs,
+			wantErr:           true,
+		},
+		{
+			name:     "Apple ID auth type without valid Bitrise connection and input overrides for API key params",
+			authType: AppleIDAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     nil,
+				APIKeyConnection:      nil,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs:  testInputs,
+			wantErr: true,
+		},
+		{
+			name:     "Apple ID auth type with valid Bitrise connection and input overrides for API key params",
+			authType: AppleIDAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     &testAppleIDConnection,
+				APIKeyConnection:      nil,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs: testInputs,
+			want: appleauth.Credentials{
+				AppleID: &appleauth.AppleID{
+					Username:            "test@bitrise.io",
+					Password:            "testpw",
+					Session:             "",
+					AppSpecificPassword: "testapppw",
+				},
+				APIKey: nil,
+			},
+		},
+		{
+			name:     "Apple ID auth type with valid Bitrise connection",
+			authType: AppleIDAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     &testAppleIDConnection,
+				APIKeyConnection:      &testApiKeyConnection,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs: testNoInputs,
+			want: appleauth.Credentials{
+				AppleID: &appleauth.AppleID{
+					Username:            "test@bitrise.io",
+					Password:            "testpw",
+					Session:             "",
+					AppSpecificPassword: "testapppw",
+				},
+				APIKey: nil,
+			},
+		},
+		{
+			name:     "Apple ID auth type without valid Bitrise connection",
+			authType: AppleIDAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     nil,
+				APIKeyConnection:      nil,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs:  testNoInputs,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := SelectConnectionCredentials(tt.authType, tt.bitriseConnection, tt.inputs, log.NewLogger())
+			if (err != nil) != tt.wantErr {
+				t.Errorf("SelectConnectionCredentials() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("SelectConnectionCredentials() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
