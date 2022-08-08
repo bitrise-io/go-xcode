@@ -209,7 +209,8 @@ func SelectConnectionCredentials(
 	}
 
 	if authType == APIKeyAuth {
-		if bitriseConnection.APIKeyConnection == nil {
+		if bitriseConnection == nil || bitriseConnection.APIKeyConnection == nil {
+			logger.Errorf(devportalclient.NotConnectedWarning)
 			return appleauth.Credentials{}, fmt.Errorf("API key authentication is selected in Step inputs, but Bitrise Apple Service connection is unset")
 		}
 
@@ -221,7 +222,8 @@ func SelectConnectionCredentials(
 	}
 
 	if authType == AppleIDAuth {
-		if bitriseConnection.AppleIDConnection == nil {
+		if bitriseConnection == nil || bitriseConnection.AppleIDConnection == nil {
+			logger.Errorf(devportalclient.NotConnectedWarning)
 			return appleauth.Credentials{}, fmt.Errorf("Apple ID authentication is selected in Step inputs, but Bitrise Apple Service connection is unset")
 		}
 
