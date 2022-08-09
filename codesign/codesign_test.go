@@ -190,7 +190,7 @@ func generateCert(t *testing.T, commonName string) certificateutil.CertificateIn
 }
 
 func TestSelectConnectionCredentials(t *testing.T) {
-	testApiKeyConnection := devportalservice.APIKeyConnection{
+	testAPIKeyConnection := devportalservice.APIKeyConnection{
 		KeyID:      "TestKeyID",
 		IssuerID:   "TestIssuerID",
 		PrivateKey: "test private key contents",
@@ -235,14 +235,14 @@ func TestSelectConnectionCredentials(t *testing.T) {
 			authType: APIKeyAuth,
 			bitriseConnection: &devportalservice.AppleDeveloperConnection{
 				AppleIDConnection:     nil,
-				APIKeyConnection:      &testApiKeyConnection,
+				APIKeyConnection:      &testAPIKeyConnection,
 				TestDevices:           []devportalservice.TestDevice{},
 				DuplicatedTestDevices: []devportalservice.TestDevice{},
 			},
 			inputs: testNoInputs,
 			want: appleauth.Credentials{
 				AppleID: nil,
-				APIKey:  &testApiKeyConnection,
+				APIKey:  &testAPIKeyConnection,
 			},
 		},
 		{
@@ -281,7 +281,7 @@ func TestSelectConnectionCredentials(t *testing.T) {
 			authType: APIKeyAuth,
 			bitriseConnection: &devportalservice.AppleDeveloperConnection{
 				AppleIDConnection:     nil,
-				APIKeyConnection:      &testApiKeyConnection,
+				APIKeyConnection:      &testAPIKeyConnection,
 				TestDevices:           []devportalservice.TestDevice{},
 				DuplicatedTestDevices: []devportalservice.TestDevice{},
 			},
@@ -339,7 +339,7 @@ func TestSelectConnectionCredentials(t *testing.T) {
 			authType: AppleIDAuth,
 			bitriseConnection: &devportalservice.AppleDeveloperConnection{
 				AppleIDConnection:     &testAppleIDConnection,
-				APIKeyConnection:      &testApiKeyConnection,
+				APIKeyConnection:      &testAPIKeyConnection,
 				TestDevices:           nil,
 				DuplicatedTestDevices: nil,
 			},
