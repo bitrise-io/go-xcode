@@ -195,7 +195,7 @@ func SelectConnectionCredentials(
 	bitriseConnection *devportalservice.AppleDeveloperConnection,
 	inputs ConnectionOverrideInputs, logger log.Logger) (appleauth.Credentials, error) {
 	if authType == APIKeyAuth && inputs.APIKeyPath != "" && inputs.APIKeyIssuerID != "" && inputs.APIKeyID != "" {
-		logger.Infof("Overriding App Store Connect API connection with step-provided credentials (api_key_path, api_key_id, api_key_issuer_id)")
+		logger.Infof("Overriding Bitrise Apple Service connection with Step-provided credentials (api_key_path, api_key_id, api_key_issuer_id)")
 
 		config, err := parseConnectionOverrideConfig(inputs.APIKeyPath, inputs.APIKeyID, inputs.APIKeyIssuerID, logger)
 		if err != nil {
