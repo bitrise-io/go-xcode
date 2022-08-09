@@ -99,10 +99,14 @@ func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 			return nil, err
 		}
 	} else {
+		trimmedPath := string(keyPathOrURL)
+		if strings.HasPrefix(string(keyPathOrURL), "file://") {
+			trimmedPath = strings.TrimPrefix(string(keyPathOrURL), "file://")
+		}
 		var err error
-		key, err = os.ReadFile(string(keyPathOrURL))
+		key, err = os.ReadFile(trimmedPath)
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("private key does not exist at %s", keyPathOrURL)
+			return nil, fmt.Errorf("private key does not exist at %s", trimmedPath)
 		} else if err != nil {
 			return nil, err
 		}
