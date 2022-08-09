@@ -2,11 +2,15 @@ package codesign
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 
+	"github.com/bitrise-io/go-steputils/v2/stepconf"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
 	"github.com/stretchr/testify/require"
 )
@@ -192,4 +196,31 @@ func Test_validateAndExpandProfilePaths(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func Test_ParseConnectionOverrideConfig(t *testing.T) {
+	// Given
+	path := filepath.Join(t.TempDir(), "private_key.p8")
+	fileContent := "this is a private key"
+	err := ioutil.WriteFile(path, []byte(fileContent), 0666)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	keyID := " ABC123   "
+	keyIssuerID := "   ABC456 "
+
+	// When
+	connection, err := parseConnectionOverrideConfig(stepconf.Secret(path), keyID, keyIssuerID, log.NewLogger())
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	// Then
+	expected := devportalservice.APIKeyConnection{
+		KeyID:      "ABC123",
+		IssuerID:   "ABC456",
+		PrivateKey: fileContent,
+	}
+	require.Equal(t, expected, *connection)
 }
