@@ -145,6 +145,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 func Test_deviceFinder_FindDevice_realXcrun(t *testing.T) {
 	commandFactory := command.NewFactory(env.NewRepository())
 	logger := log.NewLogger()
+	logger.EnableDebugLog(true)
 
 	d := deviceFinder{
 		logger:         logger,
@@ -154,9 +155,11 @@ func Test_deviceFinder_FindDevice_realXcrun(t *testing.T) {
 	got, err := d.FindDevice(Simulator{
 		Platform: "iOS Simulator",
 		OS:       "latest",
-		Name:     "iPhone 8",
+		Name:     "iPhone Xs",
 	})
 
 	require.NoError(t, err)
 	require.NotEmpty(t, got.ID)
+
+	t.Logf("got: %+v", got)
 }

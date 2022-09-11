@@ -1,6 +1,7 @@
 package destination
 
 import (
+	"errors"
 	"time"
 
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -38,7 +39,6 @@ func NewDeviceFinder(log log.Logger, commandFactory command.Factory) DeviceFinde
 // GetSimulator returns a Simulator matching the destination
 func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 	start := time.Now()
-
 	if d.list == nil {
 		list, err := d.parseDeviceList()
 		if err != nil {
@@ -49,13 +49,32 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 	}
 
 	device, err := d.filterDeviceList(destination)
-	if err != nil {
+	d.logger.TDebugf("Parsed simulator list in %s", time.Since(start).Round(time.Second))
+	if err == nil {
+		return device, nil
+	}
+
+	var misingErr *missingDeviceErr
+	if err != nil && !errors.As(err, &misingErr) {
 		if err := d.debugDeviceList(); err != nil {
 			d.logger.Warnf("failed to log device list: %s", err)
 		}
+
+		return Device{}, err
 	}
 
-	d.logger.TDebugf("Parsed simulator list in %s", time.Since(start).Round(time.Second))
+	start = time.Now()
+	err = d.createDevice(misingErr.name, misingErr.deviceTypeID, misingErr.runtimeID)
+	d.logger.Debugf("Created device in %s", time.Since(start).Round(time.Second))
+	if err != nil {
+		return Device{}, err
+	}
 
-	return device, err
+	list, err := d.parseDeviceList()
+	if err != nil {
+		return Device{}, err
+	}
+	d.list = &list
+
+	return d.filterDeviceList(destination)
 }
