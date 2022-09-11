@@ -1,7 +1,6 @@
 package destination
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -110,18 +109,22 @@ type deviceList struct {
 
 func (d deviceFinder) createDevice(name, deviceTypeID, runtimeID string) error {
 	var (
-		out       bytes.Buffer
 		args      = []string{"simctl", "create", name, deviceTypeID, runtimeID}
-		createCmd = d.commandFactory.Create("xcrun", args, &command.Opts{
-			Stdout: &out,
-			Stderr: os.Stderr,
-		})
+		createCmd = d.commandFactory.Create("xcrun", args, &command.Opts{})
 	)
 
 	d.logger.Println()
-	d.logger.Donef("$ %s", createCmd.PrintableCommandArgs())
+	d.logger.TDonef("$ %s", createCmd.PrintableCommandArgs())
 
-	return createCmd.Run()
+	if out, err := createCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		if errorutil.IsExitStatusError(err) {
+			return fmt.Errorf("device create command failed: %s", out)
+		}
+
+		return fmt.Errorf("failed to run device create command: %s", err)
+	}
+
+	return nil
 }
 
 func (d deviceFinder) debugDeviceList() error {
@@ -194,25 +197,6 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 		return Device{}, fmt.Errorf("runtime (%s) not found", runtimeID)
 	}
 
-	if len(d.list.DeviceTypes) == 0 { // Device types not available with Xcode 11
-		for _, device := range devices {
-			if device.Name == wantedDevice.Name {
-				if !device.IsAvailable {
-					return Device{}, fmt.Errorf("device type (%s) with runtime OS (%s) is unavailable: %s", wantedDevice.Name, runtime.Version, device.AvailabilityError)
-				}
-
-				return Device{
-					Name:   device.Name,
-					ID:     device.UDID,
-					Status: device.State,
-					OS:     runtime.Version,
-				}, nil
-			}
-		}
-
-		return Device{}, fmt.Errorf("device type (%s) with runtime OS (%s) is unavailable", wantedDevice.Name, runtime.Version)
-	}
-
 	deviceTypeIdentifier, err := d.filterDeviceType(wantedDevice.Name)
 	if err != nil {
 		return Device{}, err
@@ -234,7 +218,7 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 	}
 
 	if !runtime.isDeviceSupported(deviceTypeIdentifier) {
-		return Device{}, fmt.Errorf("runtime (%s) does not support device (%s)", runtimeID, deviceTypeIdentifier)
+		return Device{}, fmt.Errorf("runtime (%s) is incompatible with device (%s)", runtimeID, deviceTypeIdentifier)
 	}
 
 	return Device{}, newMissingDeviceErr(wantedDevice.Name, deviceTypeIdentifier, runtimeID)
@@ -247,7 +231,7 @@ func (d deviceFinder) filterDeviceType(wantedDeviceName string) (string, error) 
 		}
 	}
 
-	return "", fmt.Errorf("device (%s) is unavailable", wantedDeviceName)
+	return "", fmt.Errorf("invalid device name (%s) provided", wantedDeviceName)
 }
 
 func (r deviceRuntime) isDeviceSupported(wantedDeviceIdentifier string) bool {

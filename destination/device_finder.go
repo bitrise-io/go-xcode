@@ -54,8 +54,9 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 		return device, nil
 	}
 
+	// err != nil
 	var misingErr *missingDeviceErr
-	if err != nil && !errors.As(err, &misingErr) {
+	if !errors.As(err, &misingErr) {
 		if err := d.debugDeviceList(); err != nil {
 			d.logger.Warnf("failed to log device list: %s", err)
 		}
@@ -64,6 +65,7 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 	}
 
 	start = time.Now()
+	d.logger.Infof("Creating missing device...")
 	err = d.createDevice(misingErr.name, misingErr.deviceTypeID, misingErr.runtimeID)
 	d.logger.Debugf("Created device in %s", time.Since(start).Round(time.Second))
 	if err != nil {
