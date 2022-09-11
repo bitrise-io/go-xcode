@@ -139,7 +139,7 @@ func (d deviceFinder) debugDeviceList() error {
 	return listCmd.Run()
 }
 
-func (d deviceFinder) parseDeviceList() (deviceList, error) {
+func (d deviceFinder) parseDeviceList() (*deviceList, error) {
 	var list deviceList
 
 	// Retry gathering device information since xcrun simctl list can fail to show the complete device list
@@ -173,10 +173,10 @@ func (d deviceFinder) parseDeviceList() (deviceList, error) {
 
 		return fmt.Errorf("no device is available")
 	}); err != nil {
-		return deviceList{}, err
+		return &deviceList{}, err
 	}
 
-	return list, nil
+	return &list, nil
 }
 
 func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
@@ -197,7 +197,7 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 		return Device{}, fmt.Errorf("runtime (%s) not found", runtimeID)
 	}
 
-	deviceTypeIdentifier, err := d.filterDeviceType(wantedDevice.Name)
+	deviceTypeIdentifier, err := d.lookupDeviceTypeID(wantedDevice.Name)
 	if err != nil {
 		return Device{}, err
 	}
@@ -224,7 +224,7 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 	return Device{}, newMissingDeviceErr(wantedDevice.Name, deviceTypeIdentifier, runtimeID)
 }
 
-func (d deviceFinder) filterDeviceType(wantedDeviceName string) (string, error) {
+func (d deviceFinder) lookupDeviceTypeID(wantedDeviceName string) (string, error) {
 	for _, dt := range d.list.DeviceTypes {
 		if dt.Name == wantedDeviceName {
 			return dt.Identifier, nil
@@ -232,20 +232,6 @@ func (d deviceFinder) filterDeviceType(wantedDeviceName string) (string, error) 
 	}
 
 	return "", fmt.Errorf("invalid device name (%s) provided", wantedDeviceName)
-}
-
-func (r deviceRuntime) isDeviceSupported(wantedDeviceIdentifier string) bool {
-	if len(r.SupportedDeviceTypes) != 0 {
-		for _, d := range r.SupportedDeviceTypes {
-			if d.Identifier == wantedDeviceIdentifier {
-				return true
-			}
-		}
-
-		return false
-	}
-
-	return true
 }
 
 func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Version) bool {
@@ -341,4 +327,18 @@ func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 	}
 
 	return deviceRuntime{}, fmt.Errorf("runtime OS (%s) on platform (%s) is unavailable", wanted.OS, wanted.Platform)
+}
+
+func (r deviceRuntime) isDeviceSupported(wantedDeviceIdentifier string) bool {
+	if len(r.SupportedDeviceTypes) != 0 {
+		for _, d := range r.SupportedDeviceTypes {
+			if d.Identifier == wantedDeviceIdentifier {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	return true
 }
