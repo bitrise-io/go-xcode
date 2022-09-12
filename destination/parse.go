@@ -55,11 +55,12 @@ type deviceType struct {
 	}, ... ]
 */
 type deviceRuntime struct {
-	Identifier  string `json:"identifier"`
-	Platform    string `json:"platform"`
-	Version     string `json:"version"`
-	IsAvailable bool   `json:"isAvailable"`
-	Name        string `json:"name"`
+	Identifier           string       `json:"identifier"`
+	Platform             string       `json:"platform"`
+	Version              string       `json:"version"`
+	IsAvailable          bool         `json:"isAvailable"`
+	Name                 string       `json:"name"`
+	SupportedDeviceTypes []deviceType `json:"supportedDeviceTypes"`
 }
 
 /*
@@ -106,6 +107,26 @@ type deviceList struct {
 	Devices     map[string][]device `json:"devices"`
 }
 
+func (d deviceFinder) createDevice(name, deviceTypeID, runtimeID string) error {
+	var (
+		args      = []string{"simctl", "create", name, deviceTypeID, runtimeID}
+		createCmd = d.commandFactory.Create("xcrun", args, &command.Opts{})
+	)
+
+	d.logger.Println()
+	d.logger.TDonef("$ %s", createCmd.PrintableCommandArgs())
+
+	if out, err := createCmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		if errorutil.IsExitStatusError(err) {
+			return fmt.Errorf("device create command failed: %s", out)
+		}
+
+		return fmt.Errorf("failed to run device create command: %s", err)
+	}
+
+	return nil
+}
+
 func (d deviceFinder) debugDeviceList() error {
 	listCmd := d.commandFactory.Create("xcrun", []string{"simctl", "list"}, &command.Opts{
 		Stdout: os.Stdout,
@@ -118,7 +139,7 @@ func (d deviceFinder) debugDeviceList() error {
 	return listCmd.Run()
 }
 
-func (d deviceFinder) parseDeviceList() (deviceList, error) {
+func (d deviceFinder) parseDeviceList() (*deviceList, error) {
 	var list deviceList
 
 	// Retry gathering device information since xcrun simctl list can fail to show the complete device list
@@ -152,10 +173,10 @@ func (d deviceFinder) parseDeviceList() (deviceList, error) {
 
 		return fmt.Errorf("no device is available")
 	}); err != nil {
-		return deviceList{}, err
+		return &deviceList{}, err
 	}
 
-	return list, nil
+	return &list, nil
 }
 
 func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
@@ -176,8 +197,13 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 		return Device{}, fmt.Errorf("runtime (%s) not found", runtimeID)
 	}
 
+	deviceTypeIdentifier, err := d.lookupDeviceTypeID(wantedDevice.Name)
+	if err != nil {
+		return Device{}, err
+	}
+
 	for _, device := range devices {
-		if device.Name == wantedDevice.Name {
+		if device.TypeIdentifier == deviceTypeIdentifier {
 			if !device.IsAvailable {
 				return Device{}, fmt.Errorf("device type (%s) with runtime OS (%s) is unavailable: %s", wantedDevice.Name, runtime.Version, device.AvailabilityError)
 			}
@@ -191,7 +217,21 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 		}
 	}
 
-	return Device{}, fmt.Errorf("device type (%s) with runtime OS (%s) is unavailable", wantedDevice.Name, runtime.Version)
+	if !runtime.isDeviceSupported(deviceTypeIdentifier) {
+		return Device{}, fmt.Errorf("runtime (%s) is incompatible with device (%s)", runtimeID, deviceTypeIdentifier)
+	}
+
+	return Device{}, newMissingDeviceErr(wantedDevice.Name, deviceTypeIdentifier, runtimeID)
+}
+
+func (d deviceFinder) lookupDeviceTypeID(wantedDeviceName string) (string, error) {
+	for _, dt := range d.list.DeviceTypes {
+		if dt.Name == wantedDeviceName {
+			return dt.Identifier, nil
+		}
+	}
+
+	return "", fmt.Errorf("invalid device name (%s) provided", wantedDeviceName)
 }
 
 func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Version) bool {
@@ -287,4 +327,18 @@ func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 	}
 
 	return deviceRuntime{}, fmt.Errorf("runtime OS (%s) on platform (%s) is unavailable", wanted.OS, wanted.Platform)
+}
+
+func (r deviceRuntime) isDeviceSupported(wantedDeviceIdentifier string) bool {
+	if len(r.SupportedDeviceTypes) != 0 {
+		for _, d := range r.SupportedDeviceTypes {
+			if d.Identifier == wantedDeviceIdentifier {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	return true
 }
