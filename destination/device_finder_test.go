@@ -1,6 +1,7 @@
 package destination
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -11,6 +12,48 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+func Test_deviceFinder_FindDevice_WhenCreateFails_ThenError(t *testing.T) {
+	// Given
+	var (
+		commandFactory = new(mocks.CommandFactory)
+		listCmd        = new(mocks.Command)
+	)
+	listCmd.On("PrintableCommandArgs").Return("xcrun simctl list --json")
+	listCmd.On("RunAndReturnTrimmedOutput").Return(testdata.DeviceList, nil)
+	commandFactory.On("Create", "xcrun", []string{"simctl", "list", "--json"}, mock.Anything).Return(listCmd)
+
+	var (
+		createCmd  = new(mocks.Command)
+		createArgs = []string{
+			"simctl",
+			"create",
+			"iPhone Xs",
+			"com.apple.CoreSimulator.SimDeviceType.iPhone-XS",
+			"com.apple.CoreSimulator.SimRuntime.iOS-16-0",
+		}
+	)
+	createCmd.On("PrintableCommandArgs").Return("xcrun simctl create")
+	createCmd.On("RunAndReturnTrimmedCombinedOutput").Return("", errors.New("create-err"))
+	commandFactory.On("Create", "xcrun", createArgs, mock.Anything).Return(createCmd)
+
+	logger := log.NewLogger()
+	d := deviceFinder{
+		logger:         logger,
+		commandFactory: commandFactory,
+	}
+
+	requiredDevice := Simulator{
+		Platform: "iOS Simulator",
+		OS:       "latest",
+		Name:     "iPhone Xs",
+	}
+
+	// When
+	_, err := d.FindDevice(requiredDevice)
+	// Then
+	require.Error(t, err)
+}
 
 func Test_deviceFinder_FindDevice(t *testing.T) {
 	command := new(mocks.Command)
@@ -48,7 +91,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			},
 		},
 		{
-			name: "device not available",
+			name: "device type not available",
 			wantedDevice: Simulator{
 				Platform: "iOS Simulator",
 				OS:       "latest",
