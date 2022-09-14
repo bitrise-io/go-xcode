@@ -122,13 +122,13 @@ func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 // parseCertificates returns an array of p12 file URLs and passphrases
 func parseCertificates(input Input) ([]certdownloader.CertificateAndPassphrase, error) {
 	if strings.TrimSpace(input.CertificateURLList) == "" {
-		return nil, fmt.Errorf("code signing certificate URL: required input is not present")
+		return nil, fmt.Errorf("code signing certificate URL is not specified")
 	}
 	if strings.TrimSpace(input.KeychainPath) == "" {
-		return nil, fmt.Errorf("keychain path: required input is not present")
+		return nil, fmt.Errorf("keychain path is not specified")
 	}
 	if strings.TrimSpace(string(input.KeychainPassword)) == "" {
-		return nil, fmt.Errorf("keychain password: required input is not present")
+		return nil, fmt.Errorf("keychain password is not specified")
 	}
 
 	pfxURLs, passphrases, err := validateCertificates(input.CertificateURLList, string(input.CertificatePassphraseList))
@@ -153,7 +153,7 @@ func validateCertificates(certURLList string, certPassphraseList string) ([]stri
 	passphrases := splitAndClean(certPassphraseList, "|", false) // allow empty items because passphrase can be empty
 
 	if len(pfxURLs) != len(passphrases) {
-		return nil, nil, fmt.Errorf("certificate count (%d) and passphrase count (%d) should match", len(pfxURLs), len(passphrases))
+		return nil, nil, fmt.Errorf("code signing certificate count (%d) and passphrase count (%d) should match", len(pfxURLs), len(passphrases))
 	}
 
 	return pfxURLs, passphrases, nil
