@@ -52,19 +52,26 @@ type Config struct {
 
 // ParseConfig validates and parses step inputs related to code signing and returns with a Config
 func ParseConfig(input Input, cmdFactory command.Factory) (Config, error) {
-	certificatesAndPassphrases, err := parseCertificates(input)
+	certificatesAndPassphrases, err := parseCertificatesAndPassphrases(input.CertificateURLList, string(input.CertificatePassphraseList))
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to parse certificate URL and passphrase inputs: %s", err)
+		return Config{}, err
+	}
+
+	if strings.TrimSpace(input.KeychainPath) == "" {
+		return Config{}, fmt.Errorf("keychain path is not specified")
+	}
+	if strings.TrimSpace(string(input.KeychainPassword)) == "" {
+		return Config{}, fmt.Errorf("keychain password is not specified")
 	}
 
 	keychainWriter, err := keychain.New(input.KeychainPath, input.KeychainPassword, cmdFactory)
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to open keychain: %s", err)
+		return Config{}, fmt.Errorf("failed to open keychain: %w", err)
 	}
 
-	fallbackProfiles, err := validateAndExpandProfilePaths(input.FallbackProvisioningProfiles)
+	fallbackProfiles, err := parseFallbackProvisioningProfiles(input.FallbackProvisioningProfiles)
 	if err != nil {
-		return Config{}, fmt.Errorf("failed to parse provisioning profiles: %w", err)
+		return Config{}, err
 	}
 
 	return Config{
@@ -119,19 +126,13 @@ func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 	}, nil
 }
 
-// parseCertificates returns an array of p12 file URLs and passphrases
-func parseCertificates(input Input) ([]certdownloader.CertificateAndPassphrase, error) {
-	if strings.TrimSpace(input.CertificateURLList) == "" {
+// parseCertificatesAndPassphrases returns an array of p12 file URLs and passphrases
+func parseCertificatesAndPassphrases(certificateURLList, certificatePassphraseList string) ([]certdownloader.CertificateAndPassphrase, error) {
+	if strings.TrimSpace(certificateURLList) == "" {
 		return nil, fmt.Errorf("code signing certificate URL is not specified")
 	}
-	if strings.TrimSpace(input.KeychainPath) == "" {
-		return nil, fmt.Errorf("keychain path is not specified")
-	}
-	if strings.TrimSpace(string(input.KeychainPassword)) == "" {
-		return nil, fmt.Errorf("keychain password is not specified")
-	}
 
-	pfxURLs, passphrases, err := validateCertificates(input.CertificateURLList, string(input.CertificatePassphraseList))
+	pfxURLs, passphrases, err := splitCertificatesAndPassphrases(certificateURLList, string(certificatePassphraseList))
 	if err != nil {
 		return nil, err
 	}
@@ -147,8 +148,8 @@ func parseCertificates(input Input) ([]certdownloader.CertificateAndPassphrase, 
 	return files, nil
 }
 
-// validateCertificates validates if the number of certificate URLs matches those of passphrases
-func validateCertificates(certURLList string, certPassphraseList string) ([]string, []string, error) {
+// splitCertificatesAndPassphrases validates if the number of certificate URLs matches those of passphrases
+func splitCertificatesAndPassphrases(certURLList string, certPassphraseList string) ([]string, []string, error) {
 	pfxURLs := splitAndClean(certURLList, "|", true)
 	passphrases := splitAndClean(certPassphraseList, "|", false) // allow empty items because passphrase can be empty
 
@@ -164,12 +165,12 @@ func splitAndClean(list string, sep string, omitEmpty bool) (items []string) {
 	return sliceutil.CleanWhitespace(strings.Split(list, sep), omitEmpty)
 }
 
-// validateAndExpandProfilePaths validates and expands profilesList.
+// parseFallbackProvisioningProfiles validates and expands profilesList.
 // profilesList must be a list of paths separated either by `|` or `\n`.
 // List items must be a remote (https://) or local (file://) file paths,
 // or a local directory (with no scheme).
 // For directory list items, the contained profiles' path will be returned.
-func validateAndExpandProfilePaths(profilesList string) ([]string, error) {
+func parseFallbackProvisioningProfiles(profilesList string) ([]string, error) {
 	profiles := splitAndClean(profilesList, "\n", true)
 	if len(profiles) == 1 {
 		profiles = splitAndClean(profiles[0], "|", true)
@@ -179,7 +180,7 @@ func validateAndExpandProfilePaths(profilesList string) ([]string, error) {
 	for _, profile := range profiles {
 		profileURL, err := url.Parse(profile)
 		if err != nil {
-			return []string{}, fmt.Errorf("invalid provisioning profile URL (%s): %w", profile, err)
+			return []string{}, fmt.Errorf("invalid provisioning profile URL specified (%s): %w", profile, err)
 		}
 
 		// When file or https scheme provided, will fetch as a file
@@ -203,14 +204,14 @@ func validateAndExpandProfilePaths(profilesList string) ([]string, error) {
 func listProfilesInDirectory(dir string) ([]string, error) {
 	exists, err := pathutil.IsDirExists(dir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check if provisioning profile path (%s) exists: %w", dir, err)
+		return nil, fmt.Errorf("failed to check if provisioning profile path exists (%s): %w", dir, err)
 	} else if !exists {
-		return nil, fmt.Errorf("please provide remote (https://) or local (file://) provisioning profile file paths with a scheme, or a local directory without a scheme: profile directory (%s) does not exist", dir)
+		return nil, fmt.Errorf("directory of provisioning profiles does not exist (%s)", dir)
 	}
 
 	dirEntries, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list profile directory: %w", err)
+		return nil, fmt.Errorf("failed to list entries of the provisioning profiles directory (%s): %w", dir, err)
 	}
 
 	var profiles []string
