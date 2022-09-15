@@ -88,7 +88,7 @@ func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 	if strings.HasPrefix(string(keyPathOrURL), "https://") {
 		resp, err := retryhttp.NewClient(logger).Get(string(keyPathOrURL))
 		if err != nil {
-			return nil, fmt.Errorf("API key download error: %s", err)
+			return nil, fmt.Errorf("failed to download App Store Connect API key: %w", err)
 		}
 
 		defer func(Body io.ReadCloser) {
@@ -98,12 +98,12 @@ func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 			}
 		}(resp.Body)
 		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("API key HTTP response %d: %s", resp.StatusCode, resp.Body)
+			return nil, fmt.Errorf("downloading App Store Connect API key failed with exit status %d: %s", resp.StatusCode, resp.Body)
 		}
 
 		key, err = io.ReadAll(resp.Body)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read App Store Connect API key download response: %w", err)
 		}
 	} else {
 		trimmedPath := string(keyPathOrURL)
@@ -113,9 +113,9 @@ func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 		var err error
 		key, err = os.ReadFile(trimmedPath)
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("private key does not exist at %s", trimmedPath)
+			return nil, fmt.Errorf("App Store Connect API does not exist at %s", trimmedPath)
 		} else if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to read App Store Connect API at %s: %w", trimmedPath, err)
 		}
 	}
 
