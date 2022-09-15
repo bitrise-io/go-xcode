@@ -123,7 +123,7 @@ func TestParseCertificates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseCertificates(tt.input)
+			got, err := parseCertificatesAndPassphrases(tt.input.CertificateURLList, string(tt.input.CertificatePassphraseList))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -186,7 +186,7 @@ func Test_validateAndExpandProfilePaths(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := validateAndExpandProfilePaths(tt.profilesList)
+			got, err := parseFallbackProvisioningProfiles(tt.profilesList)
 
 			if !tt.wantErr {
 				require.NoError(t, err)
