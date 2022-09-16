@@ -66,7 +66,7 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 							},
 							Extensions: []v1xcarchive.IosExtension{
 								{
-									v1xcarchive.IosBaseApplication{
+									IosBaseApplication: v1xcarchive.IosBaseApplication{
 										InfoPlist: map[string]interface{}{
 											"CFBundleIdentifier": "io.bitrise.watch-widget",
 											"DTPlatformName":     "watchos",
@@ -91,7 +91,7 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 						},
 						Extensions: []v1xcarchive.IosExtension{
 							{
-								v1xcarchive.IosBaseApplication{
+								IosBaseApplication: v1xcarchive.IosBaseApplication{
 									InfoPlist: map[string]interface{}{
 										"CFBundleIdentifier": "io.bitrise.ios-widget1",
 										"DTPlatformName":     "iphoneos",
@@ -102,7 +102,7 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 								},
 							},
 							{
-								v1xcarchive.IosBaseApplication{
+								IosBaseApplication: v1xcarchive.IosBaseApplication{
 									InfoPlist: map[string]interface{}{
 										"CFBundleIdentifier": "io.bitrise.ios-widget2",
 										"DTPlatformName":     "iphoneos",

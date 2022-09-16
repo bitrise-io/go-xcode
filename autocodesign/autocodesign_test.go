@@ -184,7 +184,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 		appLayout AppLayout
 		opts      CodesignAssetsOpts
 		want      map[DistributionType]AppCodesignAssets
-		wantErr   error
+		wantErr   *DetailedError
 	}{
 		{
 			name: "no valid certs found",
