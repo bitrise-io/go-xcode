@@ -1,0 +1,26 @@
+run:
+  skip-dirs:
+  - .*/mocks
+
+issues:
+  # https://github.com/golangci/golangci-lint/issues/2439
+  exclude-use-default: false
+
+linters:
+  enable:
+  - errcheck
+  - gosimple
+  - govet
+  - ineffassign
+  - staticcheck
+  - typecheck
+  - unused
+  - revive
+
+linters-settings:
+  revive:
+    severity: error
+    rules:
+    - name: exported
+      arguments:
+      - checkPrivateReceivers

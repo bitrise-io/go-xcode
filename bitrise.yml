@@ -8,10 +8,13 @@ workflows:
 
   test:
     steps:
+    - git::https://github.com/bitrise-steplib/steps-check.git:
+        title: Lint
+        inputs:
+        - workflow: lint
+        - skip_step_yml_validation: "yes"
     - go-list:
         inputs:
         - exclude: |-
             */mocks
-    - golint:
-    - errcheck:
-    - go-test:
+    - go-test: { }

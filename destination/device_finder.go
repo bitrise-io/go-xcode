@@ -36,7 +36,7 @@ func NewDeviceFinder(log log.Logger, commandFactory command.Factory) DeviceFinde
 	}
 }
 
-// GetSimulator returns a Simulator matching the destination
+// FindDevice returns a Simulator matching the destination
 func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 	var (
 		device Device

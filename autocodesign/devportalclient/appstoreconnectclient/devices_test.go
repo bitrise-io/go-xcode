@@ -15,7 +15,7 @@ type MockDeviceClient struct {
 	mock.Mock
 }
 
-func (c MockDeviceClient) Do(req *http.Request) (*http.Response, error) {
+func (c *MockDeviceClient) Do(req *http.Request) (*http.Response, error) {
 	fmt.Printf("do called: %#v - %#v\n", req.Method, req.URL.Path)
 
 	switch {
@@ -39,7 +39,7 @@ func TestDeviceClient_RegisterDevice_WhenInvaludUUID(t *testing.T) {
 		},
 	})
 
-	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
+	client := appstoreconnect.NewClient(&mockClient, "keyID", "issueID", []byte("privateKey"))
 	deviceClient := NewDeviceClient(client)
 
 	got, err := deviceClient.RegisterDevice(devportalservice.TestDevice{

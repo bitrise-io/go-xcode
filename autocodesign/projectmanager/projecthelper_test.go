@@ -97,11 +97,10 @@ func TestNew(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			projHelp, err := NewProjectHelper(tt.projOrWSPath, tt.schemeName, tt.configurationName)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if projHelp == nil {
-				t.Errorf("New() error = No projectHelper was generated")
+				t.Fatalf("New() error = No projectHelper was generated")
 			}
 			if projHelp.Configuration != tt.wantConfiguration {
 				t.Errorf("New() got1 = %v, want %v", projHelp.Configuration, tt.wantConfiguration)
