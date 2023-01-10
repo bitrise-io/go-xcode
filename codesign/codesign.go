@@ -362,6 +362,11 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials appleauth.Credential
 		return err
 	}
 
+	if profileAttachedEntitlements := appLayout.ListProfileAttachedEntitlements(); len(profileAttachedEntitlements) != 0 {
+		m.logger.Warnf("Can not create profile, due to App Store Connect API limitations for bundle IDs: %v", profileAttachedEntitlements)
+		m.logger.Warnf("Please use the Manage iOS Code-signing Step with the Profile Template Name input set.")
+	}
+
 	devPortalClient, err := m.devPortalClientFactory.Create(credentials, m.opts.TeamID)
 	if err != nil {
 		return err

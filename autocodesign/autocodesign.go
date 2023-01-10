@@ -239,3 +239,18 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 
 	return codesignAssetsByDistributionType, nil
 }
+
+// ListProfileAttachedEntitlements ...
+func (layout AppLayout) ListProfileAttachedEntitlements() map[string][]string {
+	bundleIDToTemplatedEntitlements := make(map[string][]string)
+
+	for bundleID, entitlements := range layout.EntitlementsByArchivableTargetBundleID {
+		for entitlementKey, value := range entitlements {
+			if (Entitlement{entitlementKey: value}).IsProfileAttached() {
+				bundleIDToTemplatedEntitlements[bundleID] = append(bundleIDToTemplatedEntitlements[bundleID], entitlementKey)
+			}
+		}
+	}
+
+	return bundleIDToTemplatedEntitlements
+}
