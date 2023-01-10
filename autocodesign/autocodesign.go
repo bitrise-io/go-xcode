@@ -131,7 +131,7 @@ type CodesignAssetsOpts struct {
 	BitriseTestDevices                []devportalservice.TestDevice
 	MinProfileValidityDays            int
 	FallbackToLocalAssetsOnAPIFailure bool
-	ProfileTemplateName               string
+	ProfileTemplateName               map[DistributionType]string
 	VerboseLog                        bool
 }
 

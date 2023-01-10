@@ -25,7 +25,7 @@ func appIDName(bundleID string) string {
 
 func ensureProfiles(profileClient DevPortalClient, distrType DistributionType,
 	certsByType map[appstoreconnect.CertificateType][]Certificate, app AppLayout,
-	devPortalDeviceIDs []string, minProfileDaysValid int, templateName string) (*AppCodesignAssets, error) {
+	devPortalDeviceIDs []string, minProfileDaysValid int, distributionToTemplateName map[DistributionType]string) (*AppCodesignAssets, error) {
 	// Ensure Profiles
 
 	bundleIDByBundleIDIdentifer := map[string]*appstoreconnect.BundleID{}
@@ -66,6 +66,12 @@ func ensureProfiles(profileClient DevPortalClient, distrType DistributionType,
 	}
 
 	profileType := platformProfileTypes[distrType]
+	templateName := distributionToTemplateName[distrType]
+	if templateName == "" {
+		log.Debugf("No profile tempalte name provided")
+	} else {
+		log.Printf("Profile template name: %s", templateName)
+	}
 
 	for bundleIDIdentifier, entitlements := range app.EntitlementsByArchivableTargetBundleID {
 		var profileDeviceIDs []string
@@ -90,7 +96,7 @@ func ensureProfiles(profileClient DevPortalClient, distrType DistributionType,
 			}
 
 			// Capabilities are not supported for UITest targets.
-			profile, err := profileManager.ensureProfileWithRetry(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid, templateName)
+			profile, err := profileManager.ensureProfileWithRetry(profileType, wildcardBundleID, nil, certIDs, devPortalDeviceIDs, minProfileDaysValid, "")
 			if err != nil {
 				return nil, err
 			}
