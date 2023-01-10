@@ -133,7 +133,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 	})
 	devportalWithNoAppID.On("CreateBundleID", "io.test", "Bitrise io test").Return(createdAppID, nil).
 		On("SyncBundleID", *createdAppID, mock.Anything).Return(nil).
-		On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "").
 		Return(newMockProfile(profileArgs{}), nil)
 
 	appIDAndProfileFoundAppLayout := AppLayout{
@@ -398,11 +398,11 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 	// FindProfile
 	client.On("DeleteProfile", expiredProfile.ID()).Return(nil).Once()
 	client.On("CheckBundleIDEntitlements", mock.Anything, mock.Anything).Return(nil).Once()
-	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, ProfilesInconsistentError{}).Once()
+	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "").Return(nil, ProfilesInconsistentError{}).Once()
 	// FindProfile
 	client.On("DeleteProfile", expiredProfile.ID()).Return(nil).Once()
 	client.On("CheckBundleIDEntitlements", mock.Anything, mock.Anything).Return(nil).Once()
-	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(validProfile, nil).Once()
+	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "").Return(validProfile, nil).Once()
 
 	assetWriter := newDefaultMockAssetWriter()
 	appLayout := AppLayout{
