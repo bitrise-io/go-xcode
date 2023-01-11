@@ -66,9 +66,12 @@ func ensureProfiles(profileClient DevPortalClient, distrType DistributionType,
 	}
 
 	profileType := platformProfileTypes[distrType]
+
+	profileAttachedEntitlementsByBundleID := app.ListProfileAttachedEntitlements()
 	templateName := distributionToTemplateName[distrType]
-	if templateName == "" {
-		log.Debugf("No profile tempalte name provided")
+	if len(profileAttachedEntitlementsByBundleID) != 0 && templateName == "" {
+		log.Warnf("Provisioning Profile template name is not set, required by used entitlemets (%v)", profileAttachedEntitlementsByBundleID)
+		log.Printf("Profile template names can be set only in the Manage iOS Code Signing Step, or by using manually managed profiles with the Certificate and Profile installer Step.")
 	} else {
 		log.Printf("Profile template name: %s", templateName)
 	}
