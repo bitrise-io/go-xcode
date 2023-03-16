@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/go-version v1.5.0
 	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/stretchr/testify v1.7.1
-	golang.org/x/text v0.3.7
+	golang.org/x/text v0.3.8
 	gopkg.in/yaml.v3 v3.0.0 // indirect
 	howett.net/plist v1.0.0
 )
