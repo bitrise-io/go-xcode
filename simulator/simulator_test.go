@@ -17,6 +17,18 @@ func TestGetLatestSimulatorInfoFromSimctlOut(t *testing.T) {
 		require.Equal(t, "Shutdown", info.Status)
 		require.Equal(t, "", info.StatusOther)
 	}
+
+	t.Log("Unavailable os")
+	{
+		_, _, err := getLatestSimulatorInfoFromSimctlOut(simctlListOut, "invalid", "iPhone 4")
+		require.EqualError(t, err, "simulator platform (invalid) is not found, available platforms: iOS 10.1, iOS 10.2, tvOS 10.1, watchOS 3.1")
+	}
+
+	t.Log("Unavailable device")
+	{
+		_, _, err := getLatestSimulatorInfoFromSimctlOut(simctlListOut, "iOS", "iPhone 4")
+		require.EqualError(t, err, "simulator device (iPhone 4) is not found, available iOS devices: iPad Air, iPad Air 2, iPad Pro (12.9 inch), iPad Pro (9.7 inch), iPad Retina, iPhone 5, iPhone 5s, iPhone 6, iPhone 6 Plus, iPhone 6s, iPhone 6s Plus, iPhone 7, iPhone 7 Plus, iPhone SE")
+	}
 }
 
 func TestGetSimulatorInfoFromSimctlOut(t *testing.T) {

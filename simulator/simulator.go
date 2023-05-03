@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -26,9 +27,12 @@ type OsVersionSimulatorInfosMap map[string][]InfoModel // Os version - []Info ma
 
 // getSimulatorInfoFromLine ...
 // a simulator info line should look like this:
-//  iPhone 5s (EA1C7E48-8137-428C-A0A5-B2C63FF276EB) (Shutdown)
+//
+//	iPhone 5s (EA1C7E48-8137-428C-A0A5-B2C63FF276EB) (Shutdown)
+//
 // or
-//  iPhone 4s (51B10EBD-C949-49F5-A38B-E658F41640FF) (Shutdown) (unavailable, runtime profile not found)
+//
+//	iPhone 4s (51B10EBD-C949-49F5-A38B-E658F41640FF) (Shutdown) (unavailable, runtime profile not found)
 func getSimulatorInfoFromLine(lineStr string) (InfoModel, error) {
 	baseInfosExp := regexp.MustCompile(`(?P<deviceName>[a-zA-Z].*[a-zA-Z0-9 -]*) \((?P<simulatorID>[a-zA-Z0-9-]{36})\) \((?P<status>[a-zA-Z]*)\)`)
 	baseInfosRes := baseInfosExp.FindStringSubmatch(lineStr)
@@ -79,7 +83,11 @@ func getOsVersionSimulatorInfosMapFromSimctlList(simctlList string) (OsVersionSi
 			iosVersionSectionExp := regexp.MustCompile(`-- (?P<iosVersionSection>.*) --`)
 			iosVersionSectionRes := iosVersionSectionExp.FindStringSubmatch(aLine)
 			if iosVersionSectionRes != nil {
-				currIOSVersion = iosVersionSectionRes[1]
+				osVersion := iosVersionSectionRes[1]
+				if strings.HasPrefix(osVersion, "Unavailable:") {
+					continue
+				}
+				currIOSVersion = osVersion
 			}
 			continue
 		}
@@ -139,6 +147,14 @@ func GetSimulatorInfo(osNameAndVersion, deviceName string) (InfoModel, error) {
 	return getSimulatorInfoFromSimctlOut(simctlListOut, osNameAndVersion, deviceName)
 }
 
+func deviceNames(infos []InfoModel) (names []string) {
+	for _, info := range infos {
+		names = append(names, info.Name)
+	}
+	sort.Strings(names)
+	return
+}
+
 func getLatestSimulatorInfoFromSimctlOut(simctlListOut, osName, deviceName string) (InfoModel, string, error) {
 	osVersionSimulatorInfosMap, err := getOsVersionSimulatorInfosMapFromSimctlList(simctlListOut)
 	if err != nil {
@@ -147,10 +163,18 @@ func getLatestSimulatorInfoFromSimctlOut(simctlListOut, osName, deviceName strin
 
 	var latestVersionPtr *version.Version
 	latestInfo := InfoModel{}
+
+	var osVersions []string
+	var osVersionInfos []InfoModel
+
 	for osVersion, infos := range osVersionSimulatorInfosMap {
+		osVersions = append(osVersions, osVersion)
+
 		if !strings.HasPrefix(osVersion, osName) {
 			continue
 		}
+
+		osVersionInfos = infos
 
 		deviceInfo := InfoModel{}
 		deviceFound := false
@@ -180,7 +204,11 @@ func getLatestSimulatorInfoFromSimctlOut(simctlListOut, osName, deviceName strin
 	}
 
 	if latestVersionPtr == nil {
-		return InfoModel{}, "", fmt.Errorf("failed to determin latest (%s) simulator version", osName)
+		if len(osVersionInfos) == 0 {
+			sort.Strings(osVersions)
+			return InfoModel{}, "", fmt.Errorf("simulator platform (%s) is not found, available platforms: %s", osName, strings.Join(osVersions, ", "))
+		}
+		return InfoModel{}, "", fmt.Errorf("simulator device (%s) is not found, available %s devices: %s", deviceName, osName, strings.Join(deviceNames(osVersionInfos), ", "))
 	}
 
 	versionSegments := latestVersionPtr.Segments()
