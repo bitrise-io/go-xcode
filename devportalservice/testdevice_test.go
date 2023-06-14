@@ -17,7 +17,9 @@ func TestDeviceParsing(t *testing.T) {
 	require.NoError(t, err)
 
 	currentTime := time.Now()
-	got := ParseTestDevicesFromFile(pth, currentTime)
+	got, err := ParseTestDevicesFromFile(pth, currentTime)
+	require.NoError(t, err)
+
 	expected := []TestDevice{
 		{
 			DeviceID:   "00000000–0000000000000001",

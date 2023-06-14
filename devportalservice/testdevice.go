@@ -22,15 +22,15 @@ type TestDevice struct {
 }
 
 // ParseTestDevicesFromFile ...
-func ParseTestDevicesFromFile(path string, currentTime time.Time) []TestDevice {
+func ParseTestDevicesFromFile(path string, currentTime time.Time) ([]TestDevice, error) {
 	absPath, err := pathutil.AbsPath(path)
 	if err != nil {
-		return []TestDevice{}
+		return []TestDevice{}, err
 	}
 
 	bytes, err := os.ReadFile(absPath)
 	if err != nil {
-		return []TestDevice{}
+		return []TestDevice{}, err
 	}
 
 	fileContent := strings.TrimSpace(string(bytes))
@@ -47,5 +47,5 @@ func ParseTestDevicesFromFile(path string, currentTime time.Time) []TestDevice {
 		})
 	}
 
-	return testDevices
+	return testDevices, nil
 }
