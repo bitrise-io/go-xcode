@@ -106,6 +106,7 @@ func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
 			return false, fmt.Errorf("not Xcode project nor workspace file: %s", pth)
 		}
 
+		supportedPlatformsMap := map[string]bool{}
 		sdkMap := map[string]bool{}
 		for _, projectFile := range projectFiles {
 			project, err := xcodeproj.Open(projectFile)
@@ -119,10 +120,17 @@ func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
 				buildConfigurations = append(buildConfigurations, target.BuildConfigurationList.BuildConfigurations...)
 			}
 
-			for _, buildConfiguratioon := range buildConfigurations {
-				sdk, err := buildConfiguratioon.BuildSettings.String("SDKROOT")
+			for _, buildConfiguration := range buildConfigurations {
+				sdk, err := buildConfiguration.BuildSettings.String("SDKROOT")
 				if err == nil {
 					sdkMap[sdk] = true
+				}
+
+				supportedPlatforms, err := buildConfiguration.BuildSettings.StringSlice("SUPPORTED_PLATFORMS")
+				if err == nil {
+					for _, platform := range supportedPlatforms {
+						supportedPlatformsMap[platform] = true
+					}
 				}
 			}
 
@@ -132,9 +140,14 @@ func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
 					break
 				}
 			}
-		}
 
-		fmt.Printf("Found %v SDK's from %v project files.", len(sdkMap), len(projectFiles))
+			for platform := range supportedPlatformsMap {
+				if platform == sdk {
+					found = true
+					break
+				}
+			}
+		}
 
 		return (allowed == found), nil
 	}
