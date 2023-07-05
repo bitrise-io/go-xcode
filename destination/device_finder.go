@@ -8,6 +8,8 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
+const defaultDeviceName = "Bitrise iOS default"
+
 // Device is an available device
 type Device struct {
 	Name   string

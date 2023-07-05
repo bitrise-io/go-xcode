@@ -1604,7 +1604,7 @@ const DeviceList = `
 		  "isAvailable" : true,
 		  "deviceTypeIdentifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-6s",
 		  "state" : "Shutdown",
-		  "name" : "test"
+		  "name" : "Bitrise iOS default"
 		},
 		{
 		  "dataPath" : "\/Users\/lpusok\/Library\/Developer\/CoreSimulator\/Devices\/3F9A1206-31E2-417B-BBC7-6330B52B8358\/data",
