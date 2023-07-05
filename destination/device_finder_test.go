@@ -100,7 +100,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "default device",
+			name: "default device, already created",
 			wantedDevice: Simulator{
 				Platform: "iOS Simulator",
 				OS:       "13.7",
@@ -111,6 +111,20 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				ID:     "20FDD0DF-0369-43FF-98E6-DBB8C820341E",
 				Status: "Shutdown",
 				OS:     "13.7",
+			},
+		},
+		{
+			name: "default device, but not yet created",
+			wantedDevice: Simulator{
+				Platform: "iOS Simulator",
+				OS:       "latest",
+				Name:     "Bitrise iOS default",
+			},
+			want: Device{
+				Name:   "iPhone 8",
+				ID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				Status: "Shutdown",
+				OS:     "16.0",
 			},
 		},
 		{
