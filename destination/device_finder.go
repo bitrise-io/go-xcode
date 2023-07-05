@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
+// Keep it in sync with https://github.com/bitrise-io/image-build-utils/blob/master/roles/simulators/defaults/main.yml#L14
 const defaultDeviceName = "Bitrise iOS default"
 
 // Device is an available device
