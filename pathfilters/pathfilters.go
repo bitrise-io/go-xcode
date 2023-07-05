@@ -2,6 +2,7 @@ package pathfilters
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
@@ -126,8 +127,9 @@ func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
 					sdkMap[sdk] = true
 				}
 
-				supportedPlatforms, err := buildConfiguration.BuildSettings.StringSlice("SUPPORTED_PLATFORMS")
+				supportedPlatformsValue, err := buildConfiguration.BuildSettings.String("SUPPORTED_PLATFORMS")
 				if err == nil {
+					supportedPlatforms := strings.Split(supportedPlatformsValue, " ")
 					for _, platform := range supportedPlatforms {
 						supportedPlatformsMap[platform] = true
 					}
