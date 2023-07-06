@@ -158,7 +158,13 @@ func TestAllowIphoneosSDKFilter(t *testing.T) {
 	macosxPbxprojPth := filepath.Join(macosxProject, "project.pbxproj")
 	require.NoError(t, fileutil.WriteStringToFile(macosxPbxprojPth, testMacOSPbxprojContent))
 
-	t.Log("iphoneos sdk")
+	multiplatformProject := filepath.Join(tmpDir, "multiplatform.xcodeproj")
+	require.NoError(t, os.MkdirAll(multiplatformProject, 0777))
+
+	multiplatformPbxprojPth := filepath.Join(multiplatformProject, "project.pbxproj")
+	require.NoError(t, fileutil.WriteStringToFile(multiplatformPbxprojPth, testMultiplatformPbxprojContent))
+
+	t.Log("iphoneos sdk - iOS app")
 	{
 		paths := []string{
 			iphoneosProject,
@@ -172,7 +178,20 @@ func TestAllowIphoneosSDKFilter(t *testing.T) {
 		require.Equal(t, expectedFiltered, actualFiltered)
 	}
 
-	t.Log("macosx sdk")
+	t.Log("iphoneos sdk - multiplatform app")
+	{
+		paths := []string{
+			multiplatformProject,
+		}
+		expectedFiltered := []string{
+			multiplatformProject,
+		}
+		actualFiltered, err := pathutil.FilterPaths(paths, AllowIphoneosSDKFilter)
+		require.NoError(t, err)
+		require.Equal(t, expectedFiltered, actualFiltered)
+	}
+
+	t.Log("macosx sdk - macOS app")
 	{
 		paths := []string{
 			iphoneosProject,
@@ -180,6 +199,19 @@ func TestAllowIphoneosSDKFilter(t *testing.T) {
 		}
 		expectedFiltered := []string{
 			macosxProject,
+		}
+		actualFiltered, err := pathutil.FilterPaths(paths, AllowMacosxSDKFilter)
+		require.NoError(t, err)
+		require.Equal(t, expectedFiltered, actualFiltered)
+	}
+
+	t.Log("macosx sdk - multiplatform app")
+	{
+		paths := []string{
+			multiplatformProject,
+		}
+		expectedFiltered := []string{
+			multiplatformProject,
 		}
 		actualFiltered, err := pathutil.FilterPaths(paths, AllowMacosxSDKFilter)
 		require.NoError(t, err)
