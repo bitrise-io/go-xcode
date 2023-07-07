@@ -74,7 +74,7 @@ var AllowIphoneosSDKFilter = SDKFilter("iphoneos", true)
 var AllowMacosxSDKFilter = SDKFilter("macosx", true)
 
 // SDKFilter ...
-func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
+func SDKFilter(expectedSDK string, allowed bool) pathutil.FilterFunc {
 	return func(pth string) (bool, error) {
 		found := false
 
@@ -127,6 +127,10 @@ func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
 					sdkMap[sdk] = true
 				}
 
+				if sdk != "auto" {
+					continue
+				}
+
 				supportedPlatformsValue, err := buildConfiguration.BuildSettings.String("SUPPORTED_PLATFORMS")
 				if err == nil {
 					supportedPlatforms := strings.Split(supportedPlatformsValue, " ")
@@ -137,14 +141,14 @@ func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
 			}
 
 			for projectSDK := range sdkMap {
-				if projectSDK == sdk {
+				if projectSDK == expectedSDK {
 					found = true
 					break
 				}
 			}
 
 			for platform := range supportedPlatformsMap {
-				if platform == sdk {
+				if platform == expectedSDK {
 					found = true
 					break
 				}
