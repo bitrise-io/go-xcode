@@ -8,14 +8,14 @@ import (
 
 func Test_GivenDestinationIsCorrect_WhenSimulatorIsCreated_ThenItReturnsCorrectSimulator(t *testing.T) {
 	// Given
-	destination := "platform=iOS Simulator,name=iPhone 8 Plus,OS=latest"
+	destination := "platform=iOS Simulator,name=iPhone 8 Plus,OS=latest,arch=x86_64"
 
 	// When
 	simulator, err := NewSimulator(destination)
 
 	// Then
 	if assert.NoError(t, err) {
-		expectedSimulator := &Simulator{Platform: "iOS Simulator", Name: "iPhone 8 Plus", OS: "latest"}
+		expectedSimulator := &Simulator{Platform: "iOS Simulator", Name: "iPhone 8 Plus", OS: "latest", Arch: "x86_64"}
 		assert.Equal(t, expectedSimulator, simulator)
 	}
 }

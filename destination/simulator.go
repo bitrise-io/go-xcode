@@ -7,6 +7,7 @@ type Simulator struct {
 	Platform string
 	Name     string
 	OS       string
+	Arch     string
 }
 
 // NewSimulator ...
@@ -25,6 +26,7 @@ func NewSimulator(destination string) (*Simulator, error) {
 		Platform: string(platform),
 		Name:     specifier.Name(),
 		OS:       specifier.OS(),
+		Arch:     specifier.Arch(),
 	}
 
 	if simulator.Platform == "" {

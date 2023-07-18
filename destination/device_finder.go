@@ -2,6 +2,7 @@ package destination
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -13,9 +14,10 @@ const defaultDeviceName = "Bitrise iOS default"
 
 // Device is an available device
 type Device struct {
-	Name   string
 	ID     string
+	Arch   string
 	Status string
+	Name   string
 	OS     string
 }
 
@@ -82,4 +84,13 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 	}
 
 	return device, err
+}
+
+// XcodebuildDestination returns the required xcodebuild -destination flag value for a device
+func (d Device) XcodebuildDestination() string {
+	if d.Arch == "" {
+		return fmt.Sprintf("id=%s", d.ID)
+	}
+
+	return fmt.Sprintf("id=%s,arch=%s", d.ID, d.Arch)
 }

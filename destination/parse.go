@@ -206,9 +206,10 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 			}
 
 			return Device{
-				Name:   device.Name,
 				ID:     device.UDID,
+				Arch:   wantedDevice.Arch,
 				Status: device.State,
+				Name:   device.Name,
 				OS:     runtime.Version,
 			}, nil
 		}
@@ -222,9 +223,10 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 			}
 
 			return Device{
-				Name:   device.Name,
 				ID:     device.UDID,
+				Arch:   wantedDevice.Arch,
 				Status: device.State,
+				Name:   device.Name,
 				OS:     runtime.Version,
 			}, nil
 		}

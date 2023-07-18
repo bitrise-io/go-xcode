@@ -91,6 +91,22 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			},
 		},
 		{
+			name: "arch flag specified (rosetta Simulator)",
+			wantedDevice: Simulator{
+				Platform: "iOS Simulator",
+				OS:       "latest",
+				Name:     "iPhone 8",
+				Arch:     "x86_64",
+			},
+			want: Device{
+				Name:   "iPhone 8",
+				ID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				Status: "Shutdown",
+				OS:     "16.0",
+				Arch:   "x86_64",
+			},
+		},
+		{
 			name: "device type not available",
 			wantedDevice: Simulator{
 				Platform: "iOS Simulator",
