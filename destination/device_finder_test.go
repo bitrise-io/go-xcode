@@ -91,7 +91,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			},
 		},
 		{
-			name: "arch flag specified (rosetta Simulator)",
+			name: "arch flag specified (Rosetta Simulator)",
 			wantedDevice: Simulator{
 				Platform: "iOS Simulator",
 				OS:       "latest",
