@@ -2,6 +2,7 @@ package pathfilters
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
@@ -73,7 +74,7 @@ var AllowIphoneosSDKFilter = SDKFilter("iphoneos", true)
 var AllowMacosxSDKFilter = SDKFilter("macosx", true)
 
 // SDKFilter ...
-func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
+func SDKFilter(expectedSDK string, allowed bool) pathutil.FilterFunc {
 	return func(pth string) (bool, error) {
 		found := false
 
@@ -106,6 +107,7 @@ func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
 			return false, fmt.Errorf("not Xcode project nor workspace file: %s", pth)
 		}
 
+		supportedPlatformsMap := map[string]bool{}
 		sdkMap := map[string]bool{}
 		for _, projectFile := range projectFiles {
 			project, err := xcodeproj.Open(projectFile)
@@ -119,22 +121,39 @@ func SDKFilter(sdk string, allowed bool) pathutil.FilterFunc {
 				buildConfigurations = append(buildConfigurations, target.BuildConfigurationList.BuildConfigurations...)
 			}
 
-			for _, buildConfiguratioon := range buildConfigurations {
-				sdk, err := buildConfiguratioon.BuildSettings.String("SDKROOT")
+			for _, buildConfiguration := range buildConfigurations {
+				sdk, err := buildConfiguration.BuildSettings.String("SDKROOT")
 				if err == nil {
 					sdkMap[sdk] = true
+				}
+
+				if sdk != "auto" {
+					continue
+				}
+
+				supportedPlatformsValue, err := buildConfiguration.BuildSettings.String("SUPPORTED_PLATFORMS")
+				if err == nil {
+					supportedPlatforms := strings.Split(supportedPlatformsValue, " ")
+					for _, platform := range supportedPlatforms {
+						supportedPlatformsMap[platform] = true
+					}
 				}
 			}
 
 			for projectSDK := range sdkMap {
-				if projectSDK == sdk {
+				if projectSDK == expectedSDK {
+					found = true
+					break
+				}
+			}
+
+			for platform := range supportedPlatformsMap {
+				if platform == expectedSDK {
 					found = true
 					break
 				}
 			}
 		}
-
-		fmt.Printf("Found %v SDK's from %v project files.", len(sdkMap), len(projectFiles))
 
 		return (allowed == found), nil
 	}
