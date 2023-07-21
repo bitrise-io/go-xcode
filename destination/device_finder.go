@@ -15,10 +15,12 @@ const defaultDeviceName = "Bitrise iOS default"
 // Device is an available device
 type Device struct {
 	ID     string
-	Arch   string
 	Status string
-	Name   string
-	OS     string
+
+	Platform string
+	Name     string
+	OS       string
+	Arch     string
 }
 
 // DeviceFinder is an interface that find a matching device for a given destination
@@ -92,5 +94,5 @@ func (d Device) XcodebuildDestination() string {
 		return fmt.Sprintf("id=%s", d.ID)
 	}
 
-	return fmt.Sprintf("id=%s,arch=%s", d.ID, d.Arch)
+	return fmt.Sprintf("platform=%s,name=%s,os=%s,arch=%s", d.Platform, d.Name, d.OS, d.Arch)
 }
