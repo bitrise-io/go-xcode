@@ -184,6 +184,7 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 		return Device{}, fmt.Errorf("inconsistent state in filterDeviceList: device list should be parsed")
 	}
 
+	wantedPlatform := wantedDevice.Platform
 	wantedDevice.Platform = strings.TrimSuffix(wantedDevice.Platform, " Simulator")
 
 	runtime, err := d.filterRuntime(wantedDevice)
@@ -206,10 +207,12 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 			}
 
 			return Device{
-				Name:   device.Name,
-				ID:     device.UDID,
-				Status: device.State,
-				OS:     runtime.Version,
+				ID:       device.UDID,
+				Status:   device.State,
+				Platform: wantedPlatform,
+				Name:     device.Name,
+				OS:       runtime.Version,
+				Arch:     wantedDevice.Arch,
 			}, nil
 		}
 	}
@@ -222,10 +225,12 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 			}
 
 			return Device{
-				Name:   device.Name,
-				ID:     device.UDID,
-				Status: device.State,
-				OS:     runtime.Version,
+				ID:       device.UDID,
+				Status:   device.State,
+				Platform: wantedPlatform,
+				Name:     device.Name,
+				OS:       runtime.Version,
+				Arch:     wantedDevice.Arch,
 			}, nil
 		}
 	}
