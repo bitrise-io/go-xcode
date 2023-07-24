@@ -15,17 +15,17 @@ import (
 )
 
 /*
-  "devicetypes" : [{
-  "productFamily" : "iPhone",
-  "bundlePath" : "\/Applications\/Xcode-beta.app\/Contents\/Developer\/Platforms\/iPhoneOS.platform\/Library\/Developer\/CoreSimulator\/Profiles\/DeviceTypes\/iPhone 11.simdevicetype",
-  "maxRuntimeVersion" : 4294967295,
-  "maxRuntimeVersionString" : "65535.255.255",
-  "identifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-11",
-  "modelIdentifier" : "iPhone12,1",
-  "minRuntimeVersionString" : "13.0.0",
-  "minRuntimeVersion" : 851968,
-  "name" : "iPhone 11"
-}, ... ]
+	  "devicetypes" : [{
+	  "productFamily" : "iPhone",
+	  "bundlePath" : "\/Applications\/Xcode-beta.app\/Contents\/Developer\/Platforms\/iPhoneOS.platform\/Library\/Developer\/CoreSimulator\/Profiles\/DeviceTypes\/iPhone 11.simdevicetype",
+	  "maxRuntimeVersion" : 4294967295,
+	  "maxRuntimeVersionString" : "65535.255.255",
+	  "identifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-11",
+	  "modelIdentifier" : "iPhone12,1",
+	  "minRuntimeVersionString" : "13.0.0",
+	  "minRuntimeVersion" : 851968,
+	  "name" : "iPhone 11"
+	}, ... ]
 */
 type deviceType struct {
 	Name          string `json:"name"`
@@ -34,25 +34,25 @@ type deviceType struct {
 }
 
 /*
-  "runtimes" : [
-    {
-      "bundlePath" : "\/Library\/Developer\/CoreSimulator\/Profiles\/Runtimes\/iOS 12.4.simruntime",
-      "buildversion" : "16G73",
-      "platform" : "iOS",
-      "runtimeRoot" : "\/Library\/Developer\/CoreSimulator\/Profiles\/Runtimes\/iOS 12.4.simruntime\/Contents\/Resources\/RuntimeRoot",
-      "identifier" : "com.apple.CoreSimulator.SimRuntime.iOS-12-4",
-      "version" : "12.4",
-      "isInternal" : false,
-      "isAvailable" : true,
-      "name" : "iOS 12.4",
-      "supportedDeviceTypes" : [
-        {
-          "bundlePath" : "\/Applications\/Xcode-beta.app\/Contents\/Developer\/Platforms\/iPhoneOS.platform\/Library\/Developer\/CoreSimulator\/Profiles\/DeviceTypes\/iPhone 5s.simdevicetype",
-          "name" : "iPhone 5s",
-          "identifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-5s",
-          "productFamily" : "iPhone"
-        }, ... ],
-	}, ... ]
+	  "runtimes" : [
+	    {
+	      "bundlePath" : "\/Library\/Developer\/CoreSimulator\/Profiles\/Runtimes\/iOS 12.4.simruntime",
+	      "buildversion" : "16G73",
+	      "platform" : "iOS",
+	      "runtimeRoot" : "\/Library\/Developer\/CoreSimulator\/Profiles\/Runtimes\/iOS 12.4.simruntime\/Contents\/Resources\/RuntimeRoot",
+	      "identifier" : "com.apple.CoreSimulator.SimRuntime.iOS-12-4",
+	      "version" : "12.4",
+	      "isInternal" : false,
+	      "isAvailable" : true,
+	      "name" : "iOS 12.4",
+	      "supportedDeviceTypes" : [
+	        {
+	          "bundlePath" : "\/Applications\/Xcode-beta.app\/Contents\/Developer\/Platforms\/iPhoneOS.platform\/Library\/Developer\/CoreSimulator\/Profiles\/DeviceTypes\/iPhone 5s.simdevicetype",
+	          "name" : "iPhone 5s",
+	          "identifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-5s",
+	          "productFamily" : "iPhone"
+	        }, ... ],
+		}, ... ]
 */
 type deviceRuntime struct {
 	Identifier           string       `json:"identifier"`
@@ -64,33 +64,33 @@ type deviceRuntime struct {
 }
 
 /*
-  "devices" : {
-    "com.apple.CoreSimulator.SimRuntime.watchOS-7-4" : [
-      {
-        "availabilityError" : "runtime profile not found",
-        "dataPath" : "\/Users\/lpusok\/Library\/Developer\/CoreSimulator\/Devices\/6503EC5B-2393-46F1-A947-B32677A3360F\/data",
-        "dataPathSize" : 0,
-        "logPath" : "\/Users\/lpusok\/Library\/Logs\/CoreSimulator\/6503EC5B-2393-46F1-A947-B32677A3360F",
-        "udid" : "6503EC5B-2393-46F1-A947-B32677A3360F",
-        "isAvailable" : false,
-        "deviceTypeIdentifier" : "com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-5-40mm",
-        "state" : "Shutdown",
-        "name" : "Apple Watch Series 5 - 40mm"
-      }, ... ],
-	"com.apple.CoreSimulator.SimRuntime.iOS-16-0" : [
-      {
-        "lastBootedAt" : "2022-06-07T11:34:18Z",
-        "dataPath" : "\/Users\/lpusok\/Library\/Developer\/CoreSimulator\/Devices\/D64FA78C-5A25-4BF3-9EE8-855761042DEE\/data",
-        "dataPathSize" : 311848960,
-        "logPath" : "\/Users\/lpusok\/Library\/Logs\/CoreSimulator\/D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-        "udid" : "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-        "isAvailable" : true,
-        "logPathSize" : 57344,
-        "deviceTypeIdentifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-8",
-        "state" : "Shutdown",
-        "name" : "iPhone 8"
-      }, ... ]
-  }
+	  "devices" : {
+	    "com.apple.CoreSimulator.SimRuntime.watchOS-7-4" : [
+	      {
+	        "availabilityError" : "runtime profile not found",
+	        "dataPath" : "\/Users\/lpusok\/Library\/Developer\/CoreSimulator\/Devices\/6503EC5B-2393-46F1-A947-B32677A3360F\/data",
+	        "dataPathSize" : 0,
+	        "logPath" : "\/Users\/lpusok\/Library\/Logs\/CoreSimulator\/6503EC5B-2393-46F1-A947-B32677A3360F",
+	        "udid" : "6503EC5B-2393-46F1-A947-B32677A3360F",
+	        "isAvailable" : false,
+	        "deviceTypeIdentifier" : "com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-5-40mm",
+	        "state" : "Shutdown",
+	        "name" : "Apple Watch Series 5 - 40mm"
+	      }, ... ],
+		"com.apple.CoreSimulator.SimRuntime.iOS-16-0" : [
+	      {
+	        "lastBootedAt" : "2022-06-07T11:34:18Z",
+	        "dataPath" : "\/Users\/lpusok\/Library\/Developer\/CoreSimulator\/Devices\/D64FA78C-5A25-4BF3-9EE8-855761042DEE\/data",
+	        "dataPathSize" : 311848960,
+	        "logPath" : "\/Users\/lpusok\/Library\/Logs\/CoreSimulator\/D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+	        "udid" : "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+	        "isAvailable" : true,
+	        "logPathSize" : 57344,
+	        "deviceTypeIdentifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-8",
+	        "state" : "Shutdown",
+	        "name" : "iPhone 8"
+	      }, ... ]
+	  }
 */
 type device struct {
 	Name              string `json:"name"`
@@ -184,6 +184,7 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 		return Device{}, fmt.Errorf("inconsistent state in filterDeviceList: device list should be parsed")
 	}
 
+	wantedPlatform := wantedDevice.Platform
 	wantedDevice.Platform = strings.TrimSuffix(wantedDevice.Platform, " Simulator")
 
 	runtime, err := d.filterRuntime(wantedDevice)
@@ -197,28 +198,51 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 		return Device{}, fmt.Errorf("runtime (%s) not found", runtimeID)
 	}
 
+	// As the name of the device matches the device type ('iPhone 11') for factory created devices, look up device by name.
+	// If the default name is required and already created will use that.
+	for _, device := range devices {
+		if device.Name == wantedDevice.Name {
+			if !device.IsAvailable {
+				return Device{}, fmt.Errorf("device (%s) with runtime OS (%s) is unavailable: %s", wantedDevice.Name, runtime.Version, device.AvailabilityError)
+			}
+
+			return Device{
+				ID:       device.UDID,
+				Status:   device.State,
+				Platform: wantedPlatform,
+				Name:     device.Name,
+				OS:       runtime.Version,
+				Arch:     wantedDevice.Arch,
+			}, nil
+		}
+	}
+
+	// Returns the first available device in case the default device name is specified, but not yet created.
+	if wantedDevice.Name == defaultDeviceName {
+		for _, device := range devices {
+			if !device.IsAvailable {
+				continue
+			}
+
+			return Device{
+				ID:       device.UDID,
+				Status:   device.State,
+				Platform: wantedPlatform,
+				Name:     device.Name,
+				OS:       runtime.Version,
+				Arch:     wantedDevice.Arch,
+			}, nil
+		}
+	}
+
+	// If there is no matching device, look up device type so we can create device in a later step
 	deviceTypeIdentifier, err := d.lookupDeviceTypeID(wantedDevice.Name)
 	if err != nil {
 		return Device{}, err
 	}
 
-	for _, device := range devices {
-		if device.TypeIdentifier == deviceTypeIdentifier {
-			if !device.IsAvailable {
-				return Device{}, fmt.Errorf("device type (%s) with runtime OS (%s) is unavailable: %s", wantedDevice.Name, runtime.Version, device.AvailabilityError)
-			}
-
-			return Device{
-				Name:   device.Name,
-				ID:     device.UDID,
-				Status: device.State,
-				OS:     runtime.Version,
-			}, nil
-		}
-	}
-
 	if !runtime.isDeviceSupported(deviceTypeIdentifier) {
-		return Device{}, fmt.Errorf("runtime (%s) is incompatible with device (%s)", runtimeID, deviceTypeIdentifier)
+		return Device{}, fmt.Errorf("runtime (%s) is incompatible with device type (%s)", runtimeID, deviceTypeIdentifier)
 	}
 
 	return Device{}, newMissingDeviceErr(wantedDevice.Name, deviceTypeIdentifier, runtimeID)

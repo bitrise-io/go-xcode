@@ -2,18 +2,25 @@ package destination
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
+// Keep it in sync with https://github.com/bitrise-io/image-build-utils/blob/master/roles/simulators/defaults/main.yml#L14
+const defaultDeviceName = "Bitrise iOS default"
+
 // Device is an available device
 type Device struct {
-	Name   string
 	ID     string
 	Status string
-	OS     string
+
+	Platform string
+	Name     string
+	OS       string
+	Arch     string
 }
 
 // DeviceFinder is an interface that find a matching device for a given destination
@@ -79,4 +86,14 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 	}
 
 	return device, err
+}
+
+// XcodebuildDestination returns the required xcodebuild -destination flag value for a device
+func (d Device) XcodebuildDestination() string {
+	// `arch` doesn't seem to work together with `id`
+	if d.Arch == "" {
+		return fmt.Sprintf("id=%s", d.ID)
+	}
+
+	return fmt.Sprintf("platform=%s,name=%s,OS=%s,arch=%s", d.Platform, d.Name, d.OS, d.Arch)
 }
