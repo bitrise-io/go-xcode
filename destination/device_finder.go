@@ -90,6 +90,7 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 
 // XcodebuildDestination returns the required xcodebuild -destination flag value for a device
 func (d Device) XcodebuildDestination() string {
+	// `arch` doesn't seem to work together with `id`
 	if d.Arch == "" {
 		return fmt.Sprintf("id=%s", d.ID)
 	}
