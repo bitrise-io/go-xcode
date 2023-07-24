@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/v2/destination/mocks"
 	"github.com/bitrise-io/go-xcode/v2/destination/testdata"
+	"github.com/bitrise-io/go-xcode/v2/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )

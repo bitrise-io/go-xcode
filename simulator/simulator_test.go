@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/v2/log"
-	mockcommand "github.com/bitrise-io/go-xcode/v2/simulator/mocks"
+	mockcommand "github.com/bitrise-io/go-xcode/v2/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
