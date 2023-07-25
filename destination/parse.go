@@ -274,7 +274,6 @@ func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 	var allVersions []deviceRuntime
 
 	for _, runtime := range d.list.Runtimes {
-
 		if !runtime.IsAvailable {
 			continue
 		}
@@ -317,8 +316,11 @@ func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 				return deviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
 			}
 
-			if (latestVersion == nil || runtimeVersion.GreaterThan(latestVersion)) &&
-				isIOSRuntimeSupportedByXcode(runtimeVersion, d.xcodeVersion) {
+			if wanted.Platform == string(IOS) && !isIOSRuntimeSupportedByXcode(runtimeVersion, d.xcodeVersion) {
+				continue
+			}
+
+			if latestVersion == nil || runtimeVersion.GreaterThan(latestVersion) {
 				latestVersion = runtimeVersion
 				latestRuntime = runtime
 			}
