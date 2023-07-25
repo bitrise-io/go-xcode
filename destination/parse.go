@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/errorutil"
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/hashicorp/go-version"
@@ -341,7 +340,7 @@ func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 
 		runtimeSegments := runtimeVersion.Segments()
 		if len(runtimeSegments) < 2 {
-			log.Warnf("no minor version found in Simulator version (%s)", runtime.Version)
+			d.logger.Warnf("no minor version found in Simulator version (%s)", runtime.Version)
 			continue
 		}
 
