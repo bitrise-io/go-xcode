@@ -7,6 +7,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 )
 
 // Keep it in sync with https://github.com/bitrise-io/image-build-utils/blob/master/roles/simulators/defaults/main.yml#L14
@@ -31,15 +32,17 @@ type DeviceFinder interface {
 type deviceFinder struct {
 	logger         log.Logger
 	commandFactory command.Factory
+	xcodeVersion   xcodeversion.Version
 
 	list *deviceList
 }
 
 // NewDeviceFinder retruns the default implementation of DeviceFinder
-func NewDeviceFinder(log log.Logger, commandFactory command.Factory) DeviceFinder {
+func NewDeviceFinder(log log.Logger, commandFactory command.Factory, xcodeVersion xcodeversion.Version) DeviceFinder {
 	return &deviceFinder{
 		logger:         log,
 		commandFactory: commandFactory,
+		xcodeVersion:   xcodeVersion,
 	}
 }
 
