@@ -316,7 +316,7 @@ func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 				return deviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
 			}
 
-			if wanted.Platform == string(IOS) && !isIOSRuntimeSupportedByXcode(runtimeVersion, d.xcodeVersion) {
+			if wanted.Platform == string(IOS) && !isRuntimeSupportedByXcode(wanted.Platform, runtimeVersion, d.xcodeVersion) {
 				continue
 			}
 
