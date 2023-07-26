@@ -7,8 +7,9 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/v2/destination/mocks"
 	"github.com/bitrise-io/go-xcode/v2/destination/testdata"
+	"github.com/bitrise-io/go-xcode/v2/mocks"
+	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -72,6 +73,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 
 	tests := []struct {
 		name         string
+		xcodeVersion xcodeversion.Version
 		wantedDevice Simulator
 		want         Device
 		wantErr      bool
@@ -84,10 +86,83 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "iPhone 8",
 			},
 			want: Device{
-				Name:   "iPhone 8",
-				ID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				Status: "Shutdown",
-				OS:     "16.0",
+				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				Status:   "Shutdown",
+				Platform: "iOS Simulator",
+				Name:     "iPhone 8",
+				OS:       "16.0",
+			},
+		},
+		{
+			name:         "latest for an earler Xcode version",
+			xcodeVersion: xcodeversion.Version{MajorVersion: 13},
+			wantedDevice: Simulator{
+				Platform: "iOS Simulator",
+				OS:       "latest",
+				Name:     "iPhone 8",
+			},
+			want: Device{
+				ID:       "3F9A1206-31E2-417B-BBC7-6330B52B8358",
+				Status:   "Shutdown",
+				Platform: "iOS Simulator",
+				Name:     "iPhone 8",
+				OS:       "13.7",
+			},
+		},
+		{
+			name: "arch flag specified (Rosetta Simulator)",
+			wantedDevice: Simulator{
+				Platform: "iOS Simulator",
+				OS:       "latest",
+				Name:     "iPhone 8",
+				Arch:     "x86_64",
+			},
+			want: Device{
+				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				Status:   "Shutdown",
+				Platform: "iOS Simulator",
+				Name:     "iPhone 8",
+				OS:       "16.0",
+				Arch:     "x86_64",
+			},
+		},
+		{
+			name: "device type not available",
+			wantedDevice: Simulator{
+				Platform: "iOS Simulator",
+				OS:       "latest",
+				Name:     "iPhone NotExists",
+			},
+			wantErr: true,
+		},
+		{
+			name: "default device, already created",
+			wantedDevice: Simulator{
+				Platform: "iOS Simulator",
+				OS:       "13.7",
+				Name:     "Bitrise iOS default",
+			},
+			want: Device{
+				ID:       "20FDD0DF-0369-43FF-98E6-DBB8C820341E",
+				Status:   "Shutdown",
+				Platform: "iOS Simulator",
+				Name:     "Bitrise iOS default",
+				OS:       "13.7",
+			},
+		},
+		{
+			name: "default device, but not yet created",
+			wantedDevice: Simulator{
+				Platform: "iOS Simulator",
+				OS:       "latest",
+				Name:     "Bitrise iOS default",
+			},
+			want: Device{
+				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				Status:   "Shutdown",
+				Platform: "iOS Simulator",
+				Name:     "iPhone 8",
+				OS:       "16.0",
 			},
 		},
 		{
@@ -116,10 +191,11 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "iPhone 8",
 			},
 			want: Device{
-				Name:   "iPhone 8",
-				ID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				Status: "Shutdown",
-				OS:     "16.0",
+				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				Status:   "Shutdown",
+				Platform: "iOS Simulator",
+				Name:     "iPhone 8",
+				OS:       "16.0",
 			},
 		},
 		{
@@ -130,10 +206,11 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "iPhone 8",
 			},
 			want: Device{
-				Name:   "iPhone 8",
-				ID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				Status: "Shutdown",
-				OS:     "16.0",
+				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				Status:   "Shutdown",
+				Platform: "iOS Simulator",
+				Name:     "iPhone 8",
+				OS:       "16.0",
 			},
 		},
 		{
@@ -144,10 +221,11 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "iPhone 8",
 			},
 			want: Device{
-				Name:   "iPhone 8",
-				ID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				Status: "Shutdown",
-				OS:     "16.0",
+				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				Status:   "Shutdown",
+				Platform: "iOS Simulator",
+				Name:     "iPhone 8",
+				OS:       "16.0",
 			},
 		},
 		{
@@ -158,10 +236,11 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "Apple Watch Series 7 - 45mm",
 			},
 			want: Device{
-				Name:   "Apple Watch Series 7 - 45mm",
-				ID:     "4F40330B-622F-4B44-8918-0BBE62720CC4",
-				Status: "Shutdown",
-				OS:     "9.0",
+				ID:       "4F40330B-622F-4B44-8918-0BBE62720CC4",
+				Status:   "Shutdown",
+				Platform: "watchOS Simulator",
+				Name:     "Apple Watch Series 7 - 45mm",
+				OS:       "9.0",
 			},
 		},
 	}
@@ -170,6 +249,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			d := deviceFinder{
 				logger:         logger,
 				commandFactory: commandFactory,
+				xcodeVersion:   tt.xcodeVersion,
 			}
 
 			got, err := d.FindDevice(tt.wantedDevice)

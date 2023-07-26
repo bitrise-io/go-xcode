@@ -20,6 +20,20 @@ func Test_GivenDestinationIsCorrect_WhenSimulatorIsCreated_ThenItReturnsCorrectS
 	}
 }
 
+func Test_GivenDestinationIsCorrect_WhenSimulatorIsCreatedWithArchFlag_ThenItReturnsCorrectSimulator(t *testing.T) {
+	// Given
+	destination := "platform=iOS Simulator,name=iPhone 8 Plus,OS=latest,arch=x86_64"
+
+	// When
+	simulator, err := NewSimulator(destination)
+
+	// Then
+	if assert.NoError(t, err) {
+		expectedSimulator := &Simulator{Platform: "iOS Simulator", Name: "iPhone 8 Plus", OS: "latest", Arch: "x86_64"}
+		assert.Equal(t, expectedSimulator, simulator)
+	}
+}
+
 func Test_GivenDestinationHasNoOS_WhenSimulatorIsCreated_ThenItReturnsSimulatorWithLatestOS(t *testing.T) {
 	// Given
 	destination := "platform=iOS Simulator,name=iPhone 8 Plus"
