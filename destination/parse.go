@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/errorutil"
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/hashicorp/go-version"
@@ -275,7 +274,6 @@ func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 	var allVersions []deviceRuntime
 
 	for _, runtime := range d.list.Runtimes {
-
 		if !runtime.IsAvailable {
 			continue
 		}
@@ -313,13 +311,17 @@ func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 		)
 
 		for _, runtime := range allVersions {
-			version, err := version.NewVersion(runtime.Version)
+			runtimeVersion, err := version.NewVersion(runtime.Version)
 			if err != nil {
-				return deviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", version, err)
+				return deviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
 			}
 
-			if latestVersion == nil || version.GreaterThan(latestVersion) {
-				latestVersion = version
+			if wanted.Platform == string(IOS) && !isRuntimeSupportedByXcode(wanted.Platform, runtimeVersion, d.xcodeVersion) {
+				continue
+			}
+
+			if latestVersion == nil || runtimeVersion.GreaterThan(latestVersion) {
+				latestVersion = runtimeVersion
 				latestRuntime = runtime
 			}
 		}
@@ -340,7 +342,7 @@ func (d deviceFinder) filterRuntime(wanted Simulator) (deviceRuntime, error) {
 
 		runtimeSegments := runtimeVersion.Segments()
 		if len(runtimeSegments) < 2 {
-			log.Warnf("no minor version found in Simulator version (%s)", runtime.Version)
+			d.logger.Warnf("no minor version found in Simulator version (%s)", runtime.Version)
 			continue
 		}
 

@@ -9,6 +9,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/destination/testdata"
 	"github.com/bitrise-io/go-xcode/v2/mocks"
+	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -72,6 +73,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 
 	tests := []struct {
 		name         string
+		xcodeVersion xcodeversion.Version
 		wantedDevice Simulator
 		want         Device
 		wantErr      bool
@@ -89,6 +91,22 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
 				OS:       "16.0",
+			},
+		},
+		{
+			name:         "latest for an earler Xcode version",
+			xcodeVersion: xcodeversion.Version{MajorVersion: 13},
+			wantedDevice: Simulator{
+				Platform: "iOS Simulator",
+				OS:       "latest",
+				Name:     "iPhone 8",
+			},
+			want: Device{
+				ID:       "3F9A1206-31E2-417B-BBC7-6330B52B8358",
+				Status:   "Shutdown",
+				Platform: "iOS Simulator",
+				Name:     "iPhone 8",
+				OS:       "13.7",
 			},
 		},
 		{
@@ -231,6 +249,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			d := deviceFinder{
 				logger:         logger,
 				commandFactory: commandFactory,
+				xcodeVersion:   tt.xcodeVersion,
 			}
 
 			got, err := d.FindDevice(tt.wantedDevice)
