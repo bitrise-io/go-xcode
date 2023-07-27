@@ -12,6 +12,7 @@ import (
 	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/destination"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 type Manager interface {
 	LaunchWithGUI(simulatorID string) error
 	ResetLaunchServices() error
-	Boot(id string) error
+	Boot(device destination.Device) error
 	WaitForBootFinished(id string, timeout time.Duration) error
 	EnableVerboseLog(id string) error
 	CollectDiagnostics() (string, error)
@@ -105,8 +106,13 @@ func (m manager) ResetLaunchServices() error {
 }
 
 // Boot boots Simulator in headless mode
-func (m manager) Boot(id string) error {
-	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "boot", id}, &command.Opts{
+func (m manager) Boot(device destination.Device) error {
+	args := []string{"simctl", "boot", device.ID}
+	if device.Arch != "" {
+		args = append(args, fmt.Sprintf("--arch=%s", device.Arch))
+	}
+
+	cmd := m.commandFactory.Create("xcrun", args, &command.Opts{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	})
