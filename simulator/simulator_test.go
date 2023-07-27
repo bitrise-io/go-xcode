@@ -53,6 +53,23 @@ func Test_GivenSimulator_WhenBoot_ThenBootsTheRequestedSimulator(t *testing.T) {
 	mocks.commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
 }
 
+func Test_GivenSimulator_WhenBootRosetta_ThenBootsTheRequestedSimulator(t *testing.T) {
+	// Given
+	manager, mocks := createSimulatorAndMocks()
+
+	const identifier = "test-identifier"
+	parameters := []string{"simctl", "boot", identifier, "--arch=x86_64"}
+	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
+
+	// When
+	err := manager.Boot(destination.Device{ID: identifier, Arch: "x86_64"})
+
+	// Then
+	assert.NoError(t, err)
+
+	mocks.commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
+}
+
 func Test_GivenSimulator_WhenWaitForBootFinishedTimesOut_ThenFails(t *testing.T) {
 	// Given
 	manager, mocks := createSimulatorAndMocks()
