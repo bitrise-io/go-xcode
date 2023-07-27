@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/destination"
 	mockcommand "github.com/bitrise-io/go-xcode/v2/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -44,7 +45,24 @@ func Test_GivenSimulator_WhenBoot_ThenBootsTheRequestedSimulator(t *testing.T) {
 	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
 
 	// When
-	err := manager.Boot(identifier)
+	err := manager.Boot(destination.Device{ID: identifier})
+
+	// Then
+	assert.NoError(t, err)
+
+	mocks.commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
+}
+
+func Test_GivenSimulator_WhenBootRosetta_ThenBootsTheRequestedSimulator(t *testing.T) {
+	// Given
+	manager, mocks := createSimulatorAndMocks()
+
+	const identifier = "test-identifier"
+	parameters := []string{"simctl", "boot", identifier, "--arch=x86_64"}
+	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
+
+	// When
+	err := manager.Boot(destination.Device{ID: identifier, Arch: "x86_64"})
 
 	// Then
 	assert.NoError(t, err)
