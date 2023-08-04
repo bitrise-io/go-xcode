@@ -60,7 +60,7 @@ func createInstallerAndMocks(t *testing.T, installed bool) (Runner, *version.Ver
 	}
 	mockxcpretty.On("depVersion").Return(version, nil)
 
-	installer := &xcprettyCommandRunner{
+	installer := &XcprettyCommandRunner{
 		logger:   log.NewLogger(),
 		xcpretty: mockxcpretty,
 	}

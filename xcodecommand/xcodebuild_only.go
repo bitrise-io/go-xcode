@@ -13,19 +13,22 @@ import (
 
 var xcodeCommandEnvs = []string{"NSUnbufferedIO=YES"}
 
-type rawXcodeCommand struct {
+// RawXcodeCommandRunner is an xcodebuild runner that uses no additional log formatter
+type RawXcodeCommandRunner struct {
 	logger         log.Logger
 	commandFactory command.Factory
 }
 
+// NewRawCommandRunner creates a new RawXcodeCommandRunner
 func NewRawCommandRunner(logger log.Logger, commandFactory command.Factory) Runner {
-	return &rawXcodeCommand{
+	return &RawXcodeCommandRunner{
 		logger:         logger,
 		commandFactory: commandFactory,
 	}
 }
 
-func (c *rawXcodeCommand) Run(workDir string, args []string, _ []string) (Output, error) {
+// Run runs xcodebuild using no additional log formatter
+func (c *RawXcodeCommandRunner) Run(workDir string, args []string, _ []string) (Output, error) {
 	var (
 		outBuffer bytes.Buffer
 		err       error
@@ -52,6 +55,7 @@ func (c *rawXcodeCommand) Run(workDir string, args []string, _ []string) (Output
 	}, err
 }
 
-func (c *rawXcodeCommand) CheckInstall() (*version.Version, error) {
+// CheckInstall does nothing as no additional log formatter is used
+func (c *RawXcodeCommandRunner) CheckInstall() (*version.Version, error) {
 	return nil, nil
 }

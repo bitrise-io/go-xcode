@@ -15,7 +15,8 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/errorfinder"
 )
 
-type xcprettyCommandRunner struct {
+// XcprettyCommandRunner is an xcodebuild command runner that uses xcpretty as log formatter
+type XcprettyCommandRunner struct {
 	logger         log.Logger
 	commandFactory command.Factory
 	pathChecker    pathutil.PathChecker
@@ -23,8 +24,9 @@ type xcprettyCommandRunner struct {
 	xcpretty       xcprettyManager // used by CheckInstall
 }
 
+// NewXcprettyCommandRunner crates a new XcprettyCommandRunner
 func NewXcprettyCommandRunner(logger log.Logger, commandFactory command.Factory, pathChecker pathutil.PathChecker, fileManager fileutil.FileManager, rubyCommandFactory ruby.CommandFactory, rubyEnv ruby.Environment) Runner {
-	return &xcprettyCommandRunner{
+	return &XcprettyCommandRunner{
 		logger:         logger,
 		commandFactory: commandFactory,
 		pathChecker:    pathChecker,
@@ -37,7 +39,8 @@ func NewXcprettyCommandRunner(logger log.Logger, commandFactory command.Factory,
 	}
 }
 
-func (c *xcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcprettyArgs []string) (Output, error) {
+// Run runs xcodebuild using xcpretty as a log formatter
+func (c *XcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcprettyArgs []string) (Output, error) {
 	var (
 		buildOutBuffer         bytes.Buffer
 		pipeReader, pipeWriter = io.Pipe()
@@ -98,7 +101,7 @@ func (c *xcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcp
 	}, err
 }
 
-func (c *xcprettyCommandRunner) cleanOutputFile(xcprettyArgs []string) {
+func (c *XcprettyCommandRunner) cleanOutputFile(xcprettyArgs []string) {
 	// get and delete the xcpretty output file, if exists
 	xcprettyOutputFilePath := ""
 	isNextOptOutputPth := false

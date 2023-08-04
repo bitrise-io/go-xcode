@@ -17,19 +17,22 @@ import (
 
 const xcbeautify = "xcbeautify"
 
-type xcbeautifyRunner struct {
+// XcbeautifyRunner is a xcodebuild runner that uses xcbeautify as log formatter
+type XcbeautifyRunner struct {
 	logger         log.Logger
 	commandFactory command.Factory
 }
 
+// NewXcbeautifyRunner returns a new xcbeautify runner
 func NewXcbeautifyRunner(logger log.Logger, commandFactory command.Factory) Runner {
-	return &xcbeautifyRunner{
+	return &XcbeautifyRunner{
 		logger:         logger,
 		commandFactory: commandFactory,
 	}
 }
 
-func (c *xcbeautifyRunner) Run(workDir string, xcodebuildArgs []string, xcbeautifyArgs []string) (Output, error) {
+// Run runs xcodebuild using xcbeautify as an output formatter
+func (c *XcbeautifyRunner) Run(workDir string, xcodebuildArgs []string, xcbeautifyArgs []string) (Output, error) {
 	var (
 		buildOutBuffer         bytes.Buffer
 		pipeReader, pipeWriter = io.Pipe()
@@ -88,7 +91,8 @@ func (c *xcbeautifyRunner) Run(workDir string, xcodebuildArgs []string, xcbeauti
 	}, err
 }
 
-func (c *xcbeautifyRunner) CheckInstall() (*version.Version, error) {
+// CheckInstall checks if xcbeautify is on the PATH and returns its version
+func (c *XcbeautifyRunner) CheckInstall() (*version.Version, error) {
 	c.logger.Println()
 	c.logger.Infof("Checking log formatter (xcbeautify) version")
 

@@ -20,7 +20,9 @@ type xcpretty struct {
 	rubyCommandFactory ruby.CommandFactory
 }
 
-func (c *xcprettyCommandRunner) CheckInstall() (*version.Version, error) {
+// CheckInstall checks if xcpretty is isntalled, if not installs it.
+// Returns its version.
+func (c *XcprettyCommandRunner) CheckInstall() (*version.Version, error) {
 	c.logger.Println()
 	c.logger.Infof("Checking if log formatter (xcpretty) is installed")
 
