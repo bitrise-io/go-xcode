@@ -20,19 +20,19 @@ func NewFallbackRunner(runner Runner, logger log.Logger, commandFactory command.
 	}
 }
 
-func (sel *FallbackRunner) CheckInstall() (*version.Version, error) {
-	ver, err := sel.runner.CheckInstall()
+func (f *FallbackRunner) CheckInstall() (*version.Version, error) {
+	ver, err := f.runner.CheckInstall()
 	if err == nil {
 		return ver, nil
 	}
 
-	sel.logger.Errorf("Checking log formatter failed: %s", err)
-	sel.logger.Infof("Falling back to xcodebuild log formatter")
-	sel.runner = sel.fallbackRunner
+	f.logger.Errorf("Checking log formatter failed: %s", err)
+	f.logger.Infof("Falling back to xcodebuild log formatter")
+	f.runner = f.fallbackRunner
 
-	return sel.runner.CheckInstall()
+	return f.runner.CheckInstall()
 }
 
-func (sel *FallbackRunner) Run(workDir string, xcodebuildArgs []string, xcbeautifyArgs []string) (Output, error) {
-	return sel.runner.Run(workDir, xcodebuildArgs, xcbeautifyArgs)
+func (f *FallbackRunner) Run(workDir string, xcodebuildArgs []string, xcbeautifyArgs []string) (Output, error) {
+	return f.runner.Run(workDir, xcodebuildArgs, xcbeautifyArgs)
 }
