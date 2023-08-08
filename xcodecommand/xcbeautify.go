@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/errorfinder"
@@ -100,7 +99,8 @@ func (c *XcbeautifyRunner) CheckInstall() (*version.Version, error) {
 
 	out, err := versionCmd.RunAndReturnTrimmedOutput()
 	if err != nil {
-		if errorutil.IsExitStatusError(err) {
+		var exerr *exec.ExitError
+		if errors.As(err, &exerr) {
 			return nil, fmt.Errorf("xcbeautify version command failed: %w", err)
 		}
 
