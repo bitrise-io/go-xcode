@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/v2/xcconfig/mocks"
+	"github.com/bitrise-io/go-xcode/v2/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
