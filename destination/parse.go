@@ -205,17 +205,10 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 				return Device{}, fmt.Errorf("device (%s) with runtime OS (%s) is unavailable: %s", wantedDevice.Name, runtime.Version, device.AvailabilityError)
 			}
 
-			// Fetch the device type (e.g. iPhone 11) for logging purposes.
-			// The device name equals this by default, but not for all manually created devices like `Bitrise iOS default`
-			deviceType, err := d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier)
-			if err != nil {
-				return Device{}, fmt.Errorf("no matching device for device type identifier (%s)", device.TypeIdentifier)
-			}
-
 			return Device{
 				ID:       device.UDID,
 				Status:   device.State,
-				Type:     deviceType,
+				Type:     device.TypeIdentifier,
 				Platform: wantedPlatform,
 				Name:     device.Name,
 				OS:       runtime.Version,
@@ -231,15 +224,10 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 				continue
 			}
 
-			deviceType, err := d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier)
-			if err != nil {
-				return Device{}, fmt.Errorf("no matching device for device type identifier (%s)", device.TypeIdentifier)
-			}
-
 			return Device{
 				ID:       device.UDID,
 				Status:   device.State,
-				Type:     deviceType,
+				Type:     device.TypeIdentifier,
 				Platform: wantedPlatform,
 				Name:     device.Name,
 				OS:       runtime.Version,
@@ -269,16 +257,6 @@ func (d deviceFinder) convertDeviceNameToDeviceTypeID(wantedDeviceName string) (
 	}
 
 	return "", fmt.Errorf("invalid device name (%s) provided", wantedDeviceName)
-}
-
-func (d deviceFinder) convertDeviceTypeIDToDeviceName(wantedDeviceTypeID string) (string, error) {
-	for _, dt := range d.list.DeviceTypes {
-		if dt.Identifier == wantedDeviceTypeID {
-			return dt.Name, nil
-		}
-	}
-
-	return "", fmt.Errorf("invalid device type identifier (%s) provided", wantedDeviceTypeID)
 }
 
 func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Version) bool {
