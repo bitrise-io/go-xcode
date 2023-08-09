@@ -148,7 +148,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			want: Device{
 				ID:       "20FDD0DF-0369-43FF-98E6-DBB8C820341E",
 				Status:   "Shutdown",
-				Type:     "com.apple.CoreSimulator.SimDeviceType.iPhone-6s",
+				Type:     "iPhone 6s",
 				Platform: "iOS Simulator",
 				Name:     "Bitrise iOS default",
 				OS:       "13.7",
