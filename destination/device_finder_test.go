@@ -88,6 +88,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			want: Device{
 				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
 				Status:   "Shutdown",
+				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
 				OS:       "16.0",
@@ -104,6 +105,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			want: Device{
 				ID:       "3F9A1206-31E2-417B-BBC7-6330B52B8358",
 				Status:   "Shutdown",
+				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
 				OS:       "13.7",
@@ -120,6 +122,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			want: Device{
 				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
 				Status:   "Shutdown",
+				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
 				OS:       "16.0",
@@ -145,6 +148,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			want: Device{
 				ID:       "20FDD0DF-0369-43FF-98E6-DBB8C820341E",
 				Status:   "Shutdown",
+				Type:     "iPhone 6s",
 				Platform: "iOS Simulator",
 				Name:     "Bitrise iOS default",
 				OS:       "13.7",
@@ -160,6 +164,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			want: Device{
 				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
 				Status:   "Shutdown",
+				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
 				OS:       "16.0",
@@ -193,6 +198,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			want: Device{
 				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
 				Status:   "Shutdown",
+				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
 				OS:       "16.0",
@@ -208,6 +214,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			want: Device{
 				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
 				Status:   "Shutdown",
+				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
 				OS:       "16.0",
@@ -223,6 +230,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			want: Device{
 				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
 				Status:   "Shutdown",
+				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
 				OS:       "16.0",
@@ -238,6 +246,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			want: Device{
 				ID:       "4F40330B-622F-4B44-8918-0BBE62720CC4",
 				Status:   "Shutdown",
+				Type:     "Apple Watch Series 7 - 45mm",
 				Platform: "watchOS Simulator",
 				Name:     "Apple Watch Series 7 - 45mm",
 				OS:       "9.0",

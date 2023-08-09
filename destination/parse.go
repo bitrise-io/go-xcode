@@ -208,6 +208,7 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 			return Device{
 				ID:       device.UDID,
 				Status:   device.State,
+				Type:     d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier),
 				Platform: wantedPlatform,
 				Name:     device.Name,
 				OS:       runtime.Version,
@@ -226,6 +227,7 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 			return Device{
 				ID:       device.UDID,
 				Status:   device.State,
+				Type:     d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier),
 				Platform: wantedPlatform,
 				Name:     device.Name,
 				OS:       runtime.Version,
@@ -235,19 +237,19 @@ func (d deviceFinder) filterDeviceList(wantedDevice Simulator) (Device, error) {
 	}
 
 	// If there is no matching device, look up device type so we can create device in a later step
-	deviceTypeIdentifier, err := d.lookupDeviceTypeID(wantedDevice.Name)
+	deviceTypeID, err := d.convertDeviceNameToDeviceTypeID(wantedDevice.Name)
 	if err != nil {
 		return Device{}, err
 	}
 
-	if !runtime.isDeviceSupported(deviceTypeIdentifier) {
-		return Device{}, fmt.Errorf("runtime (%s) is incompatible with device type (%s)", runtimeID, deviceTypeIdentifier)
+	if !runtime.isDeviceSupported(deviceTypeID) {
+		return Device{}, fmt.Errorf("runtime (%s) is incompatible with device type (%s)", runtimeID, deviceTypeID)
 	}
 
-	return Device{}, newMissingDeviceErr(wantedDevice.Name, deviceTypeIdentifier, runtimeID)
+	return Device{}, newMissingDeviceErr(wantedDevice.Name, deviceTypeID, runtimeID)
 }
 
-func (d deviceFinder) lookupDeviceTypeID(wantedDeviceName string) (string, error) {
+func (d deviceFinder) convertDeviceNameToDeviceTypeID(wantedDeviceName string) (string, error) {
 	for _, dt := range d.list.DeviceTypes {
 		if dt.Name == wantedDeviceName {
 			return dt.Identifier, nil
@@ -255,6 +257,19 @@ func (d deviceFinder) lookupDeviceTypeID(wantedDeviceName string) (string, error
 	}
 
 	return "", fmt.Errorf("invalid device name (%s) provided", wantedDeviceName)
+}
+
+// convertDeviceTypeIDToDeviceName returns the device type (e.g. iPhone 11) for logging purposes.
+// The device name equals this by default, but not for all manually created devices like `Bitrise iOS default`
+func (d deviceFinder) convertDeviceTypeIDToDeviceName(wantedDeviceTypeID string) string {
+	for _, dt := range d.list.DeviceTypes {
+		if dt.Identifier == wantedDeviceTypeID {
+			return dt.Name
+		}
+	}
+
+	// Should not happen. Falling back to the device type ID, as used for logging only.
+	return wantedDeviceTypeID
 }
 
 func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Version) bool {
