@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/v2/xcconfig/mocks"
+	"github.com/bitrise-io/go-xcode/v2/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,10 +16,10 @@ func Test_WhenWritingXCConfigContent_ThenItShouldReturnFilePath(t *testing.T) {
 		testContent      = "TEST"
 		testTempDir      = "temp_dir"
 		expectedPath     = filepath.Join(testTempDir, "temp.xcconfig")
-		mockPathModifier = new(mocks.PathModifier)
-		mockPathChecker  = new(mocks.PathChecker)
-		mockPathProvider = new(mocks.PathProvider)
-		mockFileManager  = new(mocks.FileManager)
+		mockPathModifier = mocks.NewPathModifier(t)
+		mockPathChecker  = mocks.NewPathChecker(t)
+		mockPathProvider = mocks.NewPathProvider(t)
+		mockFileManager  = mocks.NewFileManager(t)
 	)
 
 	mockPathProvider.On("CreateTempDir", "").Return(testTempDir, nil)
@@ -33,21 +33,16 @@ func Test_WhenWritingXCConfigContent_ThenItShouldReturnFilePath(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, expectedPath, path)
 	}
-
-	mockPathProvider.AssertExpectations(t)
-	mockFileManager.AssertExpectations(t)
-	mockPathModifier.AssertExpectations(t)
-	mockPathChecker.AssertExpectations(t)
 }
 
 func Test_XCConfigInput_NonExistentPathErrors(t *testing.T) {
 	// Given
 	var (
 		testContent      = "TEST.xcconfig"
-		mockPathModifier = new(mocks.PathModifier)
-		mockPathChecker  = new(mocks.PathChecker)
-		mockPathProvider = new(mocks.PathProvider)
-		mockFileManager  = new(mocks.FileManager)
+		mockPathModifier = mocks.NewPathModifier(t)
+		mockPathChecker  = mocks.NewPathChecker(t)
+		mockPathProvider = mocks.NewPathProvider(t)
+		mockFileManager  = mocks.NewFileManager(t)
 	)
 
 	mockPathModifier.On("AbsPath", testContent).Return(testContent, nil)
@@ -60,21 +55,16 @@ func Test_XCConfigInput_NonExistentPathErrors(t *testing.T) {
 	// Then
 	assert.Error(t, err)
 	assert.Equal(t, path, "")
-
-	mockPathProvider.AssertExpectations(t)
-	mockFileManager.AssertExpectations(t)
-	mockPathModifier.AssertExpectations(t)
-	mockPathChecker.AssertExpectations(t)
 }
 
 func Test_XCConfigInput_CorrectInputPathReturnSamePath(t *testing.T) {
 	// Given
 	var (
 		input            = "TEST.xcconfig"
-		mockPathChecker  = new(mocks.PathChecker)
-		mockPathProvider = new(mocks.PathProvider)
-		mockFileManager  = new(mocks.FileManager)
-		mockPathModifier = new(mocks.PathModifier)
+		mockPathModifier = mocks.NewPathModifier(t)
+		mockPathChecker  = mocks.NewPathChecker(t)
+		mockPathProvider = mocks.NewPathProvider(t)
+		mockFileManager  = mocks.NewFileManager(t)
 	)
 
 	mockPathModifier.On("AbsPath", input).Return(input, nil)
@@ -88,9 +78,4 @@ func Test_XCConfigInput_CorrectInputPathReturnSamePath(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, path, input)
 	}
-
-	mockPathProvider.AssertExpectations(t)
-	mockFileManager.AssertExpectations(t)
-	mockPathModifier.AssertExpectations(t)
-	mockPathChecker.AssertExpectations(t)
 }
