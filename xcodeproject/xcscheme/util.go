@@ -13,7 +13,7 @@ func FindSchemesIn(root string) (schemes []Scheme, err error) {
 		return nil, err
 	}
 
-	//
+	// TODO: Xcode only considers user schemes of the current user
 	// Add the non-shared user schemes to the list
 	userPths, err := pathsByPattern(root, "xcuserdata", "*.xcuserdatad", "xcschemes", "*.xcscheme")
 	if err != nil {
