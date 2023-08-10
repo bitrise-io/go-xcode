@@ -12,6 +12,51 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_GivenNewlyGeneratedXcodeProject_WhenCheckingIfAutocreateSchemeNeeded_ThenReturnsTrue(t *testing.T) {
+	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
+	proj, err := open(xcodeProjectPath)
+	require.NoError(t, err)
+
+	isAutocreateSchemesNeeded, err := proj.isAutocreateSchemesNeeded()
+	require.NoError(t, err)
+	require.True(t, isAutocreateSchemesNeeded)
+}
+
+func Test_GivenNewlyGeneratedXcodeProject_WhenCheckingIfAutocreateSchemeEnabled_ThenReturnsTrue(t *testing.T) {
+	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
+	proj, err := open(xcodeProjectPath)
+	require.NoError(t, err)
+
+	isAutocreateSchemesEnabled, err := proj.isAutocreateSchemesEnabled()
+	require.NoError(t, err)
+	require.True(t, isAutocreateSchemesEnabled)
+}
+
+func Test_GivenNewlyGeneratedXcodeProject_WhenAutoCreateSchemes_ThenCreatesDefaultSchemes(t *testing.T) {
+	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
+	proj, err := open(xcodeProjectPath)
+	require.NoError(t, err)
+
+	err = proj.autocreateSchemes()
+	require.NoError(t, err)
+
+	schemes, err := proj.Schemes()
+	require.NoError(t, err)
+
+	expectedSchemeNames := []string{"ios-sample"}
+	require.Equal(t, len(expectedSchemeNames), len(schemes))
+	for _, expectedSchemeName := range expectedSchemeNames {
+		schemeFound := false
+		for _, scheme := range schemes {
+			if scheme.Name == expectedSchemeName {
+				schemeFound = true
+				break
+			}
+		}
+		require.True(t, schemeFound)
+	}
+}
+
 func ensureTmpTestdataDir(t *testing.T) string {
 	_, callerFilename, _, ok := runtime.Caller(0)
 	require.True(t, ok)
@@ -32,6 +77,7 @@ func newlyGeneratedXcodeProjectPath(t *testing.T) string {
 	newlyGeneratedXcodeProjectDirExist := !errors.Is(err, os.ErrNotExist)
 	if newlyGeneratedXcodeProjectDirExist {
 		cmd := command.New("git", "clean", "-f", "-x", "-d")
+		cmd.SetDir(newlyGeneratedXcodeProjectDir)
 		require.NoError(t, cmd.Run())
 	} else {
 		repo := "https://github.com/godrei/ios-sample.git"
@@ -39,14 +85,4 @@ func newlyGeneratedXcodeProjectPath(t *testing.T) string {
 		testhelper.GitCloneBranch(t, repo, branch, newlyGeneratedXcodeProjectDir)
 	}
 	return filepath.Join(newlyGeneratedXcodeProjectDir, "ios-sample.xcodeproj")
-}
-
-func Test_GivenNewlyGeneratedXcodeProject_WhenCheckingIfAutocreateSchemeNeeded_ThenReturnsTrue(t *testing.T) {
-	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
-	proj, err := open(xcodeProjectPath)
-	require.NoError(t, err)
-
-	isAutocreateSchemesNeeded, err := proj.isAutocreateSchemesNeeded()
-	require.NoError(t, err)
-	require.True(t, isAutocreateSchemesNeeded)
 }
