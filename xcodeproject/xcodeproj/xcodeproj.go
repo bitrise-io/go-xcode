@@ -382,6 +382,10 @@ func Open(pth string) (XcodeProj, error) {
 
 	log.TDebugf("Opened xcode project")
 
+	if err := p.autoCreateSchemesIfNeeded(); err != nil {
+		return XcodeProj{}, err
+	}
+
 	return *p, nil
 }
 
