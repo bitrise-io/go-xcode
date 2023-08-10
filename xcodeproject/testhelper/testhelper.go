@@ -34,10 +34,15 @@ func GitCloneBranchIntoTmpDir(t *testing.T, repo string, branch string) string {
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("__xcode-proj__")
 	require.NoError(t, err)
 
-	cmd := command.New("git", "clone", "-b", branch, repo, tmpDir)
-	require.NoError(t, cmd.Run())
+	GitCloneBranch(t, repo, branch, tmpDir)
 
 	return tmpDir
+}
+
+// GitCloneBranch clones a branch from a git repository into an existing directory
+func GitCloneBranch(t *testing.T, repo string, branch string, dir string) {
+	cmd := command.New("git", "clone", "-b", branch, repo, dir)
+	require.NoError(t, cmd.Run())
 }
 
 // CreateTmpFile ...

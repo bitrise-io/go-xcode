@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	plist "github.com/bitrise-io/go-plist"
+	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -360,6 +360,21 @@ func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 
 // Open ...
 func Open(pth string) (XcodeProj, error) {
+	p, err := open(pth)
+	if err != nil {
+		return XcodeProj{}, err
+	}
+
+	log.TDebugf("Opened xcode project")
+
+	if err := p.autoCreateSchemesIfNeeded(); err != nil {
+		return XcodeProj{}, err
+	}
+
+	return p, nil
+}
+
+func open(pth string) (XcodeProj, error) {
 	absPth, err := pathutil.AbsPath(pth)
 	if err != nil {
 		return XcodeProj{}, err
@@ -379,12 +394,6 @@ func Open(pth string) (XcodeProj, error) {
 
 	p.Path = absPth
 	p.Name = strings.TrimSuffix(filepath.Base(absPth), filepath.Ext(absPth))
-
-	log.TDebugf("Opened xcode project")
-
-	if err := p.autoCreateSchemesIfNeeded(); err != nil {
-		return XcodeProj{}, err
-	}
 
 	return *p, nil
 }

@@ -168,6 +168,9 @@ func (p XcodeProj) sharedSchemeFilePaths() ([]string, error) {
 func listSchemeFilePaths(dir string) ([]string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
