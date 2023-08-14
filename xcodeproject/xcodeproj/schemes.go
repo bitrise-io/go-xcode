@@ -35,7 +35,7 @@ func (p XcodeProj) autoCreateSchemesIfNeeded() error {
 
 	isAutocreateSchemesEnabled, err := p.isAutocreateSchemesEnabled()
 	if err != nil {
-		return fmt.Errorf("schemes should be auto created, but failed to check whether autocreate schemes is enabled: %s", err)
+		return fmt.Errorf("schemes should be auto created, but failed to check whether autocreate schemes is enabled: %w", err)
 	}
 
 	if !isAutocreateSchemesEnabled {
@@ -43,7 +43,7 @@ func (p XcodeProj) autoCreateSchemesIfNeeded() error {
 	}
 
 	if err := p.autocreateSchemes(); err != nil {
-		return fmt.Errorf("autocreating schemes failed: %s", err)
+		return fmt.Errorf("autocreating schemes failed: %w", err)
 	}
 
 	return nil
@@ -79,10 +79,6 @@ func (p XcodeProj) isAutocreateSchemesEnabled() (bool, error) {
 }
 
 func (p XcodeProj) isAutocreateSchemesNeeded() (bool, error) {
-	// if a shared scheme given -> no
-	// if a current user's user scheme given -> no
-	// if no schemes (no shared, no user scheme) given -> yes
-	// if another user's user scheme given -> yes
 	sharedSchemeFilePaths, err := p.sharedSchemeFilePaths()
 	if err != nil {
 		return false, err
