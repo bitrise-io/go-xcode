@@ -30,7 +30,7 @@ func Test_GivenScheme_WhenMarshal_ThenContentRemain(t *testing.T) {
 
 	schemeContent, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
-	require.Equal(t, schemeContent, content)
+	require.Equal(t, string(schemeContent), string(content))
 }
 
 func Test_GivenSchemeWithTestPlan_WhenOpen_ThenDefaultTestPlanSet(t *testing.T) {

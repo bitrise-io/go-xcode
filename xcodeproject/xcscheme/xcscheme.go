@@ -66,7 +66,7 @@ type BuildAction struct {
 // TestableReference ...
 type TestableReference struct {
 	Skipped        string `xml:"skipped,attr"`
-	Parallelizable string `xml:"parallelizable"`
+	Parallelizable string `xml:"parallelizable,attr,omitempty"`
 
 	BuildableReference BuildableReference
 }
@@ -119,7 +119,7 @@ type TestAction struct {
 	//   As long as the related testPlan has default settings it is not created as a separate TestPlan file.
 	//   If any default test plan setting is changed, Xcode creates the TestPlan file, adds a TestPlans entry to the scheme and removes this property from the TestAction.
 	//   Code working with test plans should be updated to consider this new property.
-	ShouldAutocreateTestPlan string `xml:"shouldAutocreateTestPlan,attr"`
+	ShouldAutocreateTestPlan string `xml:"shouldAutocreateTestPlan,attr,omitempty"`
 
 	Testables         []TestableReference `xml:"Testables>TestableReference"`
 	TestPlans         *TestPlans
