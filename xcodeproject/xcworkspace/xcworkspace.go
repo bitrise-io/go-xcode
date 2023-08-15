@@ -17,6 +17,7 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 	"golang.org/x/text/unicode/norm"
+	"howett.net/plist"
 )
 
 const (
@@ -54,7 +55,7 @@ func Open(pth string) (Workspace, error) {
 
 // Schemes returns the schemes considered by Xcode, when opening the given workspace.
 // The considered schemes are the workspace shared schemes, the workspace user schemes (for the current user)
-// and the embedded project's schemes (XcodeProj.Schemes).
+// and the embedded project's schemes (XcodeProj.SchemesWithAutocreateEnabled).
 func (w Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
 	log.TDebugf("Searching schemes in workspace: %s", w.Path)
 
@@ -81,6 +82,11 @@ func (w Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
 		return nil, err
 	}
 
+	isAutocreateSchemesEnabled, err := w.isAutocreateSchemesEnabled()
+	if err != nil {
+		return nil, err
+	}
+
 	for _, projectLocation := range projectLocations {
 		if exist, err := pathutil.IsPathExists(projectLocation); err != nil {
 			return nil, fmt.Errorf("failed to check if project exist at: %s, error: %s", projectLocation, err)
@@ -94,7 +100,7 @@ func (w Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
 			return nil, err
 		}
 
-		projectSchemes, err := project.Schemes()
+		projectSchemes, err := project.SchemesWithAutocreateEnabled(isAutocreateSchemesEnabled)
 		if err != nil {
 			return nil, err
 		}
@@ -243,6 +249,34 @@ func (w Workspace) userSchemesDir() (string, error) {
 	username := currentUser.Username
 
 	return filepath.Join(w.Path, "xcuserdata", username+".xcuserdatad", "xcschemes"), nil
+}
+
+func (w Workspace) isAutocreateSchemesEnabled() (bool, error) {
+	// <workspace_name>.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+	shareddataDir := filepath.Join(w.Path, "xcshareddata")
+	workspaceSettingsPth := filepath.Join(shareddataDir, "WorkspaceSettings.xcsettings")
+
+	workspaceSettingsContent, err := os.ReadFile(workspaceSettingsPth)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			// By default 'Autocreate Schemes' is enabled
+			return true, nil
+		}
+
+		return false, err
+	}
+
+	var settings serialized.Object
+	if _, err := plist.Unmarshal(workspaceSettingsContent, &settings); err != nil {
+		return false, err
+	}
+
+	autoCreate, err := settings.Bool("IDEWorkspaceSharedSettings_AutocreateContextsIfNeeded")
+	if err != nil {
+		return false, err
+	}
+
+	return autoCreate, nil
 }
 
 func listSchemeFilePaths(dir string) ([]string, error) {

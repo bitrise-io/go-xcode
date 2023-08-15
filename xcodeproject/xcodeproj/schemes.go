@@ -24,17 +24,10 @@ import (
 func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 	log.TDebugf("Searching schemes in project: %s", p.Path)
 
-	sharedSchemes, err := p.sharedSchemes()
+	schemes, err := p.visibleSchemes()
 	if err != nil {
 		return nil, err
 	}
-
-	userSchemes, err := p.userSchemes()
-	if err != nil {
-		return nil, err
-	}
-
-	schemes := append(sharedSchemes, userSchemes...)
 
 	if len(schemes) == 0 {
 		isUserSchememanagementFileExist, err := p.isUserSchememanagementFileExist()
@@ -51,6 +44,42 @@ func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 		isAutocreateSchemesEnabled, err := p.isAutocreateSchemesEnabled()
 		if err != nil {
 			return nil, err
+		}
+
+		if isAutocreateSchemesEnabled {
+			log.TDebugf("Autocreating the default scheme")
+			defaultSchemes := p.ReCreateSchemes()
+			return defaultSchemes, nil
+		}
+
+		return nil, fmt.Errorf("no schemes found and the Xcode project's 'Autocreate schemes' option is disabled")
+	}
+
+	log.TDebugf("%d scheme(s) found", len(schemes))
+	return schemes, nil
+}
+
+// SchemesWithAutocreateEnabled returns the schemes considered by Xcode, when opening the given project as part of a workspace.
+// SchemesWithAutocreateEnabled behaves similarly to XcodeProj.Schemes,
+// the only difference is that the ‘Autocreate schemes' option is coming from the workspace settings.
+func (p XcodeProj) SchemesWithAutocreateEnabled(isAutocreateSchemesEnabled bool) ([]xcscheme.Scheme, error) {
+	log.TDebugf("Searching schemes in project: %s", p.Path)
+
+	schemes, err := p.visibleSchemes()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(schemes) == 0 {
+		isUserSchememanagementFileExist, err := p.isUserSchememanagementFileExist()
+		if err != nil {
+			return nil, err
+		}
+
+		if isUserSchememanagementFileExist {
+			log.TDebugf("Default scheme found")
+			defaultSchemes := p.ReCreateSchemes()
+			return defaultSchemes, nil
 		}
 
 		if isAutocreateSchemesEnabled {
@@ -100,6 +129,21 @@ func (p XcodeProj) sharedSchemes() ([]xcscheme.Scheme, error) {
 	}
 
 	return sharedSchemes, nil
+}
+
+func (p XcodeProj) visibleSchemes() ([]xcscheme.Scheme, error) {
+	sharedSchemes, err := p.sharedSchemes()
+	if err != nil {
+		return nil, err
+	}
+
+	userSchemes, err := p.userSchemes()
+	if err != nil {
+		return nil, err
+	}
+
+	schemes := append(sharedSchemes, userSchemes...)
+	return schemes, nil
 }
 
 func (p XcodeProj) sharedSchemeFilePaths() ([]string, error) {
