@@ -1,42 +1,30 @@
 package xcodeproj
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
-	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/testhelper"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_GivenNewlyGeneratedXcodeProject_WhenListingSchemes_ThenReturnsTheDefaultScheme(t *testing.T) {
-	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
+	xcodeProjectPath := testhelper.NewlyGeneratedXcodeProjectPath(t)
 	proj, err := Open(xcodeProjectPath)
 	require.NoError(t, err)
 
 	schemes, err := proj.Schemes()
 	require.NoError(t, err)
 
-	expectedSchemeNames := []string{"ios-sample"}
-	require.Equal(t, len(expectedSchemeNames), len(schemes))
-	for _, expectedSchemeName := range expectedSchemeNames {
-		schemeFound := false
-		for _, scheme := range schemes {
-			if scheme.Name == expectedSchemeName {
-				schemeFound = true
-				break
-			}
-		}
-		require.True(t, schemeFound)
-	}
+	expectedSchemeName := "ios-sample"
+	require.Equal(t, 1, len(schemes))
+	require.Equal(t, expectedSchemeName, schemes[0].Name)
 }
 
 func Test_GivenNewlyGeneratedXcodeProjectWithUserDataGitignored_WhenListingSchemes_ThenReturnsTheDefaultScheme(t *testing.T) {
-	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
+	xcodeProjectPath := testhelper.NewlyGeneratedXcodeProjectPath(t)
 
 	userDataDir := filepath.Join(xcodeProjectPath, "xcuserdata")
 	require.NoError(t, os.RemoveAll(userDataDir))
@@ -47,22 +35,13 @@ func Test_GivenNewlyGeneratedXcodeProjectWithUserDataGitignored_WhenListingSchem
 	schemes, err := proj.Schemes()
 	require.NoError(t, err)
 
-	expectedSchemeNames := []string{"ios-sample"}
-	require.Equal(t, len(expectedSchemeNames), len(schemes))
-	for _, expectedSchemeName := range expectedSchemeNames {
-		schemeFound := false
-		for _, scheme := range schemes {
-			if scheme.Name == expectedSchemeName {
-				schemeFound = true
-				break
-			}
-		}
-		require.True(t, schemeFound)
-	}
+	expectedSchemeName := "ios-sample"
+	require.Equal(t, 1, len(schemes))
+	require.Equal(t, expectedSchemeName, schemes[0].Name)
 }
 
 func Test_GivenNewlyGeneratedXcodeProjectWithAutocreateSchemesDisabled_WhenListingSchemes_ThenReturnsError(t *testing.T) {
-	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
+	xcodeProjectPath := testhelper.NewlyGeneratedXcodeProjectPath(t)
 
 	worksaceSettingsPth := filepath.Join(xcodeProjectPath, "project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings")
 	require.NoError(t, fileutil.WriteStringToFile(worksaceSettingsPth, workspaceSettingsWithAutocreateSchemesDisabledContent))
@@ -76,7 +55,7 @@ func Test_GivenNewlyGeneratedXcodeProjectWithAutocreateSchemesDisabled_WhenListi
 }
 
 func Test_GivenNewlyGeneratedXcodeProjectWithASharedAndAUserScheme_WhenListingSchemes_ThenReturnsTheSharedScheme(t *testing.T) {
-	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
+	xcodeProjectPath := testhelper.NewlyGeneratedXcodeProjectPath(t)
 
 	vagrantUserSchemePth := filepath.Join(xcodeProjectPath, "xcuserdata/vagrant.xcuserdatad/xcschemes/ios-sample.xcscheme")
 	require.NoError(t, os.MkdirAll(filepath.Dir(vagrantUserSchemePth), os.ModePerm))
@@ -93,48 +72,9 @@ func Test_GivenNewlyGeneratedXcodeProjectWithASharedAndAUserScheme_WhenListingSc
 	schemes, err := proj.Schemes()
 	require.NoError(t, err)
 
-	expectedSchemeNames := []string{sharedSchemeName}
-	require.Equal(t, len(expectedSchemeNames), len(schemes))
-	for _, expectedSchemeName := range expectedSchemeNames {
-		schemeFound := false
-		for _, scheme := range schemes {
-			if scheme.Name == expectedSchemeName {
-				schemeFound = true
-				break
-			}
-		}
-		require.True(t, schemeFound)
-	}
-}
-
-func ensureTmpTestdataDir(t *testing.T) string {
-	_, callerFilename, _, ok := runtime.Caller(0)
-	require.True(t, ok)
-	callerDir := filepath.Dir(callerFilename)
-	callerPackageDir := filepath.Dir(callerDir)
-	packageTmpTestdataDir := filepath.Join(callerPackageDir, "_testdata")
-	if _, err := os.Stat(packageTmpTestdataDir); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(packageTmpTestdataDir, os.ModePerm)
-		require.NoError(t, err)
-	}
-	return packageTmpTestdataDir
-}
-
-func newlyGeneratedXcodeProjectPath(t *testing.T) string {
-	testdataDir := ensureTmpTestdataDir(t)
-	newlyGeneratedXcodeProjectDir := filepath.Join(testdataDir, "newly_generated_xcode_project")
-	_, err := os.Stat(newlyGeneratedXcodeProjectDir)
-	newlyGeneratedXcodeProjectDirExist := !errors.Is(err, os.ErrNotExist)
-	if newlyGeneratedXcodeProjectDirExist {
-		cmd := command.New("git", "clean", "-f", "-x", "-d")
-		cmd.SetDir(newlyGeneratedXcodeProjectDir)
-		require.NoError(t, cmd.Run())
-	} else {
-		repo := "https://github.com/godrei/ios-sample.git"
-		branch := "main"
-		testhelper.GitCloneBranch(t, repo, branch, newlyGeneratedXcodeProjectDir)
-	}
-	return filepath.Join(newlyGeneratedXcodeProjectDir, "ios-sample.xcodeproj")
+	expectedSchemeName := sharedSchemeName
+	require.Equal(t, 1, len(schemes))
+	require.Equal(t, expectedSchemeName, schemes[0].Name)
 }
 
 const workspaceSettingsWithAutocreateSchemesDisabledContent = `<?xml version="1.0" encoding="UTF-8"?>
