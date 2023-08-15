@@ -18,8 +18,6 @@ import (
 	"github.com/bitrise-io/go-utils/pretty"
 	"github.com/bitrise-io/go-xcode/xcodebuild"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
-	"golang.org/x/text/unicode/norm"
 )
 
 const (
@@ -330,51 +328,8 @@ func (p XcodeProj) TargetBuildSettings(target, configuration string, customOptio
 	return commandModel.RunAndReturnSettings()
 }
 
-// Scheme returns the project's scheme by name and the project's absolute path.
-func (p XcodeProj) Scheme(name string) (*xcscheme.Scheme, string, error) {
-	schemes, err := p.Schemes()
-	if err != nil {
-		return nil, "", err
-	}
-
-	normName := norm.NFC.String(name)
-	for _, scheme := range schemes {
-		if norm.NFC.String(scheme.Name) == normName {
-			return &scheme, p.Path, nil
-		}
-	}
-
-	return nil, "", xcscheme.NotFoundError{Scheme: name, Container: p.Name}
-}
-
-// Schemes ...
-func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
-	log.TDebugf("Locating scheme for project path: %s", p.Path)
-
-	schemes, err := xcscheme.FindSchemesIn(p.Path)
-
-	log.TDebugf("Located %v schemes", len(schemes))
-
-	return schemes, err
-}
-
 // Open ...
 func Open(pth string) (XcodeProj, error) {
-	p, err := open(pth)
-	if err != nil {
-		return XcodeProj{}, err
-	}
-
-	log.TDebugf("Opened xcode project")
-
-	if err := p.autoCreateSchemesIfNeeded(); err != nil {
-		return XcodeProj{}, err
-	}
-
-	return p, nil
-}
-
-func open(pth string) (XcodeProj, error) {
 	absPth, err := pathutil.AbsPath(pth)
 	if err != nil {
 		return XcodeProj{}, err
@@ -394,6 +349,8 @@ func open(pth string) (XcodeProj, error) {
 
 	p.Path = absPth
 	p.Name = strings.TrimSuffix(filepath.Base(absPth), filepath.Ext(absPth))
+
+	log.TDebugf("Opened xcode project")
 
 	return *p, nil
 }

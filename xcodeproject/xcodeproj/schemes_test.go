@@ -12,32 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_GivenNewlyGeneratedXcodeProject_WhenCheckingIfAutocreateSchemeNeeded_ThenReturnsTrue(t *testing.T) {
+func Test_GivenNewlyGeneratedXcodeProject_WhenListingSchemes_ThenReturnsTheDefaultSchemes(t *testing.T) {
 	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
-	proj, err := open(xcodeProjectPath)
-	require.NoError(t, err)
-
-	isAutocreateSchemesNeeded, err := proj.isAutocreateSchemesNeeded()
-	require.NoError(t, err)
-	require.True(t, isAutocreateSchemesNeeded)
-}
-
-func Test_GivenNewlyGeneratedXcodeProject_WhenCheckingIfAutocreateSchemeEnabled_ThenReturnsTrue(t *testing.T) {
-	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
-	proj, err := open(xcodeProjectPath)
-	require.NoError(t, err)
-
-	isAutocreateSchemesEnabled, err := proj.isAutocreateSchemesEnabled()
-	require.NoError(t, err)
-	require.True(t, isAutocreateSchemesEnabled)
-}
-
-func Test_GivenNewlyGeneratedXcodeProject_WhenAutoCreateSchemes_ThenCreatesDefaultSchemes(t *testing.T) {
-	xcodeProjectPath := newlyGeneratedXcodeProjectPath(t)
-	proj, err := open(xcodeProjectPath)
-	require.NoError(t, err)
-
-	err = proj.autocreateSchemes()
+	proj, err := Open(xcodeProjectPath)
 	require.NoError(t, err)
 
 	schemes, err := proj.Schemes()
