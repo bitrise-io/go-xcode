@@ -2,7 +2,10 @@ package xcworkspace
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
+	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -30,7 +33,79 @@ type Workspace struct {
 	Path string
 }
 
-// Scheme returns the scheme by name and it's container's absolute path.
+// Open ...
+func Open(pth string) (Workspace, error) {
+	contentsPth := filepath.Join(pth, "contents.xcworkspacedata")
+	b, err := fileutil.ReadBytesFromFile(contentsPth)
+	if err != nil {
+		return Workspace{}, err
+	}
+
+	var workspace Workspace
+	if err := xml.Unmarshal(b, &workspace); err != nil {
+		return Workspace{}, fmt.Errorf("failed to unmarshal workspace file: %s, error: %s", pth, err)
+	}
+
+	workspace.Name = strings.TrimSuffix(filepath.Base(pth), filepath.Ext(pth))
+	workspace.Path = pth
+
+	return workspace, nil
+}
+
+// Schemes returns the schemes considered by Xcode, when opening the given workspace.
+// The considered schemes are the workspace shared schemes, the workspace user schemes (for the current user)
+// and the embedded project's schemes (XcodeProj.Schemes).
+func (w Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
+	log.TDebugf("Searching schemes in workspace: %s", w.Path)
+
+	schemesByContainer := map[string][]xcscheme.Scheme{}
+
+	sharedSchemes, err := w.sharedSchemes()
+	if err != nil {
+		return nil, err
+	}
+
+	userSchemes, err := w.userSchemes()
+	if err != nil {
+		return nil, err
+	}
+
+	workspaceSchemes := append(sharedSchemes, userSchemes...)
+
+	log.TDebugf("%d scheme(s) found", len(workspaceSchemes))
+	schemesByContainer[w.Path] = workspaceSchemes
+
+	// project schemes
+	projectLocations, err := w.ProjectFileLocations()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, projectLocation := range projectLocations {
+		if exist, err := pathutil.IsPathExists(projectLocation); err != nil {
+			return nil, fmt.Errorf("failed to check if project exist at: %s, error: %s", projectLocation, err)
+		} else if !exist {
+			// at this point we are interested the schemes visible for the workspace
+			continue
+		}
+
+		project, err := xcodeproj.Open(projectLocation)
+		if err != nil {
+			return nil, err
+		}
+
+		projectSchemes, err := project.Schemes()
+		if err != nil {
+			return nil, err
+		}
+
+		schemesByContainer[project.Path] = projectSchemes
+	}
+
+	return schemesByContainer, nil
+}
+
+// Scheme returns the scheme by name, and it's container's absolute path.
 func (w Workspace) Scheme(name string) (*xcscheme.Scheme, string, error) {
 	schemesByContainer, err := w.Schemes()
 	if err != nil {
@@ -63,51 +138,6 @@ func (w Workspace) SchemeBuildSettings(scheme, configuration string, customOptio
 	log.TDebugf("Fetched %s scheme build settings", scheme)
 
 	return object, err
-}
-
-// Schemes ...
-func (w Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
-	log.TDebugf("Looking for schemes in workspace: %s", w.Name)
-
-	schemesByContainer := map[string][]xcscheme.Scheme{}
-
-	workspaceSchemes, err := xcscheme.FindSchemesIn(w.Path)
-	if err != nil {
-		return nil, err
-	}
-
-	schemesByContainer[w.Path] = workspaceSchemes
-
-	// project schemes
-	projectLocations, err := w.ProjectFileLocations()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, projectLocation := range projectLocations {
-		if exist, err := pathutil.IsPathExists(projectLocation); err != nil {
-			return nil, fmt.Errorf("failed to check if project exist at: %s, error: %s", projectLocation, err)
-		} else if !exist {
-			// at this point we are interested the schemes visible for the workspace
-			continue
-		}
-
-		project, err := xcodeproj.Open(projectLocation)
-		if err != nil {
-			return nil, err
-		}
-
-		projectSchemes, err := project.Schemes()
-		if err != nil {
-			return nil, err
-		}
-
-		schemesByContainer[project.Path] = projectSchemes
-	}
-
-	log.TDebugf("Found %v workspace schemes", len(schemesByContainer))
-
-	return schemesByContainer, nil
 }
 
 // FileLocations ...
@@ -150,26 +180,87 @@ func (w Workspace) ProjectFileLocations() ([]string, error) {
 	return projectLocations, nil
 }
 
-// Open ...
-func Open(pth string) (Workspace, error) {
-	contentsPth := filepath.Join(pth, "contents.xcworkspacedata")
-	b, err := fileutil.ReadBytesFromFile(contentsPth)
+func (w Workspace) sharedSchemes() ([]xcscheme.Scheme, error) {
+	sharedSchemeFilePaths, err := w.sharedSchemeFilePaths()
 	if err != nil {
-		return Workspace{}, err
+		return nil, err
 	}
 
-	var workspace Workspace
-	if err := xml.Unmarshal(b, &workspace); err != nil {
-		return Workspace{}, fmt.Errorf("failed to unmarshal workspace file: %s, error: %s", pth, err)
+	var sharedSchemes []xcscheme.Scheme
+	for _, pth := range sharedSchemeFilePaths {
+		scheme, err := xcscheme.Open(pth)
+		if err != nil {
+			return nil, err
+		}
+
+		sharedSchemes = append(sharedSchemes, scheme)
 	}
 
-	workspace.Name = strings.TrimSuffix(filepath.Base(pth), filepath.Ext(pth))
-	workspace.Path = pth
-
-	return workspace, nil
+	return sharedSchemes, nil
 }
 
-// IsWorkspace ...
-func IsWorkspace(pth string) bool {
-	return filepath.Ext(pth) == ".xcworkspace"
+func (w Workspace) sharedSchemeFilePaths() ([]string, error) {
+	// <workspace_name>.xcworkspace/xcshareddata/xcschemes/<scheme_name>.xcscheme
+	sharedSchemesDir := filepath.Join(w.Path, "xcshareddata", "xcschemes")
+	return listSchemeFilePaths(sharedSchemesDir)
+}
+
+func (w Workspace) userSchemes() ([]xcscheme.Scheme, error) {
+	userSchemeFilePaths, err := w.userSchemeFilePaths()
+	if err != nil {
+		return nil, err
+	}
+
+	var userSchemes []xcscheme.Scheme
+	for _, pth := range userSchemeFilePaths {
+		scheme, err := xcscheme.Open(pth)
+		if err != nil {
+			return nil, err
+		}
+
+		userSchemes = append(userSchemes, scheme)
+	}
+
+	return userSchemes, nil
+}
+
+func (w Workspace) userSchemeFilePaths() ([]string, error) {
+	// <workspace_name>.xcworkspace/xcuserdata/<current_user>.xcuserdatad/xcschemes/<scheme_name>.xcscheme
+	userSchemesDir, err := w.userSchemesDir()
+	if err != nil {
+		return nil, err
+	}
+	return listSchemeFilePaths(userSchemesDir)
+}
+
+func (w Workspace) userSchemesDir() (string, error) {
+	// <workspace_name>.xcworkspace/xcuserdata/<current_user>.xcuserdatad/xcschemes/
+	currentUser, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+
+	username := currentUser.Username
+
+	return filepath.Join(w.Path, "xcuserdata", username+".xcuserdatad", "xcschemes"), nil
+}
+
+func listSchemeFilePaths(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var schemeFilePaths []string
+	for _, entry := range entries {
+		baseName := entry.Name()
+		if filepath.Ext(baseName) == ".xcscheme" {
+			schemeFilePaths = append(schemeFilePaths, filepath.Join(dir, baseName))
+		}
+	}
+
+	return schemeFilePaths, nil
 }

@@ -15,14 +15,14 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 )
 
-// Schemes returns the schemes considered by Xcode.
-// The considered schemes are the shared schemes and the current user's schemes.
+// Schemes returns the schemes considered by Xcode, when opening the given project.
+// The considered schemes are the project shared schemes and the project user schemes (for the current user).
 // The default (shared scheme) is present in the user's xcschememanagement.plist,
 // any schemes related change trigger generating all the schemes as xcscheme files.
 // If no schemes are found, Xcode recreates the default schemes unless ‘Autocreate schemes' option is disabled
 // (in this case actions are disabled in Xcode, and 'No schemes’ message appears).
 func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
-	log.TDebugf("Locating scheme for project path: %s", p.Path)
+	log.TDebugf("Searching schemes in project: %s", p.Path)
 
 	sharedSchemes, err := p.sharedSchemes()
 	if err != nil {
@@ -43,6 +43,7 @@ func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 		}
 
 		if isUserSchememanagementFileExist {
+			log.TDebugf("Default scheme found")
 			defaultSchemes := p.ReCreateSchemes()
 			return defaultSchemes, nil
 		}
@@ -53,6 +54,7 @@ func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 		}
 
 		if isAutocreateSchemesEnabled {
+			log.TDebugf("Autocreating the default scheme")
 			defaultSchemes := p.ReCreateSchemes()
 			return defaultSchemes, nil
 		}
@@ -60,6 +62,7 @@ func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 		return nil, fmt.Errorf("no schemes found and the Xcode project's 'Autocreate schemes' option is disabled")
 	}
 
+	log.TDebugf("%d scheme(s) found", len(schemes))
 	return schemes, nil
 }
 
@@ -99,6 +102,12 @@ func (p XcodeProj) sharedSchemes() ([]xcscheme.Scheme, error) {
 	return sharedSchemes, nil
 }
 
+func (p XcodeProj) sharedSchemeFilePaths() ([]string, error) {
+	// <project_name>.xcodeproj/xcshareddata/xcschemes/<scheme_name>.xcscheme
+	sharedSchemesDir := filepath.Join(p.Path, "xcshareddata", "xcschemes")
+	return listSchemeFilePaths(sharedSchemesDir)
+}
+
 func (p XcodeProj) userSchemes() ([]xcscheme.Scheme, error) {
 	userSchemeFilePaths, err := p.userSchemeFilePaths()
 	if err != nil {
@@ -118,6 +127,38 @@ func (p XcodeProj) userSchemes() ([]xcscheme.Scheme, error) {
 	return userSchemes, nil
 }
 
+func (p XcodeProj) userSchemeFilePaths() ([]string, error) {
+	// <project_name>.xcodeproj/xcuserdata/<current_user>.xcuserdatad/xcschemes/<scheme_name>.xcscheme
+	userSchemesDir, err := p.userSchemesDir()
+	if err != nil {
+		return nil, err
+	}
+	return listSchemeFilePaths(userSchemesDir)
+}
+
+func (p XcodeProj) userSchemesDir() (string, error) {
+	// <project_name>.xcodeproj/xcuserdata/<current_user>.xcuserdatad/xcschemes/
+	currentUser, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+
+	username := currentUser.Username
+
+	return filepath.Join(p.Path, "xcuserdata", username+".xcuserdatad", "xcschemes"), nil
+}
+
+func (p XcodeProj) isUserSchememanagementFileExist() (bool, error) {
+	// <project_name>.xcodeproj/xcuserdata/<current_user>.xcuserdatad/xcschemes/xcschememanagement.plist
+	userSchemesDir, err := p.userSchemesDir()
+	if err != nil {
+		return false, err
+	}
+	schemeManagementPth := filepath.Join(userSchemesDir, "xcschememanagement.plist")
+	_, err = os.Stat(schemeManagementPth)
+	return err == nil, nil
+}
+
 func (p XcodeProj) isAutocreateSchemesEnabled() (bool, error) {
 	// <project_name>.xcodeproj/project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
 	embeddedWorkspaceDir := filepath.Join(p.Path, "project.xcworkspace")
@@ -127,7 +168,7 @@ func (p XcodeProj) isAutocreateSchemesEnabled() (bool, error) {
 	workspaceSettingsContent, err := os.ReadFile(workspaceSettingsPth)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			// By default Autocreate Schemes is enabled
+			// By default 'Autocreate Schemes' is enabled
 			return true, nil
 		}
 
@@ -145,43 +186,6 @@ func (p XcodeProj) isAutocreateSchemesEnabled() (bool, error) {
 	}
 
 	return autoCreate, nil
-}
-
-func (p XcodeProj) sharedSchemeFilePaths() ([]string, error) {
-	// <project_name>.xcodeproj/xcshareddata/xcschemes/<scheme_name>.xcscheme
-	sharedSchemesDir := filepath.Join(p.Path, "xcshareddata", "xcschemes")
-	return listSchemeFilePaths(sharedSchemesDir)
-}
-
-func (p XcodeProj) userSchemesDir() (string, error) {
-	// <project_name>.xcodeproj/xcuserdata/<current_user>.xcuserdatad/xcschemes/<scheme_name>.xcscheme
-	currentUser, err := user.Current()
-	if err != nil {
-		return "", err
-	}
-
-	username := currentUser.Username
-
-	return filepath.Join(p.Path, "xcuserdata", username+".xcuserdatad", "xcschemes"), nil
-}
-
-func (p XcodeProj) userSchemeFilePaths() ([]string, error) {
-	userSchemesDir, err := p.userSchemesDir()
-	if err != nil {
-		return nil, err
-	}
-	return listSchemeFilePaths(userSchemesDir)
-}
-
-func (p XcodeProj) isUserSchememanagementFileExist() (bool, error) {
-	// <project_name>.xcodeproj/xcuserdata/<current_user>.xcuserdatad/xcschemes/xcschememanagement.plist
-	userSchemesDir, err := p.userSchemesDir()
-	if err != nil {
-		return false, err
-	}
-	schemeManagementPth := filepath.Join(userSchemesDir, "xcschememanagement.plist")
-	_, err = os.Stat(schemeManagementPth)
-	return err == nil, nil
 }
 
 func listSchemeFilePaths(dir string) ([]string, error) {
