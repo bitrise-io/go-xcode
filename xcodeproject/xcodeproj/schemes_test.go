@@ -57,9 +57,9 @@ func Test_GivenNewlyGeneratedXcodeProjectWithAutocreateSchemesDisabled_WhenListi
 func Test_GivenNewlyGeneratedXcodeProjectWithASharedAndAUserScheme_WhenListingSchemes_ThenReturnsTheSharedScheme(t *testing.T) {
 	xcodeProjectPath := testhelper.NewlyGeneratedXcodeProjectPath(t)
 
-	vagrantUserSchemePth := filepath.Join(xcodeProjectPath, "xcuserdata/vagrant.xcuserdatad/xcschemes/ios-sample.xcscheme")
-	require.NoError(t, os.MkdirAll(filepath.Dir(vagrantUserSchemePth), os.ModePerm))
-	require.NoError(t, fileutil.WriteStringToFile(vagrantUserSchemePth, defaultSchemeContent))
+	userSchemePth := filepath.Join(xcodeProjectPath, "xcuserdata/bitrise-test-user.xcuserdatad/xcschemes/ios-sample.xcscheme")
+	require.NoError(t, os.MkdirAll(filepath.Dir(userSchemePth), os.ModePerm))
+	require.NoError(t, fileutil.WriteStringToFile(userSchemePth, defaultSchemeContent))
 
 	sharedSchemeName := "custom-scheme"
 	sharedSchemePth := filepath.Join(xcodeProjectPath, "xcshareddata/xcschemes", sharedSchemeName+".xcscheme")
