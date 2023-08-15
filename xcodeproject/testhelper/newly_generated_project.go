@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// NewlyGeneratedXcodeProjectPath ...
 func NewlyGeneratedXcodeProjectPath(t *testing.T) string {
 	testdataDir := ensureTmpTestdataDir(t)
 	newlyGeneratedXcodeProjectDir := filepath.Join(testdataDir, "newly_generated_xcode_project")
@@ -28,6 +29,7 @@ func NewlyGeneratedXcodeProjectPath(t *testing.T) string {
 	return filepath.Join(newlyGeneratedXcodeProjectDir, "ios-sample.xcodeproj")
 }
 
+// NewlyGeneratedXcodeWorkspacePath ...
 func NewlyGeneratedXcodeWorkspacePath(t *testing.T) string {
 	testdataDir := ensureTmpTestdataDir(t)
 	newlyGeneratedXcodeWorkspaceDir := filepath.Join(testdataDir, "newly_generated_xcode_workspace")
