@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const newlyGeneratedProjectRepoURL = "https://github.com/bitrise-io/newly-generated-ios-sample-project.git"
+
 // NewlyGeneratedXcodeProjectPath ...
 func NewlyGeneratedXcodeProjectPath(t *testing.T) string {
 	testdataDir := ensureTmpTestdataDir(t)
@@ -22,7 +24,7 @@ func NewlyGeneratedXcodeProjectPath(t *testing.T) string {
 		cmd.SetDir(newlyGeneratedXcodeProjectDir)
 		require.NoError(t, cmd.Run())
 	} else {
-		repo := "https://github.com/godrei/ios-sample.git"
+		repo := newlyGeneratedProjectRepoURL
 		branch := "main"
 		GitCloneBranch(t, repo, branch, newlyGeneratedXcodeProjectDir)
 	}
@@ -40,7 +42,7 @@ func NewlyGeneratedXcodeWorkspacePath(t *testing.T) string {
 		cmd.SetDir(newlyGeneratedXcodeWorkspaceDir)
 		require.NoError(t, cmd.Run())
 	} else {
-		repo := "https://github.com/godrei/ios-sample.git"
+		repo := newlyGeneratedProjectRepoURL
 		branch := "workspace"
 		GitCloneBranch(t, repo, branch, newlyGeneratedXcodeWorkspaceDir)
 	}
