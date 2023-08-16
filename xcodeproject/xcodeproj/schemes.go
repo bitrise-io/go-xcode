@@ -19,8 +19,8 @@ import (
 // The considered schemes are the project shared schemes and the project user schemes (for the current user).
 // The default (shared scheme) is present in the user's xcschememanagement.plist,
 // any schemes related change trigger generating all the schemes as xcscheme files.
-// If no schemes are found, Xcode recreates the default schemes unless ‘Autocreate schemes' option is disabled
-// (in this case actions are disabled in Xcode, and 'No schemes’ message appears).
+// If no schemes are found, Xcode recreates the default schemes unless 'Autocreate schemes' option is disabled
+// (in this case actions are disabled in Xcode, and 'No schemes' message appears).
 func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 	log.TDebugf("Searching schemes in project: %s", p.Path)
 
@@ -61,7 +61,7 @@ func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 
 // SchemesWithAutocreateEnabled returns the schemes considered by Xcode, when opening the given project as part of a workspace.
 // SchemesWithAutocreateEnabled behaves similarly to XcodeProj.Schemes,
-// the only difference is that the ‘Autocreate schemes' option is coming from the workspace settings.
+// the only difference is that the 'Autocreate schemes' option is coming from the workspace settings.
 func (p XcodeProj) SchemesWithAutocreateEnabled(isAutocreateSchemesEnabled bool) ([]xcscheme.Scheme, error) {
 	log.TDebugf("Searching schemes in project: %s", p.Path)
 
