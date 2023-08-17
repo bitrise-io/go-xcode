@@ -21,6 +21,7 @@ func Test_GivenNewlyGeneratedXcodeProject_WhenListingSchemes_ThenReturnsTheDefau
 	expectedSchemeName := "ios-sample"
 	require.Equal(t, 1, len(schemes))
 	require.Equal(t, expectedSchemeName, schemes[0].Name)
+	require.Equal(t, true, schemes[0].IsShared)
 }
 
 func Test_GivenNewlyGeneratedXcodeProjectWithUserDataGitignored_WhenListingSchemes_ThenReturnsTheDefaultScheme(t *testing.T) {
@@ -38,6 +39,7 @@ func Test_GivenNewlyGeneratedXcodeProjectWithUserDataGitignored_WhenListingSchem
 	expectedSchemeName := "ios-sample"
 	require.Equal(t, 1, len(schemes))
 	require.Equal(t, expectedSchemeName, schemes[0].Name)
+	require.Equal(t, true, schemes[0].IsShared)
 }
 
 func Test_GivenNewlyGeneratedXcodeProjectWithAutocreateSchemesDisabled_WhenListingSchemes_ThenReturnsError(t *testing.T) {
@@ -75,6 +77,7 @@ func Test_GivenNewlyGeneratedXcodeProjectWithASharedAndAUserScheme_WhenListingSc
 	expectedSchemeName := sharedSchemeName
 	require.Equal(t, 1, len(schemes))
 	require.Equal(t, expectedSchemeName, schemes[0].Name)
+	require.Equal(t, true, schemes[0].IsShared)
 }
 
 const workspaceSettingsWithAutocreateSchemesDisabledContent = `<?xml version="1.0" encoding="UTF-8"?>

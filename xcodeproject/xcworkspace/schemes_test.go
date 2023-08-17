@@ -27,6 +27,7 @@ func Test_GivenNewlyGeneratedWorkspace_WhenListingSchemes_ThenReturnsTheDefaultS
 
 	require.Equal(t, 1, len(actualSchemes))
 	require.Equal(t, expectedSchemeName, actualSchemes[0].Name)
+	require.Equal(t, true, actualSchemes[0].IsShared)
 }
 
 func Test_GivenNewlyGeneratedWorkspaceWithAutocreateSchemesDisabled_WhenListingSchemes_ThenReturnsError(t *testing.T) {

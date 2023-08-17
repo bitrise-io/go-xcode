@@ -37,7 +37,7 @@ func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 
 		if isUserSchememanagementFileExist {
 			log.TDebugf("Default scheme found")
-			defaultSchemes := p.ReCreateSchemes()
+			defaultSchemes := p.defaultSchemes()
 			return defaultSchemes, nil
 		}
 
@@ -48,7 +48,7 @@ func (p XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 
 		if isAutocreateSchemesEnabled {
 			log.TDebugf("Autocreating the default scheme")
-			defaultSchemes := p.ReCreateSchemes()
+			defaultSchemes := p.defaultSchemes()
 			return defaultSchemes, nil
 		}
 
@@ -78,13 +78,13 @@ func (p XcodeProj) SchemesWithAutocreateEnabled(isAutocreateSchemesEnabled bool)
 
 		if isUserSchememanagementFileExist {
 			log.TDebugf("Default scheme found")
-			defaultSchemes := p.ReCreateSchemes()
+			defaultSchemes := p.defaultSchemes()
 			return defaultSchemes, nil
 		}
 
 		if isAutocreateSchemesEnabled {
 			log.TDebugf("Autocreating the default scheme")
-			defaultSchemes := p.ReCreateSchemes()
+			defaultSchemes := p.defaultSchemes()
 			return defaultSchemes, nil
 		}
 
@@ -112,25 +112,6 @@ func (p XcodeProj) Scheme(name string) (*xcscheme.Scheme, string, error) {
 	return nil, "", xcscheme.NotFoundError{Scheme: name, Container: p.Name}
 }
 
-func (p XcodeProj) sharedSchemes() ([]xcscheme.Scheme, error) {
-	sharedSchemeFilePaths, err := p.sharedSchemeFilePaths()
-	if err != nil {
-		return nil, err
-	}
-
-	var sharedSchemes []xcscheme.Scheme
-	for _, pth := range sharedSchemeFilePaths {
-		scheme, err := xcscheme.Open(pth)
-		if err != nil {
-			return nil, err
-		}
-
-		sharedSchemes = append(sharedSchemes, scheme)
-	}
-
-	return sharedSchemes, nil
-}
-
 func (p XcodeProj) visibleSchemes() ([]xcscheme.Scheme, error) {
 	sharedSchemes, err := p.sharedSchemes()
 	if err != nil {
@@ -146,10 +127,24 @@ func (p XcodeProj) visibleSchemes() ([]xcscheme.Scheme, error) {
 	return schemes, nil
 }
 
-func (p XcodeProj) sharedSchemeFilePaths() ([]string, error) {
-	// <project_name>.xcodeproj/xcshareddata/xcschemes/<scheme_name>.xcscheme
-	sharedSchemesDir := filepath.Join(p.Path, "xcshareddata", "xcschemes")
-	return listSchemeFilePaths(sharedSchemesDir)
+func (p XcodeProj) sharedSchemes() ([]xcscheme.Scheme, error) {
+	sharedSchemeFilePaths, err := p.sharedSchemeFilePaths()
+	if err != nil {
+		return nil, err
+	}
+
+	var sharedSchemes []xcscheme.Scheme
+	for _, pth := range sharedSchemeFilePaths {
+		scheme, err := xcscheme.Open(pth)
+		if err != nil {
+			return nil, err
+		}
+
+		scheme.IsShared = true
+		sharedSchemes = append(sharedSchemes, scheme)
+	}
+
+	return sharedSchemes, nil
 }
 
 func (p XcodeProj) userSchemes() ([]xcscheme.Scheme, error) {
@@ -169,6 +164,12 @@ func (p XcodeProj) userSchemes() ([]xcscheme.Scheme, error) {
 	}
 
 	return userSchemes, nil
+}
+
+func (p XcodeProj) sharedSchemeFilePaths() ([]string, error) {
+	// <project_name>.xcodeproj/xcshareddata/xcschemes/<scheme_name>.xcscheme
+	sharedSchemesDir := filepath.Join(p.Path, "xcshareddata", "xcschemes")
+	return listSchemeFilePaths(sharedSchemesDir)
 }
 
 func (p XcodeProj) userSchemeFilePaths() ([]string, error) {
@@ -230,6 +231,27 @@ func (p XcodeProj) isAutocreateSchemesEnabled() (bool, error) {
 	}
 
 	return autoCreate, nil
+}
+
+func (p XcodeProj) defaultSchemes() []xcscheme.Scheme {
+	var schemes []xcscheme.Scheme
+	for _, buildTarget := range p.Proj.Targets {
+		if buildTarget.Type != NativeTargetType || buildTarget.IsTest() {
+			continue
+		}
+
+		var testTargets []Target
+		for _, testTarget := range p.Proj.Targets {
+			if testTarget.IsTest() && testTarget.DependsOn(buildTarget.ID) {
+				testTargets = append(testTargets, testTarget)
+			}
+		}
+
+		scheme := newScheme(buildTarget, testTargets, filepath.Base(p.Path))
+		scheme.IsShared = true
+		schemes = append(schemes, scheme)
+	}
+	return schemes
 }
 
 func listSchemeFilePaths(dir string) ([]string, error) {
