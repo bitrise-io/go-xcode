@@ -17,6 +17,7 @@ const defaultDeviceName = "Bitrise iOS default"
 type Device struct {
 	ID     string
 	Status string
+	Type   string
 
 	Platform string
 	Name     string
