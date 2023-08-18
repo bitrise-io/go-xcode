@@ -2,3 +2,4 @@ _tmp/
 .vscode/*
 .idea/
 .DS_Store
+_testdata

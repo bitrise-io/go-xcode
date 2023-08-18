@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var clonedRespos = map[string]string{}
+var clonedRepos = map[string]string{}
 
 // GitCloneIntoTmpDir ...
 func GitCloneIntoTmpDir(t *testing.T, repo string) string {
-	if tmpDir, ok := clonedRespos[repo]; ok {
+	if tmpDir, ok := clonedRepos[repo]; ok {
 		return tmpDir
 	}
 
@@ -24,20 +24,25 @@ func GitCloneIntoTmpDir(t *testing.T, repo string) string {
 	cmd := command.New("git", "clone", repo, tmpDir)
 	require.NoError(t, cmd.Run())
 
-	clonedRespos[repo] = tmpDir
+	clonedRepos[repo] = tmpDir
 
 	return tmpDir
 }
 
-// GitCloneBranchIntoTmpDir clones a specific branch from a git repository
+// GitCloneBranchIntoTmpDir clones a specific branch from a git repository.
 func GitCloneBranchIntoTmpDir(t *testing.T, repo string, branch string) string {
 	tmpDir, err := pathutil.NormalizedOSTempDirPath("__xcode-proj__")
 	require.NoError(t, err)
 
-	cmd := command.New("git", "clone", "-b", branch, repo, tmpDir)
-	require.NoError(t, cmd.Run())
+	GitCloneBranch(t, repo, branch, tmpDir)
 
 	return tmpDir
+}
+
+// GitCloneBranch clones a branch from a git repository into an existing directory.
+func GitCloneBranch(t *testing.T, repo string, branch string, dir string) {
+	cmd := command.New("git", "clone", "--depth", "1", "--branch", branch, repo, dir)
+	require.NoError(t, cmd.Run())
 }
 
 // CreateTmpFile ...
