@@ -24,6 +24,24 @@ func Test_GivenNewlyGeneratedXcodeProject_WhenListingSchemes_ThenReturnsTheDefau
 	require.Equal(t, true, schemes[0].IsShared)
 }
 
+func Test_GivenNewlyGeneratedXcodeProjectWithWorkspaceSettings_WhenListingSchemes_ThenReturnsTheDefaultScheme(t *testing.T) {
+	xcodeProjectPath := testhelper.NewlyGeneratedXcodeProjectPath(t)
+
+	worksaceSettingsPth := filepath.Join(xcodeProjectPath, "project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings")
+	require.NoError(t, fileutil.WriteStringToFile(worksaceSettingsPth, workspaceSettingsWithBuildSystemTypeOriginalContent))
+
+	proj, err := Open(xcodeProjectPath)
+	require.NoError(t, err)
+
+	schemes, err := proj.Schemes()
+	require.NoError(t, err)
+
+	expectedSchemeName := "ios-sample"
+	require.Equal(t, 1, len(schemes))
+	require.Equal(t, expectedSchemeName, schemes[0].Name)
+	require.Equal(t, true, schemes[0].IsShared)
+}
+
 func Test_GivenNewlyGeneratedXcodeProjectWithUserDataGitignored_WhenListingSchemes_ThenReturnsTheDefaultScheme(t *testing.T) {
 	xcodeProjectPath := testhelper.NewlyGeneratedXcodeProjectPath(t)
 
@@ -86,6 +104,16 @@ const workspaceSettingsWithAutocreateSchemesDisabledContent = `<?xml version="1.
 <dict>
 	<key>IDEWorkspaceSharedSettings_AutocreateContextsIfNeeded</key>
 	<false/>
+</dict>
+</plist>
+`
+
+const workspaceSettingsWithBuildSystemTypeOriginalContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>BuildSystemType</key>
+	<string>Original</string>
 </dict>
 </plist>
 `
