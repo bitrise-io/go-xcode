@@ -162,15 +162,22 @@ func (d deviceFinder) parseDeviceList() (*deviceList, error) {
 			return fmt.Errorf("failed to unmarshal device list: %w, json: %s", err, output)
 		}
 
+		hasAvailableDevice := false
 		for _, deviceList := range list.Devices {
 			for _, device := range deviceList {
 				if !device.IsAvailable {
 					d.logger.Warnf("device %s is unavailable: %s", device.Name, device.AvailabilityError)
+				} else {
+					hasAvailableDevice = true
 				}
 			}
 		}
 
-		return nil
+		if hasAvailableDevice {
+			return nil
+		} else {
+			return fmt.Errorf("no available device found")
+		}
 	}); err != nil {
 		return &deviceList{}, err
 	}
@@ -341,7 +348,7 @@ func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion st
 				return deviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
 			}
 
-			if wantedPlatform == string(IOS) && !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
+			if !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
 				continue
 			}
 
