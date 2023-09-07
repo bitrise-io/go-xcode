@@ -18,3 +18,4 @@ workflows:
         - exclude: |-
             */mocks
     - go-test: { }
+
