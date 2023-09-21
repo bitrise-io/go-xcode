@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>AppIDName</key>
+		<string>app_id_7</string>
+		<key>ApplicationIdentifierPrefix</key>
+		<array>
+			<string>app_id_7</string>
+		</array>
+		<key>CreationDate</key>
+		<date>2023-09-20T13:57:36Z</date>
+		<key>DER-Encoded-Profile</key>
+		<data/>
+		<key>DeveloperCertificates</key>
+		<array>
+		</array>
+		<key>Entitlements</key>
+		<dict>
+			<key>get-task-allow</key>
+			<false/>
+		</dict>
+		<key>ExpirationDate</key>
+		<date>2024-02-09T14:22:50Z</date>
+		<key>IsXcodeManaged</key>
+		<false/>
+		<key>Name</key>
+		<string>tvOS Ad Hoc</string>
+		<key>Platform</key>
+		<array>
+			<string>tvOS</string>
+		</array>
+		<key>ProvisionedDevices</key>
+		<array>
+			<string>device_0</string>
+		</array>
+		<key>TeamIdentifier</key>
+		<array>
+			<string>team_id_0</string>
+		</array>
+		<key>TeamName</key>
+		<string>Dev Team</string>
+		<key>TimeToLive</key>
+		<integer>142</integer>
+		<key>UUID</key>
+		<string>uuid_7</string>
+		<key>Version</key>
+		<integer>1</integer>
+	</dict>
+</plist>

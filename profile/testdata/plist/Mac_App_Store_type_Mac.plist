@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>AppIDName</key>
+		<string>app_id_10</string>
+		<key>ApplicationIdentifierPrefix</key>
+		<array>
+			<string>app_id_10</string>
+		</array>
+		<key>CreationDate</key>
+		<date>2023-09-21T12:04:35Z</date>
+		<key>DER-Encoded-Profile</key>
+		<data/>
+		<key>DeveloperCertificates</key>
+		<array>
+		</array>
+		<key>Entitlements</key>
+		<dict>
+		</dict>
+		<key>ExpirationDate</key>
+		<date>2024-02-29T14:34:43Z</date>
+		<key>IsXcodeManaged</key>
+		<false/>
+		<key>Name</key>
+		<string>Mac App Store type Mac</string>
+		<key>Platform</key>
+		<array>
+			<string>OSX</string>
+		</array>
+		<key>TeamIdentifier</key>
+		<array>
+			<string>team_id_0</string>
+		</array>
+		<key>TeamName</key>
+		<string>Dev Team</string>
+		<key>TimeToLive</key>
+		<integer>161</integer>
+		<key>UUID</key>
+		<string>uuid_10</string>
+		<key>Version</key>
+		<integer>1</integer>
+	</dict>
+</plist>
