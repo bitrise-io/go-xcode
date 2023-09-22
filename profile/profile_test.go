@@ -152,7 +152,7 @@ func verifyProfileModel(t *testing.T, profile Profile, expectedProfilePlistData 
 //		f, err := os.Open(profilePth)
 //		require.NoError(t, err)
 //
-//		profile, err := NewProfile(f)
+//		profile, err := NewProfileFromFile(f)
 //		require.NoError(t, err)
 //
 //		profile = redactSensitiveInfo(profileIdx, profile)

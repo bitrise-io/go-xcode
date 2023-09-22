@@ -1,5 +1,21 @@
 package profile
 
+/*
+	Functionality of the legacy profileutil package:
+
+	MatchTargetAndProfileEntitlements(targetEntitlements plistutil.PlistData, profileEntitlements plistutil.PlistData, profileType ProfileType)
+	String(installedCertificates ...certificateutil.CertificateInfoModel)
+	IsXcodeManaged
+	CheckValidity
+	HasInstalledCertificate
+	InstalledProvisioningProfileInfos(profileType ProfileType)
+	FindProvisioningProfileInfo(uuid string)
+	ProvisioningProfileFromContent(content []byte)
+	ProvisioningProfileFromFile(pth string)
+	InstalledProvisioningProfiles(profileType ProfileType)
+	FindProvisioningProfile(uuid string)
+*/
+
 import (
 	"fmt"
 	"io"
@@ -51,7 +67,7 @@ type Profile struct {
 	Version                     int                    `plist:"Version"`
 }
 
-func NewProfile(reader io.Reader) (*Profile, error) {
+func NewProfileFromFile(reader io.Reader) (*Profile, error) {
 	profileMessage, err := parseProfile(reader)
 	if err != nil {
 		return nil, err
