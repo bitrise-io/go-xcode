@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/fullsailor/pkcs7"
+
 	"github.com/bitrise-io/go-plist"
 	"github.com/stretchr/testify/require"
 )
@@ -110,20 +112,24 @@ func TestNewProfile(t *testing.T) {
 			b, err := io.ReadAll(f)
 			require.NoError(t, err)
 
-			profile, err := newProfileFromPlist(b)
-			require.NoError(t, err)
+			pkcs7Profile := pkcs7.PKCS7{}
+			pkcs7Profile.Content = b
 
+			profile := newProfile(&pkcs7Profile)
 			require.NotNil(t, profile)
-			verifyProfileModel(t, *profile, b)
-			require.Equal(t, tt.wantType, profile.Type())
-			require.Equal(t, tt.wantPlatform, profile.Platform)
+
+			details, err := profile.Details()
+			require.NoError(t, err)
+			verifyDetails(t, details, b)
+			require.Equal(t, tt.wantType, details.Type())
+			require.Equal(t, tt.wantPlatform, details.Platform)
 		})
 	}
 }
 
 // verifyProfileModel verifies if the profile models is complete (contains all information from the profile plist data).
-func verifyProfileModel(t *testing.T, profile Profile, expectedProfilePlistData []byte) {
-	b, err := plist.MarshalIndent(profile, plist.XMLFormat, "\t")
+func verifyDetails(t *testing.T, details *Details, expectedProfilePlistData []byte) {
+	b, err := plist.MarshalIndent(details, plist.XMLFormat, "\t")
 	require.NoError(t, err)
 
 	var profileData map[string]interface{}
