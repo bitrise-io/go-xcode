@@ -1,35 +1,16 @@
 package certificate
 
 import (
+	"crypto/rand"
 	"crypto/sha1"
 	"crypto/x509"
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/bitrise-io/go-pkcs12"
 )
-
-/*
-	Details.String()
-	Certificate.CheckValidity()
-	Certificate.EncodeToP12(passphrase string)
-	- NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) NewCertificate + cert.details()
-	-CertificatesFromPKCS12Content(content []byte, password string) -> NewCertificatesFromFile
-	-CertificatesFromPKCS12File(pkcs12Pth, password string) -> NewCertificatesFromFile
-	- CertificateFromDERContent(content []byte) - move to autocodesign/devportalclient/spaceship/certificates.go (only used here)
-	- CeritifcateFromPemContent(content []byte) - move to autocodesign/devportalclient/spaceship/certificates.go (only used here)
-
-	InstalledCodesigningCertificateNames()
-	InstalledMacAppStoreCertificateNames()
-	InstalledCodesigningCertificates()
-	InstalledMacAppStoreCertificates()
-	InstalledCodesigningCertificateInfos()
-	InstalledInstallerCertificateInfos()
-
-	FilterCertificateInfoModelsByFilterFunc(certificates []CertificateInfoModel, filterFunc func(certificate CertificateInfoModel) bool)
-	FilterValidCertificateInfos(certificateInfos []CertificateInfoModel)
-*/
 
 type Certificate struct {
 	X509Certificate *x509.Certificate
@@ -83,4 +64,19 @@ func (cert Certificate) Details() Details {
 		Serial:          cert.X509Certificate.SerialNumber.String(),
 		SHA1Fingerprint: fmt.Sprintf("%x", sha1.Sum(cert.X509Certificate.Raw)),
 	}
+}
+
+func (cert Certificate) CheckValidity() error {
+	timeNow := time.Now()
+	if !timeNow.After(cert.X509Certificate.NotBefore) {
+		return fmt.Errorf("validity starts at: %s", cert.X509Certificate.NotBefore)
+	}
+	if !timeNow.Before(cert.X509Certificate.NotAfter) {
+		return fmt.Errorf("validity ended at: %s", cert.X509Certificate.NotAfter)
+	}
+	return nil
+}
+
+func (cert Certificate) EncodeToP12(passphrase string) ([]byte, error) {
+	return pkcs12.Encode(rand.Reader, cert.PrivateKey, cert.X509Certificate, nil, passphrase)
 }

@@ -1,6 +1,7 @@
 package certificate
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -80,4 +81,10 @@ func (d Details) Platform() Platform {
 
 	// TODO: this should mean a Certificate for services (like Pass Type ID Certificate)
 	return ""
+}
+
+func (d Details) String() string {
+	team := fmt.Sprintf("%s (%s)", d.TeamName, d.TeamID)
+	certInfo := fmt.Sprintf("Serial: %s, Name: %s, Team: %s, Expiry: %s", d.Serial, d.CommonName, team, d.EndDate)
+	return certInfo
 }
