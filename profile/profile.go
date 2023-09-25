@@ -28,7 +28,11 @@ type Profile struct {
 	PKCS7Profile *pkcs7.PKCS7
 }
 
-func NewProfileFromFile(reader io.Reader) (*Profile, error) {
+func NewProfile(prof *pkcs7.PKCS7) *Profile {
+	return &Profile{PKCS7Profile: prof}
+}
+
+func NewProfileFromPKCS7File(reader io.Reader) (*Profile, error) {
 	content, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
@@ -39,11 +43,7 @@ func NewProfileFromFile(reader io.Reader) (*Profile, error) {
 		return nil, err
 	}
 
-	return newProfile(pkcs7Profile), nil
-}
-
-func newProfile(prof *pkcs7.PKCS7) *Profile {
-	return &Profile{PKCS7Profile: prof}
+	return NewProfile(pkcs7Profile), nil
 }
 
 func (prof Profile) Details() (*Details, error) {

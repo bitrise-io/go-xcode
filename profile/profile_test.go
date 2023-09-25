@@ -115,7 +115,7 @@ func TestNewProfile(t *testing.T) {
 			pkcs7Profile := pkcs7.PKCS7{}
 			pkcs7Profile.Content = b
 
-			profile := newProfile(&pkcs7Profile)
+			profile := NewProfile(&pkcs7Profile)
 			require.NotNil(t, profile)
 
 			details, err := profile.Details()

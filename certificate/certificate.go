@@ -14,17 +14,19 @@ import (
 	Details.String()
 	Certificate.CheckValidity()
 	Certificate.EncodeToP12(passphrase string)
-	NewCertificateInfo(certificate x509.Certificate, privateKey interface{})
-	InstalledCodesigningCertificateInfos()
-	InstalledInstallerCertificateInfos()
-	CertificatesFromPKCS12Content(content []byte, password string)
-	CertificatesFromPKCS12File(pkcs12Pth, password string)
-	CertificateFromDERContent(content []byte)
-	CeritifcateFromPemContent(content []byte)
+	- NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) NewCertificate + cert.details()
+	-CertificatesFromPKCS12Content(content []byte, password string) -> NewCertificatesFromFile
+	-CertificatesFromPKCS12File(pkcs12Pth, password string) -> NewCertificatesFromFile
+	- CertificateFromDERContent(content []byte) - move to autocodesign/devportalclient/spaceship/certificates.go (only used here)
+	- CeritifcateFromPemContent(content []byte) - move to autocodesign/devportalclient/spaceship/certificates.go (only used here)
+
 	InstalledCodesigningCertificateNames()
 	InstalledMacAppStoreCertificateNames()
 	InstalledCodesigningCertificates()
 	InstalledMacAppStoreCertificates()
+	InstalledCodesigningCertificateInfos()
+	InstalledInstallerCertificateInfos()
+
 	FilterCertificateInfoModelsByFilterFunc(certificates []CertificateInfoModel, filterFunc func(certificate CertificateInfoModel) bool)
 	FilterValidCertificateInfos(certificateInfos []CertificateInfoModel)
 */
@@ -34,7 +36,14 @@ type Certificate struct {
 	PrivateKey      interface{}
 }
 
-func NewCertificatesFromFile(reader io.Reader, password string) ([]Certificate, error) {
+func NewCertificate(cert *x509.Certificate, key interface{}) Certificate {
+	return Certificate{
+		X509Certificate: cert,
+		PrivateKey:      key,
+	}
+}
+
+func NewCertificatesFromPKCS12File(reader io.Reader, password string) ([]Certificate, error) {
 	data, err := io.ReadAll(reader)
 	if err != nil {
 		return nil, err
@@ -57,18 +66,11 @@ func NewCertificatesFromFile(reader io.Reader, password string) ([]Certificate, 
 	for i, certificate := range certificates {
 		privateKey := privateKeys[i]
 
-		cert := newCertificate(certificate, privateKey)
+		cert := NewCertificate(certificate, privateKey)
 		certs = append(certs, cert)
 	}
 
 	return certs, nil
-}
-
-func newCertificate(cert *x509.Certificate, key interface{}) Certificate {
-	return Certificate{
-		X509Certificate: cert,
-		PrivateKey:      key,
-	}
 }
 
 func (cert Certificate) Details() Details {

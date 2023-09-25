@@ -94,7 +94,7 @@ func TestNewCertificatesFromFile(t *testing.T) {
 			require.NoError(t, err)
 
 			x509Cert := newCertFromJSON(t, f)
-			cert := newCertificate(x509Cert, nil)
+			cert := NewCertificate(x509Cert, nil)
 			details := cert.Details()
 
 			require.Equal(t, tt.wantType, details.Type())
