@@ -66,7 +66,7 @@ func Test_GivenNewlyGeneratedWorkspaceWithAutocreateSchemesDisabled_WhenListingS
 	require.NoError(t, err)
 
 	schemesByContainer, err := workspace.Schemes()
-	require.EqualError(t, err, `no schemes found and the Xcode project's 'Autocreate schemes' option is disabled`)
+	require.EqualError(t, err, `failed to read project schemes: no schemes found and the Xcode project's 'Autocreate schemes' option is disabled`)
 	require.Equal(t, 0, len(schemesByContainer))
 }
 
