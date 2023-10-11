@@ -54,7 +54,7 @@ func (w Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
 
 	for _, projectLocation := range projectLocations {
 		if exist, err := pathutil.IsPathExists(projectLocation); err != nil {
-			return nil, fmt.Errorf("failed to check if project exist at: %s, error: %w", projectLocation, err)
+			return nil, fmt.Errorf("failed to check if project (%s) exists: %w", projectLocation, err)
 		} else if !exist {
 			// at this point we are interested the schemes visible for the workspace
 			continue
@@ -67,7 +67,7 @@ func (w Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
 
 		projectSchemes, err := project.SchemesWithAutocreateEnabled(isAutocreateSchemesEnabled)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read project schemes: %w", err)
+			return nil, fmt.Errorf("failed to read project (%s) schemes: %w", projectLocation, err)
 		}
 
 		if len(projectSchemes) > 0 {
