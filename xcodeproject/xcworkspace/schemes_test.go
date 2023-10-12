@@ -1,7 +1,6 @@
 package xcworkspace
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -53,7 +52,7 @@ func Test_GivenNewlyGeneratedWorkspaceWithWorkspaceSettings_WhenListingSchemes_T
 	require.Equal(t, true, actualSchemes[0].IsShared)
 }
 
-func Test_GivenNewlyGeneratedWorkspaceWithAutocreateSchemesDisabled_WhenListingSchemes_ThenReturnsError(t *testing.T) {
+func Test_GivenNewlyGeneratedWorkspaceWithAutocreateSchemesDisabled_WhenListingSchemes_ThenReturnsAnEmptyList(t *testing.T) {
 	xcodeWorkspacePath := testhelper.NewlyGeneratedXcodeWorkspacePath(t)
 
 	xcodeProjectPath := filepath.Join(filepath.Dir(xcodeWorkspacePath), "ios-sample.xcodeproj")
@@ -67,8 +66,6 @@ func Test_GivenNewlyGeneratedWorkspaceWithAutocreateSchemesDisabled_WhenListingS
 	require.NoError(t, err)
 
 	schemesByContainer, err := workspace.Schemes()
-	expectedMessage := fmt.Sprintf(`failed to read project (%s) schemes: no schemes found and the Xcode project's 'Autocreate schemes' option is disabled`, xcodeProjectPath)
-	require.EqualError(t, err, expectedMessage)
 	require.Equal(t, 0, len(schemesByContainer))
 }
 
