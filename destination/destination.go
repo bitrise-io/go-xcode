@@ -13,19 +13,18 @@ const (
 	archKey            = "arch"
 )
 
-// Platform ...
 type Platform string
 
-// Platforms ...
 const (
-	MacOS            Platform = "macOS"
-	IOS              Platform = "iOS"
-	IOSSimulator     Platform = "iOS Simulator"
-	WatchOS          Platform = "watchOS"
-	WatchOSSimulator Platform = "watchOS Simulator"
-	TvOS             Platform = "tvOS"
-	TvOSSimulator    Platform = "tvOS Simulator"
-	DriverKit        Platform = "DriverKit"
+	MacOS             Platform = "macOS"
+	IOS               Platform = "iOS"
+	IOSSimulator      Platform = "iOS Simulator"
+	WatchOS           Platform = "watchOS"
+	WatchOSSimulator  Platform = "watchOS Simulator"
+	TvOS              Platform = "tvOS"
+	TvOSSimulator     Platform = "tvOS Simulator"
+	DriverKit         Platform = "DriverKit"
+	VisionOSSimulator Platform = "visionOS Simulator"
 )
 
 // Specifier ...
