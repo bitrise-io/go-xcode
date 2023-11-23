@@ -143,7 +143,6 @@ func (m manager) WaitForBootFinished(id string, timeout time.Duration) error {
 
 	launchDoneCh := make(chan error, 1)
 	doWait := func() {
-		time.Sleep(5 * time.Second)
 		waitCmd := m.commandFactory.Create("xcrun", []string{"simctl", "launch", id, "com.apple.Preferences"}, &command.Opts{
 			Stdout: os.Stderr,
 			Stderr: os.Stderr,

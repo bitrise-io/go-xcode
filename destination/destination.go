@@ -13,7 +13,7 @@ const (
 	archKey            = "arch"
 )
 
-//revive:disable:exported
+//revive:disable-next-line:exported
 type Platform string
 
 const (
@@ -32,7 +32,7 @@ const (
 // Specifier is the parsed destination specifier
 type Specifier map[string]string
 
-//revive:disable:exported
+//revive:disable-next-line:exported
 func NewSpecifier(destination string) (Specifier, error) {
 	specifier := Specifier{}
 
@@ -63,17 +63,17 @@ func (s Specifier) Platform() (Platform, bool) {
 	return Platform(s[platformKey]), false
 }
 
-//revive:disable:exported
+//revive:disable-next-line:exported
 func (s Specifier) Name() string {
 	return s[nameKey]
 }
 
-//revive:disable:exported
+//revive:disable-next-line:exported
 func (s Specifier) OS() string {
 	return s[osKey]
 }
 
-//revive:disable:exported
+//revive:disable-next-line:exported
 func (s Specifier) Arch() string {
 	return s[archKey]
 }
