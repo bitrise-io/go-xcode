@@ -303,7 +303,12 @@ func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion st
 
 		if runtime.Platform != "" && runtime.Platform == string(wantedPlatform) {
 			runtimesOfPlatform = append(runtimesOfPlatform, runtime)
+			continue
+		}
 
+		// simctl reports visionOS as xrOS (as of Xcode 15.1 Beta 3)
+		if (runtime.Platform == "xrOS" || runtime.Platform == "visionOS") && wantedPlatform == string(VisionOS) {
+			runtimesOfPlatform = append(runtimesOfPlatform, runtime)
 			continue
 		}
 
@@ -331,6 +336,9 @@ func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion st
 		}
 		if wantedPlatform == string(TvOS) {
 			return deviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, TvOSSimulator)
+		}
+		if wantedPlatform == string(VisionOS) {
+			return deviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, VisionOSSimulator)
 		}
 		return deviceRuntime{}, fmt.Errorf("no runtime installed for platform %s", wantedPlatform)
 	}

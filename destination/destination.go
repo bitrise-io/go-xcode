@@ -18,14 +18,16 @@ type Platform string
 
 // Platforms ...
 const (
-	MacOS            Platform = "macOS"
-	IOS              Platform = "iOS"
-	IOSSimulator     Platform = "iOS Simulator"
-	WatchOS          Platform = "watchOS"
-	WatchOSSimulator Platform = "watchOS Simulator"
-	TvOS             Platform = "tvOS"
-	TvOSSimulator    Platform = "tvOS Simulator"
-	DriverKit        Platform = "DriverKit"
+	MacOS             Platform = "macOS"
+	IOS               Platform = "iOS"
+	IOSSimulator      Platform = "iOS Simulator"
+	WatchOS           Platform = "watchOS"
+	WatchOSSimulator  Platform = "watchOS Simulator"
+	TvOS              Platform = "tvOS"
+	TvOSSimulator     Platform = "tvOS Simulator"
+	DriverKit         Platform = "DriverKit"
+	VisionOS          Platform = "visionOS"
+	VisionOSSimulator Platform = "visionOS Simulator"
 )
 
 // Specifier ...
@@ -52,7 +54,7 @@ func NewSpecifier(destination string) (Specifier, error) {
 	return specifier, nil
 }
 
-// Platform ...
+// Platform returns the platform part of the specifier and true if it's the generic platform
 func (s Specifier) Platform() (Platform, bool) {
 	p, ok := s[genericPlatformKey]
 	if ok {
