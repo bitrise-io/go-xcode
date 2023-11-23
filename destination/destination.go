@@ -13,6 +13,7 @@ const (
 	archKey            = "arch"
 )
 
+//revive:disable:exported
 type Platform string
 
 const (
@@ -24,13 +25,14 @@ const (
 	TvOS              Platform = "tvOS"
 	TvOSSimulator     Platform = "tvOS Simulator"
 	DriverKit         Platform = "DriverKit"
+	VisionOS          Platform = "visionOS"
 	VisionOSSimulator Platform = "visionOS Simulator"
 )
 
-// Specifier ...
+// Specifier is the parsed destination specifier
 type Specifier map[string]string
 
-// NewSpecifier ...
+//revive:disable:exported
 func NewSpecifier(destination string) (Specifier, error) {
 	specifier := Specifier{}
 
@@ -51,7 +53,7 @@ func NewSpecifier(destination string) (Specifier, error) {
 	return specifier, nil
 }
 
-// Platform ...
+// Platform returns the platform part of the specifier and true if it's the generic platform
 func (s Specifier) Platform() (Platform, bool) {
 	p, ok := s[genericPlatformKey]
 	if ok {
@@ -61,17 +63,17 @@ func (s Specifier) Platform() (Platform, bool) {
 	return Platform(s[platformKey]), false
 }
 
-// Name ...
+//revive:disable:exported
 func (s Specifier) Name() string {
 	return s[nameKey]
 }
 
-// OS ...
+//revive:disable:exported
 func (s Specifier) OS() string {
 	return s[osKey]
 }
 
-// Arch ...
+//revive:disable:exported
 func (s Specifier) Arch() string {
 	return s[archKey]
 }
