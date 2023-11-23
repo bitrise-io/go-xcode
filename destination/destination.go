@@ -13,7 +13,7 @@ const (
 	archKey            = "arch"
 )
 
-//revive:disable-next-line:exported
+// Platform ...
 type Platform string
 
 const (
@@ -29,10 +29,10 @@ const (
 	VisionOSSimulator Platform = "visionOS Simulator"
 )
 
-// Specifier is the parsed destination specifier
+// Specifier ...
 type Specifier map[string]string
 
-//revive:disable-next-line:exported
+// NewSpecifier ...
 func NewSpecifier(destination string) (Specifier, error) {
 	specifier := Specifier{}
 
@@ -63,17 +63,17 @@ func (s Specifier) Platform() (Platform, bool) {
 	return Platform(s[platformKey]), false
 }
 
-//revive:disable-next-line:exported
+// Name ...
 func (s Specifier) Name() string {
 	return s[nameKey]
 }
 
-//revive:disable-next-line:exported
+// OS ...
 func (s Specifier) OS() string {
 	return s[osKey]
 }
 
-//revive:disable-next-line:exported
+// Arch ...
 func (s Specifier) Arch() string {
 	return s[archKey]
 }
