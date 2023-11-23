@@ -306,8 +306,8 @@ func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion st
 			continue
 		}
 
-		// simctl reports visionOS as xrOS
-		if runtime.Platform == "xrOS" && wantedPlatform == string(VisionOS) {
+		// simctl reports visionOS as xrOS (as of Xcode 15.1 Beta 3)
+		if (runtime.Platform == "xrOS" || runtime.Platform == "visionOS") && wantedPlatform == string(VisionOS) {
 			runtimesOfPlatform = append(runtimesOfPlatform, runtime)
 			continue
 		}
