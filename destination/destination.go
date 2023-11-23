@@ -16,6 +16,7 @@ const (
 // Platform ...
 type Platform string
 
+// Platforms ...
 const (
 	MacOS             Platform = "macOS"
 	IOS               Platform = "iOS"
