@@ -103,6 +103,7 @@ func runSpaceshipCommand(cmd spaceshipCommand) (string, error) {
 	log.Debugf("$ %s", cmd.printableCommandArgs)
 	output, err := cmd.command.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
+		// Omitting err from log, to avoid logging plaintext password present in command params
 		var exitError *exec.ExitError
 		if errors.As(err, &exitError) {
 			return "", fmt.Errorf("spaceship command exited with status %d, output: %s", exitError.ProcessState.ExitCode(), output)
