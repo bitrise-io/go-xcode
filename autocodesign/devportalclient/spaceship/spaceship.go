@@ -108,6 +108,7 @@ func runSpaceshipCommand(cmd spaceshipCommand) (string, error) {
 		output, err := cmd.command.RunAndReturnTrimmedCombinedOutput()
 		spaceshipOut = output
 		if err != nil && shouldRetrySpaceshipCommand(output) {
+			log.Warnf("spaceship command failed with a retryable error, retrying...")
 			return err, false
 		}
 		return err, true
