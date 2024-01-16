@@ -225,8 +225,5 @@ func prepareSpaceship() (string, error) {
 }
 
 func shouldRetrySpaceshipCommand(out string) bool {
-	if strings.Contains(out, "503 Service Temporarily Unavailable") {
-		return true
-	}
-	return false
+	return strings.Contains(out, "503 Service Temporarily Unavailable")
 }
