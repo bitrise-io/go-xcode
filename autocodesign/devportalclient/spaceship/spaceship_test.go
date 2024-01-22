@@ -16,7 +16,7 @@ const spaceshipTemporaryUnavailableOutput = `Apple ID authentication failed: <ht
 </body>
 </html>`
 
-func Test_runSpaceshipCommand_retries_on_temporary_unavailable_error(t *testing.T) {
+func Test_runSpaceshipCommand_retries_on_temporarily_unavailable_error(t *testing.T) {
 	cmd := new(mocks.Command)
 	cmd.On("RunAndReturnTrimmedCombinedOutput").Return(spaceshipTemporaryUnavailableOutput, errors.New("exit status 1")).Once()
 	cmd.On("RunAndReturnTrimmedCombinedOutput").Return(spaceshipTemporaryUnavailableOutput, errors.New("exit status 1")).Once()
@@ -34,7 +34,7 @@ func Test_runSpaceshipCommand_retries_on_temporary_unavailable_error(t *testing.
 	cmd.AssertExpectations(t)
 }
 
-func Test_runSpaceshipCommand_retries_only_temporary_unavailable_error(t *testing.T) {
+func Test_runSpaceshipCommand_retries_only_temporarily_unavailable_error(t *testing.T) {
 	cmd := new(mocks.Command)
 	cmd.On("RunAndReturnTrimmedCombinedOutput").Return("exit status 1", errors.New("exit status 1")).Once()
 
