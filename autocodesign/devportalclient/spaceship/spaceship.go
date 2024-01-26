@@ -43,12 +43,19 @@ func NewClient(authConfig appleauth.AppleID, teamID string, cmdFactory ruby.Comm
 		return nil, err
 	}
 
-	return &Client{
+	c := &Client{
 		workDir:    dir,
 		authConfig: authConfig,
 		teamID:     teamID,
 		cmdFactory: cmdFactory,
-	}, nil
+	}
+
+	output, err := c.runSpaceshipCommand("login")
+	if err != nil {
+		return nil, fmt.Errorf("running command failed with error: %s, output: %s", err, output)
+	}
+
+	return c, nil
 }
 
 // DevPortalClient ...

@@ -4,6 +4,7 @@ require_relative 'profiles'
 require_relative 'app'
 require_relative 'devices'
 require_relative 'log'
+require 'json'
 require 'optparse'
 
 begin
@@ -26,6 +27,14 @@ begin
   end.parse!
 
   Log.verbose = true
+
+  cmd_started = Time.now
+
+  if options[:subcommand] == 'login'
+    Portal::AuthClient.login(options[:username], options[:password], options[:session], options[:team_id])
+  else
+    Portal::AuthClient.login(options[:username], '', options[:session], options[:team_id])
+  end
 
   begin
     login_started = Time.now.utc
@@ -70,15 +79,40 @@ begin
     raise "Unknown subcommand: #{options[:subcommand]}"
   end
 
-  response = { data: result }
-  puts response.to_json.to_s
+  puts Result.new(cmd_started, Time.now, result).to_json.to_s
 rescue RetryNeeded => e
-  result = { retry: true, error: "#{e.cause}" }
-  puts result.to_json.to_s
+  puts Result.new(cmd_started, Time.now, nil, "#{e.cause}", true).to_json.to_s
 rescue Spaceship::BasicPreferredInfoError, Spaceship::UnexpectedResponse => e
-  result = { error: "#{e.preferred_error_info&.join("\n") || e.to_s}, stacktrace: #{e.backtrace.join("\n")}" }
-  puts result.to_json.to_s
+  error = "#{e.preferred_error_info&.join("\n") || e.to_s}, stacktrace: #{e.backtrace.join("\n")}"
+  puts Result.new(cmd_started, Time.now, nil, error, false).to_json.to_s
 rescue => e
-  result = { error: "#{e}, stacktrace: #{e.backtrace.join("\n")}" }
-  puts result.to_json.to_s
+  error = "#{e}, stacktrace: #{e.backtrace.join("\n")}"
+  puts Result.new(cmd_started, Time.now, nil, error, false).to_json.to_s
+end
+
+class Result
+  def initialize(start_time, end_time, data, error = '', should_retry = false)
+    @start_time = start_time
+    @end_time = end_time
+    @data = data
+    @error = error
+    @should_retry = should_retry
+  end
+
+  def to_json
+    if error.to_s.strip.empty?
+      {
+        start_time: @start_time,
+        end_time: @end_time,
+        data: @data
+      }.to_json
+    else
+      {
+        start_time: @start_time,
+        end_time: @end_time,
+        error: @error,
+        retry: @should_retry
+      }.to_json
+    end
+  end
 end
