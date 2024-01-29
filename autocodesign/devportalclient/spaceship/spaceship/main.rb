@@ -4,7 +4,6 @@ require_relative 'profiles'
 require_relative 'app'
 require_relative 'devices'
 require_relative 'log'
-require 'json'
 require 'optparse'
 
 begin
