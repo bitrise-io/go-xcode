@@ -70,40 +70,15 @@ begin
     end
   end
 
-  puts Result.new(cmd_started, Time.now, result).to_json.to_s
+  response = { data: result }
+  puts response.to_json.to_s
 rescue RetryNeeded => e
-  puts Result.new(cmd_started, Time.now, nil, "#{e.cause}", true).to_json.to_s
+  result = { retry: true, error: "#{e.cause}" }
+  puts result.to_json.to_s
 rescue Spaceship::BasicPreferredInfoError, Spaceship::UnexpectedResponse => e
-  error = "#{e.preferred_error_info&.join("\n") || e.to_s}, stacktrace: #{e.backtrace.join("\n")}"
-  puts Result.new(cmd_started, Time.now, nil, error, false).to_json.to_s
+  result = { error: "#{e.preferred_error_info&.join("\n") || e.to_s}, stacktrace: #{e.backtrace.join("\n")}" }
+  puts result.to_json.to_s
 rescue => e
-  error = "#{e}, stacktrace: #{e.backtrace.join("\n")}"
-  puts Result.new(cmd_started, Time.now, nil, error, false).to_json.to_s
-end
-
-class Result
-  def initialize(start_time, end_time, data, error = '', should_retry = false)
-    @start_time = start_time
-    @end_time = end_time
-    @data = data
-    @error = error
-    @should_retry = should_retry
-  end
-
-  def to_json
-    if error.to_s.strip.empty?
-      {
-        start_time: @start_time,
-        end_time: @end_time,
-        data: @data
-      }.to_json
-    else
-      {
-        start_time: @start_time,
-        end_time: @end_time,
-        error: @error,
-        retry: @should_retry
-      }.to_json
-    end
-  end
+  result = { error: "#{e}, stacktrace: #{e.backtrace.join("\n")}" }
+  puts result.to_json.to_s
 end
