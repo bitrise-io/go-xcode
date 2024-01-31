@@ -50,10 +50,14 @@ func NewClient(authConfig appleauth.AppleID, teamID string, cmdFactory ruby.Comm
 		cmdFactory: cmdFactory,
 	}
 
-	_, err = c.runSpaceshipCommand("login")
+	teamID, err = c.runSpaceshipCommand("login")
 	if err != nil {
 		return nil, fmt.Errorf("running command failed with error: %s", err)
 	}
+
+	fmt.Println("current team id:", teamID)
+
+	c.teamID = teamID
 
 	return c, nil
 }
