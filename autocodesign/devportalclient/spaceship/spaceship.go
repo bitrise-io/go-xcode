@@ -50,16 +50,33 @@ func NewClient(authConfig appleauth.AppleID, teamID string, cmdFactory ruby.Comm
 		cmdFactory: cmdFactory,
 	}
 
-	teamID, err = c.runSpaceshipCommand("login")
+	currentTeamID, err := c.login()
 	if err != nil {
-		return nil, fmt.Errorf("running command failed with error: %s", err)
+		return nil, fmt.Errorf("spaceship command failed: %s", err)
 	}
 
-	fmt.Println("current team id:", teamID)
+	fmt.Println("current team id:", currentTeamID)
 
-	c.teamID = teamID
+	c.teamID = currentTeamID
 
 	return c, nil
+}
+
+func (c *Client) login() (string, error) {
+	output, err := c.runSpaceshipCommand("login")
+	if err != nil {
+		return "", fmt.Errorf("running command failed with error: %s", err)
+	}
+
+	// {"data":"72SA8V3WYL"}
+	var teamIDResponse struct {
+		Data string `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(output), &teamIDResponse); err != nil {
+		return "", fmt.Errorf("failed to unmarshal response: %v", err)
+	}
+
+	return teamIDResponse.Data, nil
 }
 
 // DevPortalClient ...
