@@ -159,8 +159,8 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 }
 
 // CreateProfile ...
-func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
-	profile, err := c.createProfile(name, profileType, bundleID, certificateIDs, deviceIDs)
+func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string, templateName string) (autocodesign.Profile, error) {
+	profile, err := c.createProfile(name, profileType, bundleID, certificateIDs, deviceIDs, templateName)
 	if err != nil {
 		// Expired profiles are not listed via profiles endpoint,
 		// so we can not catch if the profile already exist but expired, before we attempt to create one with the managed profile name.
@@ -171,7 +171,7 @@ func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.P
 				return nil, fmt.Errorf("expired profile cleanup failed: %s", err)
 			}
 
-			profile, err = c.createProfile(name, profileType, bundleID, certificateIDs, deviceIDs)
+			profile, err = c.createProfile(name, profileType, bundleID, certificateIDs, deviceIDs, templateName)
 			if err != nil {
 				return nil, err
 			}
@@ -218,7 +218,7 @@ func (c *ProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 	return c.DeleteProfile(profile.ID)
 }
 
-func (c *ProfileClient) createProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
+func (c *ProfileClient) createProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string, templateName string) (autocodesign.Profile, error) {
 	// Create new Bitrise profile on App Store Connect
 	r, err := c.client.Provisioning.CreateProfile(
 		appstoreconnect.NewProfileCreateRequest(
@@ -227,6 +227,7 @@ func (c *ProfileClient) createProfile(name string, profileType appstoreconnect.P
 			bundleID.ID,
 			certificateIDs,
 			deviceIDs,
+			templateName,
 		),
 	)
 	if err != nil {

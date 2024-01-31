@@ -156,8 +156,9 @@ func (s ProvisioningService) ListProfiles(opt *ListProfilesOptions) (*ProfilesRe
 
 // ProfileCreateRequestDataAttributes ...
 type ProfileCreateRequestDataAttributes struct {
-	Name        string      `json:"name"`
-	ProfileType ProfileType `json:"profileType"`
+	Name         string      `json:"name"`
+	ProfileType  ProfileType `json:"profileType"`
+	TemplateType string      `json:"templateName,omitempty"`
 }
 
 // ProfileCreateRequestDataRelationshipData ...
@@ -201,7 +202,7 @@ type ProfileCreateRequest struct {
 }
 
 // NewProfileCreateRequest returns a ProfileCreateRequest structure
-func NewProfileCreateRequest(profileType ProfileType, name, bundleIDID string, certificateIDs []string, deviceIDs []string) ProfileCreateRequest {
+func NewProfileCreateRequest(profileType ProfileType, name, bundleIDID string, certificateIDs []string, deviceIDs []string, templateName string) ProfileCreateRequest {
 	bundleIDData := ProfileCreateRequestDataRelationshipData{
 		ID:   bundleIDID,
 		Type: "bundleIds",
@@ -233,8 +234,9 @@ func NewProfileCreateRequest(profileType ProfileType, name, bundleIDID string, c
 
 	data := ProfileCreateRequestData{
 		Attributes: ProfileCreateRequestDataAttributes{
-			Name:        name,
-			ProfileType: profileType,
+			Name:         name,
+			ProfileType:  profileType,
+			TemplateType: templateName,
 		},
 		Relationships: relationships,
 		Type:          "profiles",

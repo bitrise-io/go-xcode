@@ -133,7 +133,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 	})
 	devportalWithNoAppID.On("CreateBundleID", "io.test", "Bitrise io test").Return(createdAppID, nil).
 		On("SyncBundleID", *createdAppID, mock.Anything).Return(nil).
-		On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "").
 		Return(newMockProfile(profileArgs{}), nil)
 
 	appIDAndProfileFoundAppLayout := AppLayout{
@@ -398,11 +398,11 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 	// FindProfile
 	client.On("DeleteProfile", expiredProfile.ID()).Return(nil).Once()
 	client.On("CheckBundleIDEntitlements", mock.Anything, mock.Anything).Return(nil).Once()
-	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, ProfilesInconsistentError{}).Once()
+	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "").Return(nil, ProfilesInconsistentError{}).Once()
 	// FindProfile
 	client.On("DeleteProfile", expiredProfile.ID()).Return(nil).Once()
 	client.On("CheckBundleIDEntitlements", mock.Anything, mock.Anything).Return(nil).Once()
-	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(validProfile, nil).Once()
+	client.On("CreateProfile", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, "").Return(validProfile, nil).Once()
 
 	assetWriter := newDefaultMockAssetWriter()
 	appLayout := AppLayout{
@@ -551,4 +551,69 @@ func newClientWithAppIDWithoutAppleSignIn(cert certificateutil.CertificateInfoMo
 	client.On("CheckBundleIDEntitlements", appID, mock.Anything).Return(NonmatchingProfileError{})
 
 	return client
+}
+
+func TestAppLayout_ListProfileAttachedEntitlements(t *testing.T) {
+	tests := []struct {
+		name                   string
+		entitlementsByBundleID map[string]Entitlements
+		want                   map[string][]string
+	}{
+		{
+			name: "no entitlements",
+			entitlementsByBundleID: map[string]Entitlements{
+				"com.bundleid": map[string]interface{}{},
+			},
+			want: map[string][]string{},
+		},
+		{
+			name: "all entitlements supported",
+			entitlementsByBundleID: map[string]Entitlements{
+				"com.bundleid": map[string]interface{}{
+					"aps-environment": true,
+				},
+			},
+			want: map[string][]string{},
+		},
+		{
+			name: "contains unsupported entitlement",
+			entitlementsByBundleID: map[string]Entitlements{
+				"com.bundleid": map[string]interface{}{
+					"com.entitlement-ignored":            true,
+					"com.apple.developer.contacts.notes": true,
+				},
+			},
+			want: map[string][]string{
+				"com.bundleid": {"com.apple.developer.contacts.notes"},
+			},
+		},
+		{
+			name: "contains unsupported entitlement, multiple bundle IDs",
+			entitlementsByBundleID: map[string]Entitlements{
+				"com.bundleid": map[string]interface{}{
+					"aps-environment":                  true,
+					"com.apple.developer.carplay-maps": true,
+				},
+				"com.bundleid2": map[string]interface{}{
+					"com.entitlement-ignored":            true,
+					"com.apple.developer.contacts.notes": true,
+				},
+			},
+			want: map[string][]string{
+				"com.bundleid":  {"com.apple.developer.carplay-maps"},
+				"com.bundleid2": {"com.apple.developer.contacts.notes"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := AppLayout{
+				EntitlementsByArchivableTargetBundleID: tt.entitlementsByBundleID,
+			}
+
+			got := app.ListProfileAttachedEntitlements()
+
+			require.Equal(t, tt.want, got)
+		})
+	}
 }

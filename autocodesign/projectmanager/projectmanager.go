@@ -100,11 +100,6 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 		return autocodesign.AppLayout{}, fmt.Errorf("failed to read archivable targets' entitlements: %s", err)
 	}
 
-	if ok, entitlement, bundleID := CanGenerateProfileWithEntitlements(archivableTargetBundleIDToEntitlements); !ok {
-		log.Errorf("Can not create profile with unsupported entitlement (%s) for the bundle ID %s, due to App Store Connect API limitations.", entitlement, bundleID)
-		return autocodesign.AppLayout{}, fmt.Errorf("please generate provisioning profile manually on Apple Developer Portal and use the Certificate and profile installer Step instead")
-	}
-
 	var uiTestTargetBundleIDs []string
 	if uiTestTargets {
 		log.Printf("UITest targets:")
@@ -209,17 +204,4 @@ func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType,
 	log.Debugf("Xcode project saved.")
 
 	return nil
-}
-
-// CanGenerateProfileWithEntitlements checks all entitlements, whether they can be generated
-func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]autocodesign.Entitlements) (ok bool, badEntitlement string, badBundleID string) {
-	for bundleID, entitlements := range entitlementsByBundleID {
-		for entitlementKey, value := range entitlements {
-			if (autocodesign.Entitlement{entitlementKey: value}).IsProfileAttached() {
-				return false, entitlementKey, bundleID
-			}
-		}
-	}
-
-	return true, "", ""
 }

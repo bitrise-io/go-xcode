@@ -77,7 +77,7 @@ type DevPortalClient interface {
 
 	FindProfile(name string, profileType appstoreconnect.ProfileType) (Profile, error)
 	DeleteProfile(id string) error
-	CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (Profile, error)
+	CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string, templateName string) (Profile, error)
 
 	FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error)
 	CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, appEntitlements Entitlements) error
@@ -131,6 +131,7 @@ type CodesignAssetsOpts struct {
 	BitriseTestDevices                []devportalservice.TestDevice
 	MinProfileValidityDays            int
 	FallbackToLocalAssetsOnAPIFailure bool
+	ProfileTemplateName               map[DistributionType]string
 	VerboseLog                        bool
 }
 
@@ -206,7 +207,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 			printMissingCodeSignAssets(missingAppLayout)
 
 			// Ensure Profiles
-			newCodesignAssets, err := ensureProfiles(m.devPortalClient, distrType, certsByType, *missingAppLayout, devPortalDeviceIDs, opts.MinProfileValidityDays)
+			newCodesignAssets, err := ensureProfiles(m.devPortalClient, distrType, certsByType, *missingAppLayout, devPortalDeviceIDs, opts.MinProfileValidityDays, opts.ProfileTemplateName)
 			if err != nil {
 				switch {
 				case errors.As(err, &ErrAppClipAppID{}):
@@ -237,4 +238,19 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 	}
 
 	return codesignAssetsByDistributionType, nil
+}
+
+// ListProfileAttachedEntitlements ...
+func (layout AppLayout) ListProfileAttachedEntitlements() map[string][]string {
+	bundleIDToTemplatedEntitlements := make(map[string][]string)
+
+	for bundleID, entitlements := range layout.EntitlementsByArchivableTargetBundleID {
+		for entitlementKey, value := range entitlements {
+			if (Entitlement{entitlementKey: value}).IsProfileAttached() {
+				bundleIDToTemplatedEntitlements[bundleID] = append(bundleIDToTemplatedEntitlements[bundleID], entitlementKey)
+			}
+		}
+	}
+
+	return bundleIDToTemplatedEntitlements
 }

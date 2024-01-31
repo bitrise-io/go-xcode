@@ -106,7 +106,7 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 		},
 	}
 
-	profile, err := profileClient.CreateProfile("Bitrise iOS development - (io.bitrise.testapp)", appstoreconnect.IOSAppDevelopment, bundleID, []string{}, []string{})
+	profile, err := profileClient.CreateProfile("Bitrise iOS development - (io.bitrise.testapp)", appstoreconnect.IOSAppDevelopment, bundleID, []string{}, []string{}, "")
 
 	// Assert
 	require.NoError(t, err)

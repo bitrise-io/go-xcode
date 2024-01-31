@@ -168,7 +168,11 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 }
 
 // CreateProfile ...
-func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
+func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string, templateName string) (autocodesign.Profile, error) {
+	if templateName != "" {
+		return nil, fmt.Errorf("profile template name not supported with spaceship client")
+	}
+
 	log.Debugf("Creating provisioning profile with name: %s", name)
 
 	output, err := c.client.runSpaceshipCommand("create_profile",
