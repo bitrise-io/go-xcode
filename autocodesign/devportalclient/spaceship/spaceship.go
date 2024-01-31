@@ -55,7 +55,7 @@ func NewClient(authConfig appleauth.AppleID, teamID string, cmdFactory ruby.Comm
 		return nil, fmt.Errorf("spaceship command failed: %s", err)
 	}
 
-	fmt.Println("current team id:", currentTeamID)
+	log.Debugf("current team id: %s", currentTeamID)
 
 	c.teamID = currentTeamID
 
