@@ -1,9 +1,9 @@
 package certdownloader
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -20,7 +20,7 @@ func Test_downloader_GetCertificates_Local(t *testing.T) {
 		t.Errorf("init: failed to encode certificate: %s", err)
 	}
 
-	p12File, err := ioutil.TempFile("", "*.p12")
+	p12File, err := os.CreateTemp("", "*.p12")
 	if err != nil {
 		t.Errorf("init: failed to create temp test file: %s", err)
 	}

@@ -2,7 +2,6 @@ package codesign
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -202,7 +201,7 @@ func Test_ParseConnectionOverrideConfig(t *testing.T) {
 	// Given
 	path := filepath.Join(t.TempDir(), "private_key.p8")
 	fileContent := "this is a private key"
-	err := ioutil.WriteFile(path, []byte(fileContent), 0666)
+	err := os.WriteFile(path, []byte(fileContent), 0666)
 	if err != nil {
 		t.Errorf(err.Error())
 	}

@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -58,7 +57,7 @@ func TestCollectSwiftPackages(t *testing.T) {
 		t.Skip("Skipping integration test as -short flag is set.")
 	}
 
-	tempDir, err := ioutil.TempDir("", "")
+	tempDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatalf("setup: failed to create temp dir, error: %s", err)
 	}
@@ -73,7 +72,7 @@ func TestCollectSwiftPackages(t *testing.T) {
 		t.Fatalf("setup: failed to create cache dir: %s", err)
 	}
 
-	checkoutDir, err := ioutil.TempDir("", "")
+	checkoutDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatalf("setup: failed to create temp dir, error: %s", err)
 	}
@@ -83,7 +82,7 @@ func TestCollectSwiftPackages(t *testing.T) {
 		}
 	}()
 
-	cacheTempDir, err := ioutil.TempDir("", "")
+	cacheTempDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		t.Fatalf("setup: failed to create temp dir, error: %s", err)
 	}

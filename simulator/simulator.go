@@ -3,7 +3,6 @@ package simulator
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -196,7 +195,7 @@ func (m manager) CollectDiagnostics() (string, error) {
 		return "", err
 	}
 
-	diagnosticsOutDir, err := ioutil.TempDir("", diagnosticsName)
+	diagnosticsOutDir, err := os.MkdirTemp("", diagnosticsName)
 	if err != nil {
 		return "", fmt.Errorf("failed to collect Simulator diagnostics, could not create temporary directory: %v", err)
 	}
