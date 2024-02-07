@@ -1,7 +1,6 @@
 package keychain
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestCreateKeychain(t *testing.T) {
-	dir, err := ioutil.TempDir("", "test-create-keychain")
+	dir, err := os.MkdirTemp("", "test-create-keychain")
 	if err != nil {
 		t.Errorf("setup: create temp dir for keychain: %s", err)
 	}
@@ -38,7 +37,7 @@ func TestKeychain_importCertificate(t *testing.T) {
 	)
 
 	// Create test keychain
-	dirTmp, err := ioutil.TempDir("", "test-import-certificate")
+	dirTmp, err := os.MkdirTemp("", "test-import-certificate")
 	if err != nil {
 		t.Fatalf("setup: create temp dir for keychain: %s", err)
 	}
@@ -82,7 +81,7 @@ func TestKeychain_importCertificate(t *testing.T) {
 	}
 
 	testcertPath := filepath.Join(dirTmp, "TestCert.p12")
-	if err := ioutil.WriteFile(testcertPath, pfxData, 0600); err != nil {
+	if err := os.WriteFile(testcertPath, pfxData, 0600); err != nil {
 		t.Fatalf("Setup: failed to write test p12 file.")
 	}
 

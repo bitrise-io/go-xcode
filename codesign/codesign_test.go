@@ -2,7 +2,7 @@ package codesign
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -204,7 +204,7 @@ func TestSelectConnectionCredentials(t *testing.T) {
 	}
 
 	localKeyPath := filepath.Join(t.TempDir(), "key.p8")
-	err := ioutil.WriteFile(localKeyPath, []byte("private key contents"), 0700)
+	err := os.WriteFile(localKeyPath, []byte("private key contents"), 0700)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

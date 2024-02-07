@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"testing"
 
@@ -178,13 +178,13 @@ func newResponse(t *testing.T, status int, body map[string]interface{}) *http.Re
 	resp := http.Response{
 		StatusCode: status,
 		Header:     http.Header{},
-		Body:       ioutil.NopCloser(nil),
+		Body:       io.NopCloser(nil),
 	}
 
 	if body != nil {
 		var buff bytes.Buffer
 		require.NoError(t, json.NewEncoder(&buff).Encode(body))
-		resp.Body = ioutil.NopCloser(&buff)
+		resp.Body = io.NopCloser(&buff)
 		resp.ContentLength = int64(buff.Len())
 	}
 
