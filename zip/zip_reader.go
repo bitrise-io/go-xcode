@@ -10,11 +10,13 @@ import (
 	"github.com/ryanuber/go-glob"
 )
 
+// Reader ...
 type Reader struct {
 	zipReader *zip.ReadCloser
 	logger    log.Logger
 }
 
+// NewReader ...
 func NewReader(archivePath string, logger log.Logger) (*Reader, error) {
 	zipReader, err := zip.OpenReader(archivePath)
 	if err != nil {
@@ -27,10 +29,12 @@ func NewReader(archivePath string, logger log.Logger) (*Reader, error) {
 	}, nil
 }
 
+// Close ...
 func (reader Reader) Close() error {
 	return reader.zipReader.Close()
 }
 
+// ReadFile ...
 func (reader Reader) ReadFile(targetPathGlob string) ([]byte, error) {
 	var files []*zip.File
 	var fileNames []string
@@ -68,6 +72,7 @@ func (reader Reader) ReadFile(targetPathGlob string) ([]byte, error) {
 	return b, nil
 }
 
+// IsFileOrDirExistsInZipArchive ...
 func (reader Reader) IsFileOrDirExistsInZipArchive(targetPathGlob string) bool {
 	for _, file := range reader.zipReader.File {
 		if glob.Glob(targetPathGlob, file.Name) {
