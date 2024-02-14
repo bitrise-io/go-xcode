@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// ReadCloser ...
 type ReadCloser interface {
 	Files() []File
 	Close() error
@@ -14,6 +15,7 @@ type defaultReadCloser struct {
 	zipReader *zip.ReadCloser
 }
 
+// NewDefaultReadCloser ...
 func NewDefaultReadCloser(archivePath string) (ReadCloser, error) {
 	zipReader, err := zip.OpenReader(archivePath)
 	if err != nil {
@@ -25,6 +27,7 @@ func NewDefaultReadCloser(archivePath string) (ReadCloser, error) {
 	}, nil
 }
 
+// Files ...
 func (readCloser defaultReadCloser) Files() []File {
 	var files []File
 	for _, file := range readCloser.zipReader.File {
@@ -33,6 +36,7 @@ func (readCloser defaultReadCloser) Files() []File {
 	return files
 }
 
+// Close ...
 func (readCloser defaultReadCloser) Close() error {
 	return readCloser.zipReader.Close()
 }

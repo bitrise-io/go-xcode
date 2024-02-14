@@ -5,6 +5,7 @@ import (
 	"io"
 )
 
+// File ...
 type File interface {
 	Name() string
 	Open() (io.ReadCloser, error)
@@ -18,10 +19,12 @@ func newDefaultFile(file *zip.File) File {
 	return defaultFile{file: file}
 }
 
+// Name ...
 func (file defaultFile) Name() string {
 	return file.file.Name
 }
 
+// Open ...
 func (file defaultFile) Open() (io.ReadCloser, error) {
 	return file.file.Open()
 }

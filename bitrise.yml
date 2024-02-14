@@ -16,13 +16,13 @@ workflows:
         - skip_step_yml_validation: "yes"
     - go-list:
         inputs:
-        - exclude: '*/mocks'
-    - go-test: {}
+        - exclude: "*/mocks"
+    - go-test: { }
 
   integration_test:
     steps:
-    - change-workdir@1:
+    - change-workdir:
         inputs:
         - path: ./_integration_tests
-    - go-list: {}
-    - go-test: {}
+    - go-list: { }
+    - go-test: { }
