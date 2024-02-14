@@ -5,6 +5,7 @@ workflows:
   ci:
     before_run:
     - test
+    - integration_test
 
   test:
     steps:
@@ -15,6 +16,13 @@ workflows:
         - skip_step_yml_validation: "yes"
     - go-list:
         inputs:
-        - exclude: |-
-            */mocks
+        - exclude: "*/mocks"
+    - go-test: { }
+
+  integration_test:
+    steps:
+    - change-workdir:
+        inputs:
+        - path: ./_integration_tests
+    - go-list: { }
     - go-test: { }
