@@ -1,24 +1,24 @@
 package zip
 
 import (
-	"archive/zip"
 	"fmt"
 	"io"
-	"strings"
+	"sort"
 
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/internals/zip"
 	"github.com/ryanuber/go-glob"
 )
 
 // Reader ...
 type Reader struct {
-	zipReader *zip.ReadCloser
+	zipReader zip.ReadCloser
 	logger    log.Logger
 }
 
 // NewReader ...
 func NewReader(archivePath string, logger log.Logger) (*Reader, error) {
-	zipReader, err := zip.OpenReader(archivePath)
+	zipReader, err := zip.NewDefaultReadCloser(archivePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open archive %s: %w", archivePath, err)
 	}
@@ -36,37 +36,36 @@ func (reader Reader) Close() error {
 
 // ReadFile ...
 func (reader Reader) ReadFile(targetPathGlob string) ([]byte, error) {
-	var files []*zip.File
-	var fileNames []string
-	for _, file := range reader.zipReader.File {
-		name := file.Name
-		fmt.Println(name)
+	var files []zip.File
+	for _, file := range reader.zipReader.Files() {
+		name := file.Name()
 		if glob.Glob(targetPathGlob, name) {
 			files = append(files, file)
-			fileNames = append(fileNames, name)
 		}
 	}
 
+	sort.Slice(files, func(i, j int) bool {
+		return len(files[i].Name()) < len(files[j].Name())
+	})
+
 	if len(files) == 0 {
 		return nil, fmt.Errorf("no file found with pattern: %s", targetPathGlob)
-	} else if len(files) > 1 {
-		return nil, fmt.Errorf("multiple files (%s) found with pattern: %s", strings.Join(fileNames, ", "), targetPathGlob)
 	}
 
 	file := files[0]
 	r, err := file.Open()
 	if err != nil {
-		return nil, fmt.Errorf("failed to open archive file %s: %w", file.Name, err)
+		return nil, fmt.Errorf("failed to open archive file %s: %w", file.Name(), err)
 	}
 	defer func() {
 		if err := r.Close(); err != nil {
-			reader.logger.Warnf("failed to close archive file %s: %s", file.Name, err)
+			reader.logger.Warnf("failed to close archive file %s: %s", file.Name(), err)
 		}
 	}()
 
 	b, err := io.ReadAll(r)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read archive file %s: %w", file.Name, err)
+		return nil, fmt.Errorf("failed to read archive file %s: %w", file.Name(), err)
 	}
 
 	return b, nil
@@ -74,8 +73,8 @@ func (reader Reader) ReadFile(targetPathGlob string) ([]byte, error) {
 
 // IsFileOrDirExistsInZipArchive ...
 func (reader Reader) IsFileOrDirExistsInZipArchive(targetPathGlob string) bool {
-	for _, file := range reader.zipReader.File {
-		if glob.Glob(targetPathGlob, file.Name) {
+	for _, file := range reader.zipReader.Files() {
+		if glob.Glob(targetPathGlob, file.Name()) {
 			return true
 		}
 	}
