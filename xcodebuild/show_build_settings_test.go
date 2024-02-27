@@ -1,6 +1,7 @@
 package xcodebuild
 
 import (
+	"os"
 	"testing"
 
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
@@ -72,6 +73,28 @@ func Test_parseShowBuildSettingsOutput(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestReadLongBuildSettingsLine(t *testing.T) {
+	// The default line limit for a bufio.Scanner is 65000 characters, and this fie contains a line longer than that
+	buildSettingsWithLongLine, err := os.ReadFile("./testdata/buildSettingsWithLongLine.txt")
+	require.NoError(t, err)
+
+	got, err := parseBuildSettings(string(buildSettingsWithLongLine))
+	require.NoError(t, err)
+
+	// Reading the same single long line value from a file, so it does not hurt test readability
+	expectedSingleLongLine, err := os.ReadFile("./testdata/expectedSingleLongLine.txt")
+	require.NoError(t, err)
+
+	want := serialized.Object{
+		"ACTION":                      "build",
+		"AD_HOC_CODE_SIGNING_ALLOWED": "NO",
+		"REALLY_LONG_LINE":            string(expectedSingleLongLine),
+		"ALTERNATE_GROUP":             "staff",
+		"BUILD_STYLE":                 "fast",
+	}
+	require.Equal(t, want, got)
 }
 
 const testBuildSettingsOut = `Build settings for action build and target sample-apps-osx-10-12:
