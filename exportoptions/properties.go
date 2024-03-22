@@ -1,6 +1,10 @@
 package exportoptions
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/bitrise-io/go-xcode/utility"
+)
 
 // CompileBitcodeKey ...
 const CompileBitcodeKey = "compileBitcode"
@@ -45,6 +49,8 @@ const ManifestFullSizeImageURLKey = "fullSizeImageURL"
 // ManifestAssetPackManifestURLKey ...
 const ManifestAssetPackManifestURLKey = "assetPackManifestURL"
 
+const xcode15Dot3BuildVersion = "15E204a"
+
 // Manifest ...
 type Manifest struct {
 	AppURL               string
@@ -76,22 +82,27 @@ func (manifest Manifest) ToHash() map[string]string {
 	return hash
 }
 
-// MethodKey ...
 const MethodKey = "method"
 
 const (
-	// MethodAppStore ...
+	// MethodAppStore is deprecated since Xcode 15.3, its new name is MethodAppStoreConnect
 	MethodAppStore Method = "app-store"
-	// MethodAdHoc ...
+	// MethodAdHoc is deprecated since Xcode 15.3, its new name is MethodReleaseTesting
 	MethodAdHoc Method = "ad-hoc"
 	// MethodPackage ...
 	MethodPackage Method = "package"
 	// MethodEnterprise ...
 	MethodEnterprise Method = "enterprise"
-	// MethodDevelopment ...
+	// MethodDevelopment is deprecated since Xcode 15.3, its new name is MethodDebugging
 	MethodDevelopment Method = "development"
 	// MethodDeveloperID ...
 	MethodDeveloperID Method = "developer-id"
+	// MethodDebugging is the new name for MethodDevelopment since Xcode 15.3
+	MethodDebugging Method = "debugging"
+	// MethodAppStoreConnect is the new name for MethodAppStore since Xcode 15.3
+	MethodAppStoreConnect Method = "app-store-connect"
+	// MethodReleaseTesting is the new name for MethodAdHoc since Xcode 15.3
+	MethodReleaseTesting Method = "release-testing"
 	// MethodDefault ...
 	MethodDefault Method = MethodDevelopment
 )
@@ -101,17 +112,35 @@ type Method string
 
 // ParseMethod ...
 func ParseMethod(method string) (Method, error) {
+	// TODO: Print warning if old export methods are used with Xcode 15.3 or newer
+	newExportMethods, err := utility.XcodeBuildVersionIsAtLeast(xcode15Dot3BuildVersion)
+	if err != nil {
+		return Method(""), fmt.Errorf("check Xcode version: %s", err)
+	}
+
 	switch method {
 	case "app-store":
-		return MethodAppStore, nil
+		if newExportMethods {
+			return MethodAppStoreConnect, nil
+		} else {
+			return MethodAppStore, nil
+		}
 	case "ad-hoc":
-		return MethodAdHoc, nil
+		if newExportMethods {
+			return MethodReleaseTesting, nil
+		} else {
+			return MethodAdHoc, nil
+		}
 	case "package":
 		return MethodPackage, nil
 	case "enterprise":
 		return MethodEnterprise, nil
 	case "development":
-		return MethodDevelopment, nil
+		if newExportMethods {
+			return MethodDebugging, nil
+		} else {
+			return MethodDevelopment, nil
+		}
 	case "developer-id":
 		return MethodDeveloperID, nil
 	default:
