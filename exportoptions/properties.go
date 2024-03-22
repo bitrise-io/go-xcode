@@ -85,15 +85,25 @@ func (manifest Manifest) ToHash() map[string]string {
 const MethodKey = "method"
 
 const (
+	// MethodAppStore is deprecated since Xcode 15.3, its new name is MethodAppStoreConnect
 	MethodAppStore Method = "app-store"
+	// MethodAdHoc is deprecated since Xcode 15.3, its new name is MethodReleaseTesting
 	MethodAdHoc Method = "ad-hoc"
+	// MethodPackage ...
 	MethodPackage Method = "package"
+	// MethodEnterprise ...
 	MethodEnterprise Method = "enterprise"
+	// MethodDevelopment is deprecated since Xcode 15.3, its new name is MethodDebugging
 	MethodDevelopment Method = "development"
+	// MethodDeveloperID ...
 	MethodDeveloperID Method = "developer-id"
+	// MethodDebugging is the new name for MethodDevelopment since Xcode 15.3
 	MethodDebugging Method = "debugging"
+	// MethodAppStoreConnect is the new name for MethodAppStore since Xcode 15.3
 	MethodAppStoreConnect Method = "app-store-connect"
+	// MethodReleaseTesting is the new name for MethodAdHoc since Xcode 15.3
 	MethodReleaseTesting Method = "release-testing"
+	// MethodDefault ...
 	MethodDefault Method = MethodDevelopment
 )
 

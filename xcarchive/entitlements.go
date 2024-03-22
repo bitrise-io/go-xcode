@@ -29,7 +29,7 @@ func getEntitlements(basePath, executableRelativePath string) (plistutil.PlistDa
 }
 
 func entitlementsFromExecutable(basePath, executableRelativePath string) (*plistutil.PlistData, error) {
-	fmt.Printf("Fetching entitlements from executable")
+	fmt.Println("Fetching entitlements from executable")
 
 	cmd := command.New("codesign", "--display", "--entitlements", ":-", filepath.Join(basePath, executableRelativePath))
 	entitlementsString, err := cmd.RunAndReturnTrimmedOutput()
