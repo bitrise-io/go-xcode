@@ -1,4 +1,4 @@
-package zip
+package ziputil
 
 import (
 	"fmt"
@@ -8,17 +8,15 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
-	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
 type dittoReader struct {
 	extractedDir string
-	logger       log.Logger
 }
 
 // NewDittoReader ...
-func NewDittoReader(archivePath string, logger log.Logger) (ReadCloser, error) {
+func NewDittoReader(archivePath string) (ReadCloser, error) {
 	factory := command.NewFactory(env.NewRepository())
 	tmpDir, err := pathutil.NewPathProvider().CreateTempDir("ditto_reader")
 	if err != nil {
@@ -32,7 +30,6 @@ func NewDittoReader(archivePath string, logger log.Logger) (ReadCloser, error) {
 
 	return dittoReader{
 		extractedDir: tmpDir,
-		logger:       logger,
 	}, nil
 }
 

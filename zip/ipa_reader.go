@@ -2,24 +2,36 @@ package zip
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/ziputil"
 )
 
 // IPAReader ...
 type IPAReader struct {
-	zipReader Reader
+	zipReader ziputil.ReadCloser
 }
 
 // NewIPAReader ...
-func NewIPAReader(zipReader Reader) IPAReader {
+func NewIPAReader(zipReader ziputil.ReadCloser) IPAReader {
 	return IPAReader{zipReader: zipReader}
 }
 
 // ProvisioningProfileInfo ...
 func (reader IPAReader) ProvisioningProfileInfo() (*profileutil.ProvisioningProfileInfoModel, error) {
-	b, err := reader.zipReader.ReadFile("Payload/*.app/embedded.mobileprovision")
+	f, err := reader.zipReader.ReadFile("Payload/*.app/embedded.mobileprovision")
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := f.Open()
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +51,17 @@ func (reader IPAReader) ProvisioningProfileInfo() (*profileutil.ProvisioningProf
 
 // AppInfoPlist ...
 func (reader IPAReader) AppInfoPlist() (plistutil.PlistData, error) {
-	b, err := reader.zipReader.ReadFile("Payload/*.app/Info.plist")
+	f, err := reader.zipReader.ReadFile("Payload/*.app/Info.plist")
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := f.Open()
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
