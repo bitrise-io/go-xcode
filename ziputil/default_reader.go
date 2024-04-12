@@ -6,15 +6,17 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/ryanuber/go-glob"
 )
 
 type defaultRead struct {
 	zipReader *zip.ReadCloser
+	logger    log.Logger
 }
 
 // NewDefaultRead ...
-func NewDefaultRead(archivePath string) (ReadCloser, error) {
+func NewDefaultRead(archivePath string, logger log.Logger) (ReadCloser, error) {
 	zipReader, err := zip.OpenReader(archivePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open archive %s: %w", archivePath, err)
@@ -22,39 +24,45 @@ func NewDefaultRead(archivePath string) (ReadCloser, error) {
 
 	return defaultRead{
 		zipReader: zipReader,
+		logger:    logger,
 	}, nil
 }
 
 // ReadFile ...
-func (readCloser defaultRead) ReadFile(relPthPattern string) (File, error) {
-	for _, file := range readCloser.zipReader.File {
-		absPthPattern := filepath.Join("*", relPthPattern)
-		if glob.Glob(absPthPattern, file.Name) {
-			return newZipFile(file), nil
+func (r defaultRead) ReadFile(relPthPattern string) ([]byte, error) {
+	absPthPattern := filepath.Join("*", relPthPattern)
+
+	var file *zip.File
+	for _, f := range r.zipReader.File {
+		if glob.Glob(absPthPattern, f.Name) {
+			file = f
+			break
 		}
 	}
-	return nil, nil
+
+	if file == nil {
+		return nil, fmt.Errorf("no file found with pattern: %s", absPthPattern)
+	}
+
+	f, err := file.Open()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %s: %w", file.Name, err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			r.logger.Warnf("Failed to close %s: %s", file.Name, err)
+		}
+	}()
+
+	b, err := io.ReadAll(f)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", file.Name, err)
+	}
+
+	return b, nil
 }
 
 // Close ...
-func (readCloser defaultRead) Close() error {
-	return readCloser.zipReader.Close()
-}
-
-type zipFile struct {
-	file *zip.File
-}
-
-func newZipFile(file *zip.File) File {
-	return zipFile{file: file}
-}
-
-// Name ...
-func (file zipFile) Name() string {
-	return file.file.Name
-}
-
-// Open ...
-func (file zipFile) Open() (io.ReadCloser, error) {
-	return file.file.Open()
+func (r defaultRead) Close() error {
+	return r.zipReader.Close()
 }

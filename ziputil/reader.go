@@ -1,15 +1,7 @@
 package ziputil
 
-import "io"
-
 // ReadCloser ...
 type ReadCloser interface {
-	ReadFile(relPthPattern string) (File, error)
+	ReadFile(relPthPattern string) ([]byte, error)
 	Close() error
-}
-
-// File ...
-type File interface {
-	Name() string
-	Open() (io.ReadCloser, error)
 }
