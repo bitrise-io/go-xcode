@@ -2,6 +2,7 @@ package ziputil
 
 import (
 	"archive/zip"
+	"errors"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -65,4 +66,8 @@ func (r defaultRead) ReadFile(relPthPattern string) ([]byte, error) {
 // Close ...
 func (r defaultRead) Close() error {
 	return r.zipReader.Close()
+}
+
+func IsErrFormat(err error) bool {
+	return errors.Is(err, zip.ErrFormat)
 }
