@@ -19,7 +19,7 @@ func NewXCArchiveReader(reader ziputil.ReadCloser) XCArchiveReader {
 func (reader XCArchiveReader) InfoPlist() (plistutil.PlistData, error) {
 	b, err := reader.zipReader.ReadFile("*.xcarchive/Info.plist")
 	if err != nil {
-		return nil, NewError(err)
+		return nil, err
 	}
 
 	return plistutil.NewPlistDataFromContent(string(b))

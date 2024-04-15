@@ -22,7 +22,7 @@ func NewIPAReader(zipReader ziputil.ReadCloser) IPAReader {
 func (reader IPAReader) ProvisioningProfileInfo() (*profileutil.ProvisioningProfileInfoModel, error) {
 	b, err := reader.zipReader.ReadFile("Payload/*.app/embedded.mobileprovision")
 	if err != nil {
-		return nil, NewError(err)
+		return nil, err
 	}
 
 	profilePKCS7, err := profileutil.ProvisioningProfileFromContent(b)
@@ -42,7 +42,7 @@ func (reader IPAReader) ProvisioningProfileInfo() (*profileutil.ProvisioningProf
 func (reader IPAReader) AppInfoPlist() (plistutil.PlistData, error) {
 	b, err := reader.zipReader.ReadFile("Payload/*.app/Info.plist")
 	if err != nil {
-		return nil, NewError(err)
+		return nil, err
 	}
 
 	return plistutil.NewPlistDataFromContent(string(b))
