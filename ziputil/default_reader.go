@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path/filepath"
+	"sort"
 
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/ryanuber/go-glob"
@@ -31,20 +31,22 @@ func NewDefaultRead(archivePath string, logger log.Logger) (ReadCloser, error) {
 
 // ReadFile ...
 func (r defaultRead) ReadFile(relPthPattern string) ([]byte, error) {
-	absPthPattern := filepath.Join("*", relPthPattern)
-
-	var file *zip.File
+	var files []*zip.File
 	for _, f := range r.zipReader.File {
-		if glob.Glob(absPthPattern, f.Name) {
-			file = f
-			break
+		if glob.Glob(relPthPattern, f.Name) {
+			files = append(files, f)
 		}
 	}
 
-	if file == nil {
-		return nil, fmt.Errorf("no file found with pattern: %s", absPthPattern)
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no file found with pattern: %s", relPthPattern)
 	}
 
+	sort.Slice(files, func(i, j int) bool {
+		return len(files[i].Name) < len(files[j].Name)
+	})
+
+	file := files[0]
 	f, err := file.Open()
 	if err != nil {
 		return nil, fmt.Errorf("failed to open %s: %w", file.Name, err)

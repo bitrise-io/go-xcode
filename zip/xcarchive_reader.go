@@ -27,7 +27,6 @@ func (reader XCArchiveReader) InfoPlist() (plistutil.PlistData, error) {
 
 // IsMacOS ...
 func (reader XCArchiveReader) IsMacOS() bool {
-	// TODO: distingush unzip and not found errors
-	_, err := reader.zipReader.ReadFile("*.xcarchive/Products/Applications/*.app/Contents/*")
+	_, err := reader.zipReader.ReadFile("*.xcarchive/Products/Applications/*.app/Contents/Info.plist")
 	return err == nil
 }

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/bitrise-io/go-utils/v2/log"
 
@@ -26,8 +27,9 @@ func NewDittoReader(archivePath string, logger log.Logger) (ReadCloser, error) {
 		return nil, err
 	}
 
-	cmd := factory.Create("ditto", []string{"-x", archivePath, tmpDir}, nil)
-	if err := cmd.Run(); err != nil {
+	cmd := factory.Create("ditto", []string{"-x", "-k", archivePath, tmpDir}, nil)
+	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		fmt.Println(out)
 		return nil, err
 	}
 
@@ -47,6 +49,8 @@ func (r dittoReader) ReadFile(relPthPattern string) ([]byte, error) {
 	if len(matches) == 0 {
 		return nil, fmt.Errorf("no file found with pattern: %s", absPthPattern)
 	}
+
+	sort.Strings(matches)
 
 	pth := matches[0]
 	f, err := os.Open(pth)
