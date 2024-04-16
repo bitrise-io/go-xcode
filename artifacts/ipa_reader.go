@@ -1,20 +1,20 @@
-package zip
+package artifacts
 
 import (
 	"fmt"
 
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
-	"github.com/bitrise-io/go-xcode/v2/ziputil"
+	"github.com/bitrise-io/go-xcode/v2/zip"
 )
 
 // IPAReader ...
 type IPAReader struct {
-	zipReader ziputil.ReadCloser
+	zipReader zip.ReadCloser
 }
 
 // NewIPAReader ...
-func NewIPAReader(zipReader ziputil.ReadCloser) IPAReader {
+func NewIPAReader(zipReader zip.ReadCloser) IPAReader {
 	return IPAReader{zipReader: zipReader}
 }
 

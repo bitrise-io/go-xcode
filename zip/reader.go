@@ -1,4 +1,4 @@
-package ziputil
+package zip
 
 // ReadCloser ...
 type ReadCloser interface {

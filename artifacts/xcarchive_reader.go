@@ -1,17 +1,17 @@
-package zip
+package artifacts
 
 import (
 	"github.com/bitrise-io/go-xcode/plistutil"
-	"github.com/bitrise-io/go-xcode/v2/ziputil"
+	"github.com/bitrise-io/go-xcode/v2/zip"
 )
 
 // XCArchiveReader ...
 type XCArchiveReader struct {
-	zipReader ziputil.ReadCloser
+	zipReader zip.ReadCloser
 }
 
 // NewXCArchiveReader ...
-func NewXCArchiveReader(reader ziputil.ReadCloser) XCArchiveReader {
+func NewXCArchiveReader(reader zip.ReadCloser) XCArchiveReader {
 	return XCArchiveReader{zipReader: reader}
 }
 
