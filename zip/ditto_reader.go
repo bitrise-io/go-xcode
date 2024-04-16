@@ -34,6 +34,15 @@ func NewDittoReader(archivePath string, logger log.Logger) (ReadCloser, error) {
 		return nil, err
 	}
 
+	/*
+	   -x            Extract the archives given as source arguments. The format
+	                 is assumed to be CPIO, unless -k is given.  Compressed CPIO
+	                 is automatically handled.
+
+	   -k            Create or extract from a PKZip archive instead of the
+	                 default CPIO.  PKZip archives should be stored in filenames
+	                 ending in .zip.
+	*/
 	cmd := factory.Create("ditto", []string{"-x", "-k", archivePath, tmpDir}, nil)
 	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 		fmt.Println(out)
