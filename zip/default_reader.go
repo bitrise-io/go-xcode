@@ -70,6 +70,7 @@ func (r defaultRead) Close() error {
 	return r.zipReader.Close()
 }
 
+// IsErrFormat ...
 func IsErrFormat(err error) bool {
 	return errors.Is(err, zip.ErrFormat)
 }
