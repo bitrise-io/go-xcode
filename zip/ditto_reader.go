@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 
@@ -17,6 +18,12 @@ import (
 type dittoReader struct {
 	extractedDir string
 	logger       log.Logger
+}
+
+// IsDittoReaderAvailable ...
+func IsDittoReaderAvailable() bool {
+	_, err := exec.LookPath("ditto")
+	return err == nil
 }
 
 // NewDittoReader ...
