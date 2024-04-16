@@ -13,7 +13,7 @@ import (
 
 func TestXCArchiveReader_DefaultZipReader_MacOSArchive(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
-	macOSXCArchivePath := filepath.Join(sampleArtifactsDir, "archives", "macos.xcarchive.artifacts")
+	macOSXCArchivePath := filepath.Join(sampleArtifactsDir, "archives", "macos.xcarchive.zip")
 
 	r, err := zip.NewDefaultRead(macOSXCArchivePath, log.NewLogger())
 	require.NoError(t, err)
@@ -33,7 +33,7 @@ func TestXCArchiveReader_DefaultZipReader_MacOSArchive(t *testing.T) {
 
 func TestXCArchiveReader_DittoZipReader_MacOSArchive(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
-	macOSXCArchivePath := filepath.Join(sampleArtifactsDir, "archives", "macos.xcarchive.artifacts")
+	macOSXCArchivePath := filepath.Join(sampleArtifactsDir, "archives", "macos.xcarchive.zip")
 
 	r, err := zip.NewDittoReader(macOSXCArchivePath, log.NewLogger())
 	require.NoError(t, err)
@@ -53,7 +53,7 @@ func TestXCArchiveReader_DittoZipReader_MacOSArchive(t *testing.T) {
 
 func TestXCArchiveReader_DefaultZipReader_IOSArchive(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
-	iosXCArchiveIPAPath := filepath.Join(sampleArtifactsDir, "archives", "ios.xcarchive.artifacts")
+	iosXCArchiveIPAPath := filepath.Join(sampleArtifactsDir, "archives", "ios.xcarchive.zip")
 
 	r, err := zip.NewDefaultRead(iosXCArchiveIPAPath, log.NewLogger())
 	require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestXCArchiveReader_DefaultZipReader_IOSArchive(t *testing.T) {
 
 func TestXCArchiveReader_DittoZipReader_IOSArchive(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
-	iosXCArchiveIPAPath := filepath.Join(sampleArtifactsDir, "archives", "ios.xcarchive.artifacts")
+	iosXCArchiveIPAPath := filepath.Join(sampleArtifactsDir, "archives", "ios.xcarchive.zip")
 
 	r, err := zip.NewDittoReader(iosXCArchiveIPAPath, log.NewLogger())
 	require.NoError(t, err)
