@@ -15,11 +15,11 @@ type fallbackReader struct {
 func NewFallbackReader(archivePath string, logger log.Logger) (ReadCloser, error) {
 	var zipReaders []ReadCloser
 
-	defaultReader, err := NewDefaultRead(archivePath, logger)
+	stdlibReader, err := NewStdlibRead(archivePath, logger)
 	if err != nil {
 		return nil, err
 	}
-	zipReaders = append(zipReaders, defaultReader)
+	zipReaders = append(zipReaders, stdlibReader)
 
 	if IsDittoReaderAvailable() {
 		dittoReader := NewDittoReader(archivePath, logger)

@@ -14,11 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIPAReader_DefaultZipReader(t *testing.T) {
+func TestIPAReader_StdlibZipReader(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
 	watchTestIPAPath := filepath.Join(sampleArtifactsDir, "ipas", "watch-test.ipa")
 
-	plist, profile := readIPAWithDefaultZipReader(t, watchTestIPAPath)
+	plist, profile := readIPAWithStdlibZipReader(t, watchTestIPAPath)
 	bundleID, _ := plist.GetString("CFBundleIdentifier")
 	require.Equal(t, "bitrise.watch-test", bundleID)
 	require.Equal(t, "XC iOS: *", profile.Name)
@@ -42,8 +42,8 @@ func Benchmark_ZipReaders(b *testing.B) {
 		"dittoReader": func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
 			return readIPAWithDittoZipReader(b, watchTestIPAPath)
 		},
-		"defaultRead": func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
-			return readIPAWithDefaultZipReader(b, watchTestIPAPath)
+		"stdlibReader": func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+			return readIPAWithStdlibZipReader(b, watchTestIPAPath)
 		},
 	} {
 		b.Run(fmt.Sprintf("Benchmarking %s", name), func(b *testing.B) {
@@ -54,8 +54,8 @@ func Benchmark_ZipReaders(b *testing.B) {
 
 type readIPAFunc func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel)
 
-func readIPAWithDefaultZipReader(t require.TestingT, archivePth string) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
-	r, err := zip.NewDefaultRead(archivePth, log.NewLogger())
+func readIPAWithStdlibZipReader(t require.TestingT, archivePth string) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+	r, err := zip.NewStdlibRead(archivePth, log.NewLogger())
 	require.NoError(t, err)
 	defer func() {
 		err := r.Close()
@@ -73,8 +73,7 @@ func readIPAWithDefaultZipReader(t require.TestingT, archivePth string) (plistut
 }
 
 func readIPAWithDittoZipReader(t require.TestingT, archivePth string) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
-	r, err := zip.NewDittoReader(archivePth, log.NewLogger())
-	require.NoError(t, err)
+	r := zip.NewDittoReader(archivePth, log.NewLogger())
 	defer func() {
 		err := r.Close()
 		require.NoError(t, err)

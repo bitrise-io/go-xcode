@@ -15,7 +15,7 @@ func TestXCArchiveReader_DefaultZipReader_MacOSArchive(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
 	macOSXCArchivePath := filepath.Join(sampleArtifactsDir, "archives", "macos.xcarchive.zip")
 
-	r, err := zip.NewDefaultRead(macOSXCArchivePath, log.NewLogger())
+	r, err := zip.NewStdlibRead(macOSXCArchivePath, log.NewLogger())
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, r.Close())
@@ -35,8 +35,7 @@ func TestXCArchiveReader_DittoZipReader_MacOSArchive(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
 	macOSXCArchivePath := filepath.Join(sampleArtifactsDir, "archives", "macos.xcarchive.zip")
 
-	r, err := zip.NewDittoReader(macOSXCArchivePath, log.NewLogger())
-	require.NoError(t, err)
+	r := zip.NewDittoReader(macOSXCArchivePath, log.NewLogger())
 	defer func() {
 		require.NoError(t, r.Close())
 	}()
@@ -55,7 +54,7 @@ func TestXCArchiveReader_DefaultZipReader_IOSArchive(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
 	iosXCArchiveIPAPath := filepath.Join(sampleArtifactsDir, "archives", "ios.xcarchive.zip")
 
-	r, err := zip.NewDefaultRead(iosXCArchiveIPAPath, log.NewLogger())
+	r, err := zip.NewStdlibRead(iosXCArchiveIPAPath, log.NewLogger())
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, r.Close())
@@ -81,8 +80,7 @@ func TestXCArchiveReader_DittoZipReader_IOSArchive(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
 	iosXCArchiveIPAPath := filepath.Join(sampleArtifactsDir, "archives", "ios.xcarchive.zip")
 
-	r, err := zip.NewDittoReader(iosXCArchiveIPAPath, log.NewLogger())
-	require.NoError(t, err)
+	r := zip.NewDittoReader(iosXCArchiveIPAPath, log.NewLogger())
 	defer func() {
 		require.NoError(t, r.Close())
 	}()
