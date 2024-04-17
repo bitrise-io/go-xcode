@@ -6,13 +6,15 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
-type fallbackReader struct {
+// defaultReader is a zip ReadCloser, that utilises multiple zip readers.
+// If one fails it falls back to the next reader.
+type defaultReader struct {
 	logger           log.Logger
 	zipReaders       []ReadCloser
 	currentReaderIdx int
 }
 
-func NewFallbackReader(archivePath string, logger log.Logger) (ReadCloser, error) {
+func NewDefaultReader(archivePath string, logger log.Logger) (ReadCloser, error) {
 	var zipReaders []ReadCloser
 
 	stdlibReader, err := NewStdlibRead(archivePath, logger)
@@ -26,14 +28,14 @@ func NewFallbackReader(archivePath string, logger log.Logger) (ReadCloser, error
 		zipReaders = append(zipReaders, dittoReader)
 	}
 
-	return &fallbackReader{
+	return &defaultReader{
 		logger:           logger,
 		zipReaders:       zipReaders,
 		currentReaderIdx: 0,
 	}, nil
 }
 
-func (r *fallbackReader) ReadFile(relPthPattern string) ([]byte, error) {
+func (r *defaultReader) ReadFile(relPthPattern string) ([]byte, error) {
 	zipReader := r.zipReaders[r.currentReaderIdx]
 	b, err := zipReader.ReadFile(relPthPattern)
 	if err != nil && r.currentReaderIdx < len(r.zipReaders)-1 {
@@ -46,7 +48,7 @@ func (r *fallbackReader) ReadFile(relPthPattern string) ([]byte, error) {
 	return b, err
 }
 
-func (r *fallbackReader) Close() error {
+func (r *defaultReader) Close() error {
 	var closeErrs []map[int]error
 	for i := 0; i <= r.currentReaderIdx; i++ {
 		zipReader := r.zipReaders[r.currentReaderIdx]

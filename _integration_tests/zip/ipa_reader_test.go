@@ -14,6 +14,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestIPAReader_DefaultZipReader(t *testing.T) {
+	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
+	watchTestIPAPath := filepath.Join(sampleArtifactsDir, "ipas", "watch-test.ipa")
+
+	r, err := zip.NewDefaultReader(watchTestIPAPath, log.NewLogger())
+	require.NoError(t, err)
+	defer func() {
+		err := r.Close()
+		require.NoError(t, err)
+	}()
+
+	plist, profile := readIPAWithStdlibZipReader(t, watchTestIPAPath)
+	bundleID, _ := plist.GetString("CFBundleIdentifier")
+	require.Equal(t, "bitrise.watch-test", bundleID)
+	require.Equal(t, "XC iOS: *", profile.Name)
+}
+
 func TestIPAReader_StdlibZipReader(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
 	watchTestIPAPath := filepath.Join(sampleArtifactsDir, "ipas", "watch-test.ipa")
@@ -62,14 +79,7 @@ func readIPAWithStdlibZipReader(t require.TestingT, archivePth string) (plistuti
 		require.NoError(t, err)
 	}()
 
-	ipaReader := artifacts.NewIPAReader(r)
-	plist, err := ipaReader.AppInfoPlist()
-	require.NoError(t, err)
-
-	profile, err := ipaReader.ProvisioningProfileInfo()
-	require.NoError(t, err)
-
-	return plist, profile
+	return readIPA(t, r)
 }
 
 func readIPAWithDittoZipReader(t require.TestingT, archivePth string) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
@@ -79,7 +89,11 @@ func readIPAWithDittoZipReader(t require.TestingT, archivePth string) (plistutil
 		require.NoError(t, err)
 	}()
 
-	ipaReader := artifacts.NewIPAReader(r)
+	return readIPA(t, r)
+}
+
+func readIPA(t require.TestingT, zipReader zip.ReadCloser) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+	ipaReader := artifacts.NewIPAReader(zipReader)
 	plist, err := ipaReader.AppInfoPlist()
 	require.NoError(t, err)
 
