@@ -14,6 +14,7 @@ type defaultReader struct {
 	currentReaderIdx int
 }
 
+// NewDefaultReader ...
 func NewDefaultReader(archivePath string, logger log.Logger) (ReadCloser, error) {
 	var zipReaders []ReadCloser
 
@@ -35,6 +36,7 @@ func NewDefaultReader(archivePath string, logger log.Logger) (ReadCloser, error)
 	}, nil
 }
 
+// ReadFile ...
 func (r *defaultReader) ReadFile(relPthPattern string) ([]byte, error) {
 	zipReader := r.zipReaders[r.currentReaderIdx]
 	b, err := zipReader.ReadFile(relPthPattern)
@@ -48,6 +50,7 @@ func (r *defaultReader) ReadFile(relPthPattern string) ([]byte, error) {
 	return b, err
 }
 
+// Close ...
 func (r *defaultReader) Close() error {
 	var closeErrs []map[int]error
 	for i := 0; i <= r.currentReaderIdx; i++ {
