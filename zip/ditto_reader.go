@@ -28,11 +28,11 @@ func IsDittoReaderAvailable() bool {
 }
 
 // NewDittoReader ...
-func NewDittoReader(archivePath string, logger log.Logger) (ReadCloser, error) {
+func NewDittoReader(archivePath string, logger log.Logger) ReadCloser {
 	return &dittoReader{
 		logger:      logger,
 		archivePath: archivePath,
-	}, nil
+	}
 }
 
 // ReadFile ...
