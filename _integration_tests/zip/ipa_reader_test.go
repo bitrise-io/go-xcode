@@ -1,10 +1,13 @@
 package zip
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/_integration_tests"
 	"github.com/bitrise-io/go-xcode/v2/artifacts"
 	"github.com/bitrise-io/go-xcode/v2/zip"
@@ -15,20 +18,9 @@ func TestIPAReader_DefaultZipReader(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
 	watchTestIPAPath := filepath.Join(sampleArtifactsDir, "ipas", "watch-test.ipa")
 
-	r, err := zip.NewDefaultRead(watchTestIPAPath, log.NewLogger())
-	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, r.Close())
-	}()
-
-	ipaReader := artifacts.NewIPAReader(r)
-	plist, err := ipaReader.AppInfoPlist()
-	require.NoError(t, err)
+	plist, profile := readIPAWithDefaultZipReader(t, watchTestIPAPath)
 	bundleID, _ := plist.GetString("CFBundleIdentifier")
 	require.Equal(t, "bitrise.watch-test", bundleID)
-
-	profile, err := ipaReader.ProvisioningProfileInfo()
-	require.NoError(t, err)
 	require.Equal(t, "XC iOS: *", profile.Name)
 }
 
@@ -36,19 +28,64 @@ func TestIPAReader_DittoZipReader(t *testing.T) {
 	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(t)
 	watchTestIPAPath := filepath.Join(sampleArtifactsDir, "ipas", "watch-test.ipa")
 
-	r, err := zip.NewDittoReader(watchTestIPAPath, log.NewLogger())
+	plist, profile := readIPAWithDittoZipReader(t, watchTestIPAPath)
+	bundleID, _ := plist.GetString("CFBundleIdentifier")
+	require.Equal(t, "bitrise.watch-test", bundleID)
+	require.Equal(t, "XC iOS: *", profile.Name)
+}
+
+func Benchmark_ZipReaders(b *testing.B) {
+	sampleArtifactsDir := _integration_tests.GetSampleArtifactsRepository(b)
+	watchTestIPAPath := filepath.Join(sampleArtifactsDir, "ipas", "watch-test.ipa")
+
+	for name, zipFunc := range map[string]readIPAFunc{
+		"dittoReader": func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+			return readIPAWithDittoZipReader(b, watchTestIPAPath)
+		},
+		"defaultRead": func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+			return readIPAWithDefaultZipReader(b, watchTestIPAPath)
+		},
+	} {
+		b.Run(fmt.Sprintf("Benchmarking %s", name), func(b *testing.B) {
+			_, _ = zipFunc()
+		})
+	}
+}
+
+type readIPAFunc func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel)
+
+func readIPAWithDefaultZipReader(t require.TestingT, archivePth string) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+	r, err := zip.NewDefaultRead(archivePth, log.NewLogger())
 	require.NoError(t, err)
 	defer func() {
-		require.NoError(t, r.Close())
+		err := r.Close()
+		require.NoError(t, err)
 	}()
 
 	ipaReader := artifacts.NewIPAReader(r)
 	plist, err := ipaReader.AppInfoPlist()
 	require.NoError(t, err)
-	bundleID, _ := plist.GetString("CFBundleIdentifier")
-	require.Equal(t, "bitrise.watch-test", bundleID)
 
 	profile, err := ipaReader.ProvisioningProfileInfo()
 	require.NoError(t, err)
-	require.Equal(t, "XC iOS: *", profile.Name)
+
+	return plist, profile
+}
+
+func readIPAWithDittoZipReader(t require.TestingT, archivePth string) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+	r, err := zip.NewDittoReader(archivePth, log.NewLogger())
+	require.NoError(t, err)
+	defer func() {
+		err := r.Close()
+		require.NoError(t, err)
+	}()
+
+	ipaReader := artifacts.NewIPAReader(r)
+	plist, err := ipaReader.AppInfoPlist()
+	require.NoError(t, err)
+
+	profile, err := ipaReader.ProvisioningProfileInfo()
+	require.NoError(t, err)
+
+	return plist, profile
 }
