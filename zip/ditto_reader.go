@@ -16,8 +16,9 @@ import (
 )
 
 type dittoReader struct {
-	extractedDir string
 	logger       log.Logger
+	archivePath  string
+	extractedDir string
 }
 
 // IsDittoReaderAvailable ...
@@ -28,35 +29,20 @@ func IsDittoReaderAvailable() bool {
 
 // NewDittoReader ...
 func NewDittoReader(archivePath string, logger log.Logger) (ReadCloser, error) {
-	factory := command.NewFactory(env.NewRepository())
-	tmpDir, err := pathutil.NewPathProvider().CreateTempDir("ditto_reader")
-	if err != nil {
-		return nil, err
-	}
-
-	/*
-	   -x            Extract the archives given as source arguments. The format
-	                 is assumed to be CPIO, unless -k is given.  Compressed CPIO
-	                 is automatically handled.
-
-	   -k            Create or extract from a PKZip archive instead of the
-	                 default CPIO.  PKZip archives should be stored in filenames
-	                 ending in .zip.
-	*/
-	cmd := factory.Create("ditto", []string{"-x", "-k", archivePath, tmpDir}, nil)
-	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
-		fmt.Println(out)
-		return nil, err
-	}
-
-	return dittoReader{
-		extractedDir: tmpDir,
-		logger:       logger,
+	return &dittoReader{
+		logger:      logger,
+		archivePath: archivePath,
 	}, nil
 }
 
 // ReadFile ...
-func (r dittoReader) ReadFile(relPthPattern string) ([]byte, error) {
+func (r *dittoReader) ReadFile(relPthPattern string) ([]byte, error) {
+	if r.extractedDir == "" {
+		if err := r.extractArchive(); err != nil {
+			return nil, fmt.Errorf("failed to extract archive: %w", err)
+		}
+	}
+
 	absPthPattern := filepath.Join(r.extractedDir, relPthPattern)
 	matches, err := filepath.Glob(absPthPattern)
 	if err != nil {
@@ -88,6 +74,36 @@ func (r dittoReader) ReadFile(relPthPattern string) ([]byte, error) {
 }
 
 // Close ...
-func (r dittoReader) Close() error {
+func (r *dittoReader) Close() error {
+	if r.extractedDir == "" {
+		return nil
+	}
 	return os.RemoveAll(r.extractedDir)
+}
+
+func (r *dittoReader) extractArchive() error {
+	tmpDir, err := pathutil.NewPathProvider().CreateTempDir("ditto_reader")
+	if err != nil {
+		return nil
+	}
+
+	/*
+	   -x            Extract the archives given as source arguments. The format
+	                 is assumed to be CPIO, unless -k is given.  Compressed CPIO
+	                 is automatically handled.
+
+	   -k            Create or extract from a PKZip archive instead of the
+	                 default CPIO.  PKZip archives should be stored in filenames
+	                 ending in .zip.
+	*/
+	factory := command.NewFactory(env.NewRepository())
+	cmd := factory.Create("ditto", []string{"-x", "-k", r.archivePath, tmpDir}, nil)
+	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		fmt.Println(out)
+		return err
+	}
+
+	r.extractedDir = tmpDir
+
+	return nil
 }
