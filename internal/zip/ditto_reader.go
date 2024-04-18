@@ -15,6 +15,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
+// DittoReader ...
 type DittoReader struct {
 	logger       log.Logger
 	archivePath  string

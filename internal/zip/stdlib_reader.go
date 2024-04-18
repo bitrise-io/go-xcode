@@ -11,6 +11,7 @@ import (
 	"github.com/ryanuber/go-glob"
 )
 
+// StdlibRead ...
 type StdlibRead struct {
 	zipReader *zip.ReadCloser
 	logger    log.Logger
