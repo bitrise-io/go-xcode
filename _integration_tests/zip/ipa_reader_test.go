@@ -93,7 +93,7 @@ func readIPAWithDittoZipReader(t require.TestingT, archivePth string) (plistutil
 	return readIPA(t, r)
 }
 
-func readIPA(t require.TestingT, zipReader zip.ReadCloser) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+func readIPA(t require.TestingT, zipReader artifacts.ZipReadCloser) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
 	ipaReader := artifacts.NewIPAReader(zipReader)
 	plist, err := ipaReader.AppInfoPlist()
 	require.NoError(t, err)
