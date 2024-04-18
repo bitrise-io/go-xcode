@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/_integration_tests"
 	"github.com/bitrise-io/go-xcode/v2/artifacts"
+	internalzip "github.com/bitrise-io/go-xcode/v2/internal/zip"
 	"github.com/bitrise-io/go-xcode/v2/zip"
 	"github.com/stretchr/testify/require"
 )
@@ -72,7 +73,7 @@ func Benchmark_ZipReaders(b *testing.B) {
 type readIPAFunc func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel)
 
 func readIPAWithStdlibZipReader(t require.TestingT, archivePth string) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
-	r, err := zip.NewStdlibRead(archivePth, log.NewLogger())
+	r, err := internalzip.NewStdlibRead(archivePth, log.NewLogger())
 	require.NoError(t, err)
 	defer func() {
 		err := r.Close()
@@ -83,7 +84,7 @@ func readIPAWithStdlibZipReader(t require.TestingT, archivePth string) (plistuti
 }
 
 func readIPAWithDittoZipReader(t require.TestingT, archivePth string) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
-	r := zip.NewDittoReader(archivePth, log.NewLogger())
+	r := internalzip.NewDittoReader(archivePth, log.NewLogger())
 	defer func() {
 		err := r.Close()
 		require.NoError(t, err)

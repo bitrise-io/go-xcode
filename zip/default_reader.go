@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/internal/zip"
 )
 
 // defaultReader is a zip ReadCloser, that utilises multiple zip readers.
@@ -18,14 +19,14 @@ type defaultReader struct {
 func NewDefaultReader(archivePath string, logger log.Logger) (ReadCloser, error) {
 	var zipReaders []ReadCloser
 
-	stdlibReader, err := NewStdlibRead(archivePath, logger)
+	stdlibReader, err := zip.NewStdlibRead(archivePath, logger)
 	if err != nil {
 		return nil, err
 	}
 	zipReaders = append(zipReaders, stdlibReader)
 
-	if IsDittoReaderAvailable() {
-		dittoReader := NewDittoReader(archivePath, logger)
+	if zip.IsDittoReaderAvailable() {
+		dittoReader := zip.NewDittoReader(archivePath, logger)
 		zipReaders = append(zipReaders, dittoReader)
 	}
 
