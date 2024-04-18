@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"testing"
 
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/stretchr/testify/require"
@@ -14,11 +13,11 @@ const sampleArtifactsRepoURL = "https://github.com/bitrise-io/sample-artifacts.g
 
 var reposToDir map[string]map[string]string
 
-func GetSampleArtifactsRepository(t *testing.T) string {
+func GetSampleArtifactsRepository(t require.TestingT) string {
 	return GetRepository(t, sampleArtifactsRepoURL, "master")
 }
 
-func GetRepository(t *testing.T, url, branch string) string {
+func GetRepository(t require.TestingT, url, branch string) string {
 	if repoDir := getRepoDir(url, branch); repoDir != "" {
 		return repoDir
 	}
@@ -66,7 +65,7 @@ func saveRepoDir(dir, url, branch string) {
 	reposToDir[url] = branchToDir
 }
 
-func createDirForRepo(t *testing.T, repo, branch string) string {
+func createDirForRepo(t require.TestingT, repo, branch string) string {
 	tmpDir, err := os.MkdirTemp("", "go-xcode")
 	require.NoError(t, err)
 

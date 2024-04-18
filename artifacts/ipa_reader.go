@@ -1,4 +1,4 @@
-package zip
+package artifacts
 
 import (
 	"fmt"
@@ -9,11 +9,11 @@ import (
 
 // IPAReader ...
 type IPAReader struct {
-	zipReader Reader
+	zipReader ZipReadCloser
 }
 
 // NewIPAReader ...
-func NewIPAReader(zipReader Reader) IPAReader {
+func NewIPAReader(zipReader ZipReadCloser) IPAReader {
 	return IPAReader{zipReader: zipReader}
 }
 
