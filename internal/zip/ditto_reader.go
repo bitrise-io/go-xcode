@@ -8,10 +8,9 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/bitrise-io/go-utils/v2/log"
-
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
