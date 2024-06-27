@@ -10,11 +10,11 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/export"
-	"github.com/bitrise-io/go-xcode/exportoptions"
+	exportoptionsv1 "github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/exportoptions"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
@@ -52,15 +52,28 @@ func New(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration 
 	return g
 }
 
-// GenerateApplicationExportOptions generates exportOptions for an application export.
-func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod exportoptions.Method, containerEnvironment string, teamID string, uploadBitcode bool, compileBitcode bool, xcodeManaged bool,
-	xcodeMajorVersion int64) (exportoptions.ExportOptions, error) {
+type XcodeVersion struct {
+	Major int
+	Minor int
+	Patch int
+}
 
+// GenerateApplicationExportOptions generates exportOptions for an application export.
+func (g ExportOptionsGenerator) GenerateApplicationExportOptionsAt(
+	exportMethod exportoptions.Method,
+	containerEnvironment string,
+	teamID string,
+	uploadBitcode bool,
+	compileBitcode bool,
+	xcodeManaged bool,
+	xcodeVersion XcodeVersion,
+	pth string,
+) error {
 	g.logger.TDebugf("Generating application export options for: %s", exportMethod)
 
 	mainTarget, err := ArchivableApplicationTarget(g.xcodeProj, g.scheme)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	dependentTargets := filterApplicationBundleTargets(
@@ -74,12 +87,12 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod ex
 	for i, target := range targets {
 		bundleID, err := g.targetInfoProvider.TargetBundleID(target.Name, g.configuration)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
+			return fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
 		}
 
 		entitlements, err := g.targetInfoProvider.TargetCodeSignEntitlements(target.Name, g.configuration)
 		if err != nil && !serialized.IsKeyNotFoundError(err) {
-			return nil, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
+			return fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
 		}
 
 		entitlementsByBundleID[bundleID] = plistutil.PlistData(entitlements)
@@ -92,179 +105,55 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod ex
 	g.logger.TDebugf("Generated application export options plist for: %s", exportMethod)
 
 	return g.generateExportOptions(exportMethod, containerEnvironment, teamID, uploadBitcode, compileBitcode,
-		xcodeManaged, entitlementsByBundleID, xcodeMajorVersion, mainTargetBundleID)
+		xcodeManaged, entitlementsByBundleID, xcodeVersion.Major, mainTargetBundleID)
 }
 
-// TargetInfoProvider can determine a target's bundle id and codesign entitlements.
-type TargetInfoProvider interface {
-	TargetBundleID(target, configuration string) (string, error)
-	TargetCodeSignEntitlements(target, configuration string) (serialized.Object, error)
-}
-
-// XcodebuildTargetInfoProvider implements TargetInfoProvider.
-type XcodebuildTargetInfoProvider struct {
-	xcodeProj *xcodeproj.XcodeProj
-}
-
-// TargetBundleID ...
-func (b XcodebuildTargetInfoProvider) TargetBundleID(target, configuration string) (string, error) {
-	return b.xcodeProj.TargetBundleID(target, configuration)
-}
-
-// TargetCodeSignEntitlements ...
-func (b XcodebuildTargetInfoProvider) TargetCodeSignEntitlements(target, configuration string) (serialized.Object, error) {
-	return b.xcodeProj.TargetCodeSignEntitlements(target, configuration)
-}
-
-// ArchivableApplicationTarget locate archivable app target from a given project and scheme
-func ArchivableApplicationTarget(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme) (*xcodeproj.Target, error) {
-	archiveEntry, ok := scheme.AppBuildActionEntry()
-	if !ok {
-		return nil, fmt.Errorf("archivable entry not found in project: %s for scheme: %s", xcodeProj.Path, scheme.Name)
-	}
-
-	mainTarget, ok := xcodeProj.Proj.Target(archiveEntry.BuildableReference.BlueprintIdentifier)
-	if !ok {
-		return nil, fmt.Errorf("target not found: %s", archiveEntry.BuildableReference.BlueprintIdentifier)
-	}
-
-	return &mainTarget, nil
-}
-
-func filterApplicationBundleTargets(targets []xcodeproj.Target, exportMethod exportoptions.Method) (filteredTargets []xcodeproj.Target) {
-	fmt.Printf("Filtering %v application bundle targets", len(targets))
-
-	for _, target := range targets {
-		if !target.IsExecutableProduct() {
-			continue
-		}
-
-		// App store exports contain App Clip too. App Clip provisioning profile has to be included in export options:
-		// ..
-		// <key>provisioningProfiles</key>
-		// <dict>
-		// 	<key>io.bundle.id</key>
-		// 	<string>Development Application Profile</string>
-		// 	<key>io.bundle.id.AppClipID</key>
-		// 	<string>Development App Clip Profile</string>
-		// </dict>
-		// ..,
-		if exportMethod != exportoptions.MethodAppStore && target.IsAppClipProduct() {
-			continue
-		}
-
-		filteredTargets = append(filteredTargets, target)
-	}
-
-	fmt.Printf("Found %v application bundle targets", len(filteredTargets))
-
-	return
-}
-
-// projectUsesCloudKit determines whether the project uses any CloudKit capability or not.
-func projectUsesCloudKit(bundleIDEntitlementsMap map[string]plistutil.PlistData) bool {
-	fmt.Printf("Checking if project uses CloudKit")
-
-	for _, entitlements := range bundleIDEntitlementsMap {
-		if entitlements == nil {
-			continue
-		}
-
-		services, ok := entitlements.GetStringArray("com.apple.developer.icloud-services")
-		if !ok {
-			continue
-		}
-
-		if sliceutil.IsStringInSlice("CloudKit", services) || sliceutil.IsStringInSlice("CloudDocuments", services) {
-			fmt.Printf("Project uses CloudKit")
-
-			return true
-		}
-	}
-	return false
-}
-
-// determineIcloudContainerEnvironment calculates the value of iCloudContainerEnvironment.
-func determineIcloudContainerEnvironment(desiredIcloudContainerEnvironment string, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, xcodeMajorVersion int64) (string, error) {
-	// iCloudContainerEnvironment: If the app is using CloudKit, this configures the "com.apple.developer.icloud-container-environment" entitlement.
-	// Available options vary depending on the type of provisioning profile used, but may include: Development and Production.
-	usesCloudKit := projectUsesCloudKit(bundleIDEntitlementsMap)
-	if !usesCloudKit {
-		return "", nil
-	}
-
-	// From Xcode 9 iCloudContainerEnvironment is required for every export method, before that version only for non app-store exports.
-	if xcodeMajorVersion < 9 && exportMethod == exportoptions.MethodAppStore {
-		return "", nil
-	}
-
-	if exportMethod == exportoptions.MethodAppStore {
-		return "Production", nil
-	}
-
-	if desiredIcloudContainerEnvironment == "" {
-		return "", fmt.Errorf("Your project uses CloudKit but \"iCloud container environment\" input not specified.\n"+
-			"Export method is: %s (For app-store export method Production container environment is implied.)", exportMethod)
-	}
-
-	return desiredIcloudContainerEnvironment, nil
-}
-
-// generateBaseExportOptions creates a default exportOptions introudced in Xcode 7.
-func generateBaseExportOptions(exportMethod exportoptions.Method, cfgUploadBitcode, cfgCompileBitcode bool, iCloudContainerEnvironment string) exportoptions.ExportOptions {
-	if exportMethod == exportoptions.MethodAppStore {
-		appStoreOptions := exportoptions.NewAppStoreOptions()
-		appStoreOptions.UploadBitcode = cfgUploadBitcode
-		if iCloudContainerEnvironment != "" {
-			appStoreOptions.ICloudContainerEnvironment = exportoptions.ICloudContainerEnvironment(iCloudContainerEnvironment)
-		}
-		return appStoreOptions
-	}
-
-	nonAppStoreOptions := exportoptions.NewNonAppStoreOptions(exportMethod)
-	nonAppStoreOptions.CompileBitcode = cfgCompileBitcode
-
-	if iCloudContainerEnvironment != "" {
-		nonAppStoreOptions.ICloudContainerEnvironment = exportoptions.ICloudContainerEnvironment(iCloudContainerEnvironment)
-	}
-
-	return nonAppStoreOptions
-}
-
-// CodesignIdentityProvider can list certificate infos.
-type CodesignIdentityProvider interface {
-	ListCodesignIdentities() ([]certificateutil.CertificateInfoModel, error)
-}
-
-// LocalCodesignIdentityProvider ...
-type LocalCodesignIdentityProvider struct{}
-
-// ListCodesignIdentities ...
-func (p LocalCodesignIdentityProvider) ListCodesignIdentities() ([]certificateutil.CertificateInfoModel, error) {
-	certs, err := certificateutil.InstalledCodesigningCertificateInfos()
-	if err != nil {
-		return nil, err
-	}
-	certInfo := certificateutil.FilterValidCertificateInfos(certs)
-	return append(certInfo.ValidCertificates, certInfo.DuplicatedCertificates...), nil
-}
-
-// ProvisioningProfileProvider can list profile infos.
-type ProvisioningProfileProvider interface {
-	ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error)
-}
-
-// LocalProvisioningProfileProvider ...
-type LocalProvisioningProfileProvider struct{}
-
-// ListProvisioningProfiles ...
-func (p LocalProvisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
-	return profileutil.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
-}
+//// GenerateApplicationExportOptions generates exportOptions for an application export.
+//func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod exportoptions.Method, containerEnvironment string, teamID string, uploadBitcode bool, compileBitcode bool, xcodeManaged bool,
+//	xcodeMajorVersion int64) (exportoptions.Options, error) {
+//
+//	g.logger.TDebugf("Generating application export options for: %s", exportMethod)
+//
+//	mainTarget, err := ArchivableApplicationTarget(g.xcodeProj, g.scheme)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	dependentTargets := filterApplicationBundleTargets(
+//		g.xcodeProj.DependentTargetsOfTarget(*mainTarget),
+//		exportMethod,
+//	)
+//	targets := append([]xcodeproj.Target{*mainTarget}, dependentTargets...)
+//
+//	var mainTargetBundleID string
+//	entitlementsByBundleID := map[string]plistutil.PlistData{}
+//	for i, target := range targets {
+//		bundleID, err := g.targetInfoProvider.TargetBundleID(target.Name, g.configuration)
+//		if err != nil {
+//			return exportoptions.Options{}, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
+//		}
+//
+//		entitlements, err := g.targetInfoProvider.TargetCodeSignEntitlements(target.Name, g.configuration)
+//		if err != nil && !serialized.IsKeyNotFoundError(err) {
+//			return exportoptions.Options{}, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
+//		}
+//
+//		entitlementsByBundleID[bundleID] = plistutil.PlistData(entitlements)
+//
+//		if i == 0 {
+//			mainTargetBundleID = bundleID
+//		}
+//	}
+//
+//	g.logger.TDebugf("Generated application export options plist for: %s", exportMethod)
+//
+//	return g.generateExportOptions(exportMethod, containerEnvironment, teamID, uploadBitcode, compileBitcode,
+//		xcodeManaged, entitlementsByBundleID, xcodeMajorVersion, mainTargetBundleID)
+//}
 
 // determineCodesignGroup finds the best codesign group (certificate + profiles)
 // based on the installed Provisioning Profiles and Codesign Certificates.
-func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*export.IosCodeSignGroup, error) {
+func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptionsv1.Method, teamID string, xcodeManaged bool) (*export.IosCodeSignGroup, error) {
 	fmt.Println()
 	g.logger.Printf("Target Bundle ID - Entitlements map")
 	var bundleIDs []string
@@ -408,33 +297,18 @@ func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap m
 	return &iosCodeSignGroups[0], nil
 }
 
-func addDistributionBundleIdentifierFromXcode12(exportOpts exportoptions.ExportOptions, distributionBundleIdentifier string) exportoptions.ExportOptions {
-	switch options := exportOpts.(type) {
-	case exportoptions.AppStoreOptionsModel:
-		// Export option plist with App store export method (Xcode 12.0.1) do not contain distribution bundle identifier.
-		// Probably due to App store IPAs containing App Clips also, which are executable targets with a separate bundle ID.
-		return exportOpts
-	case exportoptions.NonAppStoreOptionsModel:
-		options.DistributionBundleIdentifier = distributionBundleIdentifier
-		return options
-	}
-	return nil
-}
-
-func disableManagedBuildNumberFromXcode13(exportOpts exportoptions.ExportOptions) exportoptions.ExportOptions {
-	switch options := exportOpts.(type) {
-	case exportoptions.AppStoreOptionsModel:
-		options.ManageAppVersion = false // Only available for app-store exports
-
-		return options
-	}
-
-	return exportOpts
-}
-
 // generateExportOptions generates an exportOptions based on the provided conditions.
-func (g ExportOptionsGenerator) generateExportOptions(exportMethod exportoptions.Method, containerEnvironment string, teamID string, uploadBitcode bool, compileBitcode bool, xcodeManaged bool,
-	bundleIDEntitlementsMap map[string]plistutil.PlistData, xcodeMajorVersion int64, distributionBundleIdentifier string) (exportoptions.ExportOptions, error) {
+func (g ExportOptionsGenerator) generateExportOptions(
+	exportMethod exportoptionsv1.Method,
+	containerEnvironment string,
+	teamID string,
+	uploadBitcode bool,
+	compileBitcode bool,
+	xcodeManaged bool,
+	bundleIDEntitlementsMap map[string]plistutil.PlistData,
+	xcodeMajorVersion int,
+	distributionBundleIdentifier string,
+) (exportoptionsv1.ExportOptions, error) {
 	g.logger.TDebugf("Generating export options")
 
 	iCloudContainerEnvironment, err := determineIcloudContainerEnvironment(containerEnvironment, bundleIDEntitlementsMap, exportMethod, xcodeMajorVersion)
@@ -494,7 +368,7 @@ func (g ExportOptionsGenerator) generateExportOptions(exportMethod exportoptions
 	g.logger.TDebugf("Determined code signing style")
 
 	switch options := exportOpts.(type) {
-	case exportoptions.AppStoreOptionsModel:
+	case exportoptionsv1.AppStoreOptionsModel:
 		options.BundleIDProvisioningProfileMapping = exportProfileMapping
 		options.SigningCertificate = codeSignGroup.Certificate().CommonName
 		options.TeamID = codeSignGroup.Certificate().TeamID
@@ -503,7 +377,7 @@ func (g ExportOptionsGenerator) generateExportOptions(exportMethod exportoptions
 			options.SigningStyle = manualSigningStyle
 		}
 		exportOpts = options
-	case exportoptions.NonAppStoreOptionsModel:
+	case exportoptionsv1.NonAppStoreOptionsModel:
 		options.BundleIDProvisioningProfileMapping = exportProfileMapping
 		options.SigningCertificate = codeSignGroup.Certificate().CommonName
 		options.TeamID = codeSignGroup.Certificate().TeamID
@@ -560,4 +434,143 @@ func (g ExportOptionsGenerator) GetDefaultProvisioningProfile() (profileutil.Pro
 	}
 
 	return defaultProfile, nil
+}
+
+// ArchivableApplicationTarget locate archivable app target from a given project and scheme
+func ArchivableApplicationTarget(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme) (*xcodeproj.Target, error) {
+	archiveEntry, ok := scheme.AppBuildActionEntry()
+	if !ok {
+		return nil, fmt.Errorf("archivable entry not found in project: %s for scheme: %s", xcodeProj.Path, scheme.Name)
+	}
+
+	mainTarget, ok := xcodeProj.Proj.Target(archiveEntry.BuildableReference.BlueprintIdentifier)
+	if !ok {
+		return nil, fmt.Errorf("target not found: %s", archiveEntry.BuildableReference.BlueprintIdentifier)
+	}
+
+	return &mainTarget, nil
+}
+
+func addDistributionBundleIdentifierFromXcode12(exportOpts exportoptionsv1.ExportOptions, distributionBundleIdentifier string) exportoptionsv1.ExportOptions {
+	switch options := exportOpts.(type) {
+	case exportoptionsv1.AppStoreOptionsModel:
+		// Export option plist with App store export method (Xcode 12.0.1) do not contain distribution bundle identifier.
+		// Probably due to App store IPAs containing App Clips also, which are executable targets with a separate bundle ID.
+		return exportOpts
+	case exportoptionsv1.NonAppStoreOptionsModel:
+		options.DistributionBundleIdentifier = distributionBundleIdentifier
+		return options
+	}
+	return nil
+}
+
+func disableManagedBuildNumberFromXcode13(exportOpts exportoptionsv1.ExportOptions) exportoptionsv1.ExportOptions {
+	switch options := exportOpts.(type) {
+	case exportoptionsv1.AppStoreOptionsModel:
+		options.ManageAppVersion = false // Only available for app-store exports
+
+		return options
+	}
+
+	return exportOpts
+}
+
+func filterApplicationBundleTargets(targets []xcodeproj.Target, exportMethod exportoptionsv1.Method) (filteredTargets []xcodeproj.Target) {
+	fmt.Printf("Filtering %v application bundle targets", len(targets))
+
+	for _, target := range targets {
+		if !target.IsExecutableProduct() {
+			continue
+		}
+
+		// App store exports contain App Clip too. App Clip provisioning profile has to be included in export options:
+		// ..
+		// <key>provisioningProfiles</key>
+		// <dict>
+		// 	<key>io.bundle.id</key>
+		// 	<string>Development Application Profile</string>
+		// 	<key>io.bundle.id.AppClipID</key>
+		// 	<string>Development App Clip Profile</string>
+		// </dict>
+		// ..,
+		if exportMethod != exportoptionsv1.MethodAppStore && target.IsAppClipProduct() {
+			continue
+		}
+
+		filteredTargets = append(filteredTargets, target)
+	}
+
+	fmt.Printf("Found %v application bundle targets", len(filteredTargets))
+
+	return
+}
+
+// projectUsesCloudKit determines whether the project uses any CloudKit capability or not.
+func projectUsesCloudKit(bundleIDEntitlementsMap map[string]plistutil.PlistData) bool {
+	fmt.Printf("Checking if project uses CloudKit")
+
+	for _, entitlements := range bundleIDEntitlementsMap {
+		if entitlements == nil {
+			continue
+		}
+
+		services, ok := entitlements.GetStringArray("com.apple.developer.icloud-services")
+		if !ok {
+			continue
+		}
+
+		if sliceutil.IsStringInSlice("CloudKit", services) || sliceutil.IsStringInSlice("CloudDocuments", services) {
+			fmt.Printf("Project uses CloudKit")
+
+			return true
+		}
+	}
+	return false
+}
+
+// determineIcloudContainerEnvironment calculates the value of iCloudContainerEnvironment.
+func determineIcloudContainerEnvironment(desiredIcloudContainerEnvironment string, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptionsv1.Method, xcodeMajorVersion int) (string, error) {
+	// iCloudContainerEnvironment: If the app is using CloudKit, this configures the "com.apple.developer.icloud-container-environment" entitlement.
+	// Available options vary depending on the type of provisioning profile used, but may include: Development and Production.
+	usesCloudKit := projectUsesCloudKit(bundleIDEntitlementsMap)
+	if !usesCloudKit {
+		return "", nil
+	}
+
+	// From Xcode 9 iCloudContainerEnvironment is required for every export method, before that version only for non app-store exports.
+	if xcodeMajorVersion < 9 && exportMethod == exportoptionsv1.MethodAppStore {
+		return "", nil
+	}
+
+	if exportMethod == exportoptionsv1.MethodAppStore {
+		return "Production", nil
+	}
+
+	if desiredIcloudContainerEnvironment == "" {
+		return "", fmt.Errorf("Your project uses CloudKit but \"iCloud container environment\" input not specified.\n"+
+			"Export method is: %s (For app-store export method Production container environment is implied.)", exportMethod)
+	}
+
+	return desiredIcloudContainerEnvironment, nil
+}
+
+// generateBaseExportOptions creates a default exportOptions introudced in Xcode 7.
+func generateBaseExportOptions(exportMethod exportoptionsv1.Method, cfgUploadBitcode, cfgCompileBitcode bool, iCloudContainerEnvironment string) exportoptionsv1.ExportOptions {
+	if exportMethod == exportoptionsv1.MethodAppStore {
+		appStoreOptions := exportoptionsv1.NewAppStoreOptions()
+		appStoreOptions.UploadBitcode = cfgUploadBitcode
+		if iCloudContainerEnvironment != "" {
+			appStoreOptions.ICloudContainerEnvironment = exportoptionsv1.ICloudContainerEnvironment(iCloudContainerEnvironment)
+		}
+		return appStoreOptions
+	}
+
+	nonAppStoreOptions := exportoptionsv1.NewNonAppStoreOptions(exportMethod)
+	nonAppStoreOptions.CompileBitcode = cfgCompileBitcode
+
+	if iCloudContainerEnvironment != "" {
+		nonAppStoreOptions.ICloudContainerEnvironment = exportoptions.ICloudContainerEnvironment(iCloudContainerEnvironment)
+	}
+
+	return nonAppStoreOptions
 }

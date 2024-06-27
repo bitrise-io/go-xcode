@@ -8,9 +8,11 @@ import (
 
 // Version ...
 type Version struct {
-	Version      string
-	BuildVersion string
-	MajorVersion int64
+	Version       string
+	BuildVersion  string
+	MajorVersion  int
+	MinorVersion  int
+	PatchVersions int
 }
 
 // Reader ...

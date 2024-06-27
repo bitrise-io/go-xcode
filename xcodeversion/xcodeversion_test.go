@@ -10,18 +10,48 @@ import (
 
 func Test_reader_GetVersion(t *testing.T) {
 	tests := []struct {
-		name          string
-		output        string
-		wantedVersion Version
+		name        string
+		output      string
+		wantVersion Version
+		wantErr     string
 	}{
 		{
 			name:   "Plain output",
 			output: "Xcode 8.2.1\nBuild version 8C1002",
-			wantedVersion: Version{
-				Version:      "Xcode 8.2.1",
-				BuildVersion: "Build version 8C1002",
-				MajorVersion: 8,
+			wantVersion: Version{
+				Version:       "Xcode 8.2.1",
+				BuildVersion:  "Build version 8C1002",
+				MajorVersion:  8,
+				MinorVersion:  2,
+				PatchVersions: 1,
 			},
+		},
+		{
+			name:   "Plain output - no patch version",
+			output: "Xcode 8.2\nBuild version 8C1002",
+			wantVersion: Version{
+				Version:       "Xcode 8.2",
+				BuildVersion:  "Build version 8C1002",
+				MajorVersion:  8,
+				MinorVersion:  2,
+				PatchVersions: 0,
+			},
+		},
+		{
+			name:   "Plain output - no minor and patch version",
+			output: "Xcode 8\nBuild version 8C1002",
+			wantVersion: Version{
+				Version:       "Xcode 8",
+				BuildVersion:  "Build version 8C1002",
+				MajorVersion:  8,
+				MinorVersion:  0,
+				PatchVersions: 0,
+			},
+		},
+		{
+			name:    "Plain output - no version",
+			output:  "Xcode\nBuild version 8C1002",
+			wantErr: "couldn't find Xcode version in output: [Xcode Build version 8C1002]",
 		},
 		{
 			name: "Warnings in output (Xcode 13.2.1 bug)",
@@ -29,10 +59,12 @@ func Test_reader_GetVersion(t *testing.T) {
 objc[82434]: Class AMSupportURLSession is implemented in both /usr/lib/libauthinstall.dylib (0x212da2be0) and /Library/Apple/System/Library/PrivateFrameworks/MobileDevice.framework/Versions/A/MobileDevice (0x1046dc318). One of the two will be used. Which one is undefined.
 Xcode 13.2.1
 Build version 13C100`,
-			wantedVersion: Version{
-				Version:      "Xcode 13.2.1",
-				BuildVersion: "Build version 13C100",
-				MajorVersion: 13,
+			wantVersion: Version{
+				Version:       "Xcode 13.2.1",
+				BuildVersion:  "Build version 13C100",
+				MajorVersion:  13,
+				MinorVersion:  2,
+				PatchVersions: 1,
 			},
 		},
 	}
@@ -48,11 +80,16 @@ Build version 13C100`,
 			}
 
 			got, err := xcodeVersionProvider.GetVersion()
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				require.Empty(t, got)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.wantVersion, got)
+			}
 
 			mockCommandFactory.AssertExpectations(t)
 			mockCommand.AssertExpectations(t)
-			require.NoError(t, err)
-			require.Equal(t, tt.wantedVersion, got)
 		})
 	}
 }

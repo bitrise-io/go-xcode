@@ -1,53 +1,11 @@
-package exportoptions
+package xcode_15_4
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/pointers"
-)
-
-// Xcode 15.4
-
-type Destination string
-
-const (
-	DestinationExport Destination = "export"
-	DestinationUpload Destination = "upload"
-)
-
-type ICloudContainerEnvironment string
-
-const (
-	ICloudContainerEnvironmentDevelopment ICloudContainerEnvironment = "Development"
-	ICloudContainerEnvironmentProduction  ICloudContainerEnvironment = "Production"
-)
-
-type Method string
-
-const (
-	MethodAppStoreConnect Method = "app-store-connect"
-	MethodReleaseTesting  Method = "release-testing"
-	MethodEnterprise      Method = "enterprise"
-	MethodDebugging       Method = "debugging"
-)
-
-type SigningStyle string
-
-const (
-	SigningStyleManual    SigningStyle = "manual"
-	SigningStyleAutomatic SigningStyle = "automatic"
-)
-
-type Thinning string
-
-const (
-	ThinningNone               Thinning = "<none>"
-	ThinningThinForAllVariants Thinning = "<thin-for-all-variants>"
-	// or a specific device (e.g. "iPhone7,1"), e.g.: Thinning("iPhone7,1")
 )
 
 type Options struct {
@@ -173,31 +131,8 @@ type Generator struct {
 	options Options
 }
 
-func NewGenerator(method Method, teamID string, optionals OptionalOptions) Generator {
-	options := Options{
-		Destination: DestinationExport,
-		Method:      method,
-		TeamID:      teamID,
-	}
-
-	if optionals.StripSwiftSymbols != nil {
-		options.StripSwiftSymbols = optionals.StripSwiftSymbols
-	} else {
-		options.StripSwiftSymbols = pointers.NewBoolPtr(true)
-	}
-
-	if optionals.DistributionBundleIdentifier != "" {
-		options.DistributionBundleIdentifier = optionals.DistributionBundleIdentifier
-	}
-	if optionals.ICloudContainerEnvironment != "" {
-		options.ICloudContainerEnvironment = optionals.ICloudContainerEnvironment
-	}
-
-	return Generator{options: options}
-}
-
 func NewGeneratorForAppStoreExports(teamID string, optionals AppStoreOptionalOptions) Generator {
-	generator := NewGenerator(MethodAppStoreConnect, teamID, optionals.OptionalOptions)
+	generator := newGenerator(MethodAppStoreConnect, teamID, optionals.OptionalOptions)
 
 	if optionals.ManageAppVersionAndBuildNumber != nil {
 		generator.options.ManageAppVersionAndBuildNumber = optionals.ManageAppVersionAndBuildNumber
@@ -221,7 +156,7 @@ func NewGeneratorForAppStoreExports(teamID string, optionals AppStoreOptionalOpt
 }
 
 func NewGeneratorForNonAppStoreExports(method Method, teamID string, optionals NonAppStoreOptionalOptions) Generator {
-	generator := NewGenerator(method, teamID, optionals.OptionalOptions)
+	generator := newGenerator(method, teamID, optionals.OptionalOptions)
 
 	if optionals.CompileBitcode != nil {
 		generator.options.CompileBitcode = optionals.CompileBitcode
@@ -272,18 +207,27 @@ func WriteExportOptionsToFile(options Options, pth string) error {
 	return nil
 }
 
-func WriteExportOptionsToTmpFile(options Options) (string, error) {
-	tmpDir, err := pathutil.NormalizedOSTempDirPath("output")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir: %s", err)
-	}
-	pth := filepath.Join(tmpDir, "exportOptions.plist")
-
-	if err := WriteExportOptionsToFile(options, pth); err != nil {
-		return "", err
+func newGenerator(method Method, teamID string, optionals OptionalOptions) Generator {
+	options := Options{
+		Destination: DestinationExport,
+		Method:      method,
+		TeamID:      teamID,
 	}
 
-	return pth, nil
+	if optionals.StripSwiftSymbols != nil {
+		options.StripSwiftSymbols = optionals.StripSwiftSymbols
+	} else {
+		options.StripSwiftSymbols = pointers.NewBoolPtr(true)
+	}
+
+	if optionals.DistributionBundleIdentifier != "" {
+		options.DistributionBundleIdentifier = optionals.DistributionBundleIdentifier
+	}
+	if optionals.ICloudContainerEnvironment != "" {
+		options.ICloudContainerEnvironment = optionals.ICloudContainerEnvironment
+	}
+
+	return Generator{options: options}
 }
 
 func unmarshalExportOptions(b []byte) (Options, error) {
