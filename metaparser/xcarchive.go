@@ -16,7 +16,10 @@ func (m *Parser) ParseXCArchiveData(pth string) (*ArtifactMetadata, error) {
 
 	appInfo, scheme, err := m.readXCArchiveDeploymentMeta(pth)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse deployment info for %s: %w", pth, err)
+		return &ArtifactMetadata{
+			AppInfo: appInfo,
+			Scheme:  scheme,
+		}, fmt.Errorf("failed to parse deployment info for %s: %w", pth, err)
 	}
 
 	fileSize, err := m.fileManager.FileSizeInBytes(pth)
