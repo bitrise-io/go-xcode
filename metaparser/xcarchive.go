@@ -5,7 +5,10 @@ import (
 
 	"github.com/bitrise-io/go-xcode/v2/artifacts"
 	"github.com/bitrise-io/go-xcode/v2/zip"
+	"github.com/pkg/errors"
 )
+
+var MacOSProjectIsNotSupported = errors.New("macOS project is not supported")
 
 // ParseXCArchiveData ...
 func (m *Parser) ParseXCArchiveData(pth string) (*ArtifactMetadata, error) {
@@ -41,8 +44,7 @@ func (m *Parser) readXCArchiveDeploymentMeta(pth string) (Info, string, error) {
 	xcarchiveReader := artifacts.NewXCArchiveReader(reader)
 	isMacos := xcarchiveReader.IsMacOS()
 	if isMacos {
-		m.logger.Warnf("macOS archive deployment is not supported, skipping xcarchive")
-		return Info{}, "", nil // MacOS project is not supported, so won't be deployed.
+		return Info{}, "", MacOSProjectIsNotSupported // so won't be deployed.
 	}
 	archiveInfoPlist, err := xcarchiveReader.InfoPlist()
 	if err != nil {
