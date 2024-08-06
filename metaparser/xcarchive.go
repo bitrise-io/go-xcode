@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// MacOSProjectIsNotSupported ...
 var MacOSProjectIsNotSupported = errors.New("macOS project is not supported")
 
 // ParseXCArchiveData ...
