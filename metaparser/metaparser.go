@@ -18,13 +18,12 @@ type ArtifactMetadata struct {
 
 // Info ...
 type Info struct {
-	AppTitle          string   `json:"app_title"`
-	BundleID          string   `json:"bundle_id"`
-	Version           string   `json:"version"`
-	BuildNumber       string   `json:"build_number"`
-	MinOSVersion      string   `json:"min_OS_version"`
-	DeviceFamilyList  []uint64 `json:"device_family_list"`
-	RawPackageContent string   `json:"-"`
+	AppTitle         string   `json:"app_title"`
+	BundleID         string   `json:"bundle_id"`
+	Version          string   `json:"version"`
+	BuildNumber      string   `json:"build_number"`
+	MinOSVersion     string   `json:"min_OS_version"`
+	DeviceFamilyList []uint64 `json:"device_family_list"`
 }
 
 // ProvisionInfo ...
