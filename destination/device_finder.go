@@ -94,8 +94,12 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 
 // XcodebuildDestination returns the required xcodebuild -destination flag value for a device
 func (d Device) XcodebuildDestination() string {
+	if d.Platform == string(VisionOSSimulator) { // visionOS does not start tests with `id` (as of Xcode 15)
+		return fmt.Sprintf("platform=%s,name=%s,OS=%s", d.Platform, d.Name, d.OS)
+	}
+
 	// `arch` doesn't seem to work together with `id`
-	if d.Arch == "" {
+	if d.Arch == "" { // `arch` doesn't seem to work together with `id`
 		return fmt.Sprintf("id=%s", d.ID)
 	}
 
