@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-io/go-xcode/exportoptions"
 )
 
+// ArtifactMetadata ...
 type ArtifactMetadata struct {
 	AppInfo          Info          `json:"app_info"`
 	FileSizeBytes    int64         `json:"file_size_bytes"`
@@ -15,6 +16,7 @@ type ArtifactMetadata struct {
 	Scheme           string        `json:"scheme,omitempty"`
 }
 
+// Info ...
 type Info struct {
 	AppTitle          string   `json:"app_title"`
 	BundleID          string   `json:"bundle_id"`
@@ -25,6 +27,7 @@ type Info struct {
 	RawPackageContent string   `json:"-"`
 }
 
+// ProvisionInfo ...
 type ProvisionInfo struct {
 	CreationDate         time.Time            `json:"creation_date"`
 	ExpireDate           time.Time            `json:"expire_date"`
@@ -35,14 +38,16 @@ type ProvisionInfo struct {
 	IPAExportMethod      exportoptions.Method `json:"ipa_export_method"`
 }
 
+// Parser ...
 type Parser struct {
 	logger      log.Logger
 	fileManager fileutil.FileManager
 }
 
-func New(logger log.Logger) *Parser {
+// New ...
+func New(logger log.Logger, fileManager fileutil.FileManager) *Parser {
 	return &Parser{
 		logger:      logger,
-		fileManager: fileutil.NewFileManager(),
+		fileManager: fileManager,
 	}
 }
