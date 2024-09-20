@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	plist "github.com/bitrise-io/go-plist"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
 func Test_parseResourcesBuildPhase(t *testing.T) {

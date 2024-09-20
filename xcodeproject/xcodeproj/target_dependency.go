@@ -1,6 +1,6 @@
 package xcodeproj
 
-import "github.com/bitrise-io/go-xcode/xcodeproject/serialized"
+import "github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 
 // TargetDependency is a reference to another Target that is a dependency of a given Target
 type TargetDependency struct {

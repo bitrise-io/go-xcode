@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-xcode/xcodeproject/testhelper"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/testhelper"
 	"github.com/stretchr/testify/require"
 )
 

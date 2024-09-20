@@ -7,8 +7,8 @@ import (
 
 	plist "github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/pretty"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-io/go-xcode/xcodeproject/testhelper"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/testhelper"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 )
