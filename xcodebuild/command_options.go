@@ -15,6 +15,7 @@ type CommandOptions struct {
 	Project                   string `xboption:"project"`
 	Workspace                 string `xboption:"workspace"`
 	Scheme                    string `xboption:"scheme"`
+	Target                    string `xboption:"target"`
 	Configuration             string `xboption:"configuration"`
 	Destination               string `xboption:"destination"`
 	XCConfig                  string `xboption:"xcconfig"`
