@@ -22,7 +22,7 @@ const (
 
 // SaveSharedScheme saves or overwrites a shared Scheme in the Project
 // The file name will be determined using the Name field of the Scheme
-func (p XcodeProj) SaveSharedScheme(scheme xcscheme.Scheme) error {
+func (p *XcodeProj) SaveSharedScheme(scheme xcscheme.Scheme) error {
 	dir := filepath.Join(p.Path, "xcshareddata", "xcschemes")
 	path := filepath.Join(dir, fmt.Sprintf("%s.xcscheme", scheme.Name))
 
@@ -43,7 +43,7 @@ func (p XcodeProj) SaveSharedScheme(scheme xcscheme.Scheme) error {
 }
 
 // ReCreateSchemes creates new schemes based on the available Targets
-func (p XcodeProj) ReCreateSchemes() []xcscheme.Scheme {
+func (p *XcodeProj) ReCreateSchemes() []xcscheme.Scheme {
 	fmt.Printf("Recreating xcode scheme")
 
 	var schemes []xcscheme.Scheme
