@@ -1,8 +1,11 @@
 package xcodeproj
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"path"
 	"path/filepath"
@@ -37,23 +40,25 @@ type change struct {
 }
 
 type XcodeProj struct {
+	Name    string
+	Path    string
 	Proj    Proj
 	RawProj serialized.Object
 	Format  int
+
 	// Used to replace project in-place. This leaves the order of objects and comments for unchanged objects unchanged.
 	// It allows better compatibility with Cordova and the Xcode agvtool
 	originalContents                  []byte
 	originalPbxProj, annotatedPbxProj serialized.Object
 
-	Name string
-	Path string
+	xcodebuildFactory xcodebuild.Factory
 }
 
 func IsXcodeProj(pth string) bool {
 	return filepath.Ext(pth) == XcodeProjExtension
 }
 
-func Open(pth string) (XcodeProj, error) {
+func NewFromFile(pth string, xcodebuildFactory xcodebuild.Factory) (XcodeProj, error) {
 	absPth, err := pathutil.AbsPath(pth)
 	if err != nil {
 		return XcodeProj{}, err
@@ -73,6 +78,8 @@ func Open(pth string) (XcodeProj, error) {
 
 	p.Path = absPth
 	p.Name = strings.TrimSuffix(filepath.Base(absPth), filepath.Ext(absPth))
+
+	p.xcodebuildFactory = xcodebuildFactory
 
 	log.TDebugf("Opened xcode project")
 
@@ -146,7 +153,7 @@ func (p *XcodeProj) TargetInfoplistPath(target, configuration string) (string, e
 }
 
 func (p *XcodeProj) TargetBundleID(target, configuration string) (string, error) {
-	buildSettings, err := p.TargetBuildSettings(target, configuration)
+	buildSettings, err := p.TargetBuildSettings(target, configuration, nil)
 	if err != nil {
 		return "", err
 	}
@@ -177,12 +184,26 @@ func (p *XcodeProj) TargetBundleID(target, configuration string) (string, error)
 	return resolve(bundleID, buildSettings)
 }
 
-func (p *XcodeProj) TargetBuildSettings(target, configuration string, customOptions ...string) (serialized.Object, error) {
-	commandModel := xcodebuild.NewShowBuildSettingsCommand(p.Path)
-	commandModel.SetTarget(target)
-	commandModel.SetConfiguration(configuration)
-	commandModel.SetCustomOptions(customOptions)
-	return commandModel.RunAndReturnSettings()
+func (p *XcodeProj) TargetBuildSettings(target, configuration string, customOptions map[string]any) (serialized.Object, error) {
+	cmd := p.xcodebuildFactory.Create(xcodebuild.ShowBuildSettingsAction, xcodebuild.CommandOptions{
+		Project:       p.Path,
+		Target:        target,
+		Configuration: configuration,
+		CustomOptions: customOptions,
+	}, xcodebuild.CommandBuildSettings{}, nil)
+
+	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return nil, err
+	}
+
+	return parseBuildSettings(out)
+
+	//commandModel := xcodebuild.NewShowBuildSettingsCommand(p.Path)
+	//commandModel.SetTarget(target)
+	//commandModel.SetConfiguration(configuration)
+	//commandModel.SetCustomOptions(customOptions)
+	//return commandModel.RunAndReturnSettings()
 }
 
 // ForceTargetCodeSignEntitlement updates the project descriptor behind p. It
@@ -420,7 +441,7 @@ func (p *XcodeProj) perObjectModify() ([]byte, error) {
 }
 
 func (p *XcodeProj) buildSettingsFilePath(target, configuration, key string) (string, error) {
-	buildSettings, err := p.TargetBuildSettings(target, configuration)
+	buildSettings, err := p.TargetBuildSettings(target, configuration, nil)
 	if err != nil {
 		return "", err
 	}
@@ -722,4 +743,40 @@ func envInBuildSettings(envKey string, buildSettings serialized.Object) (string,
 		return "", false
 	}
 	return envValue, true
+}
+
+func parseBuildSettings(out string) (serialized.Object, error) {
+	settings := serialized.Object{}
+
+	reader := bufio.NewReader(strings.NewReader(out))
+	var buffer bytes.Buffer
+
+	for {
+		b, isPrefix, err := reader.ReadLine()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+
+		lineFragment := string(b)
+		buffer.WriteString(lineFragment)
+
+		// isPrefix is set to false once a full line has been read
+		if isPrefix == false {
+			line := strings.TrimSpace(buffer.String())
+
+			if split := strings.Split(line, "="); len(split) > 1 {
+				key := strings.TrimSpace(split[0])
+				value := strings.TrimSpace(strings.Join(split[1:], "="))
+				value = strings.Trim(value, `"`)
+
+				settings[key] = value
+			}
+
+			buffer.Reset()
+		}
+	}
+
+	return settings, nil
 }
