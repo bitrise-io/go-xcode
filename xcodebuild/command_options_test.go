@@ -13,7 +13,7 @@ func TestCommandOptions_toCommandOptions(t *testing.T) {
 		want    []string
 	}{
 		{
-			name: "Creates xcodebuild options",
+			name: "Creates xcodebuild command args",
 			options: CommandOptions{
 				Project: "project",
 				Scheme:  "scheme",
@@ -21,7 +21,7 @@ func TestCommandOptions_toCommandOptions(t *testing.T) {
 			want: []string{"-project", "project", "-scheme", "scheme"},
 		},
 		{
-			name: "Adds options for boolean true values",
+			name: "Create args for boolean true values",
 			options: CommandOptions{
 				Project:                  "project",
 				AllowProvisioningUpdates: true,
@@ -29,17 +29,33 @@ func TestCommandOptions_toCommandOptions(t *testing.T) {
 			want: []string{"-project", "project", "-allowProvisioningUpdates"},
 		},
 		{
-			name: "Doesn't add options for boolean false values",
+			name: "Doesn't create args for boolean false values",
 			options: CommandOptions{
 				Project:                  "project",
 				AllowProvisioningUpdates: false,
 			},
 			want: []string{"-project", "project"},
 		},
+		{
+			name: "Creates xcodebuild command args from custom options",
+			options: CommandOptions{
+				Project:       "project",
+				CustomOptions: map[string]any{"-customOption": "value"},
+			},
+			want: []string{"-project", "project", "-customOption", "value"},
+		},
+		{
+			name: "Creates xcodebuild command args from custom options",
+			options: CommandOptions{
+				Project:       "project",
+				CustomOptions: map[string]any{"-customOption": "value"},
+			},
+			want: []string{"-project", "project", "-customOption", "value"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.options.toCommandOptions()
+			got := tt.options.cmdArgs()
 			require.ElementsMatch(t, tt.want, got)
 		})
 	}

@@ -6,12 +6,19 @@ const (
 	settingFieldTag = "xbsetting"
 )
 
+// CommandBuildSettings represents Xcode build settings to be passed to an xcodebuild command.
+// The struct fields are tagged with the build setting key and the struct fields can be of type *bool or string.
+// If the field is of type *bool and not nil, the value will be converted to "YES" or "NO" accordingly.
+// Support for new field types should be implemented in CommandBuildSettings.keysAndValues method.
 type CommandBuildSettings struct {
-	CodeSigningAllowed  string `xbsetting:"CODE_SIGNING_ALLOWED"`
-	CustomBuildSettings map[string]string
+	CodeSigningAllowed           *bool `xbsetting:"CODE_SIGNING_ALLOWED"`
+	GCCInstrumentProgramFlowArcs *bool `xbsetting:"GCC_INSTRUMENT_PROGRAM_FLOW_ARCS"`
+	GCCGenerateTestCoverageFiles *bool `xbsetting:"GCC_GENERATE_TEST_COVERAGE_FILES"`
+	CompilerIndexStoreEnable     *bool `xbsetting:"COMPILER_INDEX_STORE_ENABLE"`
+	CustomBuildSettings          map[string]string
 }
 
-func (buildSettings CommandBuildSettings) toCmdArgs() []string {
+func (buildSettings CommandBuildSettings) cmdArgs() []string {
 	settingKeyValues := buildSettings.keysAndValues()
 
 	for key, value := range buildSettings.CustomBuildSettings {
@@ -20,7 +27,7 @@ func (buildSettings CommandBuildSettings) toCmdArgs() []string {
 
 	var opts []string
 	for key, value := range settingKeyValues {
-		opts = append(opts, key, value)
+		opts = append(opts, key+"="+value)
 	}
 
 	return opts
@@ -44,7 +51,16 @@ func (buildSettings CommandBuildSettings) keysAndValues() map[string]string {
 		}
 
 		settingKey := tag
-		settingKeyValues[settingKey] = value.(string)
+		switch value := value.(type) {
+		case *bool:
+			if *value {
+				settingKeyValues[settingKey] = "YES"
+			} else {
+				settingKeyValues[settingKey] = "NO"
+			}
+		case string:
+			settingKeyValues[settingKey] = value
+		}
 	}
 
 	return settingKeyValues

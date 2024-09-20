@@ -6,6 +6,11 @@ const (
 	optionFieldTag = "xboption"
 )
 
+// CommandOptions represents xcodebuild command options.
+// The struct fields are tagged with the option key and the struct fields can be of type string or bool.
+// If the field is of type bool and true, the option key will be added to the command arguments.
+// If the field is of type string and not empty, the option key and the value will be added to the command arguments.
+// Support for new field types might require changes in CommandOptions.optionsAndValues and CommandOptions.cmdArgs methods.
 type CommandOptions struct {
 	Project                   string `xboption:"project"`
 	Workspace                 string `xboption:"workspace"`
@@ -25,7 +30,7 @@ type CommandOptions struct {
 	CustomOptions map[string]any
 }
 
-func (options CommandOptions) toCmdArgs() []string {
+func (options CommandOptions) cmdArgs() []string {
 	optsKeyValues := options.optionsAndValues()
 
 	for key, value := range options.CustomOptions {
