@@ -15,15 +15,10 @@ type CommandBuildSettings struct {
 	GCCInstrumentProgramFlowArcs *bool `xbsetting:"GCC_INSTRUMENT_PROGRAM_FLOW_ARCS"`
 	GCCGenerateTestCoverageFiles *bool `xbsetting:"GCC_GENERATE_TEST_COVERAGE_FILES"`
 	CompilerIndexStoreEnable     *bool `xbsetting:"COMPILER_INDEX_STORE_ENABLE"`
-	CustomBuildSettings          map[string]string
 }
 
 func (buildSettings CommandBuildSettings) cmdArgs() []string {
 	settingKeyValues := buildSettings.keysAndValues()
-
-	for key, value := range buildSettings.CustomBuildSettings {
-		settingKeyValues[key] = value
-	}
 
 	var opts []string
 	for key, value := range settingKeyValues {

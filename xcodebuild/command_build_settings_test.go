@@ -20,14 +20,6 @@ func TestCommandBuildSettings_cmdArgs(t *testing.T) {
 			},
 			want: []string{"CODE_SIGNING_ALLOWED=NO"},
 		},
-		{
-			name: "Creates xcodebuild command args from custom build settings",
-			buildSettings: CommandBuildSettings{
-				CodeSigningAllowed:  pointers.NewBoolPtr(false),
-				CustomBuildSettings: map[string]string{"CUSTOM_SETTING": "value"},
-			},
-			want: []string{"CODE_SIGNING_ALLOWED=NO", "CUSTOM_SETTING=value"},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

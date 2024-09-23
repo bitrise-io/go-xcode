@@ -12,31 +12,28 @@ const (
 // If the field is of type string and not empty, the option key and the value will be added to the command arguments.
 // Support for new field types might require changes in CommandOptions.optionsAndValues and CommandOptions.cmdArgs methods.
 type CommandOptions struct {
-	Project                   string `xboption:"project"`
-	Workspace                 string `xboption:"workspace"`
-	Scheme                    string `xboption:"scheme"`
-	Target                    string `xboption:"target"`
-	Configuration             string `xboption:"configuration"`
-	Destination               string `xboption:"destination"`
-	XCConfig                  string `xboption:"xcconfig"`
-	ArchivePath               string `xboption:"archivePath"`
-	SDK                       string `xboption:"sdk"`
-	ResultBundlePath          string `xboption:"resultBundlePath"`
-	TestPlan                  string `xboption:"testPlan"`
-	AllowProvisioningUpdates  bool   `xboption:"allowProvisioningUpdates"`
-	AuthenticationKeyPath     string `xboption:"authenticationKeyPath"`
-	AuthenticationKeyID       string `xboption:"authenticationKeyID"`
-	AuthenticationKeyIssuerID string `xboption:"authenticationKeyIssuerID"`
-
-	CustomOptions map[string]any
+	Project                    string `xboption:"project"`
+	Workspace                  string `xboption:"workspace"`
+	Scheme                     string `xboption:"scheme"`
+	Target                     string `xboption:"target"`
+	Configuration              string `xboption:"configuration"`
+	Destination                string `xboption:"destination"`
+	XCConfig                   string `xboption:"xcconfig"`
+	ArchivePath                string `xboption:"archivePath"`
+	SDK                        string `xboption:"sdk"`
+	ResultBundlePath           string `xboption:"resultBundlePath"`
+	TestPlan                   string `xboption:"testPlan"`
+	AllowProvisioningUpdates   bool   `xboption:"allowProvisioningUpdates"`
+	AuthenticationKeyPath      string `xboption:"authenticationKeyPath"`
+	AuthenticationKeyID        string `xboption:"authenticationKeyID"`
+	AuthenticationKeyIssuerID  string `xboption:"authenticationKeyIssuerID"`
+	ExportArchive              bool   `xboption:"exportArchive"`
+	ResolvePackageDependencies bool   `xboption:"resolvePackageDependencies"`
+	ShowBuildSettings          bool   `xboption:"showBuildSettings"`
 }
 
 func (options CommandOptions) cmdArgs() []string {
 	optsKeyValues := options.optionsAndValues()
-
-	for key, value := range options.CustomOptions {
-		optsKeyValues[key] = value
-	}
 
 	var opts []string
 	for key, value := range optsKeyValues {

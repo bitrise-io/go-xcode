@@ -36,22 +36,6 @@ func TestCommandOptions_toCommandOptions(t *testing.T) {
 			},
 			want: []string{"-project", "project"},
 		},
-		{
-			name: "Creates xcodebuild command args from custom options",
-			options: CommandOptions{
-				Project:       "project",
-				CustomOptions: map[string]any{"-customOption": "value"},
-			},
-			want: []string{"-project", "project", "-customOption", "value"},
-		},
-		{
-			name: "Creates xcodebuild command args from custom options",
-			options: CommandOptions{
-				Project:       "project",
-				CustomOptions: map[string]any{"-customOption": "value"},
-			},
-			want: []string{"-project", "project", "-customOption", "value"},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

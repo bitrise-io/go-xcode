@@ -10,12 +10,16 @@ const (
 )
 
 const (
-	ArchiveAction            = "archive"
-	TestAction               = "test"
-	CleanAction              = "clean"
-	ExportArchiveAction      = "-exportArchive"
-	ResolvePackageDepsAction = "-resolvePackageDependencies"
-	ShowBuildSettingsAction  = "-showBuildSettings"
+	BuildAction               = "build"
+	BuildForTest              = "build-for-testing"
+	AnalyzeAction             = "analyze"
+	ArchiveAction             = "archive"
+	TestAction                = "test"
+	TestWithoutBuildingAction = "test-without-building"
+	DocBuildAction            = "docbuild"
+	InstallSrcAction          = "installsrc"
+	InstallAction             = "install"
+	CleanAction               = "clean"
 )
 
 type Factory struct {
@@ -28,9 +32,11 @@ func NewFactory(envRepository env.Repository) Factory {
 	return Factory{cmdFactory: cmdFactory}
 }
 
-func (factory Factory) Create(action string, options CommandOptions, settings CommandBuildSettings, cmdOpts *command.Opts) command.Command {
-	args := []string{action}
+func (factory Factory) Create(options *CommandOptions, actions []string, buildSettings *CommandBuildSettings, additionalArgs []string, cmdOpts *command.Opts) command.Command {
+	var args []string
 	args = append(args, options.cmdArgs()...)
-	args = append(args, settings.cmdArgs()...)
+	args = append(args, actions...)
+	args = append(args, buildSettings.cmdArgs()...)
+	args = append(args, additionalArgs...)
 	return factory.cmdFactory.Create(xcodebuildCmdName, args, cmdOpts)
 }
