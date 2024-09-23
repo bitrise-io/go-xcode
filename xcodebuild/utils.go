@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-func ParseShowBuildSettingsActionOutput(out string) (map[string]any, error) {
-	var settings map[string]any
+func ParseShowBuildSettingsCommandOutput(out string) (map[string]any, error) {
+	settings := map[string]any{}
 	var buffer bytes.Buffer
 	reader := bufio.NewReader(strings.NewReader(out))
 
