@@ -34,9 +34,13 @@ func NewFactory(envRepository env.Repository) Factory {
 
 func (factory Factory) Create(options *CommandOptions, actions []string, buildSettings *CommandBuildSettings, additionalArgs []string, cmdOpts *command.Opts) command.Command {
 	var args []string
-	args = append(args, options.cmdArgs()...)
+	if options != nil {
+		args = append(args, options.cmdArgs()...)
+	}
 	args = append(args, actions...)
-	args = append(args, buildSettings.cmdArgs()...)
+	if buildSettings != nil {
+		args = append(args, buildSettings.cmdArgs()...)
+	}
 	args = append(args, additionalArgs...)
 	return factory.cmdFactory.Create(xcodebuildCmdName, args, cmdOpts)
 }
