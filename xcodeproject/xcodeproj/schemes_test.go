@@ -6,13 +6,15 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/fileutil"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/testhelper"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_GivenNewlyGeneratedXcodeProject_WhenListingSchemes_ThenReturnsTheDefaultScheme(t *testing.T) {
 	xcodeProjectPath := testhelper.NewlyGeneratedXcodeProjectPath(t)
-	proj, err := Open(xcodeProjectPath)
+	proj, err := NewFromFile(xcodeProjectPath, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	schemes, err := proj.Schemes()
@@ -30,7 +32,7 @@ func Test_GivenNewlyGeneratedXcodeProjectWithWorkspaceSettings_WhenListingScheme
 	worksaceSettingsPth := filepath.Join(xcodeProjectPath, "project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings")
 	require.NoError(t, fileutil.WriteStringToFile(worksaceSettingsPth, workspaceSettingsWithBuildSystemTypeOriginalContent))
 
-	proj, err := Open(xcodeProjectPath)
+	proj, err := NewFromFile(xcodeProjectPath, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	schemes, err := proj.Schemes()
@@ -48,7 +50,7 @@ func Test_GivenNewlyGeneratedXcodeProjectWithUserDataGitignored_WhenListingSchem
 	userDataDir := filepath.Join(xcodeProjectPath, "xcuserdata")
 	require.NoError(t, os.RemoveAll(userDataDir))
 
-	proj, err := Open(xcodeProjectPath)
+	proj, err := NewFromFile(xcodeProjectPath, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	schemes, err := proj.Schemes()
@@ -66,7 +68,7 @@ func Test_GivenNewlyGeneratedXcodeProjectWithAutocreateSchemesDisabled_WhenListi
 	worksaceSettingsPth := filepath.Join(xcodeProjectPath, "project.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings")
 	require.NoError(t, fileutil.WriteStringToFile(worksaceSettingsPth, workspaceSettingsWithAutocreateSchemesDisabledContent))
 
-	proj, err := Open(xcodeProjectPath)
+	proj, err := NewFromFile(xcodeProjectPath, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	schemes, err := proj.Schemes()
@@ -86,7 +88,7 @@ func Test_GivenNewlyGeneratedXcodeProjectWithASharedAndAUserScheme_WhenListingSc
 	require.NoError(t, os.MkdirAll(filepath.Dir(sharedSchemePth), os.ModePerm))
 	require.NoError(t, fileutil.WriteStringToFile(sharedSchemePth, defaultSchemeContent))
 
-	proj, err := Open(xcodeProjectPath)
+	proj, err := NewFromFile(xcodeProjectPath, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	schemes, err := proj.Schemes()

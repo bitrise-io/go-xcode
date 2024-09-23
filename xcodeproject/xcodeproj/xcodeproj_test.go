@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/testhelper"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
@@ -382,7 +384,7 @@ func TestExpandSimpleEnv(t *testing.T) {
 
 func TestTargets(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"))
+	project, err := NewFromFile(filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"), xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	{
@@ -455,7 +457,7 @@ func TestTargets(t *testing.T) {
 func TestScheme(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
 	pth := filepath.Join(dir, "XcodeProj.xcodeproj")
-	project, err := Open(pth)
+	project, err := NewFromFile(pth, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	{
@@ -493,7 +495,7 @@ func TestScheme(t *testing.T) {
 
 func TestSchemes(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := NewFromFile(filepath.Join(dir, "XcodeProj.xcodeproj"), xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	schemes, err := project.Schemes()
@@ -515,7 +517,7 @@ func TestOpenXcodeproj(t *testing.T) {
 	t.Log("Opening Pods.xcodeproj in sample-apps-ios-workspace-swift.git")
 	{
 		dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/sample-apps-ios-workspace-swift.git")
-		project, err := Open(filepath.Join(dir, "Pods", "Pods.xcodeproj"))
+		project, err := NewFromFile(filepath.Join(dir, "Pods", "Pods.xcodeproj"), xcodebuild.NewFactory(env.NewRepository()))
 		require.NoError(t, err)
 		require.Equal(t, filepath.Join(dir, "Pods", "Pods.xcodeproj"), project.Path)
 		require.Equal(t, "Pods", project.Name)
@@ -523,7 +525,7 @@ func TestOpenXcodeproj(t *testing.T) {
 	t.Log("Opening XcodeProj.xcodeproj in xcode-project-test.git")
 	{
 		dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-		project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+		project, err := NewFromFile(filepath.Join(dir, "XcodeProj.xcodeproj"), xcodebuild.NewFactory(env.NewRepository()))
 		require.NoError(t, err)
 		require.Equal(t, filepath.Join(dir, "XcodeProj.xcodeproj"), project.Path)
 		require.Equal(t, "XcodeProj", project.Name)
@@ -537,7 +539,7 @@ func TestIsXcodeProj(t *testing.T) {
 
 func TestXcodeProj_forceBundleID(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := NewFromFile(filepath.Join(dir, "XcodeProj.xcodeproj"), xcodebuild.NewFactory(env.NewRepository()))
 	if err != nil {
 		t.Fatalf("Failed to init project for test case, error: %s", err)
 	}
@@ -588,7 +590,7 @@ func TestXcodeProj_forceBundleID(t *testing.T) {
 
 func TestXcodePrj_forceTargetCodeSignEntitlement(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := NewFromFile(filepath.Join(dir, "XcodeProj.xcodeproj"), xcodebuild.NewFactory(env.NewRepository()))
 	if err != nil {
 		t.Fatalf("Failed to init project for test case, error: %s", err)
 	}
@@ -759,7 +761,7 @@ func findBuildConfiguration(t *testing.T, target Target, name string) BuildConfi
 func TestXcodeProjOpen_AposthropeSupported(t *testing.T) {
 	// Arrange
 	dir := testhelper.GitCloneBranchIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git", "special-character")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := NewFromFile(filepath.Join(dir, "XcodeProj.xcodeproj"), xcodebuild.NewFactory(env.NewRepository()))
 	if err != nil {
 		t.Fatalf("Failed to init project for test case, error: %s", err)
 	}
@@ -785,7 +787,7 @@ func TestXcodeProjOpen_AposthropeSupported(t *testing.T) {
 	if err := project.Save(); err != nil {
 		t.Errorf("Failed to save project, error: %s", err)
 	}
-	_, err = Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	_, err = NewFromFile(filepath.Join(dir, "XcodeProj.xcodeproj"), xcodebuild.NewFactory(env.NewRepository()))
 	if err != nil {
 		t.Fatalf("Failed to reopen project after saving it, error: %s", err)
 	}

@@ -2,10 +2,13 @@ package xcodeproj
 
 import (
 	"fmt"
+
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 )
 
 func Example() {
-	project, err := Open("project.xcodeproj")
+	project, err := NewFromFile("project.xcodeproj", xcodebuild.NewFactory(env.NewRepository()))
 	if err != nil {
 		panic(err)
 	}

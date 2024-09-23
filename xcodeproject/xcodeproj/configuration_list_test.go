@@ -7,6 +7,8 @@ import (
 
 	plist "github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/pretty"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/testhelper"
 	"github.com/google/go-cmp/cmp"
@@ -116,7 +118,7 @@ const expectedConfigurationList = `{
 
 func TestXcodeProjBuildConfigurationList(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := NewFromFile(filepath.Join(dir, "XcodeProj.xcodeproj"), xcodebuild.NewFactory(env.NewRepository()))
 	if err != nil {
 		t.Fatalf("Failed to init project for test case, error: %s", err)
 	}
@@ -162,7 +164,7 @@ func TestXcodeProjBuildConfigurationList(t *testing.T) {
 
 func TestXcodeProjBuildConfigurations(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-io/xcode-project-test.git")
-	project, err := Open(filepath.Join(dir, "XcodeProj.xcodeproj"))
+	project, err := NewFromFile(filepath.Join(dir, "XcodeProj.xcodeproj"), xcodebuild.NewFactory(env.NewRepository()))
 	if err != nil {
 		t.Fatalf("Failed to init project for test case, error: %s", err)
 	}

@@ -9,6 +9,8 @@ import (
 
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/sliceutil"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
@@ -22,7 +24,7 @@ func AppIconSetPaths(projectPath string) (TargetsToAppIconSets, error) {
 		return TargetsToAppIconSets{}, err
 	}
 
-	proj, err := Open(absPth)
+	proj, err := NewFromFile(absPth, xcodebuild.NewFactory(env.NewRepository()))
 	if err != nil {
 		return TargetsToAppIconSets{}, err
 	}
