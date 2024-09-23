@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/testhelper"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	"github.com/stretchr/testify/require"
@@ -12,7 +14,7 @@ import (
 
 func TestScheme(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-samples/xcode-project-test.git")
-	workspace, err := Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
+	workspace, err := NewFromFile(filepath.Join(dir, "XcodeProj.xcworkspace"), xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	{
@@ -50,7 +52,7 @@ func TestScheme(t *testing.T) {
 
 func TestSchemes(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-samples/xcode-project-test.git")
-	workspace, err := Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
+	workspace, err := NewFromFile(filepath.Join(dir, "XcodeProj.xcworkspace"), xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	schemesByContainer, err := workspace.Schemes()
@@ -92,7 +94,7 @@ func TestWorkspaceFileLocations(t *testing.T) {
 	workspaceContentsPth := testhelper.CreateTmpFile(t, "contents.xcworkspacedata", workspaceContentsContent)
 	workspacePth := filepath.Dir(workspaceContentsPth)
 
-	workspace, err := Open(workspacePth)
+	workspace, err := NewFromFile(workspacePth, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	workspaceDir := filepath.Dir(workspacePth)
@@ -117,7 +119,7 @@ func TestWorkspaceProjectFileLocations(t *testing.T) {
 	workspaceContentsPth := testhelper.CreateTmpFile(t, "contents.xcworkspacedata", workspaceContentsContent)
 	workspacePth := filepath.Dir(workspaceContentsPth)
 
-	workspace, err := Open(workspacePth)
+	workspace, err := NewFromFile(workspacePth, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	workspaceDir := filepath.Dir(workspacePth)
@@ -134,7 +136,7 @@ func TestOpen(t *testing.T) {
 	workspaceContentsPth := testhelper.CreateTmpFile(t, "contents.xcworkspacedata", workspaceContentsContent)
 	workspacePth := filepath.Dir(workspaceContentsPth)
 
-	workspace, err := Open(workspacePth)
+	workspace, err := NewFromFile(workspacePth, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	require.Equal(t, filepath.Base(workspacePth), workspace.Name)

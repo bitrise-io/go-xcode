@@ -194,6 +194,7 @@ func (p *XcodeProj) TargetBuildSettings(target, configuration string, additional
 	if err != nil {
 		var exitError *exec.ExitError
 		if errors.As(err, &exitError) {
+			// TODO: check if output is in a sensible size
 			fmt.Println(out)
 		}
 		return nil, err

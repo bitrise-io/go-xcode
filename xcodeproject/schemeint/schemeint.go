@@ -1,6 +1,7 @@
 package schemeint
 
 import (
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace"
@@ -12,13 +13,15 @@ type HasScheme interface {
 }
 
 // Scheme returns the project or workspace scheme by name.
-func Scheme(pth string, name string) (*xcscheme.Scheme, string, error) {
+func Scheme(pth string, name string, xcodebuildFactory xcodebuild.Factory) (*xcscheme.Scheme, string, error) {
 	var p HasScheme
 	var err error
 	if xcodeproj.IsXcodeProj(pth) {
-		p, err = xcodeproj.Open(pth)
+		var proj xcodeproj.XcodeProj
+		proj, err = xcodeproj.NewFromFile(pth, xcodebuildFactory)
+		p = &proj
 	} else {
-		p, err = xcworkspace.Open(pth)
+		p, err = xcworkspace.NewFromFile(pth, xcodebuildFactory)
 	}
 	if err != nil {
 		return nil, "", err

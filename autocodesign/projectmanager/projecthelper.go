@@ -13,6 +13,7 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/schemeint"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
@@ -29,12 +30,13 @@ type ProjectHelper struct {
 	Configuration    string
 
 	buildSettingsCache map[string]map[string]serialized.Object // target/config/buildSettings(serialized.Object)
+	xcodebuildFactory  xcodebuild.Factory
 }
 
 // NewProjectHelper checks the provided project or workspace and generate a ProjectHelper with the provided scheme and configuration
 // Previously in the ruby version the initialize method did the same
 // It returns a new ProjectHelper, whose Configuration field contains is the selected configuration (even when configurationName parameter is empty)
-func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*ProjectHelper, error) {
+func NewProjectHelper(projOrWSPath, schemeName, configurationName string, xcodebuildFactory xcodebuild.Factory) (*ProjectHelper, error) {
 	if exits, err := pathutil.IsPathExists(projOrWSPath); err != nil {
 		return nil, err
 	} else if !exits {
@@ -44,7 +46,7 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 	// Get the project and scheme of the provided .xcodeproj or .xcworkspace
 	// It is important to keep the returned scheme, as it can be located under the .xcworkspace and not the .xcodeproj.
 	// Fetching the scheme from the project based on name is not possible later.
-	xcproj, scheme, err := findBuiltProject(projOrWSPath, schemeName)
+	xcproj, scheme, err := findBuiltProject(projOrWSPath, schemeName, xcodebuildFactory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find build project: %s", err)
 	}
@@ -77,11 +79,12 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 	}
 
 	return &ProjectHelper{
-		MainTarget:       mainTarget,
-		DependentTargets: dependentTargets,
-		UITestTargets:    uiTestTargets,
-		XcProj:           xcproj,
-		Configuration:    conf,
+		MainTarget:        mainTarget,
+		DependentTargets:  dependentTargets,
+		UITestTargets:     uiTestTargets,
+		XcProj:            xcproj,
+		Configuration:     conf,
+		xcodebuildFactory: xcodebuildFactory,
 	}, nil
 }
 
@@ -443,10 +446,10 @@ func mainTargetOfScheme(proj xcodeproj.XcodeProj, scheme xcscheme.Scheme) (xcode
 
 // findBuiltProject returns the Xcode project which will be built for the provided scheme, plus the scheme.
 // The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the XcodeProj would fail.
-func findBuiltProject(pth, schemeName string) (xcodeproj.XcodeProj, xcscheme.Scheme, error) {
+func findBuiltProject(pth, schemeName string, xcodebuildFactory xcodebuild.Factory) (xcodeproj.XcodeProj, xcscheme.Scheme, error) {
 	log.TInfof("Locating built project for xcode project: %s, scheme: %s", pth, schemeName)
 
-	scheme, schemeContainerDir, err := schemeint.Scheme(pth, schemeName)
+	scheme, schemeContainerDir, err := schemeint.Scheme(pth, schemeName, xcodebuildFactory)
 	if err != nil {
 		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, fmt.Errorf("could not get scheme with name %s from path %s: %w", schemeName, pth, err)
 	}
@@ -461,7 +464,7 @@ func findBuiltProject(pth, schemeName string) (xcodeproj.XcodeProj, xcscheme.Sch
 		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, err
 	}
 
-	xcodeProj, err := xcodeproj.Open(projectPth)
+	xcodeProj, err := xcodeproj.NewFromFile(projectPth, xcodebuildFactory)
 	if err != nil {
 		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, err
 	}

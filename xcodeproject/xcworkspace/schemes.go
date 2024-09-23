@@ -60,7 +60,7 @@ func (w Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
 			continue
 		}
 
-		project, err := xcodeproj.Open(projectLocation)
+		project, err := xcodeproj.NewFromFile(projectLocation, w.xcodebuildFactory)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open project (%s): %w", projectLocation, err)
 		}

@@ -1,9 +1,13 @@
 package xcworkspace
 
-import "github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
+import (
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
+)
 
 func Example() {
-	workspace, err := Open("workspace.xcworkspace")
+	workspace, err := NewFromFile("workspace.xcworkspace", xcodebuild.NewFactory(env.NewRepository()))
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +43,7 @@ func Example() {
 			continue
 		}
 
-		project, err := xcodeproj.Open(fileRefLocation)
+		project, err := xcodeproj.NewFromFile(fileRefLocation, xcodebuild.NewFactory(env.NewRepository()))
 		if err != nil {
 			panic(err)
 		}

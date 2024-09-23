@@ -8,7 +8,9 @@ import (
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 	"github.com/stretchr/testify/require"
@@ -95,7 +97,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projHelp, err := NewProjectHelper(tt.projOrWSPath, tt.schemeName, tt.configurationName)
+			projHelp, err := NewProjectHelper(tt.projOrWSPath, tt.schemeName, tt.configurationName, xcodebuild.NewFactory(env.NewRepository()))
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -313,6 +315,7 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 		xcProj, _, err := findBuiltProject(
 			projectCases[i],
 			schemeCase,
+			xcodebuild.NewFactory(env.NewRepository()),
 		)
 		if err != nil {
 			t.Fatalf("Failed to generate XcodeProj for test case: %s", err)
@@ -323,6 +326,7 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 			projectCases[i],
 			schemeCase,
 			configCases[i],
+			xcodebuild.NewFactory(env.NewRepository()),
 		)
 		if err != nil {
 			t.Fatalf("Failed to generate projectHelper for test case: %s", err)
@@ -464,6 +468,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		xcProj, _, err := findBuiltProject(
 			projectCases[i],
 			schemeCase,
+			xcodebuild.NewFactory(env.NewRepository()),
 		)
 		if err != nil {
 			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate XcodeProj for test case: %s", err)
@@ -474,6 +479,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 			projectCases[i],
 			schemeCase,
 			configCases[i],
+			xcodebuild.NewFactory(env.NewRepository()),
 		)
 		if err != nil {
 			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate projectHelper for test case: %s", err)

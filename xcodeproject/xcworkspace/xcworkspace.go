@@ -2,15 +2,17 @@ package xcworkspace
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
-	"github.com/bitrise-io/go-xcode/xcodebuild"
 )
 
 const (
@@ -20,15 +22,16 @@ const (
 
 // Workspace represents an Xcode workspace
 type Workspace struct {
+	Name     string
+	Path     string
 	FileRefs []FileRef `xml:"FileRef"`
 	Groups   []Group   `xml:"Group"`
 
-	Name string
-	Path string
+	xcodebuildFactory xcodebuild.Factory
 }
 
 // Open ...
-func Open(pth string) (Workspace, error) {
+func NewFromFile(pth string, xcodebuildFactory xcodebuild.Factory) (Workspace, error) {
 	contentsPth := filepath.Join(pth, "contents.xcworkspacedata")
 	b, err := fileutil.ReadBytesFromFile(contentsPth)
 	if err != nil {
@@ -47,19 +50,29 @@ func Open(pth string) (Workspace, error) {
 }
 
 // SchemeBuildSettings ...
-func (w Workspace) SchemeBuildSettings(scheme, configuration string, customOptions ...string) (serialized.Object, error) {
+func (w Workspace) SchemeBuildSettings(scheme, configuration string, additionalArgs ...string) (serialized.Object, error) {
 	log.TDebugf("Fetching %s scheme build settings", scheme)
 
-	commandModel := xcodebuild.NewShowBuildSettingsCommand(w.Path)
-	commandModel.SetScheme(scheme)
-	commandModel.SetConfiguration(configuration)
-	commandModel.SetCustomOptions(customOptions)
+	cmd := w.xcodebuildFactory.Create(&xcodebuild.CommandOptions{
+		Workspace:         w.Path,
+		Scheme:            scheme,
+		Configuration:     configuration,
+		ShowBuildSettings: true,
+	}, nil, nil, additionalArgs, nil)
 
-	object, err := commandModel.RunAndReturnSettings()
+	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		var exitError *exec.ExitError
+		if errors.As(err, &exitError) {
+			// TODO: check if output is in a sensible size
+			fmt.Println(out)
+		}
+		return nil, err
+	}
 
 	log.TDebugf("Fetched %s scheme build settings", scheme)
 
-	return object, err
+	return xcodebuild.ParseShowBuildSettingsCommandOutput(out)
 }
 
 // FileLocations ...

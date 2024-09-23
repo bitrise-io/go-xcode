@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/fileutil"
-
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/testhelper"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	"github.com/stretchr/testify/require"
@@ -13,7 +14,7 @@ import (
 
 func Test_GivenNewlyGeneratedWorkspace_WhenListingSchemes_ThenReturnsTheDefaultScheme(t *testing.T) {
 	xcodeWorkspacePath := testhelper.NewlyGeneratedXcodeWorkspacePath(t)
-	workspace, err := Open(xcodeWorkspacePath)
+	workspace, err := NewFromFile(xcodeWorkspacePath, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	schemesByContainer, err := workspace.Schemes()
@@ -32,7 +33,7 @@ func Test_GivenNewlyGeneratedWorkspace_WhenListingSchemes_ThenReturnsTheDefaultS
 
 func Test_GivenNewlyGeneratedWorkspaceWithWorkspaceSettings_WhenListingSchemes_ThenReturnsTheDefaultScheme(t *testing.T) {
 	xcodeWorkspacePath := testhelper.NewlyGeneratedXcodeWorkspacePath(t)
-	workspace, err := Open(xcodeWorkspacePath)
+	workspace, err := NewFromFile(xcodeWorkspacePath, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	worksaceSettingsPth := filepath.Join(xcodeWorkspacePath, "xcshareddata/WorkspaceSettings.xcsettings")
@@ -62,7 +63,7 @@ func Test_GivenNewlyGeneratedWorkspaceWithAutocreateSchemesDisabled_WhenListingS
 	worksaceSettingsPth := filepath.Join(xcodeWorkspacePath, "xcshareddata/WorkspaceSettings.xcsettings")
 	require.NoError(t, fileutil.WriteStringToFile(worksaceSettingsPth, workspaceSettingsWithAutocreateSchemesDisabledContent))
 
-	workspace, err := Open(xcodeWorkspacePath)
+	workspace, err := NewFromFile(xcodeWorkspacePath, xcodebuild.NewFactory(env.NewRepository()))
 	require.NoError(t, err)
 
 	schemesByContainer, err := workspace.Schemes()
