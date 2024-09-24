@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+// ParseShowBuildSettingsCommandOutput parses the output of the `xcodebuild -showBuildSettings` command.
 func ParseShowBuildSettingsCommandOutput(out string) (map[string]any, error) {
 	settings := map[string]any{}
 	var buffer bytes.Buffer
@@ -24,7 +25,7 @@ func ParseShowBuildSettingsCommandOutput(out string) (map[string]any, error) {
 		buffer.WriteString(lineFragment)
 
 		// isPrefix is set to false once a full line has been read
-		if isPrefix == false {
+		if !isPrefix {
 			line := strings.TrimSpace(buffer.String())
 
 			if split := strings.Split(line, "="); len(split) > 1 {

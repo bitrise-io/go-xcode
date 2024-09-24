@@ -11,7 +11,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/hashicorp/go-version"
 )
 
@@ -19,16 +18,20 @@ const (
 	toolName = "xcpretty"
 )
 
+type XcodebuildCommandFactory interface {
+	CreateWithOpts(opts *command.Opts) command.Command
+}
+
 // CommandModel ...
 type CommandModel struct {
-	xcodebuildCommand xcodebuild.CommandModel
-	customOptions     []string
+	xcodebuildCommandFactory XcodebuildCommandFactory
+	customOptions            []string
 }
 
 // New ...
-func New(xcodebuildCommand xcodebuild.CommandModel) *CommandModel {
+func New(xcodebuildCommandFactory XcodebuildCommandFactory) *CommandModel {
 	return &CommandModel{
-		xcodebuildCommand: xcodebuildCommand,
+		xcodebuildCommandFactory: xcodebuildCommandFactory,
 	}
 }
 
@@ -46,7 +49,7 @@ func (c CommandModel) Command(opts *command.Opts) command.Command {
 // PrintableCmd ...
 func (c CommandModel) PrintableCmd() string {
 	prettyCmdStr := c.Command(nil).PrintableCommandArgs()
-	xcodebuildCmdStr := c.xcodebuildCommand.PrintableCmd()
+	xcodebuildCmdStr := c.xcodebuildCommandFactory.CreateWithOpts(nil).PrintableCommandArgs()
 
 	return fmt.Sprintf("set -o pipefail && %s | %s", xcodebuildCmdStr, prettyCmdStr)
 }
@@ -60,7 +63,7 @@ func (c CommandModel) Run() (string, error) {
 	var outBuffer bytes.Buffer
 	outWriter := io.MultiWriter(&outBuffer, pipeWriter)
 
-	xcodebuildCmd := c.xcodebuildCommand.Command(&command.Opts{
+	xcodebuildCmd := c.xcodebuildCommandFactory.CreateWithOpts(&command.Opts{
 		Stdin:  nil,
 		Stdout: outWriter,
 		Stderr: outWriter,

@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// List of the known xcodebuild actions (Xcode 16.0 Build version 16A242d).
 const (
 	BuildAction               = "build"
 	BuildForTest              = "build-for-testing"
@@ -66,6 +67,7 @@ func (r CommandArgs) ToArgs() []string {
 // ParseAdditionalArgs parses additional arguments for an xcodebuild command.
 // The additional arguments are expected to be in the following format:
 // -<option> <value> -<bool_option> <action> <buildsetting=value> <-userdefault=value>
+// TODO: handle array options, like "-destination destination1 -destination destination2"
 func ParseAdditionalArgs(args []string) CommandArgs {
 	options := map[string]any{}
 	var actions []string
@@ -95,17 +97,14 @@ func ParseAdditionalArgs(args []string) CommandArgs {
 			split := strings.Split(arg, "=")
 			if len(split) > 1 {
 				buildSettings[split[0]] = strings.Join(split[1:], "=")
-			} else {
-				// TODO: handle error
 			}
 		} else if isUserDefaults(arg) {
 			split := strings.Split(arg, "=")
 			if len(split) > 1 {
 				userDefault[split[0]] = strings.Join(split[1:], "=")
-			} else {
-				// TODO: handle error
 			}
 		}
+		// TODO: handle unexpected arguments
 
 		i++
 	}

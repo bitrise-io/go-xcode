@@ -9,12 +9,13 @@ const (
 	xcodebuildCmdName = "xcodebuild"
 )
 
+// Factory creates xcodebuild commands.
 type Factory struct {
 	cmdFactory     command.Factory
 	additionalArgs []string
 }
 
-// NewFactory ...
+// NewFactory creates a new Factory.
 func NewFactory(envRepository env.Repository) Factory {
 	cmdFactory := command.NewFactory(envRepository)
 	return Factory{
@@ -22,7 +23,7 @@ func NewFactory(envRepository env.Repository) Factory {
 	}
 }
 
-// NewFactoryWithAdditionalArgs ...
+// NewFactoryWithAdditionalArgs creates a new Factory with additional arguments to be carried over for all the xcodebuild commands created.
 func NewFactoryWithAdditionalArgs(envRepository env.Repository, additionalArgs []string) Factory {
 	cmdFactory := command.NewFactory(envRepository)
 	return Factory{
@@ -31,10 +32,12 @@ func NewFactoryWithAdditionalArgs(envRepository env.Repository, additionalArgs [
 	}
 }
 
+// CreateWithoutDefaultAdditionalArgs creates a new xcodebuild command without the default additional arguments.
 func (factory Factory) CreateWithoutDefaultAdditionalArgs(options *CommandOptions, actions []string, buildSettings *CommandBuildSettings, additionalArgs []string, cmdOpts *command.Opts) command.Command {
 	return factory.create(options, actions, buildSettings, additionalArgs, cmdOpts)
 }
 
+// Create creates a new xcodebuild command.
 func (factory Factory) Create(options *CommandOptions, actions []string, buildSettings *CommandBuildSettings, additionalArgs []string, cmdOpts *command.Opts) command.Command {
 	defaultAdditionalArgsResult := ParseAdditionalArgs(factory.additionalArgs)
 	additionalArgsResult := ParseAdditionalArgs(additionalArgs)
