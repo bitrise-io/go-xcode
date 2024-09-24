@@ -32,7 +32,7 @@ func NewFactoryWithAdditionalArgs(envRepository env.Repository, additionalArgs [
 }
 
 func (factory Factory) CreateWithoutDefaultAdditionalArgs(options *CommandOptions, actions []string, buildSettings *CommandBuildSettings, additionalArgs []string, cmdOpts *command.Opts) command.Command {
-	return factory.Create(options, actions, buildSettings, additionalArgs, cmdOpts)
+	return factory.create(options, actions, buildSettings, additionalArgs, cmdOpts)
 }
 
 func (factory Factory) Create(options *CommandOptions, actions []string, buildSettings *CommandBuildSettings, additionalArgs []string, cmdOpts *command.Opts) command.Command {
@@ -41,7 +41,7 @@ func (factory Factory) Create(options *CommandOptions, actions []string, buildSe
 	mergedAdditionalArgsResult := MergeAdditionalArgs(defaultAdditionalArgsResult, additionalArgsResult)
 	mergedAdditionalArgs := mergedAdditionalArgsResult.ToArgs()
 
-	return factory.Create(options, actions, buildSettings, mergedAdditionalArgs, cmdOpts)
+	return factory.create(options, actions, buildSettings, mergedAdditionalArgs, cmdOpts)
 }
 
 func (factory Factory) create(options *CommandOptions, actions []string, buildSettings *CommandBuildSettings, additionalArgs []string, cmdOpts *command.Opts) command.Command {
