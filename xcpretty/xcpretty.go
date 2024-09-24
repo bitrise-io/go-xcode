@@ -18,6 +18,7 @@ const (
 	toolName = "xcpretty"
 )
 
+// XcodebuildCommandFactory represents a factory for xcodebuild commands.
 type XcodebuildCommandFactory interface {
 	CreateWithOpts(opts *command.Opts) command.Command
 }
