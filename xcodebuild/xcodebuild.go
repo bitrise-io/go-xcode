@@ -9,28 +9,26 @@ const (
 	xcodebuildCmdName = "xcodebuild"
 )
 
-const (
-	BuildAction               = "build"
-	BuildForTest              = "build-for-testing"
-	AnalyzeAction             = "analyze"
-	ArchiveAction             = "archive"
-	TestAction                = "test"
-	TestWithoutBuildingAction = "test-without-building"
-	DocBuildAction            = "docbuild"
-	InstallSrcAction          = "installsrc"
-	InstallAction             = "install"
-	CleanAction               = "clean"
-)
-
 type Factory struct {
 	cmdFactory     command.Factory
 	additionalArgs []string
 }
 
 // NewFactory ...
-func NewFactory(envRepository env.Repository, additionalArgs []string) Factory {
+func NewFactory(envRepository env.Repository) Factory {
 	cmdFactory := command.NewFactory(envRepository)
-	return Factory{cmdFactory: cmdFactory}
+	return Factory{
+		cmdFactory: cmdFactory,
+	}
+}
+
+// NewFactoryWithAdditionalArgs ...
+func NewFactoryWithAdditionalArgs(envRepository env.Repository, additionalArgs []string) Factory {
+	cmdFactory := command.NewFactory(envRepository)
+	return Factory{
+		cmdFactory:     cmdFactory,
+		additionalArgs: additionalArgs,
+	}
 }
 
 func (factory Factory) CreateWithoutDefaultAdditionalArgs(options *CommandOptions, actions []string, buildSettings *CommandBuildSettings, additionalArgs []string, cmdOpts *command.Opts) command.Command {
@@ -38,10 +36,10 @@ func (factory Factory) CreateWithoutDefaultAdditionalArgs(options *CommandOption
 }
 
 func (factory Factory) Create(options *CommandOptions, actions []string, buildSettings *CommandBuildSettings, additionalArgs []string, cmdOpts *command.Opts) command.Command {
-	defaultAdditionalArgsResult := parseAdditionalArgs(factory.additionalArgs)
-	additionalArgsResult := parseAdditionalArgs(additionalArgs)
-	mergedAdditionalArgsResult := mergeAdditionalArgs(defaultAdditionalArgsResult, additionalArgsResult)
-	mergedAdditionalArgs := mergedAdditionalArgsResult.toArgs()
+	defaultAdditionalArgsResult := ParseAdditionalArgs(factory.additionalArgs)
+	additionalArgsResult := ParseAdditionalArgs(additionalArgs)
+	mergedAdditionalArgsResult := MergeAdditionalArgs(defaultAdditionalArgsResult, additionalArgsResult)
+	mergedAdditionalArgs := mergedAdditionalArgsResult.ToArgs()
 
 	return factory.Create(options, actions, buildSettings, mergedAdditionalArgs, cmdOpts)
 }
