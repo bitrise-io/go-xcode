@@ -19,6 +19,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/v2/codesign"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 )
 
 type config struct {
@@ -102,7 +103,7 @@ func Example() {
 		ProjectOrWorkspacePath: cfg.ProjectPath,
 		SchemeName:             cfg.Scheme,
 		ConfigurationName:      cfg.Configuration,
-	})
+	}, xcodebuild.NewFactory(env.NewRepository()))
 	if err != nil {
 		panic(err)
 	}

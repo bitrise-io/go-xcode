@@ -10,6 +10,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 )
 
 // Project ...
@@ -19,7 +20,8 @@ type Project struct {
 
 // Factory ...
 type Factory struct {
-	params InitParams
+	params            InitParams
+	xcodebuildFactory xcodebuild.Factory
 }
 
 // InitParams ...
@@ -30,18 +32,18 @@ type InitParams struct {
 }
 
 // NewFactory ...
-func NewFactory(params InitParams) Factory {
-	return Factory{params: params}
+func NewFactory(params InitParams, xcodebuildFactory xcodebuild.Factory) Factory {
+	return Factory{params: params, xcodebuildFactory: xcodebuildFactory}
 }
 
 // Create ...
 func (f *Factory) Create() (Project, error) {
-	return NewProject(f.params)
+	return NewProject(f.params, f.xcodebuildFactory)
 }
 
 // NewProject ...
-func NewProject(params InitParams) (Project, error) {
-	projectHelper, err := NewProjectHelper(params.ProjectOrWorkspacePath, params.SchemeName, params.ConfigurationName)
+func NewProject(params InitParams, xcodebuildFactory xcodebuild.Factory) (Project, error) {
+	projectHelper, err := NewProjectHelper(params.ProjectOrWorkspacePath, params.SchemeName, params.ConfigurationName, xcodebuildFactory)
 	if err != nil {
 		return Project{}, err
 	}
