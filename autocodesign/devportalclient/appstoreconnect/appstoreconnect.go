@@ -23,7 +23,12 @@ import (
 )
 
 const (
-	baseURL    = "https://api.appstoreconnect.apple.com/"
+	baseURL       = "https://api.appstoreconnect.apple.com/"
+	tokenAuidence = "appstoreconnect-v1"
+
+	baseEnterpiseURL        = "https://api.enterprise.developer.apple.com/"
+	tokenEnterpriseAudience = "apple-developer-enterprise-v1"
+
 	apiVersion = "v1"
 )
 
@@ -52,6 +57,7 @@ type Client struct {
 	keyID             string
 	issuerID          string
 	privateKeyContent []byte
+	audience          string
 
 	token       *jwt.Token
 	signedToken string
@@ -93,6 +99,28 @@ func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte)
 		keyID:             keyID,
 		issuerID:          issuerID,
 		privateKeyContent: privateKey,
+		audience:          tokenAuidence,
+
+		client:  httpClient,
+		BaseURL: baseURL,
+	}
+	c.common.client = c
+	c.Provisioning = (*ProvisioningService)(&c.common)
+
+	return c
+}
+
+func NewEnterpriseClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte) *Client {
+	baseURL, err := url.Parse(baseEnterpiseURL)
+	if err != nil {
+		panic("invalid api base url: " + err.Error())
+	}
+
+	c := &Client{
+		keyID:             keyID,
+		issuerID:          issuerID,
+		privateKeyContent: privateKey,
+		audience:          tokenEnterpriseAudience,
 
 		client:  httpClient,
 		BaseURL: baseURL,
@@ -126,7 +154,7 @@ func (c *Client) ensureSignedToken() (string, error) {
 		log.Debugf("Generating JWT token")
 	}
 
-	c.token = createToken(c.keyID, c.issuerID)
+	c.token = createToken(c.keyID, c.issuerID, c.audience)
 	var err error
 	if c.signedToken, err = signToken(c.token, c.privateKeyContent); err != nil {
 		return "", err
