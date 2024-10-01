@@ -24,7 +24,7 @@ import (
 
 const (
 	baseURL       = "https://api.appstoreconnect.apple.com/"
-	tokenAuidence = "appstoreconnect-v1"
+	tokenAudience = "appstoreconnect-v1"
 
 	baseEnterpiseURL        = "https://api.enterprise.developer.apple.com/"
 	tokenEnterpriseAudience = "apple-developer-enterprise-v1"
@@ -99,7 +99,7 @@ func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte)
 		keyID:             keyID,
 		issuerID:          issuerID,
 		privateKeyContent: privateKey,
-		audience:          tokenAuidence,
+		audience:          tokenAudience,
 
 		client:  httpClient,
 		BaseURL: baseURL,
