@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	got := NewClient(NewRetryableHTTPClient(), "keyID", "issuerID", []byte{})
+	got := NewClient(NewRetryableHTTPClient(), "keyID", "issuerID", []byte{}, false)
 
 	require.Equal(t, "appstoreconnect-v1", got.audience)
 
@@ -21,7 +21,7 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestNewEnterpriseClient(t *testing.T) {
-	got := NewEnterpriseClient(NewRetryableHTTPClient(), "keyID", "issuerID", []byte{})
+	got := NewClient(NewRetryableHTTPClient(), "keyID", "issuerID", []byte{}, true)
 
 	require.Equal(t, "apple-developer-enterprise-v1", got.audience)
 
