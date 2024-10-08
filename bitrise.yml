@@ -15,13 +15,17 @@ workflows:
     after_run:
       - integration-test
     steps:
-      - go-list:
-      - golint:
-      - errcheck:
-      - go-test:
+    - git::https://github.com/bitrise-steplib/steps-check.git:
+        title: Lint
+        inputs:
+        - workflow: lint
+        - skip_step_yml_validation: "yes"
+    - go-list:
+        inputs:
+        - exclude: "*/mocks"
+    - go-test: { }
 
   integration-test:
-    after_run:
     steps:
       - script:
           title: Run integration tests
