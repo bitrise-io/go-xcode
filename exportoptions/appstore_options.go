@@ -13,6 +13,7 @@ type AppStoreOptionsModel struct {
 	SigningCertificate                 string
 	InstallerSigningCertificate        string
 	SigningStyle                       string
+	Destination                        string
 	ICloudContainerEnvironment         ICloudContainerEnvironment
 	DistributionBundleIdentifier       string
 
@@ -65,6 +66,9 @@ func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	}
 	if options.SigningStyle != "" {
 		hash[SigningStyleKey] = options.SigningStyle
+	}
+	if options.Destination != "" {
+		hash[DestinationKey] = options.Destination
 	}
 	return hash
 }
