@@ -2,7 +2,6 @@ package xcarchive
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -138,7 +137,7 @@ func createFrameworkDSYMs(archivePath string, numberOfDSYMs int) error {
 
 func createDSYMs(archivePath, dSYMType string, numberOfDSYMs int) error {
 	for i := 0; i < numberOfDSYMs; i++ {
-		err := ioutil.WriteFile(createDSYMFilePath(archivePath, dSYMType, i), nil, 0777)
+		err := os.WriteFile(createDSYMFilePath(archivePath, dSYMType, i), nil, 0777)
 		if err != nil {
 			return err
 		}

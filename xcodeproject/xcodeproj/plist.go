@@ -1,11 +1,10 @@
 package xcodeproj
 
 import (
-	"io/ioutil"
-
 	plist "github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
+	"os"
 )
 
 // ReadPlistFile returns a parsed object representing a plist file residing at path
@@ -49,5 +48,5 @@ func WritePlistFile(path string, entitlements serialized.Object, format int) err
 		return err
 	}
 
-	return ioutil.WriteFile(path, marshalled, 0644)
+	return os.WriteFile(path, marshalled, 0644)
 }

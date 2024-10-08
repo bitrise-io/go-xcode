@@ -44,10 +44,12 @@ func (options NonAppStoreOptionsModel) Hash() map[string]interface{} {
 	if options.TeamID != "" {
 		hash[TeamIDKey] = options.TeamID
 	}
-	if CompileBitcodeDefault != options.CompileBitcode {
+	//nolint:gosimple
+	if options.CompileBitcode != CompileBitcodeDefault {
 		hash[CompileBitcodeKey] = options.CompileBitcode
 	}
-	if EmbedOnDemandResourcesAssetPacksInBundleDefault != options.EmbedOnDemandResourcesAssetPacksInBundle {
+	//nolint:gosimple
+	if options.EmbedOnDemandResourcesAssetPacksInBundle != EmbedOnDemandResourcesAssetPacksInBundleDefault {
 		hash[EmbedOnDemandResourcesAssetPacksInBundleKey] = options.EmbedOnDemandResourcesAssetPacksInBundle
 	}
 	if options.ICloudContainerEnvironment != "" {
