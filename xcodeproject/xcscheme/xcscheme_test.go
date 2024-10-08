@@ -2,7 +2,6 @@ package xcscheme
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -28,7 +27,7 @@ func Test_GivenScheme_WhenMarshal_ThenContentRemain(t *testing.T) {
 	_, err = f.Seek(0, io.SeekStart)
 	require.NoError(t, err)
 
-	schemeContent, err := ioutil.ReadAll(f)
+	schemeContent, err := io.ReadAll(f)
 	require.NoError(t, err)
 	require.Equal(t, string(schemeContent), string(content))
 }

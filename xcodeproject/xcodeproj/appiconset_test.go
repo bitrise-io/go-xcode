@@ -2,7 +2,6 @@ package xcodeproj
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -128,7 +127,7 @@ func Test_appIconSetPaths(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projectDir, err := ioutil.TempDir("", "ios-dummy-project")
+			projectDir, err := os.MkdirTemp("", "ios-dummy-project")
 			if err != nil {
 				t.Errorf("setup: failed to create temp dir, %v", err)
 			}
