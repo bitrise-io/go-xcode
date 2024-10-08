@@ -233,7 +233,7 @@ func (p XcodeProj) TargetBundleID(target, configuration string) (string, error) 
 func resolve(bundleID string, buildSettings serialized.Object) (string, error) {
 	resolvedBundleIDs := map[string]bool{}
 	resolved := bundleID
-	for true {
+	for {
 		if !strings.Contains(resolved, "$") {
 			return resolved, nil
 		}
@@ -250,7 +250,6 @@ func resolve(bundleID string, buildSettings serialized.Object) (string, error) {
 		}
 		resolvedBundleIDs[resolved] = true
 	}
-	return "", fmt.Errorf("failed to resolve bundle id: %s", bundleID)
 }
 
 func expand(bundleID string, buildSettings serialized.Object) (string, error) {

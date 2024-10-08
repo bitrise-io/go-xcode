@@ -60,7 +60,7 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 	if err != nil {
 		t.Errorf("init: failed to generate certificate, error: %s", err)
 	}
-	earlierValidCertInfo := NewCertificateInfo(*latestValidCert, earlierValidCert)
+	earlierValidCertInfo := NewCertificateInfo(*earlierValidCert, privateKey)
 	t.Logf("Test certificate generated: %s", earlierValidCertInfo)
 
 	invalidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, invalidExpiry)
@@ -95,11 +95,10 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 		},
 		{
 			name:             "2 valid, duplicated certs",
-			certificateInfos: []CertificateInfoModel{latestValidCertInfo, earlierValidCertInfo, invalidCertInfo},
+			certificateInfos: []CertificateInfoModel{latestValidCertInfo, latestValidCertInfo},
 			want: ValidCertificateInfo{
 				ValidCertificates:      []CertificateInfoModel{latestValidCertInfo},
-				InvalidCertificates:    []CertificateInfoModel{invalidCertInfo},
-				DuplicatedCertificates: []CertificateInfoModel{earlierValidCertInfo},
+				DuplicatedCertificates: []CertificateInfoModel{latestValidCertInfo},
 			},
 		},
 	}

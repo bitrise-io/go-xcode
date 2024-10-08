@@ -1,7 +1,7 @@
 package devportalservice
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -23,7 +23,7 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			name: "No Apple Developer Connection set for the build",
 			response: &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("{}")),
+				Body:       io.NopCloser(strings.NewReader("{}")),
 			},
 			want:    &AppleDeveloperConnection{},
 			wantErr: false,
@@ -32,7 +32,7 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			name: "No Apple Developer Connection set for the build, test devices available",
 			response: &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader(testDevicesResponseBody)),
+				Body:       io.NopCloser(strings.NewReader(testDevicesResponseBody)),
 			},
 			want:    &testConnectionOnlyDevices,
 			wantErr: false,
@@ -41,7 +41,7 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			name: "Apple ID-based Apple Developer Connection set for the build",
 			response: &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader(testAppleIDConnectionResponseBody)),
+				Body:       io.NopCloser(strings.NewReader(testAppleIDConnectionResponseBody)),
 			},
 			want:    &testConnectionWithAppleIDConnection,
 			wantErr: false,
@@ -50,7 +50,7 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			name: "API key Apple Developer Connection set for the build",
 			response: &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader(testAPIKeyConnectionResponseBody)),
+				Body:       io.NopCloser(strings.NewReader(testAPIKeyConnectionResponseBody)),
 			},
 			want:    &testConnectionWithAPIKeyConnection,
 			wantErr: false,
@@ -59,7 +59,7 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			name: "Apple ID-based and API key Apple Developer Connection set for the build, test device available",
 			response: &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader(testAppleIDAndAPIKeyConnectionResponseBody)),
+				Body:       io.NopCloser(strings.NewReader(testAppleIDAndAPIKeyConnectionResponseBody)),
 			},
 			want:    &testConnectionWithAppleIDAndAPIKeyConnection,
 			wantErr: false,
@@ -89,7 +89,7 @@ func TestFastlaneLoginSession(t *testing.T) {
 			name: "No Apple Developer Connection set for the build",
 			response: &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader("{}")),
+				Body:       io.NopCloser(strings.NewReader("{}")),
 			},
 			want:    "",
 			wantErr: false,
@@ -98,7 +98,7 @@ func TestFastlaneLoginSession(t *testing.T) {
 			name: "Apple ID-based Apple Developer Connection set for the build",
 			response: &http.Response{
 				StatusCode: 200,
-				Body:       ioutil.NopCloser(strings.NewReader(testAppleIDConnectionResponseBody)),
+				Body:       io.NopCloser(strings.NewReader(testAppleIDConnectionResponseBody)),
 			},
 			want:    testFastlaneSession,
 			wantErr: false,

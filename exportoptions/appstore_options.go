@@ -40,13 +40,13 @@ func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	if options.TeamID != "" {
 		hash[TeamIDKey] = options.TeamID
 	}
-	if options.UploadBitcode != UploadBitcodeDefault {
+	if UploadBitcodeDefault != options.UploadBitcode {
 		hash[UploadBitcodeKey] = options.UploadBitcode
 	}
-	if options.UploadSymbols != UploadSymbolsDefault {
+	if UploadSymbolsDefault != options.UploadSymbols {
 		hash[UploadSymbolsKey] = options.UploadSymbols
 	}
-	if options.ManageAppVersion != manageAppVersionDefault {
+	if manageAppVersionDefault != options.ManageAppVersion {
 		hash[manageAppVersionKey] = options.ManageAppVersion
 	}
 	if options.ICloudContainerEnvironment != "" {
