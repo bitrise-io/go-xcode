@@ -95,10 +95,11 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 		},
 		{
 			name:             "2 valid, duplicated certs",
-			certificateInfos: []CertificateInfoModel{latestValidCertInfo, latestValidCertInfo},
+			certificateInfos: []CertificateInfoModel{latestValidCertInfo, earlierValidCertInfo, invalidCertInfo},
 			want: ValidCertificateInfo{
 				ValidCertificates:      []CertificateInfoModel{latestValidCertInfo},
-				DuplicatedCertificates: []CertificateInfoModel{latestValidCertInfo},
+				InvalidCertificates:    []CertificateInfoModel{invalidCertInfo},
+				DuplicatedCertificates: []CertificateInfoModel{earlierValidCertInfo},
 			},
 		},
 	}
