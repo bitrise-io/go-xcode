@@ -195,14 +195,10 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
-		<key>destination</key>
-		<string>export</string>
 		<key>distributionBundleIdentifier</key>
 		<string>io.bundle.id</string>
 		<key>method</key>
 		<string>development</string>
-		<key>signingStyle</key>
-		<string>automatic</string>
 		<key>teamID</key>
 		<string>TEAM123</string>
 	</dict>
@@ -228,14 +224,10 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
-		<key>destination</key>
-		<string>export</string>
 		<key>manageAppVersionAndBuildNumber</key>
 		<false/>
 		<key>method</key>
 		<string>app-store</string>
-		<key>signingStyle</key>
-		<string>automatic</string>
 		<key>teamID</key>
 		<string>TEAM123</string>
 	</dict>
@@ -263,16 +255,12 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
-		<key>destination</key>
-		<string>export</string>
 		<key>distributionBundleIdentifier</key>
 		<string>io.bundle.id</string>
 		<key>iCloudContainerEnvironment</key>
 		<string>Production</string>
 		<key>method</key>
 		<string>development</string>
-		<key>signingStyle</key>
-		<string>automatic</string>
 		<key>teamID</key>
 		<string>TEAM123</string>
 	</dict>

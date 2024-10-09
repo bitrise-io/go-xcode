@@ -77,11 +77,6 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 		exportOpts = disableManagedBuildNumberFromXcode13(exportOpts)
 	}
 
-	if xcodeMajorVersion >= 15 {
-		exportOpts = addSigningStyle(exportOpts, codeSigningStyle)
-		exportOpts = addDestinationExport(exportOpts)
-	}
-
 	if codeSigningStyle == exportoptions.SigningStyleAutomatic {
 		exportOpts = addTeamID(exportOpts, teamID)
 	} else {
@@ -381,18 +376,6 @@ func addSigningStyle(exportOpts exportoptions.ExportOptions, signingStyle export
 		return options
 	case exportoptions.NonAppStoreOptionsModel:
 		options.SigningStyle = signingStyle
-		return options
-	}
-	return exportOpts
-}
-
-func addDestinationExport(exportOpts exportoptions.ExportOptions) exportoptions.ExportOptions {
-	switch options := exportOpts.(type) {
-	case exportoptions.AppStoreOptionsModel:
-		options.Destination = exportoptions.DestinationExport
-		return options
-	case exportoptions.NonAppStoreOptionsModel:
-		options.Destination = exportoptions.DestinationExport
 		return options
 	}
 	return exportOpts
