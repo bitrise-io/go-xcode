@@ -12,8 +12,8 @@ type NonAppStoreOptionsModel struct {
 	TeamID                             string
 	BundleIDProvisioningProfileMapping map[string]string
 	SigningCertificate                 string
-	SigningStyle                       string
-	Destination                        string
+	SigningStyle                       SigningStyle
+	Destination                        Destination
 	ICloudContainerEnvironment         ICloudContainerEnvironment
 	DistributionBundleIdentifier       string
 

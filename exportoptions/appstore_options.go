@@ -12,8 +12,8 @@ type AppStoreOptionsModel struct {
 	BundleIDProvisioningProfileMapping map[string]string
 	SigningCertificate                 string
 	InstallerSigningCertificate        string
-	SigningStyle                       string
-	Destination                        string
+	SigningStyle                       SigningStyle
+	Destination                        Destination
 	ICloudContainerEnvironment         ICloudContainerEnvironment
 	DistributionBundleIdentifier       string
 
