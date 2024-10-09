@@ -3,111 +3,114 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 app:
   envs:
-    - ORIG_BITRISE_SOURCE_DIR: $BITRISE_SOURCE_DIR
+  - ORIG_BITRISE_SOURCE_DIR: $BITRISE_SOURCE_DIR
 
 workflows:
   ci:
     before_run:
-      - test
-      - swiftpm_cache
+    - test
+    - swiftpm_cache
 
   test:
     after_run:
-      - integration-test
+    - integration-test
     steps:
-      - go-list:
-      - golint:
-      - errcheck:
-      - go-test:
+    - git::https://github.com/bitrise-steplib/steps-check.git:
+        title: Lint
+        inputs:
+        - workflow: lint
+        - skip_step_yml_validation: "yes"
+    - go-list:
+        inputs:
+        - exclude: "*/mocks"
+    - go-test: { }
 
   integration-test:
-    after_run:
     steps:
-      - script:
-          title: Run integration tests
-          inputs:
-            - content: |-
-                #!/bin/bash
-                echo "Running integration tests ..."
-                set -ex
+    - script:
+        title: Run integration tests
+        inputs:
+        - content: |-
+            #!/bin/bash
+            echo "Running integration tests ..."
+            set -ex
 
-                go test -v ./_tests/integration/...
+            go test -v ./_tests/integration/...
 
   _swiftpm_step:
     envs:
-      - CURRENT_PROJECT_PATH: $CURRENT_PROJECT_PATH
-      - BITRISE_ACCESS_TOKEN: $BITRISE_ACCESS_TOKEN
+    - CURRENT_PROJECT_PATH: $CURRENT_PROJECT_PATH
+    - BITRISE_ACCESS_TOKEN: $BITRISE_ACCESS_TOKEN
     steps:
-      - build-router-start:
-          inputs:
-            - workflows: swiftpm_run_xcodebuild
-            - wait_for_builds: "true"
-            - access_token: $BITRISE_ACCESS_TOKEN
-            - environment_key_list: CURRENT_PROJECT_PATH
-            - verbose: "yes"
+    - build-router-start:
+        inputs:
+        - workflows: swiftpm_run_xcodebuild
+        - wait_for_builds: "true"
+        - access_token: $BITRISE_ACCESS_TOKEN
+        - environment_key_list: CURRENT_PROJECT_PATH
+        - verbose: "yes"
 
   swiftpm_run_xcodebuild:
     envs:
-      - CURRENT_PROJECT_PATH: $CURRENT_PROJECT_PATH
-      - SAMPLES_DIR: $ORIG_BITRISE_SOURCE_DIR/_checkout
+    - CURRENT_PROJECT_PATH: $CURRENT_PROJECT_PATH
+    - SAMPLES_DIR: $ORIG_BITRISE_SOURCE_DIR/_checkout
     steps:
-      - script:
-          title: Cleanup $TMP_DIR
-          inputs:
-            - content: |
-                #!/bin/bash
-                set -ex
+    - script:
+        title: Cleanup $TMP_DIR
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
 
-                rm -rf $SAMPLES_DIR
-                mkdir $SAMPLES_DIR
-                git clone https://github.com/bitrise-io/sample-apps-ios-swiftpm.git -b master $SAMPLES_DIR
+            rm -rf $SAMPLES_DIR
+            mkdir $SAMPLES_DIR
+            git clone https://github.com/bitrise-io/sample-apps-ios-swiftpm.git -b master $SAMPLES_DIR
 
-                rm -rf /Users/lpusok/Library/Developer/Xcode/DerivedData/*
-      - cache-pull:
-          run_if: true
-          inputs:
-            - is_debug_mode: true
-      - xcode-test:
-          title: Run xcodebuild
-          inputs:
-            - project_path: $SAMPLES_DIR/$CURRENT_PROJECT_PATH/sample-swiftpm2.xcodeproj
-            - scheme: sample-swiftpm2
-            - cache_level: swift_packages
-      - cache-push:
-          title: Push cache
-          run_if: true
-          is_skippable: false
-          inputs:
-            - is_debug_mode: true
+            rm -rf /Users/lpusok/Library/Developer/Xcode/DerivedData/*
+    - cache-pull:
+        run_if: true
+        inputs:
+        - is_debug_mode: true
+    - xcode-test:
+        title: Run xcodebuild
+        inputs:
+        - project_path: $SAMPLES_DIR/$CURRENT_PROJECT_PATH/sample-swiftpm2.xcodeproj
+        - scheme: sample-swiftpm2
+        - cache_level: swift_packages
+    - cache-push:
+        title: Push cache
+        run_if: true
+        is_skippable: false
+        inputs:
+        - is_debug_mode: true
 
   _swiftpm_step2:
     envs:
-      - CURRENT_PROJECT_PATH: sample-swiftpm2
+    - CURRENT_PROJECT_PATH: sample-swiftpm2
     after_run:
-      - _swiftpm_step
+    - _swiftpm_step
 
   _swiftpm_step3:
     envs:
-      - CURRENT_PROJECT_PATH: sample-swiftpm3
+    - CURRENT_PROJECT_PATH: sample-swiftpm3
     after_run:
-      - _swiftpm_step
+    - _swiftpm_step
 
   _swiftpm_step5:
     envs:
-      - CURRENT_PROJECT_PATH: sample-swiftpm5
+    - CURRENT_PROJECT_PATH: sample-swiftpm5
     after_run:
-      - _swiftpm_step
+    - _swiftpm_step
 
   _swiftpm_step7:
     envs:
-      - CURRENT_PROJECT_PATH: sample-swiftpm7
+    - CURRENT_PROJECT_PATH: sample-swiftpm7
     after_run:
-      - _swiftpm_step
+    - _swiftpm_step
 
   swiftpm_cache:
     after_run:
-      - _swiftpm_step2
-      - _swiftpm_step3
-      - _swiftpm_step5
-      - _swiftpm_step7
-
+    - _swiftpm_step2
+    - _swiftpm_step3
+    - _swiftpm_step5
+    - _swiftpm_step7

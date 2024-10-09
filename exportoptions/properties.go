@@ -163,5 +163,16 @@ const SigningCertificateKey = "signingCertificate"
 // InstallerSigningCertificateKey ...
 const InstallerSigningCertificateKey = "installerSigningCertificate"
 
-// SigningStyleKey ...
-const SigningStyleKey = "signingStyle"
+// SigningStyle ...
+const (
+	SigningStyleKey       = "signingStyle"
+	SigningStyleManual    = "manual"
+	SigningStyleAutomatic = "automatic"
+)
+
+// Destination ...
+const (
+	DestinationKey     = "destination"
+	DestinationExport  = "export"
+	DestinationDefault = DestinationExport
+)

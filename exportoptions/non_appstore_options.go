@@ -13,6 +13,7 @@ type NonAppStoreOptionsModel struct {
 	BundleIDProvisioningProfileMapping map[string]string
 	SigningCertificate                 string
 	SigningStyle                       string
+	Destination                        string
 	ICloudContainerEnvironment         ICloudContainerEnvironment
 	DistributionBundleIdentifier       string
 
@@ -43,9 +44,11 @@ func (options NonAppStoreOptionsModel) Hash() map[string]interface{} {
 	if options.TeamID != "" {
 		hash[TeamIDKey] = options.TeamID
 	}
+	//nolint:gosimple
 	if options.CompileBitcode != CompileBitcodeDefault {
 		hash[CompileBitcodeKey] = options.CompileBitcode
 	}
+	//nolint:gosimple
 	if options.EmbedOnDemandResourcesAssetPacksInBundle != EmbedOnDemandResourcesAssetPacksInBundleDefault {
 		hash[EmbedOnDemandResourcesAssetPacksInBundleKey] = options.EmbedOnDemandResourcesAssetPacksInBundle
 	}
@@ -72,6 +75,9 @@ func (options NonAppStoreOptionsModel) Hash() map[string]interface{} {
 	}
 	if options.SigningStyle != "" {
 		hash[SigningStyleKey] = options.SigningStyle
+	}
+	if options.Destination != "" {
+		hash[DestinationKey] = options.Destination
 	}
 	return hash
 }
