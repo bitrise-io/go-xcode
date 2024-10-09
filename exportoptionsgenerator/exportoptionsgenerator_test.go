@@ -282,7 +282,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Act
-			gotOpts, err := tt.generatorFactory().GenerateApplicationExportOptions(tt.exportMethod, tt.containerEnvironment, teamID, true, true, false, AutomaticSigningStyle, tt.xcodeVersion)
+			gotOpts, err := tt.generatorFactory().GenerateApplicationExportOptions(tt.exportMethod, tt.containerEnvironment, teamID, true, true, false, exportoptions.SigningStyleAutomatic, tt.xcodeVersion)
 
 			// Assert
 			require.NoError(t, err)
@@ -384,7 +384,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, ManualSigningStyle, tt.xcodeVersion)
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, tt.xcodeVersion)
 
 			// Assert
 			require.NoError(t, err)
@@ -454,7 +454,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, ManualSigningStyle, tt.xcodeVersion)
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, tt.xcodeVersion)
 
 			// Assert
 			require.NoError(t, err)

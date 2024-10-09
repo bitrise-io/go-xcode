@@ -2,6 +2,8 @@ package exportoptionsgenerator
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/export"
@@ -11,18 +13,10 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
-	"os"
 )
 
 const (
 	AppClipProductType = "com.apple.product-type.application.on-demand-install-capable"
-)
-
-type SigningStyle string
-
-const (
-	ManualSigningStyle    = "manual"
-	AutomaticSigningStyle = "automatic"
 )
 
 // ExportOptionsGenerator generates an exportOptions.plist file.
@@ -59,7 +53,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	uploadBitcode bool,
 	compileBitcode bool,
 	archivedWithXcodeManagedProfiles bool,
-	codeSigningStyle SigningStyle,
+	codeSigningStyle exportoptions.SigningStyle,
 	xcodeMajorVersion int64,
 ) (exportoptions.ExportOptions, error) {
 	mainTargetBundleID, entitlementsByBundleID, err := g.applicationTargetsAndEntitlements(exportMethod)
@@ -73,9 +67,11 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	}
 
 	exportOpts := generateBaseExportOptions(exportMethod, uploadBitcode, compileBitcode, iCloudContainerEnvironment)
+
 	if xcodeMajorVersion >= 12 {
 		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, mainTargetBundleID)
 	}
+
 	if xcodeMajorVersion >= 13 {
 		exportOpts = disableManagedBuildNumberFromXcode13(exportOpts)
 	}
@@ -85,7 +81,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 		exportOpts = addDestinationExport(exportOpts)
 	}
 
-	if codeSigningStyle == AutomaticSigningStyle {
+	if codeSigningStyle == exportoptions.SigningStyleAutomatic {
 		exportOpts = addTeamID(exportOpts, teamID)
 	} else {
 		codeSignGroup, err := g.determineCodesignGroup(entitlementsByBundleID, exportMethod, teamID, archivedWithXcodeManagedProfiles)
@@ -158,7 +154,7 @@ func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap m
 
 	certs, err := g.certificateProvider.ListCodesignIdentities()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get installed certificates, error: %s", err)
+		return nil, fmt.Errorf("failed to get installed certificates: %w", err)
 	}
 
 	g.logger.Debugf("Installed certificates:")
@@ -168,7 +164,7 @@ func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap m
 
 	profs, err := g.profileProvider.ListProvisioningProfiles()
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get installed provisioning profiles, error: %s", err)
+		return nil, fmt.Errorf("failed to get installed provisioning profiles: %w", err)
 	}
 
 	g.logger.Debugf("Installed profiles:")
@@ -332,7 +328,7 @@ func projectUsesCloudKit(bundleIDEntitlementsMap map[string]plistutil.PlistData)
 	return false
 }
 
-// generateBaseExportOptions creates a default exportOptions introudced in Xcode 7.
+// generateBaseExportOptions creates a default exportOptions introduced in Xcode 7.
 func generateBaseExportOptions(exportMethod exportoptions.Method, cfgUploadBitcode, cfgCompileBitcode bool, iCloudContainerEnvironment string) exportoptions.ExportOptions {
 	if exportMethod == exportoptions.MethodAppStore {
 		appStoreOptions := exportoptions.NewAppStoreOptions()
@@ -377,13 +373,13 @@ func disableManagedBuildNumberFromXcode13(exportOpts exportoptions.ExportOptions
 	return exportOpts
 }
 
-func addSigningStyle(exportOpts exportoptions.ExportOptions, signingStyle SigningStyle) exportoptions.ExportOptions {
+func addSigningStyle(exportOpts exportoptions.ExportOptions, signingStyle exportoptions.SigningStyle) exportoptions.ExportOptions {
 	switch options := exportOpts.(type) {
 	case exportoptions.AppStoreOptionsModel:
-		options.SigningStyle = string(signingStyle)
+		options.SigningStyle = signingStyle
 		return options
 	case exportoptions.NonAppStoreOptionsModel:
-		options.SigningStyle = string(signingStyle)
+		options.SigningStyle = signingStyle
 		return options
 	}
 	return exportOpts
@@ -427,14 +423,14 @@ func addManualSigningFields(exportOpts exportoptions.ExportOptions, codeSignGrou
 			}
 			exportCodeSignStyle = "automatic"
 		} else {
-			if exportCodeSignStyle != "" && exportCodeSignStyle != ManualSigningStyle {
+			if exportCodeSignStyle != "" && exportCodeSignStyle != string(exportoptions.SigningStyleManual) {
 				logger.Errorf("Both Xcode managed and NON Xcode managed profiles in code signing group")
 			}
-			exportCodeSignStyle = ManualSigningStyle
+			exportCodeSignStyle = string(exportoptions.SigningStyleManual)
 		}
 	}
 
-	shouldSetManualSigning := archivedWithXcodeManagedProfiles && exportCodeSignStyle == ManualSigningStyle
+	shouldSetManualSigning := archivedWithXcodeManagedProfiles && exportCodeSignStyle == string(exportoptions.SigningStyleManual)
 	if shouldSetManualSigning {
 		logger.Warnf("App was signed with Xcode managed profile when archiving,")
 		logger.Warnf("ipa export uses manual code signing.")
@@ -450,7 +446,7 @@ func addManualSigningFields(exportOpts exportoptions.ExportOptions, codeSignGrou
 		options.TeamID = codeSignGroup.Certificate().TeamID
 
 		if shouldSetManualSigning {
-			options.SigningStyle = ManualSigningStyle
+			options.SigningStyle = exportoptions.SigningStyleManual
 		}
 		exportOpts = options
 	case exportoptions.NonAppStoreOptionsModel:
@@ -459,7 +455,7 @@ func addManualSigningFields(exportOpts exportoptions.ExportOptions, codeSignGrou
 		options.TeamID = codeSignGroup.Certificate().TeamID
 
 		if shouldSetManualSigning {
-			options.SigningStyle = ManualSigningStyle
+			options.SigningStyle = exportoptions.SigningStyleManual
 		}
 		exportOpts = options
 	}
