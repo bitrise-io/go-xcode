@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	// AppClipProductType ...
 	AppClipProductType = "com.apple.product-type.application.on-demand-install-capable"
 )
 
