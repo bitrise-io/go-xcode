@@ -369,18 +369,6 @@ func disableManagedBuildNumberFromXcode13(exportOpts exportoptions.ExportOptions
 	return exportOpts
 }
 
-func addSigningStyle(exportOpts exportoptions.ExportOptions, signingStyle exportoptions.SigningStyle) exportoptions.ExportOptions {
-	switch options := exportOpts.(type) {
-	case exportoptions.AppStoreOptionsModel:
-		options.SigningStyle = signingStyle
-		return options
-	case exportoptions.NonAppStoreOptionsModel:
-		options.SigningStyle = signingStyle
-		return options
-	}
-	return exportOpts
-}
-
 func addTeamID(exportOpts exportoptions.ExportOptions, teamID string) exportoptions.ExportOptions {
 	switch options := exportOpts.(type) {
 	case exportoptions.AppStoreOptionsModel:
