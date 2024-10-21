@@ -88,7 +88,7 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 		On("PostProfilesSuccess", mock.AnythingOfType("*http.Request")).
 		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
 
-	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
+	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"), false)
 	profileClient := NewProfileClient(client)
 	bundleID := appstoreconnect.BundleID{
 		Attributes: appstoreconnect.BundleIDAttributes{Identifier: "io.bitrise.testapp"},
