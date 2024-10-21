@@ -133,9 +133,9 @@ func (c *MockClient) Do(req *http.Request) (*http.Response, error) {
 		}
 		// After deleting the expired profile, creating a new one succeed
 		return c.PostProfilesSuccess(req)
-	case req.URL.Path == "/v1//bundleID/capabilities" && req.Method == "GET":
+	case req.URL.Path == "/v1/bundleID/capabilities" && req.Method == "GET":
 		return c.GetBundleIDCapabilities(req)
-	case req.URL.Path == "/v1//bundleID/profiles" && req.Method == "GET":
+	case req.URL.Path == "/v1/bundleID/profiles" && req.Method == "GET":
 		return c.GetBundleIDProfiles(req)
 	case req.URL.Path == "/v1/profiles/1" && req.Method == "DELETE":
 		return c.DeleteProfiles(req)
