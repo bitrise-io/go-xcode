@@ -148,7 +148,6 @@ func (c *Client) ensureSignedToken() (string, error) {
 	return c.signedToken, nil
 }
 
-// TODO: Add comment
 // NewRequestWithRelationshipURL ...
 func (c *Client) NewRequestWithRelationshipURL(method, endpoint string, body interface{}) (*http.Request, error) {
 	// endpoint = strings.TrimPrefix(endpoint, c.B+apiVersion)
