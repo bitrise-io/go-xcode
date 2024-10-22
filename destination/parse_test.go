@@ -23,7 +23,7 @@ func Test_deviceFinder_parseDeviceList(t *testing.T) {
 		commandFactory: commandFactory,
 	}
 
-	got, err := d.ParseDeviceList()
+	got, err := d.ListDevices()
 	require.NoError(t, err)
 
 	wantDeviceTypes := []DeviceType{

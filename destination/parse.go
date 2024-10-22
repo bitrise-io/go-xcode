@@ -1,16 +1,12 @@
 package destination
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"strings"
-	"time"
-
 	"github.com/bitrise-io/go-utils/errorutil"
-	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/hashicorp/go-version"
+	"os"
+	"strings"
 )
 
 type DeviceList struct {
@@ -151,53 +147,6 @@ func (d deviceFinder) debugDeviceList() error {
 	d.logger.Donef("$ %s", listCmd.PrintableCommandArgs())
 
 	return listCmd.Run()
-}
-
-func (d deviceFinder) ParseDeviceList() (*DeviceList, error) {
-	var list DeviceList
-
-	// Retry gathering device information since xcrun simctl list can fail to show the complete device list
-	// Originally added in https://github.com/bitrise-steplib/steps-xcode-test/pull/155
-	if err := retry.Times(3).Wait(10 * time.Second).Try(func(attempt uint) error {
-		listCmd := d.commandFactory.Create("xcrun", []string{"simctl", "list", "--json"}, &command.Opts{
-			Stderr: os.Stderr,
-		})
-
-		d.logger.TDebugf("$ %s", listCmd.PrintableCommandArgs())
-		output, err := listCmd.RunAndReturnTrimmedOutput()
-		if err != nil {
-			if errorutil.IsExitStatusError(err) {
-				return fmt.Errorf("device list command failed: %w", err)
-			}
-
-			return fmt.Errorf("failed to run device list command: %w", err)
-		}
-
-		if err := json.Unmarshal([]byte(output), &list); err != nil {
-			return fmt.Errorf("failed to unmarshal device list: %w, json: %s", err, output)
-		}
-
-		hasAvailableDevice := false
-		for _, deviceList := range list.Devices {
-			for _, device := range deviceList {
-				if !device.IsAvailable {
-					d.logger.Warnf("device %s is unavailable: %s", device.Name, device.AvailabilityError)
-				} else {
-					hasAvailableDevice = true
-				}
-			}
-		}
-
-		if hasAvailableDevice {
-			return nil
-		} else {
-			return fmt.Errorf("no available device found")
-		}
-	}); err != nil {
-		return &DeviceList{}, err
-	}
-
-	return &list, nil
 }
 
 func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device, error) {
