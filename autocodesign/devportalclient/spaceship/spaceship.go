@@ -223,6 +223,16 @@ func prepareSpaceship(cmdFactory ruby.CommandFactory) (string, error) {
 		return "", fmt.Errorf("running command failed with error: %s, output: %s", err, output)
 	}
 
+	fastlaneVersionCmd := cmdFactory.CreateBundleExec("fastlane", []string{"--version"}, "", &command.Opts{
+		Dir: targetDir,
+	})
+	versionOutput, versionErr := fastlaneVersionCmd.RunAndReturnTrimmedCombinedOutput()
+	if versionErr != nil {
+		return "", fmt.Errorf("running command failed with error: %s, output: %s", versionErr, versionOutput)
+	}
+
+	fmt.Printf("Fastlane version:\n %s\n", versionOutput)
+
 	return targetDir, nil
 }
 
