@@ -2,7 +2,6 @@ package destination
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -12,18 +11,6 @@ import (
 
 // Keep it in sync with https://github.com/bitrise-io/image-build-utils/blob/master/roles/simulators/defaults/main.yml#L14
 const defaultDeviceName = "Bitrise iOS default"
-
-// Device is an available device
-type Device struct {
-	ID     string
-	Status string
-	Type   string
-
-	Platform string
-	Name     string
-	OS       string
-	Arch     string
-}
 
 // DeviceFinder is an interface that find a matching device for a given destination
 type DeviceFinder interface {
@@ -35,7 +22,7 @@ type deviceFinder struct {
 	commandFactory command.Factory
 	xcodeVersion   xcodeversion.Version
 
-	list *deviceList
+	list *DeviceList
 }
 
 // NewDeviceFinder retruns the default implementation of DeviceFinder
@@ -56,7 +43,7 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 
 	start := time.Now()
 	if d.list == nil {
-		d.list, err = d.parseDeviceList()
+		d.list, err = d.ParseDeviceList()
 	}
 	if err == nil {
 		device, err = d.deviceForDestination(destination)
@@ -83,21 +70,11 @@ func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 	d.logger.Debugf("Created device in %s", time.Since(start).Round(time.Second))
 
 	if err == nil {
-		d.list, err = d.parseDeviceList()
+		d.list, err = d.ParseDeviceList()
 	}
 	if err == nil {
 		device, err = d.deviceForDestination(destination)
 	}
 
 	return device, err
-}
-
-// XcodebuildDestination returns the required xcodebuild -destination flag value for a device
-func (d Device) XcodebuildDestination() string {
-	// `arch` doesn't seem to work together with `id`
-	if d.Arch == "" {
-		return fmt.Sprintf("id=%s", d.ID)
-	}
-
-	return fmt.Sprintf("platform=%s,name=%s,OS=%s,arch=%s", d.Platform, d.Name, d.OS, d.Arch)
 }

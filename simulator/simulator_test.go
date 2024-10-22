@@ -45,7 +45,7 @@ func Test_GivenSimulator_WhenBoot_ThenBootsTheRequestedSimulator(t *testing.T) {
 	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
 
 	// When
-	err := manager.Boot(destination.Device{ID: identifier})
+	err := manager.Boot(destination.Device{UDID: identifier})
 
 	// Then
 	assert.NoError(t, err)
@@ -62,7 +62,7 @@ func Test_GivenSimulator_WhenBootRosetta_ThenBootsTheRequestedSimulator(t *testi
 	mocks.commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
 
 	// When
-	err := manager.Boot(destination.Device{ID: identifier, Arch: "x86_64"})
+	err := manager.Boot(destination.Device{UDID: identifier, Arch: "x86_64"})
 
 	// Then
 	assert.NoError(t, err)

@@ -23,12 +23,12 @@ func (e *missingDeviceErr) Error() string {
 	return fmt.Sprintf("device (%s) with runtime (%s) is not yet created", e.name, e.runtimeID)
 }
 
-func newMissingRuntimeErr(platform, version string, availableRuntimes []deviceRuntime) error {
+func newMissingRuntimeErr(platform, version string, availableRuntimes []DeviceRuntime) error {
 	runtimeList := prettyRuntimeList(availableRuntimes)
 	return fmt.Errorf("%s %s is not installed. Choose one of the available %s runtimes: \n%s", platform, version, platform, runtimeList)
 }
 
-func prettyRuntimeList(runtimes []deviceRuntime) string {
+func prettyRuntimeList(runtimes []DeviceRuntime) string {
 	var items []string
 	for _, runtime := range runtimes {
 		items = append(items, fmt.Sprintf("- %s", runtime.Name))

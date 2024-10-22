@@ -23,23 +23,23 @@ func Test_deviceFinder_parseDeviceList(t *testing.T) {
 		commandFactory: commandFactory,
 	}
 
-	got, err := d.parseDeviceList()
+	got, err := d.ParseDeviceList()
 	require.NoError(t, err)
 
-	wantDeviceTypes := []deviceType{
+	wantDeviceTypes := []DeviceType{
 		{
 			Name:          "iPhone 6s",
 			Identifier:    "com.apple.CoreSimulator.SimDeviceType.iPhone-6s",
 			ProductFamily: "iPhone",
 		},
 	}
-	wantRuntimes := []deviceRuntime{{
+	wantRuntimes := []DeviceRuntime{{
 		Identifier:  "com.apple.CoreSimulator.SimRuntime.iOS-16-0",
 		Platform:    "iOS",
 		Version:     "16.0",
 		IsAvailable: true,
 		Name:        "iOS 16.0",
-		SupportedDeviceTypes: []deviceType{
+		SupportedDeviceTypes: []DeviceType{
 			{Name: "iPhone 8", Identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-8", ProductFamily: "iPhone"},
 			{Name: "iPhone 8 Plus", Identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-8-Plus", ProductFamily: "iPhone"},
 			{Name: "iPhone X", Identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-X", ProductFamily: "iPhone"},
@@ -81,7 +81,7 @@ func Test_deviceFinder_parseDeviceList(t *testing.T) {
 			{Name: "iPad mini (6th generation)", Identifier: "com.apple.CoreSimulator.SimDeviceType.iPad-mini-6th-generation", ProductFamily: "iPad"},
 		},
 	}}
-	wantDevices := map[string][]device{
+	wantDevices := map[string][]Device{
 		"com.apple.CoreSimulator.SimRuntime.iOS-16-0": {{
 			Name:           "iPhone 11",
 			TypeIdentifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-11",

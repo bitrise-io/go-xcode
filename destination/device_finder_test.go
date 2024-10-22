@@ -86,8 +86,8 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "iPhone 8",
 			},
 			want: Device{
-				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				Status:   "Shutdown",
+				UDID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				State:    "Shutdown",
 				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
@@ -103,8 +103,8 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "iPhone 8",
 			},
 			want: Device{
-				ID:       "3F9A1206-31E2-417B-BBC7-6330B52B8358",
-				Status:   "Shutdown",
+				UDID:     "3F9A1206-31E2-417B-BBC7-6330B52B8358",
+				State:    "Shutdown",
 				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
@@ -120,8 +120,8 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Arch:     "x86_64",
 			},
 			want: Device{
-				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				Status:   "Shutdown",
+				UDID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				State:    "Shutdown",
 				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
@@ -146,8 +146,8 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "Bitrise iOS default",
 			},
 			want: Device{
-				ID:       "20FDD0DF-0369-43FF-98E6-DBB8C820341E",
-				Status:   "Shutdown",
+				UDID:     "20FDD0DF-0369-43FF-98E6-DBB8C820341E",
+				State:    "Shutdown",
 				Type:     "iPhone 6s",
 				Platform: "iOS Simulator",
 				Name:     "Bitrise iOS default",
@@ -162,8 +162,8 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "Bitrise iOS default",
 			},
 			want: Device{
-				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				Status:   "Shutdown",
+				UDID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				State:    "Shutdown",
 				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
@@ -196,8 +196,8 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "iPhone 8",
 			},
 			want: Device{
-				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				Status:   "Shutdown",
+				UDID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				State:    "Shutdown",
 				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
@@ -212,8 +212,8 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "iPhone 8",
 			},
 			want: Device{
-				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				Status:   "Shutdown",
+				UDID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				State:    "Shutdown",
 				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
@@ -228,8 +228,8 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "iPhone 8",
 			},
 			want: Device{
-				ID:       "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				Status:   "Shutdown",
+				UDID:     "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
+				State:    "Shutdown",
 				Type:     "iPhone 8",
 				Platform: "iOS Simulator",
 				Name:     "iPhone 8",
@@ -244,8 +244,8 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 				Name:     "Apple Watch Series 7 - 45mm",
 			},
 			want: Device{
-				ID:       "4F40330B-622F-4B44-8918-0BBE62720CC4",
-				Status:   "Shutdown",
+				UDID:     "4F40330B-622F-4B44-8918-0BBE62720CC4",
+				State:    "Shutdown",
 				Type:     "Apple Watch Series 7 - 45mm",
 				Platform: "watchOS Simulator",
 				Name:     "Apple Watch Series 7 - 45mm",
@@ -291,7 +291,7 @@ func Test_deviceFinder_FindDevice_realXcrun(t *testing.T) {
 	})
 
 	require.NoError(t, err)
-	require.NotEmpty(t, got.ID)
+	require.NotEmpty(t, got.UDID)
 
 	t.Logf("got: %+v", got)
 }

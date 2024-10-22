@@ -13,6 +13,12 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
+type DeviceList struct {
+	DeviceTypes []DeviceType        `json:"deviceTypes"`
+	Runtimes    []DeviceRuntime     `json:"runtimes"`
+	Devices     map[string][]Device `json:"devices"`
+}
+
 /*
 	  "devicetypes" : [{
 	  "productFamily" : "iPhone",
@@ -26,7 +32,7 @@ import (
 	  "name" : "iPhone 11"
 	}, ... ]
 */
-type deviceType struct {
+type DeviceType struct {
 	Name          string `json:"name"`
 	Identifier    string `json:"identifier"`
 	ProductFamily string `json:"productFamily"`
@@ -53,13 +59,13 @@ type deviceType struct {
 	        }, ... ],
 		}, ... ]
 */
-type deviceRuntime struct {
+type DeviceRuntime struct {
 	Identifier           string       `json:"identifier"`
 	Platform             string       `json:"platform"`
 	Version              string       `json:"version"`
 	IsAvailable          bool         `json:"isAvailable"`
 	Name                 string       `json:"name"`
-	SupportedDeviceTypes []deviceType `json:"supportedDeviceTypes"`
+	SupportedDeviceTypes []DeviceType `json:"supportedDeviceTypes"`
 }
 
 /*
@@ -91,19 +97,28 @@ type deviceRuntime struct {
 	      }, ... ]
 	  }
 */
-type device struct {
+type Device struct {
 	Name              string `json:"name"`
 	TypeIdentifier    string `json:"deviceTypeIdentifier"`
 	IsAvailable       bool   `json:"isAvailable,omitempty"`
 	AvailabilityError string `json:"availabilityError,omitempty"`
 	UDID              string `json:"udid"`
 	State             string `json:"state"`
+
+	Type     string
+	Platform string
+	OS       string
+	Arch     string
 }
 
-type deviceList struct {
-	DeviceTypes []deviceType        `json:"deviceTypes"`
-	Runtimes    []deviceRuntime     `json:"runtimes"`
-	Devices     map[string][]device `json:"devices"`
+// XcodebuildDestination returns the required xcodebuild -destination flag value for a device
+func (d Device) XcodebuildDestination() string {
+	// `arch` doesn't seem to work together with `id`
+	if d.Arch == "" {
+		return fmt.Sprintf("id=%s", d.UDID)
+	}
+
+	return fmt.Sprintf("platform=%s,name=%s,OS=%s,arch=%s", d.Platform, d.Name, d.OS, d.Arch)
 }
 
 func (d deviceFinder) createDevice(name, deviceTypeID, runtimeID string) error {
@@ -138,8 +153,8 @@ func (d deviceFinder) debugDeviceList() error {
 	return listCmd.Run()
 }
 
-func (d deviceFinder) parseDeviceList() (*deviceList, error) {
-	var list deviceList
+func (d deviceFinder) ParseDeviceList() (*DeviceList, error) {
+	var list DeviceList
 
 	// Retry gathering device information since xcrun simctl list can fail to show the complete device list
 	// Originally added in https://github.com/bitrise-steplib/steps-xcode-test/pull/155
@@ -179,7 +194,7 @@ func (d deviceFinder) parseDeviceList() (*deviceList, error) {
 			return fmt.Errorf("no available device found")
 		}
 	}); err != nil {
-		return &deviceList{}, err
+		return &DeviceList{}, err
 	}
 
 	return &list, nil
@@ -213,15 +228,12 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 				continue
 			}
 
-			return Device{
-				ID:       device.UDID,
-				Status:   device.State,
-				Type:     d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier),
-				Platform: wantedPlatform,
-				Name:     device.Name,
-				OS:       runtime.Version,
-				Arch:     wantedDestination.Arch,
-			}, nil
+			device.Type = d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier)
+			device.Platform = wantedPlatform
+			device.OS = runtime.Version
+			device.Arch = wantedDestination.Arch
+
+			return device, nil
 		}
 	}
 
@@ -232,15 +244,12 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 				continue
 			}
 
-			return Device{
-				ID:       device.UDID,
-				Status:   device.State,
-				Type:     d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier),
-				Platform: wantedPlatform,
-				Name:     device.Name,
-				OS:       runtime.Version,
-				Arch:     wantedDestination.Arch,
-			}, nil
+			device.Type = d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier)
+			device.Platform = wantedPlatform
+			device.OS = runtime.Version
+			device.Arch = wantedDestination.Arch
+
+			return device, nil
 		}
 	}
 
@@ -293,8 +302,8 @@ func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Versio
 	return true
 }
 
-func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion string) (deviceRuntime, error) {
-	var runtimesOfPlatform []deviceRuntime
+func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion string) (DeviceRuntime, error) {
+	var runtimesOfPlatform []DeviceRuntime
 
 	for _, runtime := range d.list.Runtimes {
 		if !runtime.IsAvailable {
@@ -329,31 +338,31 @@ func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion st
 
 	if len(runtimesOfPlatform) == 0 {
 		if wantedPlatform == string(IOS) {
-			return deviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, IOSSimulator)
+			return DeviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, IOSSimulator)
 		}
 		if wantedPlatform == string(WatchOS) {
-			return deviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, WatchOSSimulator)
+			return DeviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, WatchOSSimulator)
 		}
 		if wantedPlatform == string(TvOS) {
-			return deviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, TvOSSimulator)
+			return DeviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, TvOSSimulator)
 		}
 		if wantedPlatform == string(VisionOS) {
-			return deviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, VisionOSSimulator)
+			return DeviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, VisionOSSimulator)
 		}
-		return deviceRuntime{}, fmt.Errorf("no runtime installed for platform %s", wantedPlatform)
+		return DeviceRuntime{}, fmt.Errorf("no runtime installed for platform %s", wantedPlatform)
 	}
 
 	wantLatest := wantedVersion == "latest"
 	if wantLatest {
 		var (
 			latestVersion *version.Version
-			latestRuntime deviceRuntime = runtimesOfPlatform[0]
+			latestRuntime DeviceRuntime = runtimesOfPlatform[0]
 		)
 
 		for _, runtime := range runtimesOfPlatform {
 			runtimeVersion, err := version.NewVersion(runtime.Version)
 			if err != nil {
-				return deviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
+				return DeviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
 			}
 
 			if !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
@@ -371,13 +380,13 @@ func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion st
 
 	semanticVersion, err := version.NewVersion(wantedVersion)
 	if err != nil {
-		return deviceRuntime{}, fmt.Errorf("invalid Simulator version (%s) provided: %w", wantedVersion, err)
+		return DeviceRuntime{}, fmt.Errorf("invalid Simulator version (%s) provided: %w", wantedVersion, err)
 	}
 
 	for _, runtime := range runtimesOfPlatform {
 		runtimeVersion, err := version.NewVersion(runtime.Version)
 		if err != nil {
-			return deviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
+			return DeviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
 		}
 
 		runtimeSegments := runtimeVersion.Segments()
@@ -392,10 +401,10 @@ func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion st
 		}
 	}
 
-	return deviceRuntime{}, newMissingRuntimeErr(wantedPlatform, wantedVersion, runtimesOfPlatform)
+	return DeviceRuntime{}, newMissingRuntimeErr(wantedPlatform, wantedVersion, runtimesOfPlatform)
 }
 
-func (r deviceRuntime) isDeviceSupported(wantedDeviceIdentifier string) bool {
+func (r DeviceRuntime) isDeviceSupported(wantedDeviceIdentifier string) bool {
 	if len(r.SupportedDeviceTypes) != 0 {
 		for _, d := range r.SupportedDeviceTypes {
 			if d.Identifier == wantedDeviceIdentifier {
