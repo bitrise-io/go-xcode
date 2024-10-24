@@ -40,6 +40,7 @@ func NewDeviceFinder(log log.Logger, commandFactory command.Factory, xcodeVersio
 	}
 }
 
+// ListDevices ...
 func (d deviceFinder) ListDevices() (*DeviceList, error) {
 	var list DeviceList
 
