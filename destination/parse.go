@@ -108,10 +108,10 @@ type Device struct {
 	UDID              string `json:"udid"`
 	State             string `json:"state"`
 
-	Type     string
-	Platform string
-	OS       string
-	Arch     string
+	Type     string `json:"-"`
+	Platform string `json:"-"`
+	OS       string `json:"-"`
+	Arch     string `json:"-"`
 }
 
 // XcodebuildDestination returns the required xcodebuild -destination flag value for a device
