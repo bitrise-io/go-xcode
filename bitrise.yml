@@ -27,6 +27,9 @@ workflows:
         - path: ./_integration_tests
     - go-list: { }
     - go-test: { }
+    - change-workdir:
+        inputs:
+        - path: ".."
 
   e2e:
     steps:
