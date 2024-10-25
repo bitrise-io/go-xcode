@@ -8,6 +8,11 @@ workflows:
     - integration_test
     - e2e
 
+  check:
+    after_run:
+      - test
+      - integration_test
+
   test:
     steps:
     - git::https://github.com/bitrise-steplib/steps-check.git:
@@ -29,7 +34,7 @@ workflows:
     - go-test: { }
     - change-workdir:
         inputs:
-        - path: ".."
+        - path: ..
 
   e2e:
     steps:
