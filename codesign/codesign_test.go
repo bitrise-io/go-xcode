@@ -83,6 +83,18 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 			want:              codeSigningBitriseAPIKey,
 			wantErr:           true,
 		},
+		{
+			name: "Enterprise API Key",
+			credentials: devportalservice.Credentials{
+				APIKey: &devportalservice.APIKeyConnection{
+					EnterpriseAccount: true,
+				},
+			},
+			XcodeMajorVersion: 16,
+			project:           newMockProject(true, nil),
+			want:              codeSigningBitriseAPIKey,
+			wantErr:           false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

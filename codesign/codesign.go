@@ -271,6 +271,10 @@ func (m *Manager) selectCodeSigningStrategy(credentials devportalservice.Credent
 		return codeSigningBitriseAPIKey, "Using Bitrise-managed code signing assets with API key because 'xcodebuild -allowProvisioningUpdates' with API authentication requires Xcode 13 or higher.", nil
 	}
 
+	if credentials.APIKey.EnterpriseAccount {
+		return codeSigningBitriseAPIKey, "Using Bitrise-managed code signing assets with API key because 'xcodebuild -allowProvisioningUpdates' for Enterprise Program is not yet supported.", nil
+	}
+
 	isManaged, err := m.detailsProvider.IsSigningManagedAutomatically()
 	if err != nil {
 		return codeSigningBitriseAPIKey, manualProfilesReason, err
