@@ -9,8 +9,8 @@ import (
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
+	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 	"github.com/stretchr/testify/require"
 )
 

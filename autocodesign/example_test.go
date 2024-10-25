@@ -1,7 +1,6 @@
 package autocodesign_test
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
@@ -9,8 +8,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/appleauth"
-	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/codesignasset"
@@ -19,6 +16,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/v2/codesign"
+	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 )
 
 type config struct {
@@ -50,22 +48,18 @@ func Example() {
 		panic(err)
 	}
 
-	var authSource appleauth.Source
+	var authType codesign.AuthType
 	switch authClientType {
 	case codesign.APIKeyAuth:
-		authSource = &appleauth.ConnectionAPIKeySource{}
+		authType = codesign.APIKeyAuth
 	case codesign.AppleIDAuth:
-		authSource = &appleauth.ConnectionAppleIDFastlaneSource{}
+		authType = codesign.AppleIDAuth
 	default:
 		panic("missing implementation")
 	}
 
-	authConfig, err := appleauth.Select(connection, []appleauth.Source{authSource}, appleauth.Inputs{})
+	authConfig, err := codesign.SelectConnectionCredentials(authType, connection, codesign.ConnectionOverrideInputs{}, logger)
 	if err != nil {
-		if errors.Is(err, &appleauth.MissingAuthConfigError{}) {
-			panic("Apple Service connection is unset")
-		}
-
 		panic(fmt.Sprintf("could not select Apple authentication credentials: %s", err))
 	}
 

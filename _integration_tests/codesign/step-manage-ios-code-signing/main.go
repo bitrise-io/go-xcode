@@ -12,6 +12,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/v2/codesign"
+	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 
 	"github.com/bitrise-io/go-steputils/v2/export"
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
@@ -20,7 +21,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
 	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-io/go-xcode/devportalservice"
 )
 
 func failf(logger log.Logger, format string, args ...interface{}) {

@@ -20,8 +20,8 @@ import (
 	"github.com/bitrise-io/go-steputils/v2/ruby"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/v2/command"
-	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 )
 
 //go:embed spaceship
@@ -30,14 +30,14 @@ var spaceship embed.FS
 // Client ...
 type Client struct {
 	workDir    string
-	authConfig appleauth.AppleID
+	authConfig devportalservice.AppleID
 	teamID     string
 
 	cmdFactory ruby.CommandFactory
 }
 
 // NewClient ...
-func NewClient(authConfig appleauth.AppleID, teamID string, cmdFactory ruby.CommandFactory) (*Client, error) {
+func NewClient(authConfig devportalservice.AppleID, teamID string, cmdFactory ruby.CommandFactory) (*Client, error) {
 	dir, err := prepareSpaceship(cmdFactory)
 	if err != nil {
 		return nil, err
