@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/stretchr/testify/require"
 )
 
@@ -13,14 +14,16 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 	tests := []struct {
 		name string
 
-		response *http.Response
-		err      error
+		responseContent string
+		response        *http.Response
+		err             error
 
 		want    *AppleDeveloperConnection
 		wantErr bool
 	}{
 		{
-			name: "No Apple Developer Connection set for the build",
+			name:            "No Apple Developer Connection set for the build",
+			responseContent: "{}",
 			response: &http.Response{
 				StatusCode: 200,
 				Body:       io.NopCloser(strings.NewReader("{}")),
@@ -29,7 +32,8 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "No Apple Developer Connection set for the build, test devices available",
+			name:            "No Apple Developer Connection set for the build, test devices available",
+			responseContent: testDevicesResponseBody,
 			response: &http.Response{
 				StatusCode: 200,
 				Body:       io.NopCloser(strings.NewReader(testDevicesResponseBody)),
@@ -38,7 +42,8 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Apple ID-based Apple Developer Connection set for the build",
+			name:            "Apple ID-based Apple Developer Connection set for the build",
+			responseContent: testAppleIDConnectionResponseBody,
 			response: &http.Response{
 				StatusCode: 200,
 				Body:       io.NopCloser(strings.NewReader(testAppleIDConnectionResponseBody)),
@@ -47,7 +52,8 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "API key Apple Developer Connection set for the build",
+			name:            "API key Apple Developer Connection set for the build",
+			responseContent: testAPIKeyConnectionResponseBody,
 			response: &http.Response{
 				StatusCode: 200,
 				Body:       io.NopCloser(strings.NewReader(testAPIKeyConnectionResponseBody)),
@@ -56,7 +62,8 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Apple ID-based and API key Apple Developer Connection set for the build, test device available",
+			name:            "Apple ID-based and API key Apple Developer Connection set for the build, test device available",
+			responseContent: testAppleIDAndAPIKeyConnectionResponseBody,
 			response: &http.Response{
 				StatusCode: 200,
 				Body:       io.NopCloser(strings.NewReader(testAppleIDAndAPIKeyConnectionResponseBody)),
@@ -65,9 +72,24 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
+	logger := log.NewLogger()
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			c := NewBitriseClient(newMockHTTPClient(tt.response, nil), "dummy url", "dummy token")
+		// t.Run(tt.name+"_http", func(t *testing.T) {
+		// 	response :=
+		// 		&http.Response{
+		// 			StatusCode: 200,
+		// 			Body:       io.NopCloser(strings.NewReader(tt.responseContent)),
+		// 		}
+
+		// 	c := NewBitriseClient(logger, nil, newMockHTTPClient(response, nil), "dummy url", "dummy token")
+		// 	got, err := c.GetAppleDeveloperConnection()
+		// 	require.NoError(t, err)
+		// 	require.Equal(t, tt.want, got)
+		// })
+
+		t.Run(tt.name+"_file", func(t *testing.T) {
+			c := NewBitriseClient(logger, NewMockFileReader(tt.responseContent), newMockHTTPClient(tt.response, nil), "file://dummy url", "dummy token")
 			got, err := c.GetAppleDeveloperConnection()
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
@@ -104,9 +126,11 @@ func TestFastlaneLoginSession(t *testing.T) {
 			wantErr: false,
 		},
 	}
+
+	logger := log.NewLogger()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := NewBitriseClient(newMockHTTPClient(tt.response, nil), "dummy url", "dummy token")
+			c := NewBitriseClient(logger, nil, newMockHTTPClient(tt.response, nil), "dummy url", "dummy token")
 			conn, err := c.GetAppleDeveloperConnection()
 			require.NoError(t, err)
 
