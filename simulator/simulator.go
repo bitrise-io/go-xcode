@@ -106,7 +106,7 @@ func (m manager) ResetLaunchServices() error {
 
 // Boot boots Simulator in headless mode
 func (m manager) Boot(device destination.Device) error {
-	args := []string{"simctl", "boot", device.ID}
+	args := []string{"simctl", "boot", device.UDID}
 	if device.Arch != "" {
 		args = append(args, fmt.Sprintf("--arch=%s", device.Arch))
 	}
