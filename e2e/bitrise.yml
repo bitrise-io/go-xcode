@@ -255,8 +255,8 @@ workflows:
         run_if: |-
           {{ enveq "INSTALL_PODS" "true" }}
         title: CocoaPods install
-    - path::./:
-        title: Step Test
+    - path::./e2e/step-manage-ios-code-signing:
+        title: Dev Version of manage code signing
         run_if: "true"
         inputs:
         - apple_service_connection: $CONNECTION
@@ -330,28 +330,6 @@ workflows:
         - scheme: $BITRISE_SCHEME
         - configuration: Debug
         - log_formatter: xcodebuild
-
-  _expose_xcode_version:
-    steps:
-    - script:
-        title: Expose Xcode major version
-        inputs:
-        - content: |-
-            #!/bin/env bash
-            set -e
-            if [[ ! -z "$XCODE_MAJOR_VERSION" ]]; then
-              echo "Xcode major version already exposed: $XCODE_MAJOR_VERSION"
-              exit 0
-            fi
-            version=`xcodebuild -version`
-            regex="Xcode ([0-9]*)."
-            if [[ ! $version =~ $regex ]]; then
-              echo "Failed to determine Xcode major version"
-              exit 1
-            fi
-            xcode_major_version=${BASH_REMATCH[1]}
-            echo "Xcode major version: $xcode_major_version"
-            envman add --key XCODE_MAJOR_VERSION --value $xcode_major_version
 
   _restore_api_envs:
     steps:
