@@ -68,7 +68,7 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 		})
 
 		t.Run(tt.name+"_file", func(t *testing.T) {
-			c := NewBitriseClient(logger, NewMockFileReader(tt.responseContent), nil, "file://dummy url", "dummy token")
+			c := NewBitriseClient(logger, newMockFileReader(tt.responseContent), nil, "file://dummy url", "dummy token")
 			got, err := c.GetAppleDeveloperConnection()
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
