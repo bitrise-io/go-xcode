@@ -29,9 +29,10 @@ var spaceship embed.FS
 
 // Client ...
 type Client struct {
-	workDir    string
-	authConfig devportalservice.AppleID
-	teamID     string
+	workDir        string
+	authConfig     devportalservice.AppleID
+	teamID         string
+	isNoSleepRetry bool
 
 	cmdFactory ruby.CommandFactory
 }
@@ -116,7 +117,9 @@ func (c *Client) runSpaceshipCommand(subCommand string, opts ...string) (string,
 			log.Debugf(spaceshipErr.Error())
 			log.TWarnf("spaceship command failed with a retryable error, retrying (%d. attempt)...", i)
 
-			time.Sleep(time.Duration(i) * time.Minute)
+			if !c.isNoSleepRetry {
+				time.Sleep(time.Duration(i) * time.Minute)
+			}
 		} else {
 			return "", spaceshipErr
 		}

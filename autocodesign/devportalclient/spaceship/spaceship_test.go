@@ -27,7 +27,8 @@ func Test_runSpaceshipCommand_retries_on_temporarily_unavailable_error(t *testin
 	cmdFactory.On("CreateBundleExec", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(cmd)
 
 	c := &Client{
-		cmdFactory: cmdFactory,
+		cmdFactory:     cmdFactory,
+		isNoSleepRetry: true,
 	}
 	out, err := c.runSpaceshipCommand("")
 	require.NoError(t, err)
