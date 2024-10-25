@@ -9,9 +9,9 @@ workflows:
     - e2e
 
   check:
-    after_run:
-      - test
-      - integration_test
+    before_run:
+    - test
+    - integration_test
 
   test:
     steps:
