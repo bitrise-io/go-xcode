@@ -70,12 +70,11 @@ type AppleDeveloperConnectionProvider interface {
 
 // BitriseClient implements AppleDeveloperConnectionProvider through the Bitrise.io API.
 type BitriseClient struct {
-	log                     log.Logger
-	filemanager             fileutil.FileManager
-	httpClient              httpClient
-	buildURL, buildAPIToken string
+	log         log.Logger
+	filemanager fileutil.FileManager
+	httpClient  httpClient
 
-	// readBytesFromFile func(pth string) ([]byte, error)
+	buildURL, buildAPIToken string
 }
 
 // NewBitriseClient creates a new instance of BitriseClient.

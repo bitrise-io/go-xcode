@@ -15,7 +15,6 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 		name string
 
 		responseContent string
-		response        *http.Response
 		err             error
 
 		want    *AppleDeveloperConnection
@@ -24,72 +23,52 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 		{
 			name:            "No Apple Developer Connection set for the build",
 			responseContent: "{}",
-			response: &http.Response{
-				StatusCode: 200,
-				Body:       io.NopCloser(strings.NewReader("{}")),
-			},
-			want:    &AppleDeveloperConnection{},
-			wantErr: false,
+			want:            &AppleDeveloperConnection{},
+			wantErr:         false,
 		},
 		{
 			name:            "No Apple Developer Connection set for the build, test devices available",
 			responseContent: testDevicesResponseBody,
-			response: &http.Response{
-				StatusCode: 200,
-				Body:       io.NopCloser(strings.NewReader(testDevicesResponseBody)),
-			},
-			want:    &testConnectionOnlyDevices,
-			wantErr: false,
+			want:            &testConnectionOnlyDevices,
+			wantErr:         false,
 		},
 		{
 			name:            "Apple ID-based Apple Developer Connection set for the build",
 			responseContent: testAppleIDConnectionResponseBody,
-			response: &http.Response{
-				StatusCode: 200,
-				Body:       io.NopCloser(strings.NewReader(testAppleIDConnectionResponseBody)),
-			},
-			want:    &testConnectionWithAppleIDConnection,
-			wantErr: false,
+			want:            &testConnectionWithAppleIDConnection,
+			wantErr:         false,
 		},
 		{
 			name:            "API key Apple Developer Connection set for the build",
 			responseContent: testAPIKeyConnectionResponseBody,
-			response: &http.Response{
-				StatusCode: 200,
-				Body:       io.NopCloser(strings.NewReader(testAPIKeyConnectionResponseBody)),
-			},
-			want:    &testConnectionWithAPIKeyConnection,
-			wantErr: false,
+			want:            &testConnectionWithAPIKeyConnection,
+			wantErr:         false,
 		},
 		{
 			name:            "Apple ID-based and API key Apple Developer Connection set for the build, test device available",
 			responseContent: testAppleIDAndAPIKeyConnectionResponseBody,
-			response: &http.Response{
-				StatusCode: 200,
-				Body:       io.NopCloser(strings.NewReader(testAppleIDAndAPIKeyConnectionResponseBody)),
-			},
-			want:    &testConnectionWithAppleIDAndAPIKeyConnection,
-			wantErr: false,
+			want:            &testConnectionWithAppleIDAndAPIKeyConnection,
+			wantErr:         false,
 		},
 	}
 
 	logger := log.NewLogger()
 	for _, tt := range tests {
-		// t.Run(tt.name+"_http", func(t *testing.T) {
-		// 	response :=
-		// 		&http.Response{
-		// 			StatusCode: 200,
-		// 			Body:       io.NopCloser(strings.NewReader(tt.responseContent)),
-		// 		}
+		t.Run(tt.name+"_http", func(t *testing.T) {
+			response :=
+				&http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(strings.NewReader(tt.responseContent)),
+				}
 
-		// 	c := NewBitriseClient(logger, nil, newMockHTTPClient(response, nil), "dummy url", "dummy token")
-		// 	got, err := c.GetAppleDeveloperConnection()
-		// 	require.NoError(t, err)
-		// 	require.Equal(t, tt.want, got)
-		// })
+			c := NewBitriseClient(logger, nil, newMockHTTPClient(response, nil), "dummy url", "dummy token")
+			got, err := c.GetAppleDeveloperConnection()
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
 
 		t.Run(tt.name+"_file", func(t *testing.T) {
-			c := NewBitriseClient(logger, NewMockFileReader(tt.responseContent), newMockHTTPClient(tt.response, nil), "file://dummy url", "dummy token")
+			c := NewBitriseClient(logger, NewMockFileReader(tt.responseContent), nil, "file://dummy url", "dummy token")
 			got, err := c.GetAppleDeveloperConnection()
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got)
