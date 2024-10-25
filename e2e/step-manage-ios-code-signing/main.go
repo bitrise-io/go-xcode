@@ -24,11 +24,6 @@ import (
 	"github.com/bitrise-io/go-xcode/certificateutil"
 )
 
-func failf(logger log.Logger, format string, args ...interface{}) {
-	logger.Errorf(format, args...)
-	os.Exit(1)
-}
-
 func downloadCertificates(certDownloader autocodesign.CertificateProvider, logger log.Logger) ([]certificateutil.CertificateInfoModel, error) {
 	certificates, err := certDownloader.GetCertificates()
 	if err != nil {
@@ -51,7 +46,7 @@ func downloadCertificates(certDownloader autocodesign.CertificateProvider, logge
 
 func main() {
 	logger := log.NewLogger()
-	step := NewStep(logger)
+	step := newStep(logger)
 	err := step.run()
 
 	if err != nil {
@@ -66,7 +61,7 @@ type step struct {
 	exporter   export.Exporter
 }
 
-func NewStep(logger log.Logger) step {
+func newStep(logger log.Logger) step {
 	cmdFactory := command.NewFactory(env.NewRepository())
 	exporter := export.NewExporter(cmdFactory)
 
