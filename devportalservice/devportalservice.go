@@ -12,8 +12,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-utils/v2/log"
 )
 
 const appleDeveloperConnectionPath = "apple_developer_portal_data.json"
@@ -71,19 +71,21 @@ type AppleDeveloperConnectionProvider interface {
 
 // BitriseClient implements AppleDeveloperConnectionProvider through the Bitrise.io API.
 type BitriseClient struct {
-	httpClient              httpClient
-	buildURL, buildAPIToken string
+	log         log.Logger
+	filemanager fileutil.FileManager
+	httpClient  httpClient
 
-	readBytesFromFile func(pth string) ([]byte, error)
+	buildURL, buildAPIToken string
 }
 
 // NewBitriseClient creates a new instance of BitriseClient.
-func NewBitriseClient(client httpClient, buildURL, buildAPIToken string) *BitriseClient {
+func NewBitriseClient(logger log.Logger, filemanager fileutil.FileManager, client httpClient, buildURL, buildAPIToken string) *BitriseClient {
 	return &BitriseClient{
-		httpClient:        client,
-		buildURL:          buildURL,
-		buildAPIToken:     buildAPIToken,
-		readBytesFromFile: fileutil.ReadBytesFromFile,
+		log:           logger,
+		filemanager:   filemanager,
+		httpClient:    client,
+		buildURL:      buildURL,
+		buildAPIToken: buildAPIToken,
 	}
 }
 
@@ -97,6 +99,15 @@ func privateKeyWithHeader(privateKey string) string {
 		privateKey,
 		"\n-----END PRIVATE KEY-----",
 	)
+}
+
+func (c *BitriseClient) readBytesFromFile(filepath string) ([]byte, error) {
+	reader, err := c.filemanager.OpenReaderIfExists(filepath)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return io.ReadAll(reader)
 }
 
 // GetAppleDeveloperConnection fetches the Bitrise.io Apple Developer connection.
@@ -164,7 +175,7 @@ func (c *BitriseClient) download() ([]byte, error) {
 	// The client must close the response body when finished with it
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
-			log.Warnf("Failed to close response body: %s", cerr)
+			c.log.Warnf("Failed to close response body: %s", cerr)
 		}
 	}()
 
