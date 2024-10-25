@@ -57,10 +57,6 @@ type_tags:
 
 run_if: .IsCI
 
-toolkit:
-  go:
-    package_name: github.com/bitrise-steplib/bitrise-step-manage-ios-code-signing
-
 inputs:
 - apple_service_connection: api-key
   opts:

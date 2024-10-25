@@ -242,7 +242,7 @@ workflows:
     - script:
         inputs:
         - content: |-
-            #!/bin/bash
+            #!/bin/env bash
             set -ex
             rm -rf "./_tmp"
             mkdir -p "./_tmp"
@@ -255,6 +255,14 @@ workflows:
         run_if: |-
           {{ enveq "INSTALL_PODS" "true" }}
         title: CocoaPods install
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/env bash
+            cd ./e2e/step-manage-ios-code-signing
+            # Workarounfd for Bitrise CLI error
+            # command `/usr/local/go/bin/go "build" "-mod=vendor" "-o" "/Users/lpusok/.bitrise/toolkits/go/cache/path-._e2e_step-manage-ios-code-signing"` failed, output: go: cannot load module ../.. listed in go.work file: open ../../go.mod: no such file or directory
+            # go work vendor
     - path::./e2e/step-manage-ios-code-signing:
         title: Dev Version of manage code signing
         run_if: "true"
