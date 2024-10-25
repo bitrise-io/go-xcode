@@ -6,6 +6,7 @@ workflows:
     before_run:
     - test
     - integration_test
+    - e2e
 
   test:
     steps:
@@ -26,3 +27,9 @@ workflows:
         - path: ./_integration_tests
     - go-list: { }
     - go-test: { }
+
+  e2e:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-check.git:
+        inputs:
+        - workflow: e2e

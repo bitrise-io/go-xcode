@@ -18,6 +18,7 @@ import (
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
 	"github.com/bitrise-io/go-xcode/certificateutil"
@@ -126,10 +127,10 @@ func (s step) run() error {
 		return err
 	}
 
+	devPortalClientFactory := devportalclient.NewFactory(logger, fileutil.NewFileManager())
 	var connection *devportalservice.AppleDeveloperConnection
 	if cfg.BuildURL != "" && cfg.BuildAPIToken != "" {
-		f := devportalclient.NewFactory(logger)
-		connection, err = f.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken)
+		connection, err = devPortalClientFactory.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken)
 		if err != nil {
 			return err
 		}
@@ -154,7 +155,6 @@ func (s step) run() error {
 		return fmt.Errorf("failed to initialize keychain: %s", err)
 	}
 
-	devPortalClientFactory := devportalclient.NewFactory(logger)
 	certDownloader := certdownloader.NewDownloader(codesignConfig.CertificatesAndPassphrases, retryhttp.NewClient(logger).StandardClient())
 	assetWriter := codesignasset.NewWriter(*keychain)
 	localCodesignAssetManager := localcodesignasset.NewManager(localcodesignasset.NewProvisioningProfileProvider(), localcodesignasset.NewProvisioningProfileConverter())
