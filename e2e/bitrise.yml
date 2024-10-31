@@ -222,7 +222,7 @@ workflows:
         - repository_url: https://github.com/bitrise-io/sample-apps-ios-simple-objc.git
         - branch: bundle_id
         - clone_into_dir: ./_tmp
-    - path::./:
+    - path::./e2e/step-manage-ios-code-signing:
         title: Step Test
         inputs:
         - apple_service_connection: api-key
