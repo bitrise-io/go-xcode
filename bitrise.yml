@@ -3,7 +3,7 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 workflows:
   # legacy PR WF, noop in current branch, as moved to unified-ci
-  ci: {}
+  ci: { }
 
   check:
     before_run:
