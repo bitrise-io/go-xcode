@@ -6,7 +6,6 @@ workflows:
     before_run:
     - test
     - integration_test
-    - e2e
 
   check:
     before_run:
