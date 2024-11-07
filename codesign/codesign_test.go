@@ -10,11 +10,10 @@ import (
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/appleauth"
 	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/codesign/mocks"
+	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +22,7 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 	tests := []struct {
 		name                   string
 		project                DetailsProvider
-		credentials            appleauth.Credentials
+		credentials            devportalservice.Credentials
 		XcodeMajorVersion      int
 		minDaysProfileValidity int
 		want                   codeSigningStrategy
@@ -31,15 +30,15 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 	}{
 		{
 			name: "Apple ID",
-			credentials: appleauth.Credentials{
-				AppleID: &appleauth.AppleID{},
+			credentials: devportalservice.Credentials{
+				AppleID: &devportalservice.AppleID{},
 			},
 			project: newMockProject(false, nil),
 			want:    codeSigningBitriseAppleID,
 		},
 		{
 			name: "API Key, Xcode 12",
-			credentials: appleauth.Credentials{
+			credentials: devportalservice.Credentials{
 				APIKey: &devportalservice.APIKeyConnection{},
 			},
 			XcodeMajorVersion: 12,
@@ -48,7 +47,7 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 		},
 		{
 			name: "API Key, Xcode 13, Manual signing",
-			credentials: appleauth.Credentials{
+			credentials: devportalservice.Credentials{
 				APIKey: &devportalservice.APIKeyConnection{},
 			},
 			XcodeMajorVersion: 13,
@@ -57,7 +56,7 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 		},
 		{
 			name: "API Key, Xcode 13, Xcode managed signing, custom features",
-			credentials: appleauth.Credentials{
+			credentials: devportalservice.Credentials{
 				APIKey: &devportalservice.APIKeyConnection{},
 			},
 			XcodeMajorVersion: 13,
@@ -66,7 +65,7 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 		},
 		{
 			name: "API Key, Xcode 13, Xcode managed signing, no custom features",
-			credentials: appleauth.Credentials{
+			credentials: devportalservice.Credentials{
 				APIKey: &devportalservice.APIKeyConnection{},
 			},
 			XcodeMajorVersion:      13,
@@ -76,13 +75,25 @@ func Test_manager_selectCodeSigningStrategy(t *testing.T) {
 		},
 		{
 			name: "API Key, Xcode 13, can not determine if project automtic",
-			credentials: appleauth.Credentials{
+			credentials: devportalservice.Credentials{
 				APIKey: &devportalservice.APIKeyConnection{},
 			},
 			XcodeMajorVersion: 13,
 			project:           newMockProject(true, errors.New("")),
 			want:              codeSigningBitriseAPIKey,
 			wantErr:           true,
+		},
+		{
+			name: "Enterprise API Key",
+			credentials: devportalservice.Credentials{
+				APIKey: &devportalservice.APIKeyConnection{
+					EnterpriseAccount: true,
+				},
+			},
+			XcodeMajorVersion: 16,
+			project:           newMockProject(true, nil),
+			want:              codeSigningBitriseAPIKey,
+			wantErr:           false,
 		},
 	}
 	for _, tt := range tests {
@@ -220,7 +231,7 @@ func TestSelectConnectionCredentials(t *testing.T) {
 		authType          AuthType
 		bitriseConnection *devportalservice.AppleDeveloperConnection
 		inputs            ConnectionOverrideInputs
-		want              appleauth.Credentials
+		want              devportalservice.Credentials
 		wantErr           bool
 	}{
 		{
@@ -240,7 +251,7 @@ func TestSelectConnectionCredentials(t *testing.T) {
 				DuplicatedTestDevices: []devportalservice.TestDevice{},
 			},
 			inputs: testNoInputs,
-			want: appleauth.Credentials{
+			want: devportalservice.Credentials{
 				AppleID: nil,
 				APIKey:  &testAPIKeyConnection,
 			},
@@ -267,7 +278,7 @@ func TestSelectConnectionCredentials(t *testing.T) {
 				DuplicatedTestDevices: nil,
 			},
 			inputs: testInputs,
-			want: appleauth.Credentials{
+			want: devportalservice.Credentials{
 				AppleID: nil,
 				APIKey: &devportalservice.APIKeyConnection{
 					KeyID:      "TestKeyIDFromInput",
@@ -286,7 +297,7 @@ func TestSelectConnectionCredentials(t *testing.T) {
 				DuplicatedTestDevices: []devportalservice.TestDevice{},
 			},
 			inputs: testInputs,
-			want: appleauth.Credentials{
+			want: devportalservice.Credentials{
 				AppleID: nil,
 				APIKey: &devportalservice.APIKeyConnection{
 					KeyID:      "TestKeyIDFromInput",
@@ -324,8 +335,8 @@ func TestSelectConnectionCredentials(t *testing.T) {
 				DuplicatedTestDevices: nil,
 			},
 			inputs: testInputs,
-			want: appleauth.Credentials{
-				AppleID: &appleauth.AppleID{
+			want: devportalservice.Credentials{
+				AppleID: &devportalservice.AppleID{
 					Username:            "test@bitrise.io",
 					Password:            "testpw",
 					Session:             "",
@@ -344,8 +355,8 @@ func TestSelectConnectionCredentials(t *testing.T) {
 				DuplicatedTestDevices: nil,
 			},
 			inputs: testNoInputs,
-			want: appleauth.Credentials{
-				AppleID: &appleauth.AppleID{
+			want: devportalservice.Credentials{
+				AppleID: &devportalservice.AppleID{
 					Username:            "test@bitrise.io",
 					Password:            "testpw",
 					Session:             "",

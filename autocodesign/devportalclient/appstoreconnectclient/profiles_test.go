@@ -88,7 +88,7 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 		On("PostProfilesSuccess", mock.AnythingOfType("*http.Request")).
 		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
 
-	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"))
+	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"), false)
 	profileClient := NewProfileClient(client)
 	bundleID := appstoreconnect.BundleID{
 		Attributes: appstoreconnect.BundleIDAttributes{Identifier: "io.bitrise.testapp"},
@@ -133,9 +133,9 @@ func (c *MockClient) Do(req *http.Request) (*http.Response, error) {
 		}
 		// After deleting the expired profile, creating a new one succeed
 		return c.PostProfilesSuccess(req)
-	case req.URL.Path == "/v1//bundleID/capabilities" && req.Method == "GET":
+	case req.URL.Path == "/v1/bundleID/capabilities" && req.Method == "GET":
 		return c.GetBundleIDCapabilities(req)
-	case req.URL.Path == "/v1//bundleID/profiles" && req.Method == "GET":
+	case req.URL.Path == "/v1/bundleID/profiles" && req.Method == "GET":
 		return c.GetBundleIDProfiles(req)
 	case req.URL.Path == "/v1/profiles/1" && req.Method == "DELETE":
 		return c.DeleteProfiles(req)

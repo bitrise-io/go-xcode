@@ -9,8 +9,8 @@ import (
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
+	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 	"github.com/stretchr/testify/require"
 )
 
@@ -210,16 +210,17 @@ func Test_ParseConnectionOverrideConfig(t *testing.T) {
 	keyIssuerID := "   ABC456 "
 
 	// When
-	connection, err := parseConnectionOverrideConfig(stepconf.Secret(path), keyID, keyIssuerID, log.NewLogger())
+	connection, err := parseConnectionOverrideConfig(stepconf.Secret(path), keyID, keyIssuerID, true, log.NewLogger())
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	// Then
 	expected := devportalservice.APIKeyConnection{
-		KeyID:      "ABC123",
-		IssuerID:   "ABC456",
-		PrivateKey: fileContent,
+		KeyID:             "ABC123",
+		IssuerID:          "ABC456",
+		PrivateKey:        fileContent,
+		EnterpriseAccount: true,
 	}
 	require.Equal(t, expected, *connection)
 }

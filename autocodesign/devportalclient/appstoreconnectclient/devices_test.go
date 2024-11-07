@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/devportalservice"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -39,7 +39,7 @@ func TestDeviceClient_RegisterDevice_WhenInvaludUUID(t *testing.T) {
 		},
 	})
 
-	client := appstoreconnect.NewClient(&mockClient, "keyID", "issueID", []byte("privateKey"))
+	client := appstoreconnect.NewClient(&mockClient, "keyID", "issueID", []byte("privateKey"), false)
 	deviceClient := NewDeviceClient(client)
 
 	got, err := deviceClient.RegisterDevice(devportalservice.TestDevice{
