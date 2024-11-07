@@ -3,11 +3,11 @@ module github.com/bitrise-io/go-xcode/v2
 go 1.20
 
 require (
-	github.com/bitrise-io/go-steputils v1.0.6
-	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.35
-	github.com/bitrise-io/go-utils v1.0.13
+	github.com/bitrise-io/go-steputils v1.0.5
+	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.18
+	github.com/bitrise-io/go-utils v1.0.12
 	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.23
-	github.com/bitrise-io/go-xcode v1.1.2-0.20241021091717-e6ebe7ad2c74
+	github.com/bitrise-io/go-xcode v1.1.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-querystring v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.7.7

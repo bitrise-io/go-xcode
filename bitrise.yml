@@ -2,9 +2,6 @@ format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 workflows:
-  # legacy PR WF, noop in current branch, as moved to unified-ci
-  ci: { }
-
   check:
     before_run:
     - test
@@ -32,9 +29,3 @@ workflows:
     - change-workdir:
         inputs:
         - path: ..
-
-  e2e:
-    steps:
-    - git::https://github.com/bitrise-steplib/steps-check.git:
-        inputs:
-        - workflow: e2e
