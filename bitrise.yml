@@ -4,8 +4,8 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 workflows:
   check:
     before_run:
-    - test
     - integration_test
+    - test
 
   test:
     steps:

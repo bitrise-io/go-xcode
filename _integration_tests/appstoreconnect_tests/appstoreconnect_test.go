@@ -1,7 +1,6 @@
-package appstoreconnect_test
+package appstoreconnect_tests
 
 import (
-	"os"
 	"testing"
 
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
@@ -9,13 +8,7 @@ import (
 )
 
 func TestListBundleIDs(t *testing.T) {
-	keyID := os.Getenv("TEST_KEY_ID")
-	require.NotEmpty(t, keyID)
-	issuerID := os.Getenv("TEST_ISSUER_ID")
-	require.NotEmpty(t, issuerID)
-	privateKey := os.Getenv("TEST_PRIVATE_KEY")
-	require.NotEmpty(t, privateKey)
-	enterpriseAccount := os.Getenv("TEST_ENTERPRISE_ACCOUNT") == "true"
+	keyID, issuerID, privateKey, enterpriseAccount := getAPIKey(t)
 
 	client := appstoreconnect.NewClient(appstoreconnect.NewRetryableHTTPClient(), keyID, issuerID, []byte(privateKey), enterpriseAccount)
 
