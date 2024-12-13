@@ -203,7 +203,7 @@ func Test_ParseConnectionOverrideConfig(t *testing.T) {
 	fileContent := "this is a private key"
 	err := os.WriteFile(path, []byte(fileContent), 0666)
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	keyID := " ABC123   "
@@ -212,7 +212,7 @@ func Test_ParseConnectionOverrideConfig(t *testing.T) {
 	// When
 	connection, err := parseConnectionOverrideConfig(stepconf.Secret(path), keyID, keyIssuerID, true, log.NewLogger())
 	if err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 	// Then

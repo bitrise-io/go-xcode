@@ -217,7 +217,7 @@ func TestSelectConnectionCredentials(t *testing.T) {
 	localKeyPath := filepath.Join(t.TempDir(), "key.p8")
 	err := os.WriteFile(localKeyPath, []byte("private key contents"), 0700)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	testInputs := ConnectionOverrideInputs{
 		APIKeyPath:     stepconf.Secret(localKeyPath),
