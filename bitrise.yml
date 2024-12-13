@@ -9,7 +9,7 @@ workflows:
 
   test:
     steps:
-    - git::https://github.com/bitrise-steplib/steps-check.git@upgrade-golangci-lint:
+    - git::https://github.com/bitrise-steplib/steps-check.git:
         title: Lint
         inputs:
         - workflow: lint
