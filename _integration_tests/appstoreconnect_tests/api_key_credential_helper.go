@@ -5,8 +5,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/retryhttp"
 	"github.com/bitrise-io/go-xcode/v2/_integration_tests"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,7 +56,9 @@ func getRemoteAPIKey(t *testing.T) (string, string, []byte, bool) {
 	keyDownloadURL, err := bucketAccessor.GetExpiringURL(keyURL)
 	require.NoError(t, err)
 
-	client := retryablehttp.NewClient()
+	logger := log.NewLogger()
+	logger.EnableDebugLog(false)
+	client := retryhttp.NewClient(logger)
 	resp, err := client.Get(keyDownloadURL)
 	require.NoError(t, err)
 

@@ -4,12 +4,12 @@ default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 workflows:
   check:
     before_run:
-    - integration_test
     - test
+    - integration_test
 
   test:
     steps:
-    - git::https://github.com/bitrise-steplib/steps-check.git:
+    - git::https://github.com/bitrise-steplib/steps-check.git@upgrade-golangci-lint:
         title: Lint
         inputs:
         - workflow: lint
