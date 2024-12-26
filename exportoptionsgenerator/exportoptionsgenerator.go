@@ -381,6 +381,16 @@ func addTeamID(exportOpts exportoptions.ExportOptions, teamID string) exportopti
 	return exportOpts
 }
 
+func addTestFlightInternalTestingOnly(exportOpts exportoptions.ExportOptions, testFlightInternalTestingOnly bool) exportoptions.ExportOptions {
+	switch options := exportOpts.(type) {
+	case exportoptions.AppStoreOptionsModel:
+		options.TestFlightInternalTestingOnly = testFlightInternalTestingOnly // Only available for app-store exports
+		return options
+	}
+
+	return exportOpts
+}
+
 func addManualSigningFields(exportOpts exportoptions.ExportOptions, codeSignGroup *export.IosCodeSignGroup, archivedWithXcodeManagedProfiles bool, logger log.Logger) exportoptions.ExportOptions {
 	exportCodeSignStyle := ""
 	exportProfileMapping := map[string]string{}
