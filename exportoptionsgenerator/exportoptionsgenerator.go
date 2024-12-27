@@ -56,6 +56,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	archivedWithXcodeManagedProfiles bool,
 	codeSigningStyle exportoptions.SigningStyle,
 	xcodeMajorVersion int64,
+	testFlightInternalTestingOnly bool,
 ) (exportoptions.ExportOptions, error) {
 	mainTargetBundleID, entitlementsByBundleID, err := g.applicationTargetsAndEntitlements(exportMethod)
 	if err != nil {
@@ -89,6 +90,10 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 		}
 
 		exportOpts = addManualSigningFields(exportOpts, codeSignGroup, archivedWithXcodeManagedProfiles, g.logger)
+	}
+
+	if testFlightInternalTestingOnly {
+		exportOpts = addTestFlightInternalTestingOnly(exportOpts, testFlightInternalTestingOnly)
 	}
 
 	return exportOpts, nil

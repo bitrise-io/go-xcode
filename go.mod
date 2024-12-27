@@ -8,6 +8,7 @@ require (
 	github.com/bitrise-io/go-utils v1.0.12
 	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.23
 	github.com/bitrise-io/go-xcode v1.1.1
+	//github.com/naveen-bitrise/go-xcode b765cb4fdc9f35643bae857f6389f3c0479327cb
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-querystring v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
@@ -32,3 +33,5 @@ require (
 	golang.org/x/term v0.11.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+//replace github.com/bitrise-io/go-xcode v1.1.1 => github.com/naveen-bitrise/go-xcode v1.1.1
