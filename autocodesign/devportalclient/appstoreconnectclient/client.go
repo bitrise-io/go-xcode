@@ -14,7 +14,6 @@ type Client struct {
 	*CertificateSource
 	*DeviceClient
 	*ProfileClient
-	Client *appstoreconnect.Client
 }
 
 // NewAPIDevPortalClient ...
@@ -24,6 +23,5 @@ func NewAPIDevPortalClient(client *appstoreconnect.Client) autocodesign.DevPorta
 		CertificateSource: NewCertificateSource(client),
 		DeviceClient:      NewDeviceClient(client),
 		ProfileClient:     NewProfileClient(client),
-		Client:            client,
 	}
 }

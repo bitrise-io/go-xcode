@@ -13,7 +13,6 @@ import (
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
-	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnectclient"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
@@ -237,12 +236,6 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		if finalAssets != nil {
 			codesignAssetsByDistributionType[distrType] = *finalAssets
 		}
-	}
-
-	if appStoreConnectClient, ok := m.devPortalClient.(*appstoreconnectclient.Client); ok {
-		reqNum := appStoreConnectClient.Client.ReqNum()
-		log.Donef("Number of App Store Connect API requests made: %d", reqNum)
-
 	}
 
 	return codesignAssetsByDistributionType, nil
