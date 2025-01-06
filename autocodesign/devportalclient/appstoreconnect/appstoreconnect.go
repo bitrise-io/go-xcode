@@ -238,6 +238,9 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 		}
 	}
 
+	c.reqNum++
+	log.Donef("Request #%d: %s %s", c.reqNum, req.Method, req.URL.String())
+
 	resp, err := c.client.Do(req)
 
 	c.Debugf("Response:")
@@ -256,8 +259,6 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 		}
 	}()
 
-	c.reqNum++
-
 	if err := checkResponse(resp); err != nil {
 		return resp, err
 	}
@@ -273,11 +274,6 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	}
 
 	return resp, err
-}
-
-// ReqNum returns the number of requests made by the client so far.
-func (c *Client) ReqNum() int {
-	return c.reqNum
 }
 
 // PagingOptions ...
