@@ -79,14 +79,19 @@ func NewRetryableHTTPClient() *http.Client {
 		}
 
 		if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
-			message := "Received HTTP 429 (Too Many Requests)"
-			retryAfter := resp.Header.Get("Retry-After")
-			if retryAfter != "" {
-				message += ", retrying request in " + retryAfter + " seconds..."
-			} else {
-				message += ", retrying request..."
+			message := "Received HTTP 429 Too Many Requests"
+			if rateLimit := resp.Header.Get("X-Rate-Limit"); rateLimit != "" {
+				message += " (" + rateLimit + ")"
 			}
+
+			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+				message += ", retrying the request in " + retryAfter + " seconds..."
+			} else {
+				message += ", retrying the request..."
+			}
+
 			log.Warnf(message)
+
 			return true, nil
 		}
 
