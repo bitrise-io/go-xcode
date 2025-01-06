@@ -53,6 +53,7 @@ type service struct {
 // Client communicate with the Apple API
 type Client struct {
 	EnableDebugLogs bool
+	reqNum          int
 
 	keyID             string
 	issuerID          string
@@ -255,6 +256,8 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 		}
 	}()
 
+	c.reqNum++
+
 	if err := checkResponse(resp); err != nil {
 		return resp, err
 	}
@@ -270,6 +273,11 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	}
 
 	return resp, err
+}
+
+// ReqNum returns the number of requests made by the client so far.
+func (c *Client) ReqNum() int {
+	return c.reqNum
 }
 
 // PagingOptions ...
