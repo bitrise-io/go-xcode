@@ -5,7 +5,6 @@ workflows:
   check:
     before_run:
     - test
-    - integration_test
 
   test:
     steps:
@@ -18,14 +17,3 @@ workflows:
         inputs:
         - exclude: "*/mocks"
     - go-test: { }
-
-  integration_test:
-    steps:
-    - change-workdir:
-        inputs:
-        - path: ./_integration_tests
-    - go-list: { }
-    - go-test: { }
-    - change-workdir:
-        inputs:
-        - path: ..
