@@ -167,13 +167,14 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 	logger.EnableDebugLog(true)
 
 	tests := []struct {
-		name                 string
-		generatorFactory     func() ExportOptionsGenerator
-		exportMethod         exportoptions.Method
-		containerEnvironment string
-		xcodeVersion         int64
-		want                 string
-		wantErr              bool
+		name                          string
+		generatorFactory              func() ExportOptionsGenerator
+		exportMethod                  exportoptions.Method
+		containerEnvironment          string
+		xcodeVersion                  int64
+		testFlightInternalTestingOnly bool
+		want                          string
+		wantErr                       bool
 	}{
 		{
 			name:         "Default development exportOptions",
@@ -266,11 +267,43 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 	</dict>
 </plist>`,
 		},
+		{
+			name:                          "When exporting for TestFlight internal testing only",
+			exportMethod:                  exportoptions.MethodAppStore,
+			xcodeVersion:                  15,
+			testFlightInternalTestingOnly: true,
+			generatorFactory: func() ExportOptionsGenerator {
+				applicationTarget := givenApplicationTarget(nil)
+				xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget})
+				scheme := givenScheme(applicationTarget)
+
+				g := New(&xcodeProj, &scheme, "", logger)
+				g.targetInfoProvider = MockTargetInfoProvider{
+					bundleID: map[string]string{"Application": bundleID},
+				}
+
+				return g
+			},
+			want: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>manageAppVersionAndBuildNumber</key>
+		<false/>
+		<key>method</key>
+		<string>app-store</string>
+		<key>teamID</key>
+		<string>TEAM123</string>
+		<key>testFlightInternalTestingOnly</key>
+		<true/>
+	</dict>
+</plist>`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Act
-			gotOpts, err := tt.generatorFactory().GenerateApplicationExportOptions(tt.exportMethod, tt.containerEnvironment, teamID, true, true, false, exportoptions.SigningStyleAutomatic, tt.xcodeVersion)
+			gotOpts, err := tt.generatorFactory().GenerateApplicationExportOptions(tt.exportMethod, tt.containerEnvironment, teamID, true, true, false, exportoptions.SigningStyleAutomatic, tt.xcodeVersion, tt.testFlightInternalTestingOnly)
 
 			// Assert
 			require.NoError(t, err)
@@ -372,7 +405,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, tt.xcodeVersion)
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, tt.xcodeVersion, true)
 
 			// Assert
 			require.NoError(t, err)
@@ -442,7 +475,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, tt.xcodeVersion)
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, tt.xcodeVersion, true)
 
 			// Assert
 			require.NoError(t, err)
