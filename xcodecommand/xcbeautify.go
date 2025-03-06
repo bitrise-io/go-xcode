@@ -52,6 +52,7 @@ func (c *XcbeautifyRunner) Run(workDir string, xcodebuildArgs []string, xcbeauti
 		Stdin:  pipeReader,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
+		Env:    xcodeCommandEnvs,
 	})
 
 	defer func() {
