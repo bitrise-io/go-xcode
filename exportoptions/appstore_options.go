@@ -12,7 +12,8 @@ type AppStoreOptionsModel struct {
 	BundleIDProvisioningProfileMapping map[string]string
 	SigningCertificate                 string
 	InstallerSigningCertificate        string
-	SigningStyle                       string
+	SigningStyle                       SigningStyle
+	Destination                        Destination
 	ICloudContainerEnvironment         ICloudContainerEnvironment
 	DistributionBundleIdentifier       string
 
@@ -21,14 +22,17 @@ type AppStoreOptionsModel struct {
 	UploadSymbols bool
 	// Should Xcode manage the app's build number when uploading to App Store Connect? Defaults to YES.
 	ManageAppVersion bool
+
+	TestFlightInternalTestingOnly bool
 }
 
 // NewAppStoreOptions ...
 func NewAppStoreOptions() AppStoreOptionsModel {
 	return AppStoreOptionsModel{
-		UploadBitcode:    UploadBitcodeDefault,
-		UploadSymbols:    UploadSymbolsDefault,
-		ManageAppVersion: manageAppVersionDefault,
+		UploadBitcode:                 UploadBitcodeDefault,
+		UploadSymbols:                 UploadSymbolsDefault,
+		ManageAppVersion:              manageAppVersionDefault,
+		TestFlightInternalTestingOnly: TestFlightInternalTestingOnlyDefault,
 	}
 }
 
@@ -39,12 +43,15 @@ func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	if options.TeamID != "" {
 		hash[TeamIDKey] = options.TeamID
 	}
+	//nolint:gosimple
 	if options.UploadBitcode != UploadBitcodeDefault {
 		hash[UploadBitcodeKey] = options.UploadBitcode
 	}
+	//nolint:gosimple
 	if options.UploadSymbols != UploadSymbolsDefault {
 		hash[UploadSymbolsKey] = options.UploadSymbols
 	}
+	//nolint:gosimple
 	if options.ManageAppVersion != manageAppVersionDefault {
 		hash[manageAppVersionKey] = options.ManageAppVersion
 	}
@@ -65,6 +72,13 @@ func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	}
 	if options.SigningStyle != "" {
 		hash[SigningStyleKey] = options.SigningStyle
+	}
+	if options.Destination != "" {
+		hash[DestinationKey] = options.Destination
+	}
+	//nolint:gosimple
+	if options.TestFlightInternalTestingOnly != TestFlightInternalTestingOnlyDefault {
+		hash[TestFlightInternalTestingOnlyKey] = options.TestFlightInternalTestingOnly
 	}
 	return hash
 }

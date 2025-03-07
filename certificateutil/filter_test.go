@@ -60,7 +60,7 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 	if err != nil {
 		t.Errorf("init: failed to generate certificate, error: %s", err)
 	}
-	earlierValidCertInfo := NewCertificateInfo(*latestValidCert, earlierValidCert)
+	earlierValidCertInfo := NewCertificateInfo(*earlierValidCert, privateKey)
 	t.Logf("Test certificate generated: %s", earlierValidCertInfo)
 
 	invalidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, invalidExpiry)

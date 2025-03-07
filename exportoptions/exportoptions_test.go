@@ -111,6 +111,7 @@ func TestNewAppStoreOptions(t *testing.T) {
 		options := NewAppStoreOptions()
 		require.Equal(t, UploadBitcodeDefault, options.UploadBitcode)
 		require.Equal(t, UploadSymbolsDefault, options.UploadSymbols)
+		require.Equal(t, TestFlightInternalTestingOnlyDefault, options.TestFlightInternalTestingOnly)
 	}
 }
 
@@ -136,9 +137,10 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 		options.UploadBitcode = false
 		options.UploadSymbols = false
 		options.ManageAppVersion = false
+		options.TestFlightInternalTestingOnly = true
 
 		hash := options.Hash()
-		require.Equal(t, 5, len(hash))
+		require.Equal(t, 6, len(hash))
 
 		{
 			value, ok := hash[MethodKey]
@@ -164,6 +166,11 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 			value, ok := hash[manageAppVersionKey]
 			require.True(t, ok)
 			require.Equal(t, false, value)
+		}
+		{
+			value, ok := hash[TestFlightInternalTestingOnlyKey]
+			require.True(t, ok)
+			require.Equal(t, true, value)
 		}
 	}
 }

@@ -66,6 +66,7 @@ func Test_GivenNewlyGeneratedWorkspaceWithAutocreateSchemesDisabled_WhenListingS
 	require.NoError(t, err)
 
 	schemesByContainer, err := workspace.Schemes()
+	require.NoError(t, err)
 	require.Equal(t, 0, len(schemesByContainer))
 }
 

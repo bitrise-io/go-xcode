@@ -21,15 +21,15 @@ const EmbedOnDemandResourcesAssetPacksInBundleDefault = true
 // ICloudContainerEnvironmentKey ...
 const ICloudContainerEnvironmentKey = "iCloudContainerEnvironment"
 
+// ICloudContainerEnvironment ...
+type ICloudContainerEnvironment string
+
 const (
 	// ICloudContainerEnvironmentDevelopment ...
 	ICloudContainerEnvironmentDevelopment ICloudContainerEnvironment = "Development"
 	// ICloudContainerEnvironmentProduction ...
 	ICloudContainerEnvironmentProduction ICloudContainerEnvironment = "Production"
 )
-
-// ICloudContainerEnvironment ...
-type ICloudContainerEnvironment string
 
 // DistributionBundleIdentifier ...
 const DistributionBundleIdentifier = "distributionBundleIdentifier"
@@ -84,6 +84,9 @@ func (manifest Manifest) ToHash() map[string]string {
 
 const MethodKey = "method"
 
+// Method ...
+type Method string
+
 const (
 	// MethodAppStore is deprecated since Xcode 15.3, its new name is MethodAppStoreConnect
 	MethodAppStore Method = "app-store"
@@ -106,9 +109,6 @@ const (
 	// MethodDefault ...
 	MethodDefault Method = MethodDevelopment
 )
-
-// Method ...
-type Method string
 
 // ParseMethod ...
 func ParseMethod(method string) (Method, error) {
@@ -194,3 +194,25 @@ const InstallerSigningCertificateKey = "installerSigningCertificate"
 
 // SigningStyleKey ...
 const SigningStyleKey = "signingStyle"
+
+// SigningStyle ...
+type SigningStyle string
+
+// SigningStyle ...
+const (
+	SigningStyleManual    SigningStyle = "manual"
+	SigningStyleAutomatic SigningStyle = "automatic"
+)
+
+const DestinationKey = "destination"
+
+const TestFlightInternalTestingOnlyDefault = false
+const TestFlightInternalTestingOnlyKey = "testFlightInternalTestingOnly"
+
+type Destination string
+
+// Destination ...
+const (
+	DestinationExport  Destination = "export"
+	DestinationDefault Destination = DestinationExport
+)

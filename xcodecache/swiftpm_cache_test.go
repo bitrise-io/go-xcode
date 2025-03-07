@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -50,40 +49,14 @@ func TestCollectSwiftPackages(t *testing.T) {
 		t.Skip("Skipping integration test as -short flag is set.")
 	}
 
-	tempDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatalf("setup: failed to create temp dir, error: %s", err)
-	}
-	defer func() {
-		if err := os.RemoveAll(tempDir); err != nil {
-			log.Warnf("failed to remove temp dir, error: %s", err)
-		}
-	}()
-
+	tempDir := t.TempDir()
 	actualProjectDir := path.Join(tempDir, "project")
 	if err := os.Mkdir(actualProjectDir, os.ModePerm); err != nil {
 		t.Fatalf("setup: failed to create cache dir: %s", err)
 	}
 
-	checkoutDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatalf("setup: failed to create temp dir, error: %s", err)
-	}
-	defer func() {
-		if err := os.RemoveAll(checkoutDir); err != nil {
-			log.Warnf("failed to remove temp dir, error: %s", err)
-		}
-	}()
-
-	cacheTempDir, err := ioutil.TempDir("", "")
-	if err != nil {
-		t.Fatalf("setup: failed to create temp dir, error: %s", err)
-	}
-	defer func() {
-		if err := os.RemoveAll(cacheTempDir); err != nil {
-			log.Warnf("failed to remove temp dir, error: %s", err)
-		}
-	}()
+	checkoutDir := t.TempDir()
+	cacheTempDir := t.TempDir()
 
 	cacheDir := path.Join(cacheTempDir, "cache")
 	if err := os.Mkdir(cacheDir, os.ModePerm); err != nil {
