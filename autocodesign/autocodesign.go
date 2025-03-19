@@ -172,7 +172,7 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 
 	var devPortalDeviceIDs []string
 	var devPortalDeviceUDIDs []string
-	if DistributionTypeRequiresDeviceList(distrTypes) {
+	if DistributionTypeRequiresDeviceList(distrTypes) && opts.DistributionType != Enterprise {
 		devPortalDevices, err := EnsureTestDevices(m.devPortalClient, opts.BitriseTestDevices, appLayout.Platform)
 		if err != nil {
 			return nil, fmt.Errorf("failed to ensure test devices: %w", err)
