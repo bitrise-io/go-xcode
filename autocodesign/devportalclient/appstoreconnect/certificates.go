@@ -57,9 +57,9 @@ type CertificatesResponse struct {
 
 // ListCertificates ...
 func (s ProvisioningService) ListCertificates(opt *ListCertificatesOptions) (*CertificatesResponse, error) {
-	if err := opt.UpdateCursor(); err != nil {
-		return nil, err
-	}
+	// if err := opt.UpdateCursor(); err != nil {
+	// 	return nil, err
+	// }
 
 	u, err := addOptions(CertificatesEndpoint, opt)
 	if err != nil {
@@ -98,9 +98,9 @@ func (s ProvisioningService) FetchCertificate(serialNumber string) (Certificate,
 
 // Certificates ...
 func (s ProvisioningService) Certificates(relationshipLink string, opt *PagingOptions) (*CertificatesResponse, error) {
-	if err := opt.UpdateCursor(); err != nil {
-		return nil, err
-	}
+	// if err := opt.UpdateCursor(); err != nil {
+	// 	return nil, err
+	// }
 
 	u, err := addOptions(relationshipLink, opt)
 	if err != nil {

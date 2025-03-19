@@ -280,17 +280,17 @@ type PagingOptions struct {
 }
 
 // UpdateCursor ...
-func (opt *PagingOptions) UpdateCursor() error {
-	if opt != nil && opt.Next != "" {
-		u, err := url.Parse(opt.Next)
-		if err != nil {
-			return err
-		}
-		cursor := u.Query().Get("cursor")
-		opt.Cursor = cursor
-	}
-	return nil
-}
+// func (opt *PagingOptions) UpdateCursor() error {
+// 	if opt != nil && opt.Next != "" {
+// 		u, err := url.Parse(opt.Next)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		cursor := u.Query().Get("cursor")
+// 		opt.Cursor = cursor
+// 	}
+// 	return nil
+// }
 
 // addOptions adds the parameters in opt as URL query parameters to s. opt
 // must be a struct whose fields may contain "url" tags.

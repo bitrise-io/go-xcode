@@ -131,9 +131,9 @@ type ProfilesResponse struct {
 
 // ListProfiles ...
 func (s ProvisioningService) ListProfiles(opt *ListProfilesOptions) (*ProfilesResponse, error) {
-	if err := opt.UpdateCursor(); err != nil {
-		return nil, err
-	}
+	// if err := opt.UpdateCursor(); err != nil {
+	// 	return nil, err
+	// }
 
 	u, err := addOptions(ProfilesEndpoint, opt)
 	if err != nil {
@@ -276,9 +276,9 @@ func (s ProvisioningService) DeleteProfile(id string) error {
 
 // Profiles fetches provisioning profiles pointed by a relationship URL.
 func (s ProvisioningService) Profiles(relationshipLink string, opt *PagingOptions) (*ProfilesResponse, error) {
-	if err := opt.UpdateCursor(); err != nil {
-		return nil, err
-	}
+	// if err := opt.UpdateCursor(); err != nil {
+	// 	return nil, err
+	// }
 
 	u, err := addOptions(relationshipLink, opt)
 	if err != nil {
