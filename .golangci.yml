@@ -1,10 +1,8 @@
-run:
-  skip-dirs:
-  - .*/mocks
-
 issues:
   # https://github.com/golangci/golangci-lint/issues/2439
   exclude-use-default: false
+  exclude-dirs:
+  - .*/mocks
 
 linters:
   enable:
