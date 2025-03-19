@@ -78,9 +78,19 @@ type DeviceResponse struct {
 
 // ListDevices ...
 func (s ProvisioningService) ListDevices(opt *ListDevicesOptions) (*DevicesResponse, error) {
-	// if err := opt.UpdateCursor(); err != nil {
-	// 	return nil, err
-	// }
+	if opt.Next != "" {
+		req, err := s.client.NewRequestWithRelationshipURL(http.MethodGet, opt.Next, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		r := &DevicesResponse{}
+		if _, err := s.client.Do(req, r); err != nil {
+			return nil, err
+		}
+
+		return r, nil
+	}
 
 	u, err := addOptions(DevicesEndpoint, opt)
 	if err != nil {
@@ -135,9 +145,19 @@ func (s ProvisioningService) RegisterNewDevice(body DeviceCreateRequest) (*Devic
 
 // Devices ...
 func (s ProvisioningService) Devices(relationshipLink string, opt *PagingOptions) (*DevicesResponse, error) {
-	// if err := opt.UpdateCursor(); err != nil {
-	// 	return nil, err
-	// }
+	if opt.Next != "" {
+		req, err := s.client.NewRequestWithRelationshipURL(http.MethodGet, opt.Next, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		r := &DevicesResponse{}
+		if _, err := s.client.Do(req, r); err != nil {
+			return nil, err
+		}
+
+		return r, nil
+	}
 
 	u, err := addOptions(relationshipLink, opt)
 	if err != nil {

@@ -57,9 +57,19 @@ type CertificatesResponse struct {
 
 // ListCertificates ...
 func (s ProvisioningService) ListCertificates(opt *ListCertificatesOptions) (*CertificatesResponse, error) {
-	// if err := opt.UpdateCursor(); err != nil {
-	// 	return nil, err
-	// }
+	if opt.Next != "" {
+		req, err := s.client.NewRequestWithRelationshipURL(http.MethodGet, opt.Next, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		r := &CertificatesResponse{}
+		if _, err := s.client.Do(req, r); err != nil {
+			return nil, err
+		}
+
+		return r, nil
+	}
 
 	u, err := addOptions(CertificatesEndpoint, opt)
 	if err != nil {
@@ -98,9 +108,19 @@ func (s ProvisioningService) FetchCertificate(serialNumber string) (Certificate,
 
 // Certificates ...
 func (s ProvisioningService) Certificates(relationshipLink string, opt *PagingOptions) (*CertificatesResponse, error) {
-	// if err := opt.UpdateCursor(); err != nil {
-	// 	return nil, err
-	// }
+	if opt.Next != "" {
+		req, err := s.client.NewRequestWithRelationshipURL(http.MethodGet, opt.Next, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		r := &CertificatesResponse{}
+		if _, err := s.client.Do(req, r); err != nil {
+			return nil, err
+		}
+
+		return r, err
+	}
 
 	u, err := addOptions(relationshipLink, opt)
 	if err != nil {

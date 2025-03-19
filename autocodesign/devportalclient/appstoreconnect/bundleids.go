@@ -62,9 +62,19 @@ type BundleIdsResponse struct {
 
 // ListBundleIDs ...
 func (s ProvisioningService) ListBundleIDs(opt *ListBundleIDsOptions) (*BundleIdsResponse, error) {
-	// if err := opt.UpdateCursor(); err != nil {
-	// 	return nil, err
-	// }
+	if opt.Next != "" {
+		req, err := s.client.NewRequestWithRelationshipURL(http.MethodGet, opt.Next, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		r := &BundleIdsResponse{}
+		if _, err := s.client.Do(req, r); err != nil {
+			return nil, err
+		}
+
+		return r, err
+	}
 
 	u, err := addOptions(BundleIDsEndpoint, opt)
 	if err != nil {
