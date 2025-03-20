@@ -48,6 +48,13 @@ func (p APIProfile) CertificateIDs() ([]string, error) {
 			},
 		)
 		if err != nil {
+			var apiError *appstoreconnect.ErrorResponse
+			if ok := errors.As(err, &apiError); ok {
+				if apiError.IsCursorInvalid() {
+					log.Warnf("Cursor is invalid, falling back to listing certificates with 200 limit")
+					return p.list200CertificateIDs()
+				}
+			}
 			return nil, wrapInProfileError(err)
 		}
 
@@ -59,8 +66,32 @@ func (p APIProfile) CertificateIDs() ([]string, error) {
 		}
 	}
 
-	ids := []string{}
+	var ids []string
 	for _, cert := range certificates {
+		ids = append(ids, cert.ID)
+	}
+
+	return ids, nil
+}
+
+// CertificateIDs ...
+func (p APIProfile) list200CertificateIDs() ([]string, error) {
+	response, err := p.client.Provisioning.Certificates(
+		p.profile.Relationships.Certificates.Links.Related,
+		&appstoreconnect.PagingOptions{
+			Limit: 200,
+		},
+	)
+	if err != nil {
+		return nil, wrapInProfileError(err)
+	}
+
+	if response.Meta.Paging.Total > 200 {
+		log.Warnf("More than 200 certificates (%d) found", response.Meta.Paging.Total)
+	}
+
+	var ids []string
+	for _, cert := range response.Data {
 		ids = append(ids, cert.ID)
 	}
 
