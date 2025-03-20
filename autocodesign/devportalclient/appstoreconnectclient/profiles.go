@@ -249,6 +249,18 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 			FilterIdentifier: bundleIDIdentifier,
 		})
 		if err != nil {
+			var apiError *appstoreconnect.ErrorResponse
+			if ok := errors.As(err, &apiError); ok {
+				if apiError.IsCursorInvalid() {
+					log.Warnf("Cursor is invalid, falling back to listing bundleIDs with 400 limit")
+					fallbackBundleIDs, err := c.list400BundleIDs(bundleIDIdentifier)
+					if err != nil {
+						return nil, err
+					}
+					bundleIDs = fallbackBundleIDs
+					break
+				}
+			}
 			return nil, err
 		}
 
@@ -256,6 +268,10 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 
 		nextPageURL = response.Links.Next
 		if nextPageURL == "" {
+			break
+		}
+		if len(bundleIDs) >= response.Meta.Paging.Total {
+			log.Warnf("All bundleIDs fetched, but next page URL is not empty")
 			break
 		}
 	}
@@ -272,6 +288,42 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 		}
 	}
 	return nil, nil
+}
+
+func (c *ProfileClient) list400BundleIDs(bundleIDIdentifier string) ([]appstoreconnect.BundleID, error) {
+	bundleIDByID := map[string]appstoreconnect.BundleID{}
+	var totalCount int
+	for _, sort := range []appstoreconnect.ListBundleIDsSortOption{appstoreconnect.ListBundleIDsSortOptionID, appstoreconnect.ListBundleIDsSortOptionIDDesc} {
+		response, err := c.client.Provisioning.ListBundleIDs(&appstoreconnect.ListBundleIDsOptions{
+			PagingOptions: appstoreconnect.PagingOptions{
+				Limit: 200,
+			},
+			FilterIdentifier: bundleIDIdentifier,
+			Sort:             sort,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, responseBundleID := range response.Data {
+			bundleIDByID[responseBundleID.ID] = responseBundleID
+		}
+
+		if totalCount == 0 {
+			totalCount = response.Meta.Paging.Total
+		}
+	}
+
+	if totalCount > 0 && totalCount > 400 {
+		log.Warnf("More than 400 bundleIDs (%d) found", totalCount)
+	}
+
+	var bundleIDs []appstoreconnect.BundleID
+	for _, bundleID := range bundleIDByID {
+		bundleIDs = append(bundleIDs, bundleID)
+	}
+
+	return bundleIDs, nil
 }
 
 // CreateBundleID ...
