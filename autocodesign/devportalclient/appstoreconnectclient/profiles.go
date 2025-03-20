@@ -214,19 +214,20 @@ func (c *ProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 					for _, fallbackProfile := range fallbackProfiles {
 						if fallbackProfile.Attributes.Name == profileName {
 							profile = &fallbackProfile
-							// fix this break
-							break
+
+							return c.DeleteProfile(profile.ID)
 						}
 					}
+
+					return fmt.Errorf("failed to find profile: %s", profileName)
 				}
 			}
 			return err
 		}
 
-		for _, d := range response.Data {
-			if d.Attributes.Name == profileName {
-				profile = &d
-				break
+		for _, profile := range response.Data {
+			if profile.Attributes.Name == profileName {
+				return c.DeleteProfile(profile.ID)
 			}
 		}
 
@@ -236,11 +237,7 @@ func (c *ProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 		}
 	}
 
-	if profile == nil {
-		return fmt.Errorf("failed to find profile: %s", profileName)
-	}
-
-	return c.DeleteProfile(profile.ID)
+	return fmt.Errorf("failed to find profile: %s", profileName)
 }
 
 func (c *ProfileClient) list200Profiles(bundleID *appstoreconnect.BundleID) ([]appstoreconnect.Profile, error) {
