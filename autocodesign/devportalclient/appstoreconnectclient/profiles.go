@@ -43,7 +43,7 @@ func (p APIProfile) CertificateIDs() ([]string, error) {
 		response, err := p.client.Provisioning.Certificates(
 			p.profile.Relationships.Certificates.Links.Related,
 			&appstoreconnect.PagingOptions{
-				Limit: 20,
+				Limit: 100,
 				Next:  nextPageURL,
 			},
 		)
@@ -75,7 +75,7 @@ func (p APIProfile) DeviceIDs() ([]string, error) {
 		response, err := p.client.Provisioning.Devices(
 			p.profile.Relationships.Devices.Links.Related,
 			&appstoreconnect.PagingOptions{
-				Limit: 20,
+				Limit: 200,
 				Next:  nextPageURL,
 			},
 		)
@@ -191,7 +191,7 @@ func (c *ProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 
 	for {
 		response, err := c.client.Provisioning.Profiles(bundleID.Relationships.Profiles.Links.Related, &appstoreconnect.PagingOptions{
-			Limit: 20,
+			Limit: 100,
 			Next:  nextPageURL,
 		})
 		if err != nil {

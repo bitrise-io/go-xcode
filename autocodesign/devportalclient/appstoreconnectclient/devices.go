@@ -26,7 +26,7 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 	for {
 		response, err := d.client.Provisioning.ListDevices(&appstoreconnect.ListDevicesOptions{
 			PagingOptions: appstoreconnect.PagingOptions{
-				Limit: 20,
+				Limit: 200,
 				Next:  nextPageURL,
 			},
 			FilterUDID:     udid,
