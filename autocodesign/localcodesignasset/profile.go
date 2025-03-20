@@ -48,7 +48,7 @@ func (p Profile) CertificateIDs() ([]string, error) {
 	return p.certificateIDs, nil
 }
 
-// DeviceIDs ...
+// DeviceUDIDs ...
 func (p Profile) DeviceUDIDs() ([]string, error) {
 	return p.deviceUDIDs, nil
 }

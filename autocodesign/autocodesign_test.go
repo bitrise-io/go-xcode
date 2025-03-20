@@ -49,7 +49,7 @@ func newMockProfile(m profileArgs) Profile {
 	profile.On("BundleID").Return(func() appstoreconnect.BundleID {
 		return m.appID
 	}, nil)
-	profile.On("DeviceIDs").Return(func() []string {
+	profile.On("DeviceUDIDs").Return(func() []string {
 		return m.devices
 	}, nil)
 	profile.On("CertificateIDs").Return(func() []string {

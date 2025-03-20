@@ -67,9 +67,10 @@ type Certificate struct {
 	ID              string
 }
 
-// DeviceIDs is the opaque ID of a device, UDID is the unique identifier of a device
-// DeviceIDs are used in the Developer Portal API, UDIDs are used in the provisioning profiles
+// DeviceIDs is the opaque ID of a device (from used in the Developer Portal API)
 type DeviceIDs []string
+
+// DeviceUDIDs are used in the provisioning profiles, as unique device identifiers
 type DeviceUDIDs []string
 
 // DevPortalClient abstract away the Apple Developer Portal API
