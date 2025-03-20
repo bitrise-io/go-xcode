@@ -67,33 +67,9 @@ func (p APIProfile) CertificateIDs() ([]string, error) {
 	return ids, nil
 }
 
-// DeviceIDs ...
-func (p APIProfile) DeviceIDs() ([]string, error) {
-	var nextPageURL string
-	var ids []string
-	for {
-		response, err := p.client.Provisioning.Devices(
-			p.profile.Relationships.Devices.Links.Related,
-			&appstoreconnect.PagingOptions{
-				Limit: 20,
-				Next:  nextPageURL,
-			},
-		)
-		if err != nil {
-			return nil, wrapInProfileError(err)
-		}
-
-		for _, device := range response.Data {
-			ids = append(ids, device.ID)
-		}
-
-		nextPageURL = response.Links.Next
-		if nextPageURL == "" {
-			break
-		}
-	}
-
-	return ids, nil
+// DeviceUDIDs ...
+func (p APIProfile) DeviceUDIDs() ([]string, error) {
+	return autocodesign.ParseRawProfileDeviceUDIDs(p.profile.Attributes.ProfileContent)
 }
 
 // BundleID ...
