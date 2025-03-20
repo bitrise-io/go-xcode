@@ -39,6 +39,8 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 			var apiError *appstoreconnect.ErrorResponse
 			if ok := errors.As(err, &apiError); ok {
 				if apiError.IsCursorInvalid() {
+					log.Warnf("Cursor is invalid, falling back to listing devices with 400 limit")
+
 					return d.list400Devices(udid, platform)
 				}
 			}
@@ -49,6 +51,10 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 
 		nextPageURL = response.Links.Next
 		if nextPageURL == "" {
+			return devices, nil
+		}
+		if len(devices) >= response.Meta.Paging.Total {
+			log.Warnf("All devices fetched, but next page URL is not empty")
 			return devices, nil
 		}
 	}
