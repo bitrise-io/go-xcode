@@ -16,9 +16,22 @@ type ListBundleIDsOptions struct {
 	Include          string           `url:"include,omitempty"`
 }
 
+// PagingInformationPaging ...
+type PagingInformationPaging struct {
+	Total int `json:"total,omitempty"`
+	Limit int `json:"limit,omitempty"`
+}
+
+// PagingInformation ...
+type PagingInformation struct {
+	Paging PagingInformationPaging `json:"paging,omitempty"`
+}
+
 // PagedDocumentLinks ...
 type PagedDocumentLinks struct {
-	Next string `json:"next,omitempty"`
+	First string `json:"first,omitempty"`
+	Next  string `json:"next,omitempty"`
+	Self  string `json:"self,omitempty"`
 }
 
 // BundleIDAttributes ...
