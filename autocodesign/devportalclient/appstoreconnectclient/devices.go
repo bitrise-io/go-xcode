@@ -60,7 +60,7 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 }
 
 func (d *DeviceClient) list400Devices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
-	devicesByID := map[string]appstoreconnect.Device{}
+	var devices []appstoreconnect.Device
 	var totalCount int
 	for _, sort := range []appstoreconnect.ListDevicesSortOption{appstoreconnect.ListDevicesSortOptionID, appstoreconnect.ListDevicesSortOptionIDDesc} {
 		response, err := d.client.Provisioning.ListDevices(&appstoreconnect.ListDevicesOptions{
@@ -76,9 +76,7 @@ func (d *DeviceClient) list400Devices(udid string, platform appstoreconnect.Devi
 			return nil, err
 		}
 
-		for _, responseDevice := range response.Data {
-			devicesByID[responseDevice.ID] = responseDevice
-		}
+		devices = append(devices, response.Data...)
 
 		if totalCount == 0 {
 			totalCount = response.Meta.Paging.Total
@@ -87,11 +85,6 @@ func (d *DeviceClient) list400Devices(udid string, platform appstoreconnect.Devi
 
 	if totalCount > 0 && totalCount > 400 {
 		log.Warnf("More than 400 devices (%d) found", totalCount)
-	}
-
-	var devices []appstoreconnect.Device
-	for _, device := range devicesByID {
-		devices = append(devices, device)
 	}
 
 	return devices, nil
