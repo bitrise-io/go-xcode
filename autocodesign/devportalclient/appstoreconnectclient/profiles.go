@@ -202,6 +202,24 @@ func (c *ProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 			Next:  nextPageURL,
 		})
 		if err != nil {
+			var apiError *appstoreconnect.ErrorResponse
+			if ok := errors.As(err, &apiError); ok {
+				if apiError.IsCursorInvalid() {
+					log.Warnf("Cursor is invalid, falling back to listing profiles with 200 limit")
+					fallbackProfiles, err := c.list200Profiles(bundleID)
+					if err != nil {
+						return err
+					}
+
+					for _, fallbackProfile := range fallbackProfiles {
+						if fallbackProfile.Attributes.Name == profileName {
+							profile = &fallbackProfile
+							// fix this break
+							break
+						}
+					}
+				}
+			}
 			return err
 		}
 
@@ -223,6 +241,20 @@ func (c *ProfileClient) deleteExpiredProfile(bundleID *appstoreconnect.BundleID,
 	}
 
 	return c.DeleteProfile(profile.ID)
+}
+
+func (c *ProfileClient) list200Profiles(bundleID *appstoreconnect.BundleID) ([]appstoreconnect.Profile, error) {
+	response, err := c.client.Provisioning.Profiles(bundleID.Relationships.Profiles.Links.Related, &appstoreconnect.PagingOptions{
+		Limit: 200,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if response.Meta.Paging.Total > 200 {
+		log.Warnf("More than 200 profiles (%d) found", response.Meta.Paging.Total)
+	}
+
+	return response.Data, nil
 }
 
 func (c *ProfileClient) createProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
