@@ -40,7 +40,6 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 			if ok := errors.As(err, &apiError); ok {
 				if apiError.IsCursorInvalid() {
 					log.Warnf("Cursor is invalid, falling back to listing devices with 400 limit")
-
 					return d.list400Devices(udid, platform)
 				}
 			}
@@ -61,7 +60,7 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 }
 
 func (d *DeviceClient) list400Devices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
-	var devicesByID map[string]appstoreconnect.Device
+	devicesByID := map[string]appstoreconnect.Device{}
 	var totalCount int
 	for _, sort := range []appstoreconnect.ListDevicesSortOption{appstoreconnect.ListDevicesSortOptionID, appstoreconnect.ListDevicesSortOptionIDDesc} {
 		response, err := d.client.Provisioning.ListDevices(&appstoreconnect.ListDevicesOptions{
@@ -78,7 +77,7 @@ func (d *DeviceClient) list400Devices(udid string, platform appstoreconnect.Devi
 		}
 
 		for _, responseDevice := range response.Data {
-			devicesByID[responseDevice.Attributes.UDID] = responseDevice
+			devicesByID[responseDevice.ID] = responseDevice
 		}
 
 		if totalCount == 0 {
