@@ -29,7 +29,7 @@ func NewProfile(info profileutil.ProvisioningProfileInfoModel, content []byte) a
 		id:             "", // only in case of Developer Portal Profiles
 		bundleID:       info.BundleID,
 		certificateIDs: nil, // only in case of Developer Portal Profiles
-		deviceUDIDs:    nil, // (recheck this) only in case of Developer Portal Profiles
+		deviceUDIDs:    nil, // this is technically avaialble from the profile content, but we don't need it
 	}
 }
 
