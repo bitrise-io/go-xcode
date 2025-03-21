@@ -215,7 +215,7 @@ func profileFromModel(profileInfo profileutil.ProvisioningProfileInfoModel) auto
 		id:             "",
 		bundleID:       profileInfo.BundleID,
 		certificateIDs: nil,
-		deviceIDs:      nil,
+		deviceUDIDs:    nil,
 	}
 }
 

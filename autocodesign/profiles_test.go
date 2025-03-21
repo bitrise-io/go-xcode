@@ -4,9 +4,8 @@ import (
 	"testing"
 	"time"
 
-	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
-
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
 	"github.com/stretchr/testify/require"
 )
 
@@ -241,6 +240,60 @@ func Test_IsProfileExpired(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := isProfileExpired(tt.prof, tt.minProfileDaysValid); got != tt.want {
 				t.Errorf("checkProfileExpiry() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_checkProfileDevices(t *testing.T) {
+	tests := []struct {
+		name             string
+		profileDeviceIDs DeviceUDIDs
+		deviceUDIDs      DeviceUDIDs
+		wantErr          bool
+	}{
+		{
+			name:             "no devices",
+			profileDeviceIDs: DeviceUDIDs{},
+			deviceUDIDs:      DeviceUDIDs{},
+			wantErr:          false,
+		},
+		{
+			name: "devices present",
+			profileDeviceIDs: DeviceUDIDs{
+				"device1",
+				"device2",
+			},
+			deviceUDIDs: DeviceUDIDs{
+				"device1",
+			},
+		},
+		{
+			name: "devices present, even when casing is different",
+			profileDeviceIDs: DeviceUDIDs{
+				"00008020-008D4548007B4F26",
+				"device2",
+			},
+			deviceUDIDs: DeviceUDIDs{
+				"00008020008d4548007b4f26",
+			},
+		},
+		{
+			name: "devices not present",
+			profileDeviceIDs: DeviceUDIDs{
+				"device2",
+				"device3",
+			},
+			deviceUDIDs: DeviceUDIDs{
+				"DEVICE1",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := checkProfileDevices(tt.profileDeviceIDs, tt.deviceUDIDs); (err != nil) != tt.wantErr {
+				t.Errorf("checkProfileDevices() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
