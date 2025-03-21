@@ -3,6 +3,7 @@ package autocodesign
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -457,11 +458,25 @@ func checkProfileCertificates(profileCertificateIDs []string, certificateIDs []s
 	return nil
 }
 
-func checkProfileDevices(profileDeviceIDs DeviceUDIDs, deviceIDs DeviceUDIDs) error {
-	for _, id := range deviceIDs {
-		if !sliceutil.IsStringInSlice(id, profileDeviceIDs) {
+func validDeviceUDID(udid string) string {
+	r := regexp.MustCompile("[^a-zA-Z0-9-]")
+	return r.ReplaceAllLiteralString(udid, "")
+}
+
+func normalizeDeviceUDID(udid string) string {
+	return strings.ToLower(strings.ReplaceAll(validDeviceUDID(udid), "-", ""))
+}
+
+func checkProfileDevices(profileDeviceIDs DeviceUDIDs, deviceUDIDs DeviceUDIDs) error {
+	normalizedProfileDeviceIDs := []string{}
+	for _, d := range profileDeviceIDs {
+		normalizedProfileDeviceIDs = append(normalizedProfileDeviceIDs, normalizeDeviceUDID(d))
+	}
+
+	for _, UDID := range deviceUDIDs {
+		if !sliceutil.IsStringInSlice(normalizeDeviceUDID(UDID), normalizedProfileDeviceIDs) {
 			return NonmatchingProfileError{
-				Reason: fmt.Sprintf("device with ID (%s) not included in the profile", id),
+				Reason: fmt.Sprintf("device with UDID (%s) not included in the profile", UDID),
 			}
 		}
 	}
