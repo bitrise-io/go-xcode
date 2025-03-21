@@ -59,6 +59,7 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 	}
 }
 
+// list400Devices is used to work around a specific App Store Connect API bug
 func (d *DeviceClient) list400Devices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
 	devicesByID := map[string]appstoreconnect.Device{}
 	var totalCount int
