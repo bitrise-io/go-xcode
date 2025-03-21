@@ -271,11 +271,11 @@ func Test_checkProfileDevices(t *testing.T) {
 		{
 			name: "devices present, even when casing is different",
 			profileDeviceIDs: DeviceUDIDs{
-				"device1",
+				"00008020-008D4548007B4F26",
 				"device2",
 			},
 			deviceUDIDs: DeviceUDIDs{
-				"DEVICE1",
+				"00008020008d4548007b4f26",
 			},
 		},
 		{

@@ -463,6 +463,16 @@ func validDeviceUDID(udid string) string {
 	return r.ReplaceAllLiteralString(udid, "")
 }
 
+// Available UDIDs (for more info see https://theapplewiki.com/wiki/UDID)
+// iDevice example:
+// - 00008020-008D4548007B4F26
+// - 9f9bb1b742882152fb1746aab7db415cea979232
+// Mac example:
+// - 0D990E91-F2D3-430D-8405-A054CEF983CF
+// For comparing UDIDs, we ignore casing as did see cases when the UDIDs mismatched, when accepting freehand UDIDs on a form.
+// This should not happen when using UDIDs returned by Apple API and also when reading the UDIDs from the provisioning profile,
+// as the provisioning profile is also created by Apple, and did not see mismatches.
+// But to be on the safe side, we ignore casing and the '-' separator.
 func normalizeDeviceUDID(udid string) string {
 	return strings.ToLower(strings.ReplaceAll(validDeviceUDID(udid), "-", ""))
 }
