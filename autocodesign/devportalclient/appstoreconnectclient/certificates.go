@@ -134,8 +134,8 @@ func list400Certificates(client *appstoreconnect.Client, certificateType appstor
 		}
 	}
 
-	if totalCount > 0 && totalCount > 400 {
-		log.Warnf("More than 400 certificates (%d) found", totalCount)
+	if totalCount > 400 {
+		log.Warnf("Unable to retrieve all certificates: more than 400 certificates available (%s)", totalCount)
 	}
 
 	var certificates []appstoreconnect.Certificate

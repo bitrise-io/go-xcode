@@ -87,7 +87,7 @@ func (p APIProfile) list200CertificateIDs() ([]string, error) {
 	}
 
 	if response.Meta.Paging.Total > 200 {
-		log.Warnf("More than 200 certificates (%d) found", response.Meta.Paging.Total)
+		log.Warnf("Unable to retrieve all certificates: more than 200 certificates available (%s)", response.Meta.Paging.Total)
 	}
 
 	var ids []string
@@ -248,7 +248,7 @@ func (c *ProfileClient) list200Profiles(bundleID *appstoreconnect.BundleID) ([]a
 		return nil, err
 	}
 	if response.Meta.Paging.Total > 200 {
-		log.Warnf("More than 200 profiles (%d) found", response.Meta.Paging.Total)
+		log.Warnf("Unable to retrieve all profiles: more than 200 profiles available (%s)", response.Meta.Paging.Total)
 	}
 
 	return response.Data, nil
@@ -351,7 +351,7 @@ func (c *ProfileClient) list400BundleIDs(bundleIDIdentifier string) ([]appstorec
 	}
 
 	if totalCount > 0 && totalCount > 400 {
-		log.Warnf("More than 400 bundleIDs (%d) found", totalCount)
+		log.Warnf("Unable to retrieve all bundleIDs: more than 400 bundleIDs available (%s)", totalCount)
 	}
 
 	var bundleIDs []appstoreconnect.BundleID

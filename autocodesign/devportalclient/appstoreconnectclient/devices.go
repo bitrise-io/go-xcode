@@ -86,8 +86,8 @@ func (d *DeviceClient) list400Devices(udid string, platform appstoreconnect.Devi
 		}
 	}
 
-	if totalCount > 0 && totalCount > 400 {
-		log.Warnf("More than 400 devices (%d) found", totalCount)
+	if totalCount > 400 {
+		log.Warnf("Unable to retrieve all devices: more than 400 devices available (%s)", totalCount)
 	}
 
 	var devices []appstoreconnect.Device
