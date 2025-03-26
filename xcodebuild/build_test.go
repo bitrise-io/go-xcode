@@ -1,9 +1,9 @@
 package xcodebuild
 
 import (
-	"reflect"
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCommandBuilder_cmdSlice(t *testing.T) {
@@ -187,9 +187,11 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.builder().cmdSlice()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("CommandBuilder.cmdSlice() = %v\nwant %v", strings.Join(got, "\n"), strings.Join(tt.want, "\n"))
-			}
+			require.Equal(t, tt.want, got)
+
+			got = append(got, "extra")
+			got2 := tt.builder().cmdSlice()
+			require.Equal(t, tt.want, got2, "Second run after appending extra should not change the result")
 		})
 	}
 }

@@ -54,7 +54,15 @@ func (c *ExportCommandModel) SetAuthentication(authenticationParams Authenticati
 }
 
 func (c ExportCommandModel) cmdSlice() []string {
-	slice := []string{toolName, "-exportArchive"}
+	slice := []string{toolName}
+	slice = append(slice, c.CommandArgs()...)
+
+	return slice
+}
+
+// CommandArgs returns the xcodebuild command arguments for the export action
+func (c ExportCommandModel) CommandArgs() []string {
+	slice := []string{"-exportArchive"}
 	if c.archivePath != "" {
 		slice = append(slice, "-archivePath", c.archivePath)
 	}

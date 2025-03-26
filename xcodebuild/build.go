@@ -131,9 +131,16 @@ func (c *CommandBuilder) SetTestPlan(testPlan string) *CommandBuilder {
 	return c
 }
 
-func (c *CommandBuilder) cmdSlice() []string {
+func (c CommandBuilder) cmdSlice() []string {
 	slice := []string{toolName}
-	slice = append(slice, c.actions...)
+	slice = append(slice, c.CommandArgs()...)
+
+	return slice
+}
+
+// CommandArgs returns the xcodebuild command arguments, including actions and options
+func (c CommandBuilder) CommandArgs() []string {
+	slice := append([]string{}, c.actions...)
 
 	if c.projectPath != "" {
 		if filepath.Ext(c.projectPath) == XCWorkspaceExtension {
