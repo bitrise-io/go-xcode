@@ -131,7 +131,7 @@ func (c *CommandBuilder) SetTestPlan(testPlan string) *CommandBuilder {
 	return c
 }
 
-func (c CommandBuilder) cmdSlice() []string {
+func (c *CommandBuilder) cmdSlice() []string {
 	slice := []string{toolName}
 	slice = append(slice, c.CommandArgs()...)
 
@@ -139,7 +139,7 @@ func (c CommandBuilder) cmdSlice() []string {
 }
 
 // CommandArgs returns the xcodebuild command arguments, including actions and options
-func (c CommandBuilder) CommandArgs() []string {
+func (c *CommandBuilder) CommandArgs() []string {
 	slice := append([]string{}, c.actions...)
 
 	if c.projectPath != "" {
@@ -197,25 +197,25 @@ func (c CommandBuilder) CommandArgs() []string {
 }
 
 // PrintableCmd ...
-func (c CommandBuilder) PrintableCmd() string {
+func (c *CommandBuilder) PrintableCmd() string {
 	cmdSlice := c.cmdSlice()
 	return command.PrintableCommandArgs(false, cmdSlice)
 }
 
 // Command ...
-func (c CommandBuilder) Command() *command.Model {
+func (c *CommandBuilder) Command() *command.Model {
 	cmdSlice := c.cmdSlice()
 	return command.New(cmdSlice[0], cmdSlice[1:]...)
 }
 
 // ExecCommand ...
-func (c CommandBuilder) ExecCommand() *exec.Cmd {
+func (c *CommandBuilder) ExecCommand() *exec.Cmd {
 	command := c.Command()
 	return command.GetCmd()
 }
 
 // Run ...
-func (c CommandBuilder) Run() error {
+func (c *CommandBuilder) Run() error {
 	command := c.Command()
 
 	command.SetStdout(os.Stdout)
