@@ -189,7 +189,7 @@ func TestCommandBuilder_cmdSlice(t *testing.T) {
 			got := tt.builder().cmdSlice()
 			require.Equal(t, tt.want, got)
 
-			got = append(got, "extra")
+			got = append(got, "extra") // nolint:ineffassign
 			got2 := tt.builder().cmdSlice()
 			require.Equal(t, tt.want, got2, "Second run after appending extra should not change the result")
 		})

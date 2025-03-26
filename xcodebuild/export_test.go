@@ -58,7 +58,7 @@ func TestExportCommandModel_cmdSlice(t *testing.T) {
 			got := c.cmdSlice()
 			require.Equal(t, tt.want, got)
 
-			got = append(got, "extra")
+			got = append(got, "extra") // nolint:ineffassign
 			got2 := c.cmdSlice()
 			require.Equal(t, tt.want, got2, "result should not be modified")
 		})
