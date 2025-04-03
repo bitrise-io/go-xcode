@@ -24,22 +24,25 @@ type AppStoreOptionsModel struct {
 	ManageAppVersion bool
 
 	TestFlightInternalTestingOnly bool
+
+	useNewExportMethods bool
 }
 
 // NewAppStoreOptions ...
-func NewAppStoreOptions() AppStoreOptionsModel {
+func NewAppStoreOptions(useNewExportMethods bool) AppStoreOptionsModel {
 	return AppStoreOptionsModel{
 		UploadBitcode:                 UploadBitcodeDefault,
 		UploadSymbols:                 UploadSymbolsDefault,
 		ManageAppVersion:              manageAppVersionDefault,
 		TestFlightInternalTestingOnly: TestFlightInternalTestingOnlyDefault,
+		useNewExportMethods:           useNewExportMethods,
 	}
 }
 
 // Hash ...
 func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	hash := map[string]interface{}{}
-	hash[MethodKey] = MethodAppStore
+	hash[MethodKey] = mapMethodToExportOptionsMethod(MethodAppStore, options.useNewExportMethods)
 	if options.TeamID != "" {
 		hash[TeamIDKey] = options.TeamID
 	}

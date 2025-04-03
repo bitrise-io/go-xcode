@@ -23,15 +23,18 @@ type NonAppStoreOptionsModel struct {
 	Manifest                                 Manifest
 	OnDemandResourcesAssetPacksBaseURL       string
 	Thinning                                 string
+
+	useNewExportMethods bool
 }
 
 // NewNonAppStoreOptions ...
-func NewNonAppStoreOptions(method Method) NonAppStoreOptionsModel {
+func NewNonAppStoreOptions(method Method, useNewExportMethods bool) NonAppStoreOptionsModel {
 	return NonAppStoreOptionsModel{
 		Method:                                   method,
 		CompileBitcode:                           CompileBitcodeDefault,
 		EmbedOnDemandResourcesAssetPacksInBundle: EmbedOnDemandResourcesAssetPacksInBundleDefault,
 		Thinning:                                 ThinningDefault,
+		useNewExportMethods:                      useNewExportMethods,
 	}
 }
 
@@ -39,7 +42,7 @@ func NewNonAppStoreOptions(method Method) NonAppStoreOptionsModel {
 func (options NonAppStoreOptionsModel) Hash() map[string]interface{} {
 	hash := map[string]interface{}{}
 	if options.Method != "" {
-		hash[MethodKey] = options.Method
+		hash[MethodKey] = mapMethodToExportOptionsMethod(options.Method, options.useNewExportMethods)
 	}
 	if options.TeamID != "" {
 		hash[TeamIDKey] = options.TeamID

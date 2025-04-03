@@ -119,6 +119,27 @@ func ParseMethod(method string) (Method, error) {
 	}
 }
 
+type exportOptionsMethod string
+
+const (
+	exportOptionsMethodAppStore exportOptionsMethod = "app-store"
+	// "app-store-connect" is the new name for "app-store" since Xcode 15.3
+	exportOptionsMethodAppStoreConnect exportOptionsMethod = "app-store-connect"
+
+	exportOptionsMethodAdHoc exportOptionsMethod = "ad-hoc"
+	// "release-testing" is the new name for "ad-hoc" since Xcode 15.3
+	ExportOptionsMethodReleaseTesting exportOptionsMethod = "release-testing"
+
+	exportOptionsMethodEnterprise exportOptionsMethod = "enterprise"
+
+	exportOptionsMethodDevelopment exportOptionsMethod = "development"
+	// "debugging" is the new name for "development" since Xcode 15.3
+	exportOptionsMethodDebugging exportOptionsMethod = "debugging"
+
+	exportOptionsMethodPackage     exportOptionsMethod = "package"
+	exportOptionsMethodDeveloperID exportOptionsMethod = "developer-id"
+)
+
 // OnDemandResourcesAssetPacksBaseURLKey ....
 const OnDemandResourcesAssetPacksBaseURLKey = "onDemandResourcesAssetPacksBaseURL"
 
