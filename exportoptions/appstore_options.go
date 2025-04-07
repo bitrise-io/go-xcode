@@ -28,7 +28,7 @@ type AppStoreOptionsModel struct {
 }
 
 // NewAppStoreOptions sets "app-store" as the export method
-// use NewAppStoreConnectOptions instead (from Xcode 15.3)
+// deprecated: use NewAppStoreConnectOptions instead
 func NewAppStoreOptions() AppStoreOptionsModel {
 	return AppStoreOptionsModel{
 		Method:                        MethodAppStore,
@@ -39,10 +39,13 @@ func NewAppStoreOptions() AppStoreOptionsModel {
 	}
 }
 
-// NewAppStoreConnectOptions sets "app-store-connect" as the export method
-func NewAppStoreConnectOptions() AppStoreOptionsModel {
+// NewAppStoreConnectOptions sets either "app-store" or "app-store-connect" as the export method
+func NewAppStoreConnectOptions(method Method) AppStoreOptionsModel {
+	if !method.IsAppStore() {
+		panic("non app-store method passed to NewAppStoreConnectOptions")
+	}
 	return AppStoreOptionsModel{
-		Method:                        MethodAppStoreConnect,
+		Method:                        method,
 		UploadBitcode:                 UploadBitcodeDefault,
 		UploadSymbols:                 UploadSymbolsDefault,
 		ManageAppVersion:              manageAppVersionDefault,

@@ -23,18 +23,15 @@ type NonAppStoreOptionsModel struct {
 	Manifest                                 Manifest
 	OnDemandResourcesAssetPacksBaseURL       string
 	Thinning                                 string
-
-	useNewExportMethods bool
 }
 
 // NewNonAppStoreOptions ...
-func NewNonAppStoreOptions(method Method, useNewExportMethods bool) NonAppStoreOptionsModel {
+func NewNonAppStoreOptions(method Method) NonAppStoreOptionsModel {
 	return NonAppStoreOptionsModel{
 		Method:                                   method,
 		CompileBitcode:                           CompileBitcodeDefault,
 		EmbedOnDemandResourcesAssetPacksInBundle: EmbedOnDemandResourcesAssetPacksInBundleDefault,
 		Thinning:                                 ThinningDefault,
-		useNewExportMethods:                      useNewExportMethods,
 	}
 }
 
