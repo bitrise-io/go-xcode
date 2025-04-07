@@ -76,7 +76,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	}
 
 	if xcodeVersion.IsGreaterThanOrEqualTo(15, 3) {
-		exportMethod = exportoptions.UpgradeExportMethod(exportMethod)
+		exportMethod = exportoptions.UpgradeToXcode15_3MethodName(exportMethod)
 	}
 	exportOpts := generateBaseExportOptions(exportMethod, uploadBitcode, compileBitcode, iCloudContainerEnvironment)
 
