@@ -39,7 +39,7 @@ func getXcodeVersionFromXcodebuildOutput(outStr string) (Version, error) {
 	return Version{
 		Version:      xcodebuildVersion,
 		BuildVersion: buildVersion,
-		MajorVersion: majorVersion,
-		Minor:        minorVersion,
+		MajorVersion: int64(majorVersion),
+		Minor:        int64(minorVersion),
 	}, nil
 }

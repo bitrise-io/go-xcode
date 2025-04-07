@@ -10,8 +10,8 @@ import (
 type Version struct {
 	Version      string
 	BuildVersion string
-	MajorVersion int
-	Minor        int
+	MajorVersion int64
+	Minor        int64
 }
 
 // Reader ...
@@ -42,7 +42,7 @@ func (b *reader) GetVersion() (Version, error) {
 	return getXcodeVersionFromXcodebuildOutput(outStr)
 }
 
-func (v Version) IsGreaterThanOrEqualTo(major, minor int) bool {
+func (v Version) IsGreaterThanOrEqualTo(major, minor int64) bool {
 	if v.MajorVersion > major {
 		return true
 	}
