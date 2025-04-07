@@ -49,6 +49,10 @@ github.com/bitrise-io/go-xcode v1.1.2 h1:7tit56lNPPzH714pBt083z/iZh7P44vgVsNrEdv
 github.com/bitrise-io/go-xcode v1.1.2/go.mod h1:9OwsvrhZ4A2JxHVoEY7CPcABAKA+OE7FQqFfBfvbFuY=
 github.com/bitrise-io/go-xcode v1.2.1-0.20250403105136-78e990ca69f6 h1:8R5wId/YVJa7/hqiuETXe11lArRGJm38E7cD19gKgug=
 github.com/bitrise-io/go-xcode v1.2.1-0.20250403105136-78e990ca69f6/go.mod h1:9OwsvrhZ4A2JxHVoEY7CPcABAKA+OE7FQqFfBfvbFuY=
+github.com/bitrise-io/go-xcode v1.2.1-0.20250407094854-d051723c2ba6 h1:QQhCk4ApT1AxoBR+5yiCeUGlRyvcZDR3tNVZaIWnsU0=
+github.com/bitrise-io/go-xcode v1.2.1-0.20250407094854-d051723c2ba6/go.mod h1:9OwsvrhZ4A2JxHVoEY7CPcABAKA+OE7FQqFfBfvbFuY=
+github.com/bitrise-io/go-xcode v1.2.1-0.20250407100337-8b18b3fc5b8d h1:etvh09pPVy95jyGIRWwyL6oMn7i26IexIO91glHleJA=
+github.com/bitrise-io/go-xcode v1.2.1-0.20250407100337-8b18b3fc5b8d/go.mod h1:9OwsvrhZ4A2JxHVoEY7CPcABAKA+OE7FQqFfBfvbFuY=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=

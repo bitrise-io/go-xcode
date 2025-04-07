@@ -130,6 +130,18 @@ const (
 		<string>development</string>
 	</dict>
 </plist>`
+	expectedNoProfilesDevelopmentXcode16ExportOptions = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>distributionBundleIdentifier</key>
+		<string>io.bundle.id</string>
+		<key>iCloudContainerEnvironment</key>
+		<string>Production</string>
+		<key>method</key>
+		<string>debugging</string>
+	</dict>
+</plist>`
 	expectedNoProfilesXcode13AppStoreExportOptions = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -140,6 +152,18 @@ const (
 		<false/>
 		<key>method</key>
 		<string>app-store</string>
+	</dict>
+</plist>`
+	expectedNoProfilesXcode16AppStoreExportOptions = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>iCloudContainerEnvironment</key>
+		<string>Production</string>
+		<key>manageAppVersionAndBuildNumber</key>
+		<false/>
+		<key>method</key>
+		<string>app-store-connect</string>
 	</dict>
 </plist>`
 	expectedNoProfilesAdHocExportOptions = `<?xml version="1.0" encoding="UTF-8"?>
@@ -435,6 +459,12 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 		wantErr      bool
 	}{
 		{
+			name:         "When no profiles found, Xcode 16, using new export method name",
+			exportMethod: exportoptions.MethodAppStore,
+			xcodeVersion: 16,
+			want:         expectedNoProfilesXcode16AppStoreExportOptions,
+		},
+		{
 			name:         "When no profiles found, Xcode 13, then manageAppVersionAndBuildNumber is included",
 			exportMethod: exportoptions.MethodAppStore,
 			xcodeVersion: 13,
@@ -445,6 +475,12 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			exportMethod: exportoptions.MethodAdHoc,
 			xcodeVersion: 13,
 			want:         expectedNoProfilesAdHocExportOptions,
+		},
+		{
+			name:         "When no profiles found, Xcode 16, usess new export method name",
+			exportMethod: exportoptions.MethodDevelopment,
+			xcodeVersion: 16,
+			want:         expectedNoProfilesDevelopmentXcode16ExportOptions,
 		},
 		{
 			name:         "When no profiles found, Xcode 11",
