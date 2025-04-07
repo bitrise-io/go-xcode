@@ -302,11 +302,11 @@ func determineIcloudContainerEnvironment(desiredIcloudContainerEnvironment strin
 	}
 
 	// From Xcode 9 iCloudContainerEnvironment is required for every export method, before that version only for non app-store exports.
-	if xcodeMajorVersion < 9 && exportMethod == exportoptions.MethodAppStore {
+	if xcodeMajorVersion < 9 && exportMethod.IsAppStore() {
 		return "", nil
 	}
 
-	if exportMethod == exportoptions.MethodAppStore {
+	if exportMethod.IsAppStore() {
 		return "Production", nil
 	}
 
