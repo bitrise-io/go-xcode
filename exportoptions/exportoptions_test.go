@@ -108,7 +108,7 @@ func TestManifestToHash(t *testing.T) {
 func TestNewAppStoreConnectOptions(t *testing.T) {
 	t.Log("create app-store type export options with default values")
 	{
-		options := NewAppStoreConnectOptions()
+		options := NewAppStoreConnectOptions(MethodAppStoreConnect)
 		require.Equal(t, UploadBitcodeDefault, options.UploadBitcode)
 		require.Equal(t, UploadSymbolsDefault, options.UploadSymbols)
 		require.Equal(t, TestFlightInternalTestingOnlyDefault, options.TestFlightInternalTestingOnly)
@@ -132,7 +132,7 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 
 	t.Log("default app-store type options creates hash with new method")
 	{
-		options := NewAppStoreConnectOptions()
+		options := NewAppStoreConnectOptions(MethodAppStoreConnect)
 		options.ManageAppVersion = true
 		hash := options.Hash()
 		require.Equal(t, 1, len(hash), fmt.Sprintf("Hash: %+v", hash))
@@ -196,7 +196,7 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 		require.NoError(t, err)
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
-		options := NewAppStoreConnectOptions()
+		options := NewAppStoreConnectOptions(MethodAppStoreConnect)
 		options.ManageAppVersion = true
 		require.NoError(t, options.WriteToFile(pth))
 
@@ -251,7 +251,7 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 func TestNonNewAppStoreOptions(t *testing.T) {
 	t.Log("create NON app-store type export options with default values")
 	{
-		options := NewNonAppStoreOptions(MethodDevelopment, false)
+		options := NewNonAppStoreOptions(MethodDevelopment)
 		require.Equal(t, MethodDevelopment, options.Method)
 		require.Equal(t, CompileBitcodeDefault, options.CompileBitcode)
 		require.Equal(t, EmbedOnDemandResourcesAssetPacksInBundleDefault, options.EmbedOnDemandResourcesAssetPacksInBundle)
@@ -263,7 +263,7 @@ func TestNonNewAppStoreOptions(t *testing.T) {
 func TestNonAppStoreOptionsToHash(t *testing.T) {
 	t.Log("default NON app-store type options creates hash with method")
 	{
-		options := NewNonAppStoreOptions(MethodDevelopment, false)
+		options := NewNonAppStoreOptions(MethodDevelopment)
 		hash := options.Hash()
 		require.Equal(t, 1, len(hash))
 
@@ -276,7 +276,7 @@ func TestNonAppStoreOptionsToHash(t *testing.T) {
 
 	t.Log("custom NON app-store type option's generated hash contains all properties")
 	{
-		options := NewNonAppStoreOptions(MethodEnterprise, false)
+		options := NewNonAppStoreOptions(MethodEnterprise)
 		options.TeamID = "123"
 		options.CompileBitcode = false
 		options.EmbedOnDemandResourcesAssetPacksInBundle = false
@@ -364,7 +364,7 @@ func TestNonAppStoreOptionsWriteToFile(t *testing.T) {
 		require.NoError(t, err)
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
-		options := NewNonAppStoreOptions(MethodEnterprise, false)
+		options := NewNonAppStoreOptions(MethodEnterprise)
 		require.NoError(t, options.WriteToFile(pth))
 
 		content, err := fileutil.ReadStringFromFile(pth)
@@ -386,7 +386,7 @@ func TestNonAppStoreOptionsWriteToFile(t *testing.T) {
 		require.NoError(t, err)
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
-		options := NewNonAppStoreOptions(MethodEnterprise, false)
+		options := NewNonAppStoreOptions(MethodEnterprise)
 		options.TeamID = "123"
 		options.CompileBitcode = false
 		options.EmbedOnDemandResourcesAssetPacksInBundle = false
