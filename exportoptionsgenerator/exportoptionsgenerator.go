@@ -333,10 +333,12 @@ func projectUsesCloudKit(bundleIDEntitlementsMap map[string]plistutil.PlistData)
 
 // generateBaseExportOptions creates a default exportOptions introduced in Xcode 7.
 func generateBaseExportOptions(exportMethod exportoptions.Method, xcodeMajorVersion int64, cfgUploadBitcode, cfgCompileBitcode bool, iCloudContainerEnvironment string) exportoptions.ExportOptions {
-	useNewExportMethods := xcodeMajorVersion >= 16
+	if xcodeMajorVersion >= 16 {
+		exportMethod = exportoptions.UpgradeExportMethod(exportMethod)
+	}
 
-	if exportMethod == exportoptions.MethodAppStore {
-		appStoreOptions := exportoptions.NewAppStoreOptions(useNewExportMethods)
+	if exportMethod.IsAppStore() {
+		appStoreOptions := exportoptions.NewAppStoreConnectOptions(exportMethod)
 		appStoreOptions.UploadBitcode = cfgUploadBitcode
 		if iCloudContainerEnvironment != "" {
 			appStoreOptions.ICloudContainerEnvironment = exportoptions.ICloudContainerEnvironment(iCloudContainerEnvironment)
@@ -344,7 +346,7 @@ func generateBaseExportOptions(exportMethod exportoptions.Method, xcodeMajorVers
 		return appStoreOptions
 	}
 
-	nonAppStoreOptions := exportoptions.NewNonAppStoreOptions(exportMethod, useNewExportMethods)
+	nonAppStoreOptions := exportoptions.NewNonAppStoreOptions(exportMethod)
 	nonAppStoreOptions.CompileBitcode = cfgCompileBitcode
 
 	if iCloudContainerEnvironment != "" {
