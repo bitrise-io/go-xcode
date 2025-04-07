@@ -19,8 +19,19 @@ func Test_reader_GetVersion(t *testing.T) {
 			output: "Xcode 8.2.1\nBuild version 8C1002",
 			wantedVersion: Version{
 				Version:      "Xcode 8.2.1",
-				BuildVersion: "Build version 8C1002",
+				BuildVersion: "8C1002",
 				MajorVersion: 8,
+				Minor:        2,
+			},
+		},
+		{
+			name:   "major version only",
+			output: "Xcode 16beta6\nBuild version 16A5230g",
+			wantedVersion: Version{
+				Version:      "Xcode 16beta6",
+				BuildVersion: "16A5230g",
+				MajorVersion: 16,
+				Minor:        0,
 			},
 		},
 		{
@@ -31,15 +42,16 @@ Xcode 13.2.1
 Build version 13C100`,
 			wantedVersion: Version{
 				Version:      "Xcode 13.2.1",
-				BuildVersion: "Build version 13C100",
+				BuildVersion: "13C100",
 				MajorVersion: 13,
+				Minor:        2,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockCommand := new(mocks.Command)
-			mockCommand.On("RunAndReturnTrimmedCombinedOutput").Return(tt.output, nil)
+			mockCommand.On("RunAndReturnTrimmedOutput").Return(tt.output, nil)
 			mockCommandFactory := new(mocks.CommandFactory)
 			mockCommandFactory.On("Create", "xcodebuild", []string{"-version"}, &command.Opts{}).Return(mockCommand)
 
@@ -53,6 +65,57 @@ Build version 13C100`,
 			mockCommand.AssertExpectations(t)
 			require.NoError(t, err)
 			require.Equal(t, tt.wantedVersion, got)
+		})
+	}
+}
+
+func TestVersion_IsGreaterThanOrEqualTo(t *testing.T) {
+	tests := []struct {
+		name    string
+		version Version
+		major   int
+		minor   int
+		want    bool
+	}{
+		{
+			name:    "greater major",
+			version: Version{MajorVersion: 8, Minor: 2},
+			major:   7,
+			minor:   2,
+			want:    true,
+		},
+		{
+			name:    "lesser major",
+			version: Version{MajorVersion: 18, Minor: 2},
+			major:   17,
+			minor:   2,
+			want:    true,
+		},
+		{
+			name:    "equal major, greater minor",
+			version: Version{MajorVersion: 8, Minor: 2},
+			major:   8,
+			minor:   1,
+			want:    true,
+		},
+		{
+			name:    "equal major, equal minor",
+			version: Version{MajorVersion: 8, Minor: 2},
+			major:   8,
+			minor:   2,
+			want:    true,
+		},
+		{
+			name:    "equal major, lesser minor",
+			version: Version{MajorVersion: 8, Minor: 2},
+			major:   8,
+			minor:   3,
+			want:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, tt.version.IsGreaterThanOrEqualTo(tt.major, tt.minor))
 		})
 	}
 }

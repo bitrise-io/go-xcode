@@ -10,7 +10,8 @@ import (
 type Version struct {
 	Version      string
 	BuildVersion string
-	MajorVersion int64
+	MajorVersion int
+	Minor        int
 }
 
 // Reader ...
@@ -33,10 +34,20 @@ func NewXcodeVersionProvider(commandFactory command.Factory) Reader {
 func (b *reader) GetVersion() (Version, error) {
 	cmd := b.commandFactory.Create("xcodebuild", []string{"-version"}, &command.Opts{})
 
-	outStr, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	outStr, err := cmd.RunAndReturnTrimmedOutput()
 	if err != nil {
 		return Version{}, fmt.Errorf("xcodebuild -version failed: %s, output: %s", err, outStr)
 	}
 
 	return getXcodeVersionFromXcodebuildOutput(outStr)
+}
+
+func (v Version) IsGreaterThanOrEqualTo(major, minor int) bool {
+	if v.MajorVersion > major {
+		return true
+	}
+	if v.MajorVersion == major && v.Minor >= minor {
+		return true
+	}
+	return false
 }
