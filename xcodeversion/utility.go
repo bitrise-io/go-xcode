@@ -31,10 +31,10 @@ func getXcodeVersionFromXcodebuildOutput(outStr string) (Version, error) {
 	}
 
 	buildVersionMatch := buildVersionRegexp.FindStringSubmatch(outStr)
-	if len(buildVersionMatch) < 2 {
-		return Version{}, fmt.Errorf("failed to parse xcodebuild build version (output %s)", outStr)
+	buildVersion := "unknown"
+	if len(buildVersionMatch) >= 2 {
+		buildVersion = buildVersionMatch[1]
 	}
-	buildVersion := buildVersionMatch[1]
 
 	return Version{
 		Version:      xcodebuildVersion,

@@ -73,8 +73,8 @@ func TestVersion_IsGreaterThanOrEqualTo(t *testing.T) {
 	tests := []struct {
 		name    string
 		version Version
-		major   int
-		minor   int
+		major   int64
+		minor   int64
 		want    bool
 	}{
 		{
