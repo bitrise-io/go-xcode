@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUpgradeToXcode15_3MethodNames(t *testing.T) {
+func TestUpgradeToXcode15_3MethodName(t *testing.T) {
 	tests := []struct {
 		name   string
 		method Method
@@ -39,7 +39,7 @@ func TestUpgradeToXcode15_3MethodNames(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, UpgradeToXcode15_3MethodNames(tt.method))
+			require.Equal(t, tt.want, UpgradeToXcode15_3MethodName(tt.method))
 		})
 	}
 }

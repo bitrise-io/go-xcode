@@ -141,8 +141,8 @@ func ParseMethod(method string) (Method, error) {
 	}
 }
 
-// UpgradeToXcode15_3MethodNames replaces the legacy export method strings with the ones available in Xcode 15.3 and later.
-func UpgradeToXcode15_3MethodNames(method Method) Method {
+// UpgradeToXcode15_3MethodName replaces the legacy export method strings with the ones available in Xcode 15.3 and later.
+func UpgradeToXcode15_3MethodName(method Method) Method {
 	switch method {
 	case MethodAppStore:
 		return MethodAppStoreConnect
