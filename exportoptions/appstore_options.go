@@ -8,6 +8,7 @@ import (
 
 // AppStoreOptionsModel ...
 type AppStoreOptionsModel struct {
+	Method                             Method
 	TeamID                             string
 	BundleIDProvisioningProfileMapping map[string]string
 	SigningCertificate                 string
@@ -24,25 +25,35 @@ type AppStoreOptionsModel struct {
 	ManageAppVersion bool
 
 	TestFlightInternalTestingOnly bool
-
-	useNewExportMethods bool
 }
 
-// NewAppStoreOptions ...
-func NewAppStoreOptions(useNewExportMethods bool) AppStoreOptionsModel {
+// NewAppStoreOptions sets "app-store" as the export method
+// use NewAppStoreConnectOptions instead (from Xcode 15.3)
+func NewAppStoreOptions() AppStoreOptionsModel {
 	return AppStoreOptionsModel{
+		Method:                        MethodAppStore,
 		UploadBitcode:                 UploadBitcodeDefault,
 		UploadSymbols:                 UploadSymbolsDefault,
 		ManageAppVersion:              manageAppVersionDefault,
 		TestFlightInternalTestingOnly: TestFlightInternalTestingOnlyDefault,
-		useNewExportMethods:           useNewExportMethods,
+	}
+}
+
+// NewAppStoreConnectOptions sets "app-store-connect" as the export method
+func NewAppStoreConnectOptions() AppStoreOptionsModel {
+	return AppStoreOptionsModel{
+		Method:                        MethodAppStoreConnect,
+		UploadBitcode:                 UploadBitcodeDefault,
+		UploadSymbols:                 UploadSymbolsDefault,
+		ManageAppVersion:              manageAppVersionDefault,
+		TestFlightInternalTestingOnly: TestFlightInternalTestingOnlyDefault,
 	}
 }
 
 // Hash ...
 func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	hash := map[string]interface{}{}
-	hash[MethodKey] = mapMethodToExportOptionsMethod(MethodAppStore, options.useNewExportMethods)
+	hash[MethodKey] = options.Method
 	if options.TeamID != "" {
 		hash[TeamIDKey] = options.TeamID
 	}

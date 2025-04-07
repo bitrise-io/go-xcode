@@ -105,10 +105,10 @@ func TestManifestToHash(t *testing.T) {
 	}
 }
 
-func TestNewAppStoreOptions(t *testing.T) {
+func TestNewAppStoreConnectOptions(t *testing.T) {
 	t.Log("create app-store type export options with default values")
 	{
-		options := NewAppStoreOptions(true)
+		options := NewAppStoreConnectOptions()
 		require.Equal(t, UploadBitcodeDefault, options.UploadBitcode)
 		require.Equal(t, UploadSymbolsDefault, options.UploadSymbols)
 		require.Equal(t, TestFlightInternalTestingOnlyDefault, options.TestFlightInternalTestingOnly)
@@ -118,7 +118,7 @@ func TestNewAppStoreOptions(t *testing.T) {
 func TestAppStoreOptionsToHash(t *testing.T) {
 	t.Log("default app-store type options creates hash with legacy method")
 	{
-		options := NewAppStoreOptions(false)
+		options := NewAppStoreOptions()
 		options.ManageAppVersion = true
 		hash := options.Hash()
 		require.Equal(t, 1, len(hash), fmt.Sprintf("Hash: %+v", hash))
@@ -126,13 +126,13 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 		{
 			value, ok := hash[MethodKey]
 			require.Equal(t, true, ok)
-			require.Equal(t, exportOptionsMethodAppStore, value)
+			require.Equal(t, MethodAppStore, value)
 		}
 	}
 
 	t.Log("default app-store type options creates hash with new method")
 	{
-		options := NewAppStoreOptions(true)
+		options := NewAppStoreConnectOptions()
 		options.ManageAppVersion = true
 		hash := options.Hash()
 		require.Equal(t, 1, len(hash), fmt.Sprintf("Hash: %+v", hash))
@@ -140,13 +140,13 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 		{
 			value, ok := hash[MethodKey]
 			require.Equal(t, true, ok)
-			require.Equal(t, exportOptionsMethodAppStoreConnect, value)
+			require.Equal(t, MethodAppStoreConnect, value)
 		}
 	}
 
 	t.Log("custom app-store type option's generated hash contains all properties")
 	{
-		options := NewAppStoreOptions(false)
+		options := NewAppStoreOptions()
 		options.TeamID = "123"
 		options.UploadBitcode = false
 		options.UploadSymbols = false
@@ -159,7 +159,7 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 		{
 			value, ok := hash[MethodKey]
 			require.True(t, ok)
-			require.Equal(t, exportOptionsMethodAppStore, value)
+			require.Equal(t, MethodAppStore, value)
 		}
 		{
 			value, ok := hash[TeamIDKey]
@@ -196,7 +196,7 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 		require.NoError(t, err)
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
-		options := NewAppStoreOptions(false)
+		options := NewAppStoreConnectOptions()
 		options.ManageAppVersion = true
 		require.NoError(t, options.WriteToFile(pth))
 
@@ -207,7 +207,7 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 <plist version="1.0">
 	<dict>
 		<key>method</key>
-		<string>app-store</string>
+		<string>app-store-connect</string>
 	</dict>
 </plist>`
 		require.Equal(t, desired, content)
@@ -219,7 +219,7 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 		require.NoError(t, err)
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
-		options := NewAppStoreOptions(false)
+		options := NewAppStoreOptions()
 		options.TeamID = "123"
 		options.UploadBitcode = false
 		options.UploadSymbols = false
@@ -270,7 +270,7 @@ func TestNonAppStoreOptionsToHash(t *testing.T) {
 		{
 			value, ok := hash[MethodKey]
 			require.Equal(t, true, ok)
-			require.Equal(t, exportOptionsMethodDevelopment, value)
+			require.Equal(t, MethodDevelopment, value)
 		}
 	}
 
@@ -436,72 +436,5 @@ func TestNonAppStoreOptionsWriteToFile(t *testing.T) {
 	</dict>
 </plist>`
 		require.Equal(t, desired, content)
-	}
-}
-
-func Test_mapMethodToExportOptionsMethod(t *testing.T) {
-	tests := []struct {
-		name                string
-		method              Method
-		useNewExportMethods bool
-		want                exportOptionsMethod
-	}{
-		{
-			method:              "app-store",
-			useNewExportMethods: false,
-			want:                "app-store",
-		},
-		{
-			method:              "app-store",
-			useNewExportMethods: true,
-			want:                "app-store-connect",
-		},
-		{
-			method:              "ad-hoc",
-			useNewExportMethods: false,
-			want:                "ad-hoc",
-		},
-		{
-			method:              "ad-hoc",
-			useNewExportMethods: true,
-			want:                "release-testing",
-		},
-		{
-			method:              "enterprise",
-			useNewExportMethods: false,
-			want:                "enterprise",
-		},
-		{
-			method:              "enterprise",
-			useNewExportMethods: true,
-			want:                "enterprise",
-		},
-		{
-			method:              "development",
-			useNewExportMethods: false,
-			want:                "development",
-		},
-		{
-			method:              "development",
-			useNewExportMethods: true,
-			want:                "debugging",
-		},
-		{
-			method:              "package",
-			useNewExportMethods: true,
-			want:                "package",
-		},
-		{
-			method:              "developer-id",
-			useNewExportMethods: true,
-			want:                "developer-id",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := mapMethodToExportOptionsMethod(tt.method, tt.useNewExportMethods); got != tt.want {
-				t.Errorf("mapMethodToExportOptionsMethod() = %v, want %v", got, tt.want)
-			}
-		})
 	}
 }

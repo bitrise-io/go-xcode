@@ -83,23 +83,45 @@ const MethodKey = "method"
 type Method string
 
 const (
-	// MethodAppStore ...
+	// MethodAppStore is deprecated since Xcode 15.3, its new name is MethodAppStoreConnect
 	MethodAppStore Method = "app-store"
-	// MethodAdHoc ...
+	// MethodAdHoc is deprecated since Xcode 15.3, its new name is MethodReleaseTesting
 	MethodAdHoc Method = "ad-hoc"
 	// MethodPackage ...
 	MethodPackage Method = "package"
 	// MethodEnterprise ...
 	MethodEnterprise Method = "enterprise"
-	// MethodDevelopment ...
+	// MethodDevelopment is deprecated since Xcode 15.3, its new name is MethodDebugging
 	MethodDevelopment Method = "development"
 	// MethodDeveloperID ...
 	MethodDeveloperID Method = "developer-id"
+	// MethodDebugging is the new name for MethodDevelopment since Xcode 15.3
+	MethodDebugging Method = "debugging"
+	// MethodAppStoreConnect is the new name for MethodAppStore since Xcode 15.3
+	MethodAppStoreConnect Method = "app-store-connect"
+	// MethodReleaseTesting is the new name for MethodAdHoc since Xcode 15.3
+	MethodReleaseTesting Method = "release-testing"
 	// MethodDefault ...
 	MethodDefault Method = MethodDevelopment
 )
 
-// ParseMethod ...
+func (m Method) IsAppStore() bool {
+	return m == MethodAppStore || m == MethodAppStoreConnect
+}
+
+func (m Method) IsAdHoc() bool {
+	return m == MethodAdHoc || m == MethodReleaseTesting
+}
+
+func (m Method) IsDevelopment() bool {
+	return m == MethodDevelopment || m == MethodDebugging
+}
+
+func (m Method) IsEnterprise() bool {
+	return m == MethodEnterprise
+}
+
+// ParseMethod parses Step input and returns the corresponding Method.
 func ParseMethod(method string) (Method, error) {
 	switch method {
 	case "app-store":
@@ -119,26 +141,19 @@ func ParseMethod(method string) (Method, error) {
 	}
 }
 
-type exportOptionsMethod string
+// UpgradeExportMethod replaces the legacy export method strings with the ones available in Xcode 15.3 and later.
+func UpgradeExportMethod(method Method) Method {
+	switch method {
+	case MethodAppStore:
+		return MethodAppStoreConnect
+	case MethodAdHoc:
+		return MethodReleaseTesting
+	case MethodDevelopment:
+		return MethodDebugging
+	}
 
-const (
-	exportOptionsMethodAppStore exportOptionsMethod = "app-store"
-	// "app-store-connect" is the new name for "app-store" since Xcode 15.3
-	exportOptionsMethodAppStoreConnect exportOptionsMethod = "app-store-connect"
-
-	exportOptionsMethodAdHoc exportOptionsMethod = "ad-hoc"
-	// "release-testing" is the new name for "ad-hoc" since Xcode 15.3
-	ExportOptionsMethodReleaseTesting exportOptionsMethod = "release-testing"
-
-	exportOptionsMethodEnterprise exportOptionsMethod = "enterprise"
-
-	exportOptionsMethodDevelopment exportOptionsMethod = "development"
-	// "debugging" is the new name for "development" since Xcode 15.3
-	exportOptionsMethodDebugging exportOptionsMethod = "debugging"
-
-	exportOptionsMethodPackage     exportOptionsMethod = "package"
-	exportOptionsMethodDeveloperID exportOptionsMethod = "developer-id"
-)
+	return method
+}
 
 // OnDemandResourcesAssetPacksBaseURLKey ....
 const OnDemandResourcesAssetPacksBaseURLKey = "onDemandResourcesAssetPacksBaseURL"

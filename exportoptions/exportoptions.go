@@ -44,31 +44,3 @@ func WritePlistToTmpFile(options map[string]interface{}) (string, error) {
 
 	return pth, nil
 }
-
-func mapMethodToExportOptionsMethod(method Method, useNewExportMethods bool) exportOptionsMethod {
-	switch method {
-	case MethodAppStore:
-		if useNewExportMethods {
-			return exportOptionsMethodAppStoreConnect
-		}
-		return exportOptionsMethodAppStore
-	case MethodAdHoc:
-		if useNewExportMethods {
-			return ExportOptionsMethodReleaseTesting
-		}
-		return exportOptionsMethodAdHoc
-	case MethodEnterprise:
-		return exportOptionsMethodEnterprise
-	case MethodDevelopment:
-		if useNewExportMethods {
-			return exportOptionsMethodDebugging
-		}
-		return exportOptionsMethodDevelopment
-	case MethodPackage:
-		return exportOptionsMethodPackage
-	case MethodDeveloperID:
-		return exportOptionsMethodDeveloperID
-	default:
-		panic(fmt.Sprintf("unkown method (%s)", method))
-	}
-}

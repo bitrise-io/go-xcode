@@ -42,7 +42,7 @@ func NewNonAppStoreOptions(method Method, useNewExportMethods bool) NonAppStoreO
 func (options NonAppStoreOptionsModel) Hash() map[string]interface{} {
 	hash := map[string]interface{}{}
 	if options.Method != "" {
-		hash[MethodKey] = mapMethodToExportOptionsMethod(options.Method, options.useNewExportMethods)
+		hash[MethodKey] = options.Method
 	}
 	if options.TeamID != "" {
 		hash[TeamIDKey] = options.TeamID
