@@ -105,10 +105,10 @@ func TestManifestToHash(t *testing.T) {
 	}
 }
 
-func TestNewAppStoreOptions(t *testing.T) {
+func TestNewAppStoreConnectOptions(t *testing.T) {
 	t.Log("create app-store type export options with default values")
 	{
-		options := NewAppStoreOptions()
+		options := NewAppStoreConnectOptions(MethodAppStoreConnect)
 		require.Equal(t, UploadBitcodeDefault, options.UploadBitcode)
 		require.Equal(t, UploadSymbolsDefault, options.UploadSymbols)
 		require.Equal(t, TestFlightInternalTestingOnlyDefault, options.TestFlightInternalTestingOnly)
@@ -116,7 +116,7 @@ func TestNewAppStoreOptions(t *testing.T) {
 }
 
 func TestAppStoreOptionsToHash(t *testing.T) {
-	t.Log("default app-store type options creates hash with method")
+	t.Log("default app-store type options creates hash with legacy method")
 	{
 		options := NewAppStoreOptions()
 		options.ManageAppVersion = true
@@ -127,6 +127,20 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 			value, ok := hash[MethodKey]
 			require.Equal(t, true, ok)
 			require.Equal(t, MethodAppStore, value)
+		}
+	}
+
+	t.Log("default app-store type options creates hash with new method")
+	{
+		options := NewAppStoreConnectOptions(MethodAppStoreConnect)
+		options.ManageAppVersion = true
+		hash := options.Hash()
+		require.Equal(t, 1, len(hash), fmt.Sprintf("Hash: %+v", hash))
+
+		{
+			value, ok := hash[MethodKey]
+			require.Equal(t, true, ok)
+			require.Equal(t, MethodAppStoreConnect, value)
 		}
 	}
 
@@ -182,7 +196,7 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 		require.NoError(t, err)
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
-		options := NewAppStoreOptions()
+		options := NewAppStoreConnectOptions(MethodAppStoreConnect)
 		options.ManageAppVersion = true
 		require.NoError(t, options.WriteToFile(pth))
 
@@ -193,7 +207,7 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 <plist version="1.0">
 	<dict>
 		<key>method</key>
-		<string>app-store</string>
+		<string>app-store-connect</string>
 	</dict>
 </plist>`
 		require.Equal(t, desired, content)
