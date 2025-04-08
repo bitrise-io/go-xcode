@@ -13,6 +13,7 @@ func Test_reader_GetVersion(t *testing.T) {
 		name          string
 		output        string
 		wantedVersion Version
+		wantErr       bool
 	}{
 		{
 			name:   "Plain output",
@@ -26,13 +27,30 @@ func Test_reader_GetVersion(t *testing.T) {
 		},
 		{
 			name:   "major version only",
-			output: "Xcode 16beta6\nBuild version 16A5230g",
+			output: "Xcode 16 beta6\nBuild version 16A5230g",
 			wantedVersion: Version{
-				Version:      "Xcode 16beta6",
+				Version:      "Xcode 16 beta6",
 				BuildVersion: "16A5230g",
 				Major:        16,
 				Minor:        0,
 			},
+		},
+		{
+			name:          "version not found",
+			output:        "Xcode unexpected string\nBuild version unexped	ted string",
+			wantedVersion: Version{},
+			wantErr:       true,
+		},
+		{
+			name:   "build version not found",
+			output: "Xcode 16.2.1\nunexpected build version",
+			wantedVersion: Version{
+				Version:      "Xcode 16.2.1",
+				Major:        16,
+				Minor:        2,
+				BuildVersion: "unknown",
+			},
+			wantErr: false,
 		},
 		{
 			name: "Warnings in output (Xcode 13.2.1 bug)",
@@ -61,9 +79,14 @@ Build version 13C100`,
 
 			got, err := xcodeVersionProvider.GetVersion()
 
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
 			mockCommandFactory.AssertExpectations(t)
 			mockCommand.AssertExpectations(t)
-			require.NoError(t, err)
 			require.Equal(t, tt.wantedVersion, got)
 		})
 	}
