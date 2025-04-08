@@ -20,28 +20,28 @@ func Test_isRuntimeSupportedByXcode(t *testing.T) {
 			name:            "iOS 16 on Xcode 15",
 			runtimePlatform: "iOS",
 			runtimeVersion:  version.Must(version.NewVersion("16.4")),
-			xcodeVersion:    xcodeversion.Version{MajorVersion: 15},
+			xcodeVersion:    xcodeversion.Version{Major: 15},
 			want:            true,
 		},
 		{
 			name:            "iOS 16 on unknown Xcode version",
 			runtimePlatform: "iOS",
 			runtimeVersion:  version.Must(version.NewVersion("16.4")),
-			xcodeVersion:    xcodeversion.Version{MajorVersion: 3}, // unknown version
+			xcodeVersion:    xcodeversion.Version{Major: 3}, // unknown version
 			want:            true,
 		},
 		{
 			name:            "tvOS 17 on Xcode 14",
 			runtimePlatform: "tvOS",
 			runtimeVersion:  version.Must(version.NewVersion("17")),
-			xcodeVersion:    xcodeversion.Version{MajorVersion: 14},
+			xcodeVersion:    xcodeversion.Version{Major: 14},
 			want:            false,
 		},
 		{
 			name:            "unknown platform",
 			runtimePlatform: "walletOS",
 			runtimeVersion:  version.Must(version.NewVersion("1")),
-			xcodeVersion:    xcodeversion.Version{MajorVersion: 15},
+			xcodeVersion:    xcodeversion.Version{Major: 15},
 			want:            true,
 		},
 	}

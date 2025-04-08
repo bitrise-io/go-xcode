@@ -13,15 +13,54 @@ func Test_reader_GetVersion(t *testing.T) {
 		name          string
 		output        string
 		wantedVersion Version
+		wantErr       bool
 	}{
 		{
 			name:   "Plain output",
 			output: "Xcode 8.2.1\nBuild version 8C1002",
 			wantedVersion: Version{
 				Version:      "Xcode 8.2.1",
-				BuildVersion: "Build version 8C1002",
-				MajorVersion: 8,
+				BuildVersion: "8C1002",
+				Major:        8,
+				Minor:        2,
 			},
+		},
+		{
+			name:   "Plain output with more spaces",
+			output: "Xcode  8.2.1\nBuild version 8C1002",
+			wantedVersion: Version{
+				Version:      "Xcode  8.2.1",
+				BuildVersion: "8C1002",
+				Major:        8,
+				Minor:        2,
+			},
+		},
+		{
+			name:   "major version only",
+			output: "Xcode 16 beta6\nBuild version 16A5230g",
+			wantedVersion: Version{
+				Version:      "Xcode 16 beta6",
+				BuildVersion: "16A5230g",
+				Major:        16,
+				Minor:        0,
+			},
+		},
+		{
+			name:          "version not found",
+			output:        "Xcode unexpected string\nBuild version unexped	ted string",
+			wantedVersion: Version{},
+			wantErr:       true,
+		},
+		{
+			name:   "build version not found",
+			output: "Xcode 16.2.1\nunexpected build version",
+			wantedVersion: Version{
+				Version:      "Xcode 16.2.1",
+				Major:        16,
+				Minor:        2,
+				BuildVersion: "unknown",
+			},
+			wantErr: false,
 		},
 		{
 			name: "Warnings in output (Xcode 13.2.1 bug)",
@@ -31,8 +70,9 @@ Xcode 13.2.1
 Build version 13C100`,
 			wantedVersion: Version{
 				Version:      "Xcode 13.2.1",
-				BuildVersion: "Build version 13C100",
-				MajorVersion: 13,
+				BuildVersion: "13C100",
+				Major:        13,
+				Minor:        2,
 			},
 		},
 	}
@@ -49,10 +89,66 @@ Build version 13C100`,
 
 			got, err := xcodeVersionProvider.GetVersion()
 
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
 			mockCommandFactory.AssertExpectations(t)
 			mockCommand.AssertExpectations(t)
-			require.NoError(t, err)
 			require.Equal(t, tt.wantedVersion, got)
+		})
+	}
+}
+
+func TestVersion_IsGreaterThanOrEqualTo(t *testing.T) {
+	tests := []struct {
+		name    string
+		version Version
+		major   int64
+		minor   int64
+		want    bool
+	}{
+		{
+			name:    "greater major",
+			version: Version{Major: 8, Minor: 2},
+			major:   7,
+			minor:   2,
+			want:    true,
+		},
+		{
+			name:    "lesser major",
+			version: Version{Major: 18, Minor: 2},
+			major:   17,
+			minor:   2,
+			want:    true,
+		},
+		{
+			name:    "equal major, greater minor",
+			version: Version{Major: 8, Minor: 2},
+			major:   8,
+			minor:   1,
+			want:    true,
+		},
+		{
+			name:    "equal major, equal minor",
+			version: Version{Major: 8, Minor: 2},
+			major:   8,
+			minor:   2,
+			want:    true,
+		},
+		{
+			name:    "equal major, lesser minor",
+			version: Version{Major: 8, Minor: 2},
+			major:   8,
+			minor:   3,
+			want:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.want, tt.version.IsGreaterThanOrEqualTo(tt.major, tt.minor))
 		})
 	}
 }
