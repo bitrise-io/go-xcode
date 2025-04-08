@@ -98,7 +98,7 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 		},
 		{
 			name:         "latest for an earler Xcode version",
-			xcodeVersion: xcodeversion.Version{MajorVersion: 13},
+			xcodeVersion: xcodeversion.Version{Major: 13},
 			wantedDevice: Simulator{
 				Platform: "iOS Simulator",
 				OS:       "latest",

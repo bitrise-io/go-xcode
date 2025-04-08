@@ -62,7 +62,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 ) (exportoptions.ExportOptions, error) {
 	xcodeVersion, err := g.xcodeVersionReader.GetVersion()
 	if err != nil {
-		g.logger.Warnf("Failed to get Xcode version: %s", err)
+		return nil, fmt.Errorf("failed to get Xcode version: %w", err)
 	}
 
 	mainTargetBundleID, entitlementsByBundleID, err := g.applicationTargetsAndEntitlements(exportMethod)
@@ -70,7 +70,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 		return nil, err
 	}
 
-	iCloudContainerEnvironment, err := determineIcloudContainerEnvironment(containerEnvironment, entitlementsByBundleID, exportMethod, xcodeVersion.MajorVersion)
+	iCloudContainerEnvironment, err := determineIcloudContainerEnvironment(containerEnvironment, entitlementsByBundleID, exportMethod, xcodeVersion.Major)
 	if err != nil {
 		return nil, err
 	}
@@ -80,11 +80,11 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	}
 	exportOpts := generateBaseExportOptions(exportMethod, uploadBitcode, compileBitcode, iCloudContainerEnvironment)
 
-	if xcodeVersion.MajorVersion >= 12 {
+	if xcodeVersion.Major >= 12 {
 		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, mainTargetBundleID)
 	}
 
-	if xcodeVersion.MajorVersion >= 13 {
+	if xcodeVersion.Major >= 13 {
 		exportOpts = disableManagedBuildNumberFromXcode13(exportOpts)
 	}
 
@@ -102,7 +102,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 		exportOpts = addManualSigningFields(exportOpts, codeSignGroup, archivedWithXcodeManagedProfiles, g.logger)
 	}
 
-	if xcodeVersion.MajorVersion >= 15 {
+	if xcodeVersion.Major >= 15 {
 		if testFlightInternalTestingOnly {
 			exportOpts = addTestFlightInternalTestingOnly(exportOpts, testFlightInternalTestingOnly)
 		}

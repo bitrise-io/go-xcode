@@ -26,12 +26,12 @@ func isRuntimeSupportedByXcode(runtimePlatform string, runtimeVersion *version.V
 		},
 	}
 
-	if len(runtimeVersion.Segments64()) == 0 || xcodeVersion.MajorVersion == 0 {
+	if len(runtimeVersion.Segments64()) == 0 || xcodeVersion.Major == 0 {
 		return true
 	}
 	runtimeMajorVersion := runtimeVersion.Segments64()[0]
 
-	platformToLatestSupportedVersion, ok := xcodeVersionToSupportedRuntimes[xcodeVersion.MajorVersion]
+	platformToLatestSupportedVersion, ok := xcodeVersionToSupportedRuntimes[xcodeVersion.Major]
 	if !ok {
 		return true
 	}

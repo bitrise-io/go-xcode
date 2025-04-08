@@ -10,7 +10,7 @@ import (
 type Version struct {
 	Version      string
 	BuildVersion string
-	MajorVersion int64
+	Major        int64
 	Minor        int64
 }
 
@@ -43,10 +43,10 @@ func (b *reader) GetVersion() (Version, error) {
 }
 
 func (v Version) IsGreaterThanOrEqualTo(major, minor int64) bool {
-	if v.MajorVersion > major {
+	if v.Major > major {
 		return true
 	}
-	if v.MajorVersion == major && v.Minor >= minor {
+	if v.Major == major && v.Minor >= minor {
 		return true
 	}
 	return false
