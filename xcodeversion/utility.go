@@ -7,8 +7,8 @@ import (
 )
 
 func getXcodeVersionFromXcodebuildOutput(outStr string) (Version, error) {
-	versionRegexp := regexp.MustCompile(`(?m)^Xcode.* (\d+)(\.(\d+))?.*$`)
-	buildVersionRegexp := regexp.MustCompile(`(?m)^Build version.* (\w.*)$`)
+	versionRegexp := regexp.MustCompile(`(?m)^Xcode +(\d+)(\.(\d+))?.*$`)
+	buildVersionRegexp := regexp.MustCompile(`(?m)^Build version +(\w.*)$`)
 
 	xcodeVersionMatch := versionRegexp.FindStringSubmatch(outStr)
 	if len(xcodeVersionMatch) < 4 {

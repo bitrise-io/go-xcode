@@ -26,6 +26,16 @@ func Test_reader_GetVersion(t *testing.T) {
 			},
 		},
 		{
+			name:   "Plain output with more spaces",
+			output: "Xcode  8.2.1\nBuild version 8C1002",
+			wantedVersion: Version{
+				Version:      "Xcode  8.2.1",
+				BuildVersion: "8C1002",
+				Major:        8,
+				Minor:        2,
+			},
+		},
+		{
 			name:   "major version only",
 			output: "Xcode 16 beta6\nBuild version 16A5230g",
 			wantedVersion: Version{
@@ -69,7 +79,7 @@ Build version 13C100`,
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockCommand := new(mocks.Command)
-			mockCommand.On("RunAndReturnTrimmedOutput").Return(tt.output, nil)
+			mockCommand.On("RunAndReturnTrimmedCombinedOutput").Return(tt.output, nil)
 			mockCommandFactory := new(mocks.CommandFactory)
 			mockCommandFactory.On("Create", "xcodebuild", []string{"-version"}, &command.Opts{}).Return(mockCommand)
 

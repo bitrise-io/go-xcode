@@ -34,7 +34,7 @@ func NewXcodeVersionProvider(commandFactory command.Factory) Reader {
 func (b *reader) GetVersion() (Version, error) {
 	cmd := b.commandFactory.Create("xcodebuild", []string{"-version"}, &command.Opts{})
 
-	outStr, err := cmd.RunAndReturnTrimmedOutput()
+	outStr, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return Version{}, fmt.Errorf("xcodebuild -version failed: %s, output: %s", err, outStr)
 	}
