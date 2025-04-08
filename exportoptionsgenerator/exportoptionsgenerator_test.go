@@ -8,6 +8,8 @@ import (
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/mocks"
+	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
@@ -180,6 +182,12 @@ const (
 </plist>`
 )
 
+func newXcodeVersionReader(t *testing.T, major int64) xcodeversion.Reader {
+	reader := mocks.NewXcodeVersionReader(t)
+	reader.On("GetVersion").Return(xcodeversion.Version{Major: major}, nil)
+	return reader
+}
+
 func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSigningStyle(t *testing.T) {
 	// Arrange
 	const (
@@ -203,13 +211,13 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 		{
 			name:         "Default development exportOptions",
 			exportMethod: exportoptions.MethodDevelopment,
-			xcodeVersion: 15,
 			generatorFactory: func() ExportOptionsGenerator {
 				applicationTarget := givenApplicationTarget(nil)
 				xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget})
 				scheme := givenScheme(applicationTarget)
+				xcodeVersionReader := newXcodeVersionReader(t, 15)
 
-				g := New(&xcodeProj, &scheme, "", logger)
+				g := New(&xcodeProj, &scheme, "", xcodeVersionReader, logger)
 				g.targetInfoProvider = MockTargetInfoProvider{
 					bundleID: map[string]string{"Application": bundleID},
 				}
@@ -232,13 +240,13 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 		{
 			name:         "Default app store exportOptions",
 			exportMethod: exportoptions.MethodAppStore,
-			xcodeVersion: 15,
 			generatorFactory: func() ExportOptionsGenerator {
 				applicationTarget := givenApplicationTarget(nil)
 				xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget})
 				scheme := givenScheme(applicationTarget)
+				xcodeVersionReader := newXcodeVersionReader(t, 15)
 
-				g := New(&xcodeProj, &scheme, "", logger)
+				g := New(&xcodeProj, &scheme, "", xcodeVersionReader, logger)
 				g.targetInfoProvider = MockTargetInfoProvider{
 					bundleID: map[string]string{"Application": bundleID},
 				}
@@ -262,13 +270,13 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 			name:                 "When the app uses iCloud services",
 			exportMethod:         exportoptions.MethodDevelopment,
 			containerEnvironment: string(exportoptions.ICloudContainerEnvironmentProduction),
-			xcodeVersion:         15,
 			generatorFactory: func() ExportOptionsGenerator {
 				applicationTarget := givenApplicationTarget(nil)
 				xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget})
 				scheme := givenScheme(applicationTarget)
+				xcodeVersionReader := newXcodeVersionReader(t, 15)
 
-				g := New(&xcodeProj, &scheme, "", logger)
+				g := New(&xcodeProj, &scheme, "", xcodeVersionReader, logger)
 				g.targetInfoProvider = MockTargetInfoProvider{
 					bundleID:             map[string]string{"Application": bundleID},
 					codesignEntitlements: map[string]serialized.Object{"Application": map[string]interface{}{"com.apple.developer.icloud-services": []string{"CloudKit"}}},
@@ -294,14 +302,14 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 		{
 			name:                          "When exporting for TestFlight internal testing only",
 			exportMethod:                  exportoptions.MethodAppStore,
-			xcodeVersion:                  15,
 			testFlightInternalTestingOnly: true,
 			generatorFactory: func() ExportOptionsGenerator {
 				applicationTarget := givenApplicationTarget(nil)
 				xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget})
 				scheme := givenScheme(applicationTarget)
+				xcodeVersionReader := newXcodeVersionReader(t, 15)
 
-				g := New(&xcodeProj, &scheme, "", logger)
+				g := New(&xcodeProj, &scheme, "", xcodeVersionReader, logger)
 				g.targetInfoProvider = MockTargetInfoProvider{
 					bundleID: map[string]string{"Application": bundleID},
 				}
@@ -327,7 +335,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Act
-			gotOpts, err := tt.generatorFactory().GenerateApplicationExportOptions(tt.exportMethod, tt.containerEnvironment, teamID, true, true, false, exportoptions.SigningStyleAutomatic, tt.xcodeVersion, tt.testFlightInternalTestingOnly)
+			gotOpts, err := tt.generatorFactory().GenerateApplicationExportOptions(tt.exportMethod, tt.containerEnvironment, teamID, true, true, false, exportoptions.SigningStyleAutomatic, tt.testFlightInternalTestingOnly)
 
 			// Assert
 			require.NoError(t, err)
@@ -396,7 +404,9 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			scheme := givenScheme(applicationTarget)
 			logger := log.NewLogger()
 			logger.EnableDebugLog(true)
-			g := New(&xcodeProj, &scheme, "", logger)
+			xcodeVersionReader := newXcodeVersionReader(t, tt.xcodeVersion)
+
+			g := New(&xcodeProj, &scheme, "", xcodeVersionReader, logger)
 			g.certificateProvider = MockCodesignIdentityProvider{
 				[]certificateutil.CertificateInfoModel{certificate},
 			}
@@ -429,7 +439,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, tt.xcodeVersion, true)
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, true)
 
 			// Assert
 			require.NoError(t, err)
@@ -498,7 +508,9 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			scheme := givenScheme(applicationTarget)
 			logger := log.NewLogger()
 			logger.EnableDebugLog(true)
-			g := New(&xcodeProj, &scheme, "", logger)
+			xcodeVersionReader := newXcodeVersionReader(t, tt.xcodeVersion)
+
+			g := New(&xcodeProj, &scheme, "", xcodeVersionReader, logger)
 			g.certificateProvider = MockCodesignIdentityProvider{
 				[]certificateutil.CertificateInfoModel{certificate},
 			}
@@ -511,7 +523,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, tt.xcodeVersion, true)
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, true)
 
 			// Assert
 			require.NoError(t, err)
