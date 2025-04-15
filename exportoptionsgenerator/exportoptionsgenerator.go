@@ -26,28 +26,29 @@ type ExportOptionsGenerator struct {
 	xcodeVersionReader  xcodeversion.Reader
 	certificateProvider CodesignIdentityProvider
 	profileProvider     ProvisioningProfileProvider
-	targetInfoProvider  TargetInfoProvider
+	targetInfoProvider  InfoProvider
 	logger              log.Logger
 }
 
 // New constructs a new ExportOptionsGenerator.
 func New(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration string, xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOptionsGenerator {
 	targetInfoProvider := NewXcodebuildTargetInfoProvider(xcodeProj, scheme, configuration)
-	return NewWithTargetInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
+	return NewWithInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
 }
 
+// NewWithIosArchive constructs a new ExportOptionsGenerator with an xcarchive.
 func NewWithIosArchive(archive xcarchive.IosArchive, productToDistribute ExportProduct, xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOptionsGenerator {
-	targetInfoProvider := NewIosArchiveTargetInfoProvider(archive, productToDistribute)
-	return NewWithTargetInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
+	targetInfoProvider := NewIosArchiveInfoProvider(archive, productToDistribute)
+	return NewWithInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
 }
 
-// NewWithTargetInfoProvider constructs a new ExportOptionsGenerator with a custom TargetInfoProvider.
-func NewWithTargetInfoProvider(targetInfoProvider TargetInfoProvider, xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOptionsGenerator {
+// NewWithInfoProvider constructs a new ExportOptionsGenerator with a custom InfoProvider.
+func NewWithInfoProvider(infoProvider InfoProvider, xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOptionsGenerator {
 	return ExportOptionsGenerator{
 		xcodeVersionReader:  xcodeVersionReader,
 		certificateProvider: LocalCodesignIdentityProvider{},
 		profileProvider:     LocalProvisioningProfileProvider{},
-		targetInfoProvider:  targetInfoProvider,
+		targetInfoProvider:  infoProvider,
 		logger:              logger,
 	}
 }
@@ -68,9 +69,29 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 		return nil, fmt.Errorf("failed to get Xcode version: %w", err)
 	}
 
-	mainTargetBundleID, entitlementsByBundleID, err := g.targetInfoProvider.applicationTargetsAndEntitlements(exportMethod)
+	mainTargetBundleID, productToEntitlements, err := g.targetInfoProvider.ExportableBundleIDToEntitlements()
 	if err != nil {
 		return nil, err
+	}
+
+	// app-store-connect exports should contain App Clip too, but not other export methods:
+	// ..
+	// <key>provisioningProfiles</key>
+	// <dict>
+	// 	<key>io.bundle.id</key>
+	// 	<string>Development Application Profile</string>
+	// 	<key>io.bundle.id.AppClipID</key>
+	// 	<string>Development App Clip Profile</string>
+	// </dict>
+	// ..,
+	entitlementsByBundleID := map[string]plistutil.PlistData{}
+	for product, entitlements := range productToEntitlements {
+		// Filter out App Clip targets except if we are exporting App Clip itslef
+		if product.IsAppClip && !exportMethod.IsAppStore() && product.BundleID != mainTargetBundleID {
+			fmt.Printf("Filtered out App Clip target: %s", product.BundleID)
+			continue
+		}
+		entitlementsByBundleID[product.BundleID] = entitlements
 	}
 
 	iCloudContainerEnvironment, err := determineIcloudContainerEnvironment(containerEnvironment, entitlementsByBundleID, exportMethod, xcodeVersion.Major)

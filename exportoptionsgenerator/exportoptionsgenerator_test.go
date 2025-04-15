@@ -213,7 +213,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 				targetInfoProvider := MockTargetInfoProvider{
 					mainBundleID: bundleID,
 				}
-				g := NewWithTargetInfoProvider(targetInfoProvider, newXcodeVersionReader(t, 15), logger)
+				g := NewWithInfoProvider(targetInfoProvider, newXcodeVersionReader(t, 15), logger)
 
 				return g
 			},
@@ -230,100 +230,87 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 	</dict>
 </plist>`,
 		},
-		/*{
-					name:         "Default app store exportOptions",
-					exportMethod: exportoptions.MethodAppStore,
-					generatorFactory: func() ExportOptionsGenerator {
-						applicationTarget := givenApplicationTarget(nil)
-						xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget})
-						scheme := givenScheme(applicationTarget)
-						xcodeVersionReader := newXcodeVersionReader(t, 15)
+		{
+			name:         "Default app store exportOptions",
+			exportMethod: exportoptions.MethodAppStore,
+			generatorFactory: func() ExportOptionsGenerator {
+				targetInfoProvider := MockTargetInfoProvider{
+					mainBundleID: bundleID,
+				}
+				g := NewWithInfoProvider(targetInfoProvider, newXcodeVersionReader(t, 15), logger)
 
-						g := New(&xcodeProj, &scheme, "", xcodeVersionReader, logger)
-						g.targetInfoProvider = MockTargetInfoProvider{
-							bundleID: map[string]string{"Application": bundleID},
-						}
-
-						return g
+				return g
+			},
+			want: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>manageAppVersionAndBuildNumber</key>
+		<false/>
+		<key>method</key>
+		<string>app-store</string>
+		<key>teamID</key>
+		<string>TEAM123</string>
+	</dict>
+</plist>`,
+		},
+		{
+			name:                 "When the app uses iCloud services",
+			exportMethod:         exportoptions.MethodDevelopment,
+			containerEnvironment: string(exportoptions.ICloudContainerEnvironmentProduction),
+			generatorFactory: func() ExportOptionsGenerator {
+				targetInfoProvider := MockTargetInfoProvider{
+					mainBundleID: bundleID,
+					bundleIDtoEntitlements: map[string]plistutil.PlistData{
+						bundleID: {"com.apple.developer.icloud-services": []string{"CloudKit"}},
 					},
-					want: `<?xml version="1.0" encoding="UTF-8"?>
-		<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-		<plist version="1.0">
-			<dict>
-				<key>manageAppVersionAndBuildNumber</key>
-				<false/>
-				<key>method</key>
-				<string>app-store</string>
-				<key>teamID</key>
-				<string>TEAM123</string>
-			</dict>
-		</plist>`,
-				},
-				{
-					name:                 "When the app uses iCloud services",
-					exportMethod:         exportoptions.MethodDevelopment,
-					containerEnvironment: string(exportoptions.ICloudContainerEnvironmentProduction),
-					generatorFactory: func() ExportOptionsGenerator {
-						applicationTarget := givenApplicationTarget(nil)
-						xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget})
-						scheme := givenScheme(applicationTarget)
-						xcodeVersionReader := newXcodeVersionReader(t, 15)
+				}
+				g := NewWithInfoProvider(targetInfoProvider, newXcodeVersionReader(t, 15), logger)
 
-						g := New(&xcodeProj, &scheme, "", xcodeVersionReader, logger)
-						g.targetInfoProvider = MockTargetInfoProvider{
-							bundleID:             map[string]string{"Application": bundleID},
-							codesignEntitlements: map[string]serialized.Object{"Application": map[string]interface{}{"com.apple.developer.icloud-services": []string{"CloudKit"}}},
-						}
+				return g
+			},
+			want: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>distributionBundleIdentifier</key>
+		<string>io.bundle.id</string>
+		<key>iCloudContainerEnvironment</key>
+		<string>Production</string>
+		<key>method</key>
+		<string>development</string>
+		<key>teamID</key>
+		<string>TEAM123</string>
+	</dict>
+</plist>`,
+		},
+		{
+			name:                          "When exporting for TestFlight internal testing only",
+			exportMethod:                  exportoptions.MethodAppStore,
+			testFlightInternalTestingOnly: true,
+			generatorFactory: func() ExportOptionsGenerator {
+				targetInfoProvider := MockTargetInfoProvider{
+					mainBundleID: bundleID,
+				}
+				g := NewWithInfoProvider(targetInfoProvider, newXcodeVersionReader(t, 15), logger)
 
-						return g
-					},
-					want: `<?xml version="1.0" encoding="UTF-8"?>
-		<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-		<plist version="1.0">
-			<dict>
-				<key>distributionBundleIdentifier</key>
-				<string>io.bundle.id</string>
-				<key>iCloudContainerEnvironment</key>
-				<string>Production</string>
-				<key>method</key>
-				<string>development</string>
-				<key>teamID</key>
-				<string>TEAM123</string>
-			</dict>
-		</plist>`,
-				},
-				{
-					name:                          "When exporting for TestFlight internal testing only",
-					exportMethod:                  exportoptions.MethodAppStore,
-					testFlightInternalTestingOnly: true,
-					generatorFactory: func() ExportOptionsGenerator {
-						applicationTarget := givenApplicationTarget(nil)
-						xcodeProj := givenXcodeproj([]xcodeproj.Target{applicationTarget})
-						scheme := givenScheme(applicationTarget)
-						xcodeVersionReader := newXcodeVersionReader(t, 15)
-
-						g := New(&xcodeProj, &scheme, "", xcodeVersionReader, logger)
-						g.targetInfoProvider = MockTargetInfoProvider{
-							bundleID: map[string]string{"Application": bundleID},
-						}
-
-						return g
-					},
-					want: `<?xml version="1.0" encoding="UTF-8"?>
-		<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-		<plist version="1.0">
-			<dict>
-				<key>manageAppVersionAndBuildNumber</key>
-				<false/>
-				<key>method</key>
-				<string>app-store</string>
-				<key>teamID</key>
-				<string>TEAM123</string>
-				<key>testFlightInternalTestingOnly</key>
-				<true/>
-			</dict>
-		</plist>`,
-				},*/
+				return g
+			},
+			want: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>manageAppVersionAndBuildNumber</key>
+		<false/>
+		<key>method</key>
+		<string>app-store</string>
+		<key>teamID</key>
+		<string>TEAM123</string>
+		<key>testFlightInternalTestingOnly</key>
+		<true/>
+	</dict>
+</plist>`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -393,18 +380,18 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			// Arrange
 			logger := log.NewLogger()
 			logger.EnableDebugLog(true)
+
 			xcodeVersionReader := newXcodeVersionReader(t, tt.xcodeVersion)
 
-			cloudKitEntitlement := map[string]interface{}{"com.apple.developer.icloud-services": []string{"CloudKit"}}
 			targetInfoProvider := MockTargetInfoProvider{
 				mainBundleID: bundleID,
 				bundleIDtoEntitlements: map[string]plistutil.PlistData{
-					bundleID:     cloudKitEntitlement,
-					bundleIDClip: nil,
+					bundleID: {"com.apple.developer.icloud-services": []string{"CloudKit"}},
 				},
+				appClipBundleID: bundleIDClip,
 			}
 
-			g := NewWithTargetInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
+			g := NewWithInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
 			g.certificateProvider = MockCodesignIdentityProvider{
 				[]certificateutil.CertificateInfoModel{certificate},
 			}
@@ -502,11 +489,11 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			targetInfoProvider := MockTargetInfoProvider{
 				mainBundleID: bundleID,
 				bundleIDtoEntitlements: map[string]plistutil.PlistData{
-					bundleID:     cloudKitEntitlement,
-					bundleIDClip: nil,
+					bundleID: cloudKitEntitlement,
 				},
+				appClipBundleID: bundleIDClip,
 			}
-			g := NewWithTargetInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
+			g := NewWithInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
 
 			g.certificateProvider = MockCodesignIdentityProvider{
 				[]certificateutil.CertificateInfoModel{certificate},
@@ -550,55 +537,17 @@ func (p MockProvisioningProfileProvider) GetDefaultProvisioningProfile() (profil
 type MockTargetInfoProvider struct {
 	mainBundleID           string
 	bundleIDtoEntitlements map[string]plistutil.PlistData
+	appClipBundleID        string
 }
 
-func (b MockTargetInfoProvider) applicationTargetsAndEntitlements(exportMethod exportoptions.Method) (string, map[string]plistutil.PlistData, error) {
-	return b.mainBundleID, b.bundleIDtoEntitlements, nil
+func (b MockTargetInfoProvider) ExportableBundleIDToEntitlements() (string, map[DistributedProduct]plistutil.PlistData, error) {
+	bundleIDToEntitlements := map[DistributedProduct]plistutil.PlistData{}
+	for bundleID, entitlements := range b.bundleIDtoEntitlements {
+		bundleIDToEntitlements[DistributedProduct{BundleID: bundleID, IsAppClip: false}] = entitlements
+	}
+	if b.appClipBundleID != "" {
+		bundleIDToEntitlements[DistributedProduct{BundleID: b.appClipBundleID, IsAppClip: true}] = nil
+	}
+
+	return b.mainBundleID, bundleIDToEntitlements, nil
 }
-
-// func givenAppClipTarget() xcodeproj.Target {
-// 	return xcodeproj.Target{
-// 		ID:               "app_clip_id",
-// 		Name:             "App Clip",
-// 		ProductReference: xcodeproj.ProductReference{Path: "Fruta iOS Clip.app"},
-// 		ProductType:      AppClipProductType,
-// 	}
-// }
-
-// func givenApplicationTarget(dependentTargets []xcodeproj.Target) xcodeproj.Target {
-// 	var dependencies []xcodeproj.TargetDependency
-// 	for _, target := range dependentTargets {
-// 		dependencies = append(dependencies, xcodeproj.TargetDependency{TargetID: target.ID})
-// 	}
-
-// 	return xcodeproj.Target{
-// 		ID:               "application_id",
-// 		Name:             "Application",
-// 		Dependencies:     dependencies,
-// 		ProductReference: xcodeproj.ProductReference{Path: "Fruta.app"},
-// 	}
-// }
-
-// func givenXcodeproj(targets []xcodeproj.Target) xcodeproj.XcodeProj {
-// 	return xcodeproj.XcodeProj{
-// 		Proj: xcodeproj.Proj{
-// 			Targets: targets,
-// 		},
-// 	}
-// }
-
-// func givenScheme(archivableTarget xcodeproj.Target) xcscheme.Scheme {
-// 	return xcscheme.Scheme{
-// 		BuildAction: xcscheme.BuildAction{
-// 			BuildActionEntries: []xcscheme.BuildActionEntry{
-// 				{
-// 					BuildForArchiving: "YES",
-// 					BuildableReference: xcscheme.BuildableReference{
-// 						BuildableName:       archivableTarget.ProductReference.Path,
-// 						BlueprintIdentifier: archivableTarget.ID,
-// 					},
-// 				},
-// 			},
-// 		},
-// 	}
-// }
