@@ -386,7 +386,8 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			targetInfoProvider := MockTargetInfoProvider{
 				mainBundleID: bundleID,
 				bundleIDtoEntitlements: map[string]plistutil.PlistData{
-					bundleID: {"com.apple.developer.icloud-services": []string{"CloudKit"}},
+					bundleID:     {"com.apple.developer.icloud-services": []string{"CloudKit"}},
+					bundleIDClip: nil,
 				},
 				appClipBundleID: bundleIDClip,
 			}
@@ -489,7 +490,8 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			targetInfoProvider := MockTargetInfoProvider{
 				mainBundleID: bundleID,
 				bundleIDtoEntitlements: map[string]plistutil.PlistData{
-					bundleID: cloudKitEntitlement,
+					bundleID:     cloudKitEntitlement,
+					bundleIDClip: nil,
 				},
 				appClipBundleID: bundleIDClip,
 			}
@@ -540,14 +542,10 @@ type MockTargetInfoProvider struct {
 	appClipBundleID        string
 }
 
-func (b MockTargetInfoProvider) ExportableBundleIDToEntitlements() (string, map[DistributedProduct]plistutil.PlistData, error) {
-	bundleIDToEntitlements := map[DistributedProduct]plistutil.PlistData{}
-	for bundleID, entitlements := range b.bundleIDtoEntitlements {
-		bundleIDToEntitlements[DistributedProduct{BundleID: bundleID, IsAppClip: false}] = entitlements
-	}
-	if b.appClipBundleID != "" {
-		bundleIDToEntitlements[DistributedProduct{BundleID: b.appClipBundleID, IsAppClip: true}] = nil
-	}
-
-	return b.mainBundleID, bundleIDToEntitlements, nil
+func (b MockTargetInfoProvider) Read() (ArchiveInfo, error) {
+	return ArchiveInfo{
+		MainBundleID:           b.mainBundleID,
+		AppClipBundleID:        b.appClipBundleID,
+		EntitlementsByBundleID: b.bundleIDtoEntitlements,
+	}, nil
 }

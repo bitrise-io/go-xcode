@@ -9,14 +9,15 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 )
 
-type DistributedProduct struct {
-	BundleID  string
-	IsAppClip bool
+type ArchiveInfo struct {
+	MainBundleID           string
+	AppClipBundleID        string
+	EntitlementsByBundleID map[string]plistutil.PlistData
 }
 
 // InfoProvider can determine the exportable bundle ID(s) and codesign entitlements.
 type InfoProvider interface {
-	ExportableBundleIDToEntitlements() (string, map[DistributedProduct]plistutil.PlistData, error)
+	Read() (ArchiveInfo, error)
 }
 
 // XcodebuildInfoProvider implements TargetInfoProvider.
@@ -34,41 +35,45 @@ func NewXcodebuildTargetInfoProvider(xcodeProj *xcodeproj.XcodeProj, scheme *xcs
 	}
 }
 
-// ExportableBundleIDToEntitlements returns the main target's bundle ID and the entitlements of all dependent targets.
-func (b XcodebuildInfoProvider) ExportableBundleIDToEntitlements() (string, map[DistributedProduct]plistutil.PlistData, error) {
+// Read returns the main target's bundle ID and the entitlements of all dependent targets.
+func (b XcodebuildInfoProvider) Read() (ArchiveInfo, error) {
 	mainTarget, err := ArchivableApplicationTarget(b.xcodeProj, b.scheme)
 	if err != nil {
-		return "", nil, err
+		return ArchiveInfo{}, err
 	}
 
 	dependentTargets := filterApplicationBundleTargets(b.xcodeProj.DependentTargetsOfTarget(*mainTarget))
 	targets := append([]xcodeproj.Target{*mainTarget}, dependentTargets...)
 
-	var mainTargetBundleID string
-	entitlementsByBundleID := map[DistributedProduct]plistutil.PlistData{}
+	mainTargetBundleID := ""
+	appClipBundleID := ""
+	entitlementsByBundleID := map[string]plistutil.PlistData{}
 	for i, target := range targets {
 		bundleID, err := b.xcodeProj.TargetBundleID(target.Name, b.configuration)
 		if err != nil {
-			return "", nil, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
+			return ArchiveInfo{}, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
 		}
 
 		entitlements, err := b.xcodeProj.TargetCodeSignEntitlements(target.Name, b.configuration)
 		if err != nil && !serialized.IsKeyNotFoundError(err) {
-			return "", nil, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
+			return ArchiveInfo{}, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
 		}
 
-		p := DistributedProduct{
-			BundleID:  bundleID,
-			IsAppClip: target.IsAppClipProduct(),
-		}
-		entitlementsByBundleID[p] = plistutil.PlistData(entitlements)
+		entitlementsByBundleID[bundleID] = plistutil.PlistData(entitlements)
 
+		if target.IsAppClipProduct() {
+			appClipBundleID = bundleID
+		}
 		if i == 0 {
 			mainTargetBundleID = bundleID
 		}
 	}
 
-	return mainTargetBundleID, entitlementsByBundleID, nil
+	return ArchiveInfo{
+		MainBundleID:           mainTargetBundleID,
+		AppClipBundleID:        appClipBundleID,
+		EntitlementsByBundleID: entitlementsByBundleID,
+	}, nil
 }
 
 // ArchivableApplicationTarget locate archivable app target from a given project and scheme

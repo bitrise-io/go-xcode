@@ -26,7 +26,7 @@ type ExportOptionsGenerator struct {
 	xcodeVersionReader  xcodeversion.Reader
 	certificateProvider CodesignIdentityProvider
 	profileProvider     ProvisioningProfileProvider
-	targetInfoProvider  InfoProvider
+	archiveInfoProvider InfoProvider
 	logger              log.Logger
 }
 
@@ -48,7 +48,7 @@ func NewWithInfoProvider(infoProvider InfoProvider, xcodeVersionReader xcodevers
 		xcodeVersionReader:  xcodeVersionReader,
 		certificateProvider: LocalCodesignIdentityProvider{},
 		profileProvider:     LocalProvisioningProfileProvider{},
-		targetInfoProvider:  infoProvider,
+		archiveInfoProvider: infoProvider,
 		logger:              logger,
 	}
 }
@@ -69,7 +69,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 		return nil, fmt.Errorf("failed to get Xcode version: %w", err)
 	}
 
-	mainTargetBundleID, productToEntitlements, err := g.targetInfoProvider.ExportableBundleIDToEntitlements()
+	archiveInfo, err := g.archiveInfoProvider.Read()
 	if err != nil {
 		return nil, err
 	}
@@ -83,18 +83,17 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	// 	<key>io.bundle.id.AppClipID</key>
 	// 	<string>Development App Clip Profile</string>
 	// </dict>
-	// ..,
-	entitlementsByBundleID := map[string]plistutil.PlistData{}
-	for product, entitlements := range productToEntitlements {
-		// Filter out App Clip targets except if we are exporting App Clip itslef
-		if product.IsAppClip && !exportMethod.IsAppStore() && product.BundleID != mainTargetBundleID {
-			fmt.Printf("Filtered out App Clip target: %s", product.BundleID)
-			continue
+	// ..
+	for bundleID := range archiveInfo.EntitlementsByBundleID {
+		if bundleID == archiveInfo.AppClipBundleID {
+			if !exportMethod.IsAppStore() && bundleID != archiveInfo.MainBundleID { // do not remove if exporting App Clip
+				fmt.Printf("Filtered out App Clip target: %s", bundleID)
+				delete(archiveInfo.EntitlementsByBundleID, bundleID)
+			}
 		}
-		entitlementsByBundleID[product.BundleID] = entitlements
 	}
 
-	iCloudContainerEnvironment, err := determineIcloudContainerEnvironment(containerEnvironment, entitlementsByBundleID, exportMethod, xcodeVersion.Major)
+	iCloudContainerEnvironment, err := determineIcloudContainerEnvironment(containerEnvironment, archiveInfo.EntitlementsByBundleID, exportMethod, xcodeVersion.Major)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +101,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	exportOpts := generateBaseExportOptions(exportMethod, xcodeVersion, uploadBitcode, compileBitcode, iCloudContainerEnvironment)
 
 	if xcodeVersion.Major >= 12 {
-		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, mainTargetBundleID)
+		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, archiveInfo.MainBundleID)
 	}
 
 	// if xcodebuildMajorVersion >= 13 {
@@ -118,7 +117,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	if codeSigningStyle == exportoptions.SigningStyleAutomatic {
 		exportOpts = addTeamID(exportOpts, teamID)
 	} else {
-		codeSignGroup, err := g.determineCodesignGroup(entitlementsByBundleID, exportMethod, teamID, archivedWithXcodeManagedProfiles)
+		codeSignGroup, err := g.determineCodesignGroup(archiveInfo.EntitlementsByBundleID, exportMethod, teamID, archivedWithXcodeManagedProfiles)
 		if err != nil {
 			return nil, err
 		}
