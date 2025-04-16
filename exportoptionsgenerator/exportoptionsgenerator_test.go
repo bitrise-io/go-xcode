@@ -203,6 +203,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 		containerEnvironment          string
 		xcodeVersion                  int64
 		testFlightInternalTestingOnly bool
+		ManageVersionAndBuildNumber   bool
 		want                          string
 		wantErr                       bool
 	}{
@@ -231,8 +232,9 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 </plist>`,
 		},
 		{
-			name:         "Default app store exportOptions",
-			exportMethod: exportoptions.MethodAppStore,
+			name:                        "app store exportOptions, with managed version",
+			exportMethod:                exportoptions.MethodAppStore,
+			ManageVersionAndBuildNumber: true,
 			generatorFactory: func() ExportOptionsGenerator {
 				targetInfoProvider := MockTargetInfoProvider{
 					mainBundleID: bundleID,
@@ -245,8 +247,6 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
-		<key>manageAppVersionAndBuildNumber</key>
-		<false/>
 		<key>method</key>
 		<string>app-store</string>
 		<key>teamID</key>
@@ -322,6 +322,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 				CompileBitcode:                   true,
 				ArchivedWithXcodeManagedProfiles: false,
 				TestFlightInternalTestingOnly:    tt.testFlightInternalTestingOnly,
+				ManageVersionAndBuildNumber:      tt.ManageVersionAndBuildNumber,
 			}
 			gotOpts, err := tt.generatorFactory().GenerateApplicationExportOptions(tt.exportMethod, exportoptions.SigningStyleAutomatic, opts)
 
