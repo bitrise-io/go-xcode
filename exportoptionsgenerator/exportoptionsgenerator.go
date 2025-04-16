@@ -21,6 +21,17 @@ const (
 	AppClipProductType = "com.apple.product-type.application.on-demand-install-capable"
 )
 
+// Opts contains options for the exportOptions generator.
+type Opts struct {
+	ContainerEnvironment             string
+	TeamID                           string
+	UploadBitcode                    bool
+	CompileBitcode                   bool
+	ArchivedWithXcodeManagedProfiles bool
+	TestFlightInternalTestingOnly    bool
+	ManageVersionAndBuildNumber      bool
+}
+
 // ExportOptionsGenerator generates an exportOptions.plist file.
 type ExportOptionsGenerator struct {
 	xcodeVersionReader  xcodeversion.Reader
@@ -54,16 +65,7 @@ func NewWithInfoProvider(infoProvider InfoProvider, xcodeVersionReader xcodevers
 }
 
 // GenerateApplicationExportOptions generates exportOptions for an application export.
-func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
-	exportMethod exportoptions.Method,
-	containerEnvironment string,
-	teamID string,
-	uploadBitcode bool,
-	compileBitcode bool,
-	archivedWithXcodeManagedProfiles bool,
-	codeSigningStyle exportoptions.SigningStyle,
-	testFlightInternalTestingOnly bool,
-) (exportoptions.ExportOptions, error) {
+func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod exportoptions.Method, codeSigningStyle exportoptions.SigningStyle, opts Opts) (exportoptions.ExportOptions, error) {
 	xcodeVersion, err := g.xcodeVersionReader.GetVersion()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Xcode version: %w", err)
@@ -87,37 +89,31 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	for bundleID := range archiveInfo.EntitlementsByBundleID {
 		if bundleID == archiveInfo.AppClipBundleID {
 			if !exportMethod.IsAppStore() && bundleID != archiveInfo.MainBundleID { // do not remove if exporting App Clip
-				fmt.Printf("Filtered out App Clip target: %s", bundleID)
+				g.logger.Debugf("Filtering out App Clip target: %s", bundleID)
 				delete(archiveInfo.EntitlementsByBundleID, bundleID)
 			}
 		}
 	}
 
-	iCloudContainerEnvironment, err := determineIcloudContainerEnvironment(containerEnvironment, archiveInfo.EntitlementsByBundleID, exportMethod, xcodeVersion.Major)
+	iCloudContainerEnvironment, err := determineIcloudContainerEnvironment(opts.ContainerEnvironment, archiveInfo.EntitlementsByBundleID, exportMethod, xcodeVersion.Major)
 	if err != nil {
 		return nil, err
 	}
 
-	exportOpts := generateBaseExportOptions(exportMethod, xcodeVersion, uploadBitcode, compileBitcode, iCloudContainerEnvironment)
+	exportOpts := generateBaseExportOptions(exportMethod, xcodeVersion, opts.UploadBitcode, opts.CompileBitcode, iCloudContainerEnvironment)
 
 	if xcodeVersion.Major >= 12 {
 		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, archiveInfo.MainBundleID)
 	}
 
-	// if xcodebuildMajorVersion >= 13 {
-	// 	log.Debugf("Setting flag for managing app version and build number")
-
-	// 	options.ManageAppVersion = manageVersionAndBuildNumber
-	// }
-
 	if xcodeVersion.Major >= 13 {
-		exportOpts = disableManagedBuildNumberFromXcode13(exportOpts)
+		exportOpts = addManagedBuildNumberFromXcode13(exportOpts, opts.ManageVersionAndBuildNumber)
 	}
 
 	if codeSigningStyle == exportoptions.SigningStyleAutomatic {
-		exportOpts = addTeamID(exportOpts, teamID)
+		exportOpts = addTeamID(exportOpts, opts.TeamID)
 	} else {
-		codeSignGroup, err := g.determineCodesignGroup(archiveInfo.EntitlementsByBundleID, exportMethod, teamID, archivedWithXcodeManagedProfiles)
+		codeSignGroup, err := g.determineCodesignGroup(archiveInfo.EntitlementsByBundleID, exportMethod, opts.TeamID, opts.ArchivedWithXcodeManagedProfiles)
 		if err != nil {
 			return nil, err
 		}
@@ -125,12 +121,12 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 			return exportOpts, nil
 		}
 
-		exportOpts = addManualSigningFields(exportOpts, codeSignGroup, archivedWithXcodeManagedProfiles, g.logger)
+		exportOpts = addManualSigningFields(exportOpts, codeSignGroup, opts.ArchivedWithXcodeManagedProfiles, g.logger)
 	}
 
 	if xcodeVersion.Major >= 15 {
-		if testFlightInternalTestingOnly {
-			exportOpts = addTestFlightInternalTestingOnly(exportOpts, testFlightInternalTestingOnly)
+		if opts.TestFlightInternalTestingOnly {
+			exportOpts = addTestFlightInternalTestingOnly(exportOpts, opts.TestFlightInternalTestingOnly)
 		}
 	}
 
@@ -370,10 +366,10 @@ func addDistributionBundleIdentifierFromXcode12(exportOpts exportoptions.ExportO
 	return nil
 }
 
-func disableManagedBuildNumberFromXcode13(exportOpts exportoptions.ExportOptions) exportoptions.ExportOptions {
+func addManagedBuildNumberFromXcode13(exportOpts exportoptions.ExportOptions, isManageAppVersion bool) exportoptions.ExportOptions {
 	switch options := exportOpts.(type) {
 	case exportoptions.AppStoreOptionsModel:
-		options.ManageAppVersion = false // Only available for app-store exports
+		options.ManageAppVersion = isManageAppVersion // Only available for app-store exports
 
 		return options
 	}

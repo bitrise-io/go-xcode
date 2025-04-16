@@ -315,7 +315,15 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Act
-			gotOpts, err := tt.generatorFactory().GenerateApplicationExportOptions(tt.exportMethod, tt.containerEnvironment, teamID, true, true, false, exportoptions.SigningStyleAutomatic, tt.testFlightInternalTestingOnly)
+			opts := Opts{
+				ContainerEnvironment:             tt.containerEnvironment,
+				TeamID:                           teamID,
+				UploadBitcode:                    true,
+				CompileBitcode:                   true,
+				ArchivedWithXcodeManagedProfiles: false,
+				TestFlightInternalTestingOnly:    tt.testFlightInternalTestingOnly,
+			}
+			gotOpts, err := tt.generatorFactory().GenerateApplicationExportOptions(tt.exportMethod, exportoptions.SigningStyleAutomatic, opts)
 
 			// Assert
 			require.NoError(t, err)
@@ -419,7 +427,15 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, true)
+			opts := Opts{
+				ContainerEnvironment:             string(exportoptions.ICloudContainerEnvironmentProduction),
+				TeamID:                           teamID,
+				UploadBitcode:                    true,
+				CompileBitcode:                   true,
+				ArchivedWithXcodeManagedProfiles: false,
+				TestFlightInternalTestingOnly:    false,
+			}
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, exportoptions.SigningStyleManual, opts)
 
 			// Assert
 			require.NoError(t, err)
@@ -503,7 +519,15 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			g.profileProvider = MockProvisioningProfileProvider{}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, "Production", teamID, true, true, false, exportoptions.SigningStyleManual, true)
+			opts := Opts{
+				ContainerEnvironment:             string(exportoptions.ICloudContainerEnvironmentProduction),
+				TeamID:                           teamID,
+				UploadBitcode:                    true,
+				CompileBitcode:                   true,
+				ArchivedWithXcodeManagedProfiles: false,
+				TestFlightInternalTestingOnly:    true,
+			}
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, exportoptions.SigningStyleManual, opts)
 
 			// Assert
 			require.NoError(t, err)

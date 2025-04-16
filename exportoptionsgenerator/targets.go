@@ -100,7 +100,5 @@ func filterApplicationBundleTargets(targets []xcodeproj.Target) (filteredTargets
 		filteredTargets = append(filteredTargets, target)
 	}
 
-	fmt.Printf("Found %v application bundle targets", len(filteredTargets))
-
 	return
 }
