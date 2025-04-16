@@ -9,6 +9,7 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 )
 
+// ArchiveInfo contains the distribution bundle ID(s)	and entitlements of the main target and its dependencies.
 type ArchiveInfo struct {
 	MainBundleID           string
 	AppClipBundleID        string
@@ -27,6 +28,7 @@ type XcodebuildInfoProvider struct {
 	configuration string
 }
 
+// NewXcodebuildTargetInfoProvider reads archive information from an Xcode project and scheme.
 func NewXcodebuildTargetInfoProvider(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration string) InfoProvider {
 	return &XcodebuildInfoProvider{
 		xcodeProj:     xcodeProj,
@@ -35,7 +37,7 @@ func NewXcodebuildTargetInfoProvider(xcodeProj *xcodeproj.XcodeProj, scheme *xcs
 	}
 }
 
-// Read returns the main target's bundle ID and the entitlements of all dependent targets.
+// Read returns the ArchiveInfo.
 func (b XcodebuildInfoProvider) Read() (ArchiveInfo, error) {
 	mainTarget, err := ArchivableApplicationTarget(b.xcodeProj, b.scheme)
 	if err != nil {
