@@ -59,16 +59,11 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 		return nil, fmt.Errorf("failed to get Xcode version: %w", err)
 	}
 
-	// app-store-connect exports should contain App Clip too, but not other export methods:
-	// ..
-	// <key>provisioningProfiles</key>
-	// <dict>
-	// 	<key>io.bundle.id</key>
-	// 	<string>Development Application Profile</string>
-	// 	<key>io.bundle.id.AppClipID</key>
-	// 	<string>Development App Clip Profile</string>
-	// </dict>
-	// ..
+	// BundleIDs appear in the export options plist in:
+	// - distributionBundleIdentifier: can be the main app or the app Clip bundle ID.
+	//   It is only valid for NON app-store-connect distribution. App Store export includes both app and app-clip in one go, others do not.
+	// - provisioningProfiles dictionary:
+	//  When distributing an app-clip, its bundle ID needs to be in the provisioningProfiles dictionary, otherwise it needs to be removed.
 	for bundleID := range archiveInfo.EntitlementsByBundleID {
 		if bundleID == archiveInfo.AppClipBundleID {
 			if !exportMethod.IsAppStore() && bundleID != archiveInfo.ProductToDistributeBundleID { // do not remove if exporting App Clip
