@@ -9,11 +9,11 @@ import (
 	v1xcarchive "github.com/bitrise-io/go-xcode/xcarchive"
 )
 
-func TestIosArchive_ReadCodesignParameters(t *testing.T) {
+func TestIosArchive_GetAppLayout(t *testing.T) {
 	tests := []struct {
 		name    string
 		archive IosArchive
-		want    *autocodesign.AppLayout
+		want    autocodesign.AppLayout
 		wantErr bool
 	}{
 		{
@@ -33,7 +33,7 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 					},
 				},
 			},
-			want: &autocodesign.AppLayout{
+			want: autocodesign.AppLayout{
 				Platform: autocodesign.IOS,
 				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 					"io.bitrise.app": nil,
@@ -116,7 +116,7 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 					},
 				},
 			},
-			want: &autocodesign.AppLayout{
+			want: autocodesign.AppLayout{
 				Platform: autocodesign.IOS,
 				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 					"io.bitrise.app":          nil,
@@ -149,7 +149,7 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 					},
 				},
 			},
-			want: &autocodesign.AppLayout{
+			want: autocodesign.AppLayout{
 				Platform: autocodesign.IOS,
 				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 					"io.bitrise.app": {
@@ -162,7 +162,7 @@ func TestIosArchive_ReadCodesignParameters(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.archive.ReadCodesignParameters()
+			got, err := tt.archive.GetAppLayout(false)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ReadCodesignParameters() error = %v, wantErr %v", err, tt.wantErr)
 				return
