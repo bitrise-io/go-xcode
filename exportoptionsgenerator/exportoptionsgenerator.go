@@ -70,13 +70,18 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 		if archiveInfo.AppClipBundleID == "" {
 			return nil, fmt.Errorf("xcarchive does not contain an App Clip, cannot export an App Clip")
 		}
+
+		if exportMethod.IsAppStore() {
+			g.logger.Warnf("Selected app-clip for distribution, but distribution method is the App Store.\n" +
+				"Exported .app will contain both the app and the app-clip for App Store exports.\n")
+		}
 		productToDistributeBundleID = archiveInfo.AppClipBundleID
 	}
 
 	if exportedProduct != ExportProductAppClip {
 		for bundleID := range archiveInfo.EntitlementsByBundleID {
 			if bundleID == archiveInfo.AppClipBundleID && !exportMethod.IsAppStore() {
-				g.logger.Debugf("Filtering out App Clip target: %s", bundleID)
+				g.logger.Debugf("Filtering out App Clip target, as non App Store distribution is used: %s", bundleID)
 				delete(archiveInfo.EntitlementsByBundleID, bundleID)
 			}
 		}
