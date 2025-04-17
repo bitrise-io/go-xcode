@@ -11,52 +11,31 @@ import (
 
 // ArchiveInfo contains the distribution bundle ID(s)	and entitlements of the main target and its dependencies.
 type ArchiveInfo struct {
-	MainBundleID           string
-	AppClipBundleID        string
-	EntitlementsByBundleID map[string]plistutil.PlistData
+	ProductToDistributeBundleID string
+	AppClipBundleID             string
+	EntitlementsByBundleID      map[string]plistutil.PlistData
 }
 
-// InfoProvider can determine the exportable bundle ID(s) and codesign entitlements.
-type InfoProvider interface {
-	Read() (ArchiveInfo, error)
-}
-
-// XcodebuildInfoProvider implements TargetInfoProvider.
-type XcodebuildInfoProvider struct {
-	xcodeProj     *xcodeproj.XcodeProj
-	scheme        *xcscheme.Scheme
-	configuration string
-}
-
-// NewXcodebuildTargetInfoProvider reads archive information from an Xcode project and scheme.
-func NewXcodebuildTargetInfoProvider(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration string) InfoProvider {
-	return &XcodebuildInfoProvider{
-		xcodeProj:     xcodeProj,
-		scheme:        scheme,
-		configuration: configuration,
-	}
-}
-
-// Read returns the ArchiveInfo.
-func (b XcodebuildInfoProvider) Read() (ArchiveInfo, error) {
-	mainTarget, err := ArchivableApplicationTarget(b.xcodeProj, b.scheme)
+// ReadArchiveInfoFromXcodeproject reads the Bundle ID for the given scheme and configuration.
+func ReadArchiveInfoFromXcodeproject(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration string) (ArchiveInfo, error) {
+	mainTarget, err := ArchivableApplicationTarget(xcodeProj, scheme)
 	if err != nil {
 		return ArchiveInfo{}, err
 	}
 
-	dependentTargets := filterApplicationBundleTargets(b.xcodeProj.DependentTargetsOfTarget(*mainTarget))
+	dependentTargets := filterApplicationBundleTargets(xcodeProj.DependentTargetsOfTarget(*mainTarget))
 	targets := append([]xcodeproj.Target{*mainTarget}, dependentTargets...)
 
 	mainTargetBundleID := ""
 	appClipBundleID := ""
 	entitlementsByBundleID := map[string]plistutil.PlistData{}
 	for i, target := range targets {
-		bundleID, err := b.xcodeProj.TargetBundleID(target.Name, b.configuration)
+		bundleID, err := xcodeProj.TargetBundleID(target.Name, configuration)
 		if err != nil {
 			return ArchiveInfo{}, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
 		}
 
-		entitlements, err := b.xcodeProj.TargetCodeSignEntitlements(target.Name, b.configuration)
+		entitlements, err := xcodeProj.TargetCodeSignEntitlements(target.Name, configuration)
 		if err != nil && !serialized.IsKeyNotFoundError(err) {
 			return ArchiveInfo{}, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
 		}
@@ -72,9 +51,9 @@ func (b XcodebuildInfoProvider) Read() (ArchiveInfo, error) {
 	}
 
 	return ArchiveInfo{
-		MainBundleID:           mainTargetBundleID,
-		AppClipBundleID:        appClipBundleID,
-		EntitlementsByBundleID: entitlementsByBundleID,
+		ProductToDistributeBundleID: mainTargetBundleID,
+		AppClipBundleID:             appClipBundleID,
+		EntitlementsByBundleID:      entitlementsByBundleID,
 	}, nil
 }
 

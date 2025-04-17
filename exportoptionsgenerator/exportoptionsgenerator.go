@@ -10,10 +10,7 @@ import (
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
-	"github.com/bitrise-io/go-xcode/v2/xcarchive"
 	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 )
 
 const (
@@ -37,43 +34,29 @@ type ExportOptionsGenerator struct {
 	xcodeVersionReader  xcodeversion.Reader
 	certificateProvider CodesignIdentityProvider
 	profileProvider     ProvisioningProfileProvider
-	archiveInfoProvider InfoProvider
 	logger              log.Logger
 }
 
 // New constructs a new ExportOptionsGenerator.
-func New(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration string, xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOptionsGenerator {
-	targetInfoProvider := NewXcodebuildTargetInfoProvider(xcodeProj, scheme, configuration)
-	return NewWithInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
-}
-
-// NewWithIosArchive constructs a new ExportOptionsGenerator with an xcarchive.
-func NewWithIosArchive(archive xcarchive.IosArchive, productToDistribute ExportProduct, xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOptionsGenerator {
-	targetInfoProvider := NewIosArchiveInfoProvider(archive, productToDistribute)
-	return NewWithInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
-}
-
-// NewWithInfoProvider constructs a new ExportOptionsGenerator with a custom InfoProvider.
-func NewWithInfoProvider(infoProvider InfoProvider, xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOptionsGenerator {
+func New(xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOptionsGenerator {
 	return ExportOptionsGenerator{
 		xcodeVersionReader:  xcodeVersionReader,
 		certificateProvider: LocalCodesignIdentityProvider{},
 		profileProvider:     LocalProvisioningProfileProvider{},
-		archiveInfoProvider: infoProvider,
 		logger:              logger,
 	}
 }
 
 // GenerateApplicationExportOptions generates exportOptions for an application export.
-func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod exportoptions.Method, codeSigningStyle exportoptions.SigningStyle, opts Opts) (exportoptions.ExportOptions, error) {
+func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
+	archiveInfo ArchiveInfo,
+	exportMethod exportoptions.Method,
+	codeSigningStyle exportoptions.SigningStyle,
+	opts Opts,
+) (exportoptions.ExportOptions, error) {
 	xcodeVersion, err := g.xcodeVersionReader.GetVersion()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Xcode version: %w", err)
-	}
-
-	archiveInfo, err := g.archiveInfoProvider.Read()
-	if err != nil {
-		return nil, err
 	}
 
 	// app-store-connect exports should contain App Clip too, but not other export methods:
@@ -88,7 +71,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod ex
 	// ..
 	for bundleID := range archiveInfo.EntitlementsByBundleID {
 		if bundleID == archiveInfo.AppClipBundleID {
-			if !exportMethod.IsAppStore() && bundleID != archiveInfo.MainBundleID { // do not remove if exporting App Clip
+			if !exportMethod.IsAppStore() && bundleID != archiveInfo.ProductToDistributeBundleID { // do not remove if exporting App Clip
 				g.logger.Debugf("Filtering out App Clip target: %s", bundleID)
 				delete(archiveInfo.EntitlementsByBundleID, bundleID)
 			}
@@ -103,7 +86,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(exportMethod ex
 	exportOpts := generateBaseExportOptions(exportMethod, xcodeVersion, opts.UploadBitcode, opts.CompileBitcode, iCloudContainerEnvironment)
 
 	if xcodeVersion.Major >= 12 {
-		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, archiveInfo.MainBundleID)
+		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, archiveInfo.ProductToDistributeBundleID)
 	}
 
 	if xcodeVersion.Major >= 13 {

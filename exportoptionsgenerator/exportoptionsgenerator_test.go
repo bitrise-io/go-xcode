@@ -198,7 +198,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 
 	tests := []struct {
 		name                          string
-		generatorFactory              func() ExportOptionsGenerator
+		archiveInfo                   ArchiveInfo
 		exportMethod                  exportoptions.Method
 		containerEnvironment          string
 		xcodeVersion                  int64
@@ -208,16 +208,12 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 		wantErr                       bool
 	}{
 		{
-			name:         "Default development exportOptions",
-			exportMethod: exportoptions.MethodDevelopment,
-			generatorFactory: func() ExportOptionsGenerator {
-				targetInfoProvider := MockTargetInfoProvider{
-					mainBundleID: bundleID,
-				}
-				g := NewWithInfoProvider(targetInfoProvider, newXcodeVersionReader(t, 15), logger)
-
-				return g
+			name: "Default development exportOptions",
+			archiveInfo: ArchiveInfo{
+				ProductToDistributeBundleID: bundleID,
 			},
+			exportMethod: exportoptions.MethodDevelopment,
+			xcodeVersion: 15,
 			want: `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -232,17 +228,13 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 </plist>`,
 		},
 		{
-			name:                        "app store exportOptions, with managed version",
+			name: "app store exportOptions, with managed version",
+			archiveInfo: ArchiveInfo{
+				ProductToDistributeBundleID: bundleID,
+			},
 			exportMethod:                exportoptions.MethodAppStore,
 			ManageVersionAndBuildNumber: true,
-			generatorFactory: func() ExportOptionsGenerator {
-				targetInfoProvider := MockTargetInfoProvider{
-					mainBundleID: bundleID,
-				}
-				g := NewWithInfoProvider(targetInfoProvider, newXcodeVersionReader(t, 15), logger)
-
-				return g
-			},
+			xcodeVersion:                15,
 			want: `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -255,20 +247,16 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 </plist>`,
 		},
 		{
-			name:                 "When the app uses iCloud services",
+			name: "When the app uses iCloud services",
+			archiveInfo: ArchiveInfo{
+				ProductToDistributeBundleID: bundleID,
+				EntitlementsByBundleID: map[string]plistutil.PlistData{
+					bundleID: {"com.apple.developer.icloud-services": []string{"CloudKit"}},
+				},
+			},
 			exportMethod:         exportoptions.MethodDevelopment,
 			containerEnvironment: string(exportoptions.ICloudContainerEnvironmentProduction),
-			generatorFactory: func() ExportOptionsGenerator {
-				targetInfoProvider := MockTargetInfoProvider{
-					mainBundleID: bundleID,
-					bundleIDtoEntitlements: map[string]plistutil.PlistData{
-						bundleID: {"com.apple.developer.icloud-services": []string{"CloudKit"}},
-					},
-				}
-				g := NewWithInfoProvider(targetInfoProvider, newXcodeVersionReader(t, 15), logger)
-
-				return g
-			},
+			xcodeVersion:         15,
 			want: `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -285,17 +273,13 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 </plist>`,
 		},
 		{
-			name:                          "When exporting for TestFlight internal testing only",
+			name: "When exporting for TestFlight internal testing only",
+			archiveInfo: ArchiveInfo{
+				ProductToDistributeBundleID: bundleID,
+			},
 			exportMethod:                  exportoptions.MethodAppStore,
 			testFlightInternalTestingOnly: true,
-			generatorFactory: func() ExportOptionsGenerator {
-				targetInfoProvider := MockTargetInfoProvider{
-					mainBundleID: bundleID,
-				}
-				g := NewWithInfoProvider(targetInfoProvider, newXcodeVersionReader(t, 15), logger)
-
-				return g
-			},
+			xcodeVersion:                  15,
 			want: `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -314,7 +298,8 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Act
+			// Arrange
+			g := New(newXcodeVersionReader(t, tt.xcodeVersion), logger)
 			opts := Opts{
 				ContainerEnvironment:             tt.containerEnvironment,
 				TeamID:                           teamID,
@@ -324,7 +309,9 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 				TestFlightInternalTestingOnly:    tt.testFlightInternalTestingOnly,
 				ManageVersionAndBuildNumber:      tt.ManageVersionAndBuildNumber,
 			}
-			gotOpts, err := tt.generatorFactory().GenerateApplicationExportOptions(tt.exportMethod, exportoptions.SigningStyleAutomatic, opts)
+
+			// Act
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.archiveInfo, tt.exportMethod, exportoptions.SigningStyleAutomatic, opts)
 
 			// Assert
 			require.NoError(t, err)
@@ -390,22 +377,10 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			logger := log.NewLogger()
 			logger.EnableDebugLog(true)
 
-			xcodeVersionReader := newXcodeVersionReader(t, tt.xcodeVersion)
-
-			targetInfoProvider := MockTargetInfoProvider{
-				mainBundleID: bundleID,
-				bundleIDtoEntitlements: map[string]plistutil.PlistData{
-					bundleID:     {"com.apple.developer.icloud-services": []string{"CloudKit"}},
-					bundleIDClip: nil,
-				},
-				appClipBundleID: bundleIDClip,
-			}
-
-			g := NewWithInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
+			g := New(newXcodeVersionReader(t, tt.xcodeVersion), logger)
 			g.certificateProvider = MockCodesignIdentityProvider{
 				[]certificateutil.CertificateInfoModel{certificate},
 			}
-
 			profile := profileutil.ProvisioningProfileInfoModel{
 				BundleID:              bundleID,
 				TeamID:                teamID,
@@ -427,7 +402,14 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 				},
 			}
 
-			// Act
+			archiveInfo := ArchiveInfo{
+				ProductToDistributeBundleID: bundleID,
+				EntitlementsByBundleID: map[string]plistutil.PlistData{
+					bundleID:     {"com.apple.developer.icloud-services": []string{"CloudKit"}},
+					bundleIDClip: nil,
+				},
+				AppClipBundleID: bundleIDClip,
+			}
 			opts := Opts{
 				ContainerEnvironment:             string(exportoptions.ICloudContainerEnvironmentProduction),
 				TeamID:                           teamID,
@@ -436,7 +418,9 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 				ArchivedWithXcodeManagedProfiles: false,
 				TestFlightInternalTestingOnly:    false,
 			}
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, exportoptions.SigningStyleManual, opts)
+
+			// Act
+			gotOpts, err := g.GenerateApplicationExportOptions(archiveInfo, tt.exportMethod, exportoptions.SigningStyleManual, opts)
 
 			// Assert
 			require.NoError(t, err)
@@ -504,22 +488,21 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			xcodeVersionReader := newXcodeVersionReader(t, tt.xcodeVersion)
 
 			cloudKitEntitlement := map[string]interface{}{"com.apple.developer.icloud-services": []string{"CloudKit"}}
-			targetInfoProvider := MockTargetInfoProvider{
-				mainBundleID: bundleID,
-				bundleIDtoEntitlements: map[string]plistutil.PlistData{
-					bundleID:     cloudKitEntitlement,
-					bundleIDClip: nil,
-				},
-				appClipBundleID: bundleIDClip,
-			}
-			g := NewWithInfoProvider(targetInfoProvider, xcodeVersionReader, logger)
+			g := New(xcodeVersionReader, logger)
 
 			g.certificateProvider = MockCodesignIdentityProvider{
 				[]certificateutil.CertificateInfoModel{certificate},
 			}
 			g.profileProvider = MockProvisioningProfileProvider{}
 
-			// Act
+			archiveInfo := ArchiveInfo{
+				ProductToDistributeBundleID: bundleID,
+				EntitlementsByBundleID: map[string]plistutil.PlistData{
+					bundleID:     cloudKitEntitlement,
+					bundleIDClip: nil,
+				},
+				AppClipBundleID: bundleIDClip,
+			}
 			opts := Opts{
 				ContainerEnvironment:             string(exportoptions.ICloudContainerEnvironmentProduction),
 				TeamID:                           teamID,
@@ -528,7 +511,9 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 				ArchivedWithXcodeManagedProfiles: false,
 				TestFlightInternalTestingOnly:    true,
 			}
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportMethod, exportoptions.SigningStyleManual, opts)
+
+			// Act
+			gotOpts, err := g.GenerateApplicationExportOptions(archiveInfo, tt.exportMethod, exportoptions.SigningStyleManual, opts)
 
 			// Assert
 			require.NoError(t, err)
@@ -559,18 +544,4 @@ func (p MockProvisioningProfileProvider) ListProvisioningProfiles() ([]profileut
 
 func (p MockProvisioningProfileProvider) GetDefaultProvisioningProfile() (profileutil.ProvisioningProfileInfoModel, error) {
 	return profileutil.ProvisioningProfileInfoModel{}, nil
-}
-
-type MockTargetInfoProvider struct {
-	mainBundleID           string
-	bundleIDtoEntitlements map[string]plistutil.PlistData
-	appClipBundleID        string
-}
-
-func (b MockTargetInfoProvider) Read() (ArchiveInfo, error) {
-	return ArchiveInfo{
-		MainBundleID:           b.mainBundleID,
-		AppClipBundleID:        b.appClipBundleID,
-		EntitlementsByBundleID: b.bundleIDtoEntitlements,
-	}, nil
 }
