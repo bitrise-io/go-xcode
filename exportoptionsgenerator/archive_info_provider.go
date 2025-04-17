@@ -1,8 +1,6 @@
 package exportoptionsgenerator
 
 import (
-	"fmt"
-
 	"github.com/bitrise-io/go-xcode/xcarchive"
 )
 
@@ -17,28 +15,15 @@ const (
 )
 
 // ReadArchiveExportInfo ...
-func ReadArchiveExportInfo(archive xcarchive.IosArchive, exportedProduct ExportProduct) (ArchiveInfo, error) {
-	productBundleID := ""
+func ReadArchiveExportInfo(archive xcarchive.IosArchive) (ArchiveInfo, error) {
 	appClipBundleID := ""
 	if archive.Application.ClipApplication != nil {
 		appClipBundleID = archive.Application.ClipApplication.BundleIdentifier()
 	}
 
-	switch exportedProduct {
-	case ExportProductApp:
-		productBundleID = archive.Application.BundleIdentifier()
-	case ExportProductAppClip:
-		if appClipBundleID == "" {
-			return ArchiveInfo{}, fmt.Errorf("xcarchive does not contain an App Clip, cannot export an App Clip")
-		}
-		productBundleID = appClipBundleID
-	default:
-		panic("unknown export product")
-	}
-
 	return ArchiveInfo{
-		ProductToDistributeBundleID: productBundleID,
-		AppClipBundleID:             appClipBundleID,
-		EntitlementsByBundleID:      archive.BundleIDEntitlementsMap(),
+		AppBundleID:            archive.Application.BundleIdentifier(),
+		AppClipBundleID:        appClipBundleID,
+		EntitlementsByBundleID: archive.BundleIDEntitlementsMap(),
 	}, nil
 }

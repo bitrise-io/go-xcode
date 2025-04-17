@@ -49,6 +49,7 @@ func New(xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOption
 
 // GenerateApplicationExportOptions generates exportOptions for an application export.
 func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
+	exportedProduct ExportProduct,
 	archiveInfo ArchiveInfo,
 	exportMethod exportoptions.Method,
 	codeSigningStyle exportoptions.SigningStyle,
@@ -64,9 +65,17 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	//   It is only valid for NON app-store-connect distribution. App Store export includes both app and app-clip in one go, others do not.
 	// - provisioningProfiles dictionary:
 	//  When distributing an app-clip, its bundle ID needs to be in the provisioningProfiles dictionary, otherwise it needs to be removed.
-	for bundleID := range archiveInfo.EntitlementsByBundleID {
-		if bundleID == archiveInfo.AppClipBundleID {
-			if !exportMethod.IsAppStore() && bundleID != archiveInfo.ProductToDistributeBundleID { // do not remove if exporting App Clip
+	productToDistributeBundleID := archiveInfo.AppBundleID
+	if exportedProduct == ExportProductAppClip {
+		if archiveInfo.AppClipBundleID == "" {
+			return nil, fmt.Errorf("xcarchive does not contain an App Clip, cannot export an App Clip")
+		}
+		productToDistributeBundleID = archiveInfo.AppClipBundleID
+	}
+
+	if exportedProduct != ExportProductAppClip {
+		for bundleID := range archiveInfo.EntitlementsByBundleID {
+			if bundleID == archiveInfo.AppClipBundleID && !exportMethod.IsAppStore() {
 				g.logger.Debugf("Filtering out App Clip target: %s", bundleID)
 				delete(archiveInfo.EntitlementsByBundleID, bundleID)
 			}
@@ -81,7 +90,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	exportOpts := generateBaseExportOptions(exportMethod, xcodeVersion, opts.UploadBitcode, opts.CompileBitcode, iCloudContainerEnvironment)
 
 	if xcodeVersion.Major >= 12 {
-		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, archiveInfo.ProductToDistributeBundleID)
+		exportOpts = addDistributionBundleIdentifierFromXcode12(exportOpts, productToDistributeBundleID)
 	}
 
 	if xcodeVersion.Major >= 13 {

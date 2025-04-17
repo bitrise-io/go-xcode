@@ -189,8 +189,9 @@ func newXcodeVersionReader(t *testing.T, major int64) xcodeversion.Reader {
 func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSigningStyle(t *testing.T) {
 	// Arrange
 	const (
-		bundleID = "io.bundle.id"
-		teamID   = "TEAM123"
+		bundleID     = "io.bundle.id"
+		bundleIDClip = "io.bundle.id.AppClipID"
+		teamID       = "TEAM123"
 	)
 
 	logger := log.NewLogger()
@@ -198,6 +199,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 
 	tests := []struct {
 		name                          string
+		exportProduct                 ExportProduct
 		archiveInfo                   ArchiveInfo
 		exportMethod                  exportoptions.Method
 		containerEnvironment          string
@@ -208,9 +210,10 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 		wantErr                       bool
 	}{
 		{
-			name: "Default development exportOptions",
+			name:          "Default development exportOptions",
+			exportProduct: ExportProductApp,
 			archiveInfo: ArchiveInfo{
-				ProductToDistributeBundleID: bundleID,
+				AppBundleID: bundleID,
 			},
 			exportMethod: exportoptions.MethodDevelopment,
 			xcodeVersion: 15,
@@ -228,9 +231,42 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 </plist>`,
 		},
 		{
-			name: "app store exportOptions, with managed version",
+			name:          "App Clip, Default development exportOptions",
+			exportProduct: ExportProductAppClip,
 			archiveInfo: ArchiveInfo{
-				ProductToDistributeBundleID: bundleID,
+				AppBundleID:     bundleID,
+				AppClipBundleID: bundleIDClip,
+			},
+			exportMethod: exportoptions.MethodDevelopment,
+			xcodeVersion: 15,
+			want: `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>distributionBundleIdentifier</key>
+		<string>io.bundle.id.AppClipID</string>
+		<key>method</key>
+		<string>development</string>
+		<key>teamID</key>
+		<string>TEAM123</string>
+	</dict>
+</plist>`,
+		},
+		{
+			name:          "App Clip, Clip not present in archive",
+			exportProduct: ExportProductAppClip,
+			archiveInfo: ArchiveInfo{
+				AppBundleID: bundleID,
+			},
+			exportMethod: exportoptions.MethodDevelopment,
+			xcodeVersion: 15,
+			wantErr:      true,
+		},
+		{
+			name:          "app store exportOptions, with managed version",
+			exportProduct: ExportProductApp,
+			archiveInfo: ArchiveInfo{
+				AppBundleID: bundleID,
 			},
 			exportMethod:                exportoptions.MethodAppStore,
 			ManageVersionAndBuildNumber: true,
@@ -247,9 +283,10 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 </plist>`,
 		},
 		{
-			name: "When the app uses iCloud services",
+			name:          "When the app uses iCloud services",
+			exportProduct: ExportProductApp,
 			archiveInfo: ArchiveInfo{
-				ProductToDistributeBundleID: bundleID,
+				AppBundleID: bundleID,
 				EntitlementsByBundleID: map[string]plistutil.PlistData{
 					bundleID: {"com.apple.developer.icloud-services": []string{"CloudKit"}},
 				},
@@ -273,9 +310,10 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 </plist>`,
 		},
 		{
-			name: "When exporting for TestFlight internal testing only",
+			name:          "When exporting for TestFlight internal testing only",
+			exportProduct: ExportProductApp,
 			archiveInfo: ArchiveInfo{
-				ProductToDistributeBundleID: bundleID,
+				AppBundleID: bundleID,
 			},
 			exportMethod:                  exportoptions.MethodAppStore,
 			testFlightInternalTestingOnly: true,
@@ -311,10 +349,15 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 			}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(tt.archiveInfo, tt.exportMethod, exportoptions.SigningStyleAutomatic, opts)
+			gotOpts, err := g.GenerateApplicationExportOptions(tt.exportProduct, tt.archiveInfo, tt.exportMethod, exportoptions.SigningStyleAutomatic, opts)
 
 			// Assert
-			require.NoError(t, err)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			} else {
+				require.NoError(t, err)
+			}
 
 			got, err := gotOpts.String()
 			require.NoError(t, err)
@@ -403,7 +446,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			}
 
 			archiveInfo := ArchiveInfo{
-				ProductToDistributeBundleID: bundleID,
+				AppBundleID: bundleID,
 				EntitlementsByBundleID: map[string]plistutil.PlistData{
 					bundleID:     {"com.apple.developer.icloud-services": []string{"CloudKit"}},
 					bundleIDClip: nil,
@@ -420,7 +463,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 			}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(archiveInfo, tt.exportMethod, exportoptions.SigningStyleManual, opts)
+			gotOpts, err := g.GenerateApplicationExportOptions(ExportProductApp, archiveInfo, tt.exportMethod, exportoptions.SigningStyleManual, opts)
 
 			// Assert
 			require.NoError(t, err)
@@ -496,7 +539,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			g.profileProvider = MockProvisioningProfileProvider{}
 
 			archiveInfo := ArchiveInfo{
-				ProductToDistributeBundleID: bundleID,
+				AppBundleID: bundleID,
 				EntitlementsByBundleID: map[string]plistutil.PlistData{
 					bundleID:     cloudKitEntitlement,
 					bundleIDClip: nil,
@@ -513,7 +556,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			}
 
 			// Act
-			gotOpts, err := g.GenerateApplicationExportOptions(archiveInfo, tt.exportMethod, exportoptions.SigningStyleManual, opts)
+			gotOpts, err := g.GenerateApplicationExportOptions(ExportProductApp, archiveInfo, tt.exportMethod, exportoptions.SigningStyleManual, opts)
 
 			// Assert
 			require.NoError(t, err)

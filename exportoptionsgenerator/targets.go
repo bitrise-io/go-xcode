@@ -11,9 +11,9 @@ import (
 
 // ArchiveInfo contains the distribution bundle ID(s)	and entitlements of the main target and its dependencies.
 type ArchiveInfo struct {
-	ProductToDistributeBundleID string
-	AppClipBundleID             string
-	EntitlementsByBundleID      map[string]plistutil.PlistData
+	AppBundleID            string
+	AppClipBundleID        string
+	EntitlementsByBundleID map[string]plistutil.PlistData
 }
 
 // ReadArchiveInfoFromXcodeproject reads the Bundle ID for the given scheme and configuration.
@@ -51,9 +51,9 @@ func ReadArchiveInfoFromXcodeproject(xcodeProj *xcodeproj.XcodeProj, scheme *xcs
 	}
 
 	return ArchiveInfo{
-		ProductToDistributeBundleID: mainTargetBundleID,
-		AppClipBundleID:             appClipBundleID,
-		EntitlementsByBundleID:      entitlementsByBundleID,
+		AppBundleID:            mainTargetBundleID,
+		AppClipBundleID:        appClipBundleID,
+		EntitlementsByBundleID: entitlementsByBundleID,
 	}, nil
 }
 
