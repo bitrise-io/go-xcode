@@ -95,9 +95,8 @@ func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 }
 
 func TestClientDoAnalyticsTracking(t *testing.T) {
-	mockTracker := &mockAnalyticsTracker{}
-
 	t.Run("successful request", func(t *testing.T) {
+		mockTracker := &mockAnalyticsTracker{}
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			_, err := w.Write([]byte(`{"data": []}`))
@@ -133,8 +132,7 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 	})
 
 	t.Run("error response", func(t *testing.T) {
-		mockTracker.apiRequests = nil
-		mockTracker.apiErrors = nil
+		mockTracker := &mockAnalyticsTracker{}
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
@@ -160,40 +158,20 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 		req, err := http.NewRequest("POST", "https://example.com/test", nil)
 		require.NoError(t, err)
 		_, err = client.Do(req, nil)
-		require.NoError(t, err)
+		require.Errorf(t, err, "Expected error due to 400 Bad Request response")
 
-		if !mockHTTPClient.called {
-			t.Errorf("Expected HTTP client to be called")
-		}
+		require.Truef(t, mockHTTPClient.called, "Expected HTTP client to be called")
 
-		if len(mockTracker.apiRequests) != 1 {
-			t.Errorf("Expected 1 API request tracked, got %d", len(mockTracker.apiRequests))
-		}
-
-		if len(mockTracker.apiErrors) != 1 {
-			t.Errorf("Expected 1 API error tracked, got %d", len(mockTracker.apiErrors))
-		}
-
-		requestRecord := mockTracker.apiRequests[0]
-		if requestRecord.method != "POST" {
-			t.Errorf("Expected method POST, got %s", requestRecord.method)
-		}
-		if requestRecord.statusCode != 400 {
-			t.Errorf("Expected status code 400, got %d", requestRecord.statusCode)
-		}
+		require.Lenf(t, mockTracker.apiRequests, 0, "Expected 0 (successful) API requests tracked")
+		require.Lenf(t, mockTracker.apiErrors, 1, "Expected 1 API error tracked")
 
 		errorRecord := mockTracker.apiErrors[0]
-		if errorRecord.method != "POST" {
-			t.Errorf("Expected method POST, got %s", errorRecord.method)
-		}
-		if errorRecord.statusCode != 400 {
-			t.Errorf("Expected status code 400, got %d", errorRecord.statusCode)
-		}
+		require.Equal(t, "POST", errorRecord.method)
+		require.Equal(t, 400, errorRecord.statusCode)
 	})
 
 	t.Run("network error", func(t *testing.T) {
-		mockTracker.apiRequests = nil
-		mockTracker.apiErrors = nil
+		mockTracker := &mockAnalyticsTracker{}
 
 		mockHTTPClient := &mockHTTPClient{
 			err: errors.New("network connection failed"),
@@ -207,7 +185,7 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 		req, err := http.NewRequest("GET", "https://api.appstoreconnect.apple.com/test", nil)
 		require.NoError(t, err)
 		_, err = client.Do(req, nil)
-		require.NoError(t, err)
+		require.Error(t, err)
 
 		if len(mockTracker.apiRequests) != 0 {
 			t.Errorf("Expected 0 API requests tracked, got %d", len(mockTracker.apiRequests))
