@@ -100,7 +100,8 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 	t.Run("successful request", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"data": []}`))
+			_, err := w.Write([]byte(`{"data": []}`))
+			require.NoError(t, err)
 		}))
 		defer server.Close()
 
@@ -109,8 +110,10 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 			tracker: mockTracker,
 		}
 
-		req, _ := http.NewRequest("GET", server.URL+"/test", nil)
-		client.Do(req, nil)
+		req, err := http.NewRequest("GET", server.URL+"/test", nil)
+		require.NoError(t, err)
+		_, err = client.Do(req, nil)
+		require.NoError(t, err)
 
 		if len(mockTracker.apiRequests) != 1 {
 			t.Errorf("Expected 1 API request tracked, got %d", len(mockTracker.apiRequests))
@@ -135,7 +138,8 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(`{"errors": [{"code": "PARAMETER_ERROR.INVALID", "title": "Invalid parameter"}]}`))
+			_, err := w.Write([]byte(`{"errors": [{"code": "PARAMETER_ERROR.INVALID", "title": "Invalid parameter"}]}`))
+			require.NoError(t, err)
 		}))
 		defer server.Close()
 
@@ -153,8 +157,10 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 			tracker: mockTracker,
 		}
 
-		req, _ := http.NewRequest("POST", "https://example.com/test", nil)
-		client.Do(req, nil)
+		req, err := http.NewRequest("POST", "https://example.com/test", nil)
+		require.NoError(t, err)
+		_, err = client.Do(req, nil)
+		require.NoError(t, err)
 
 		if !mockHTTPClient.called {
 			t.Errorf("Expected HTTP client to be called")
@@ -198,8 +204,10 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 			tracker: mockTracker,
 		}
 
-		req, _ := http.NewRequest("GET", "https://api.appstoreconnect.apple.com/test", nil)
-		client.Do(req, nil)
+		req, err := http.NewRequest("GET", "https://api.appstoreconnect.apple.com/test", nil)
+		require.NoError(t, err)
+		_, err = client.Do(req, nil)
+		require.NoError(t, err)
 
 		if len(mockTracker.apiRequests) != 0 {
 			t.Errorf("Expected 0 API requests tracked, got %d", len(mockTracker.apiRequests))
