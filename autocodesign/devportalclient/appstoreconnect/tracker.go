@@ -1,6 +1,7 @@
 package appstoreconnect
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/bitrise-io/go-utils/v2/analytics"
@@ -31,6 +32,23 @@ func (n NoOpAnalyticsTracker) TrackAPIError(method, host, endpoint string, statu
 // TrackAuthError tracks authentication errors (no-op implementation).
 func (n NoOpAnalyticsTracker) TrackAuthError(errorMessage string) {}
 
+// StdoutTracker logs all analytics events to stdout for debugging and testing purposes.
+type StdoutTracker struct{}
+
+// TrackAPIRequest logs API requests to stdout.
+func (s StdoutTracker) TrackAPIRequest(method, host, endpoint string, statusCode int, duration time.Duration) {
+	fmt.Printf("[ANALYTICS] API Request: %s %s%s -> %d (%v)\n", method, host, endpoint, statusCode, duration)
+}
+
+// TrackAPIError logs API errors to stdout.
+func (s StdoutTracker) TrackAPIError(method, host, endpoint string, statusCode int, errorMessage string) {
+	fmt.Printf("[ANALYTICS] API Error: %s %s%s -> %d: %s\n", method, host, endpoint, statusCode, errorMessage)
+}
+
+// TrackAuthError logs authentication errors to stdout.
+func (s StdoutTracker) TrackAuthError(errorMessage string) {
+	fmt.Printf("[ANALYTICS] Auth Error: %s\n", errorMessage)
+}
 
 // DefaultTracker is the default implementation of Tracker that sends analytics events.
 type DefaultTracker struct {
