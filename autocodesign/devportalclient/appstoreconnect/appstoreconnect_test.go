@@ -36,7 +36,6 @@ func TestNewEnterpriseClient(t *testing.T) {
 	require.Equal(t, wantURL, got.BaseURL)
 }
 
-// Mock types for testing Client.Do analytics tracking behavior
 type mockAnalyticsTracker struct {
 	apiRequests []apiRequestRecord
 	apiErrors   []apiErrorRecord
@@ -94,7 +93,7 @@ func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return m.resp, m.err
 }
 
-func TestClientDoAnalyticsTracking(t *testing.T) {
+func TestTracking(t *testing.T) {
 	t.Run("successful request", func(t *testing.T) {
 		mockTracker := &mockAnalyticsTracker{}
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -133,15 +132,6 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 
 	t.Run("error response", func(t *testing.T) {
 		mockTracker := &mockAnalyticsTracker{}
-
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusBadRequest)
-			_, err := w.Write([]byte(`{"errors": [{"code": "PARAMETER_ERROR.INVALID", "title": "Invalid parameter"}]}`))
-			require.NoError(t, err)
-		}))
-		defer server.Close()
-
-		// Use a mock HTTP client to avoid JWT token generation issues
 		mockHTTPClient := &mockHTTPClient{
 			resp: &http.Response{
 				StatusCode: 400,
@@ -158,12 +148,12 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 		req, err := http.NewRequest("POST", "https://example.com/test", nil)
 		require.NoError(t, err)
 		_, err = client.Do(req, nil)
-		require.Errorf(t, err, "Expected error due to 400 Bad Request response")
+		require.Error(t, err, "Expected error due to 400 Bad Request response")
 
-		require.Truef(t, mockHTTPClient.called, "Expected HTTP client to be called")
+		require.True(t, mockHTTPClient.called, "Expected HTTP client to be called")
 
-		require.Lenf(t, mockTracker.apiRequests, 0, "Expected 0 (successful) API requests tracked")
-		require.Lenf(t, mockTracker.apiErrors, 1, "Expected 1 API error tracked")
+		require.Len(t, mockTracker.apiRequests, 0, "Expected 0 (successful) API requests tracked")
+		require.Len(t, mockTracker.apiErrors, 1, "Expected 1 API error tracked")
 
 		errorRecord := mockTracker.apiErrors[0]
 		require.Equal(t, "POST", errorRecord.method)
@@ -187,23 +177,12 @@ func TestClientDoAnalyticsTracking(t *testing.T) {
 		_, err = client.Do(req, nil)
 		require.Error(t, err)
 
-		if len(mockTracker.apiRequests) != 0 {
-			t.Errorf("Expected 0 API requests tracked, got %d", len(mockTracker.apiRequests))
-		}
-
-		if len(mockTracker.apiErrors) != 1 {
-			t.Errorf("Expected 1 API error tracked, got %d", len(mockTracker.apiErrors))
-		}
+		require.Len(t, mockTracker.apiRequests, 0, "Expected 0 API requests tracked")
+		require.Len(t, mockTracker.apiErrors, 1, "Expected 1 API error tracked")
 
 		record := mockTracker.apiErrors[0]
-		if record.method != "GET" {
-			t.Errorf("Expected method GET, got %s", record.method)
-		}
-		if record.statusCode != 0 {
-			t.Errorf("Expected status code 0 for network error, got %d", record.statusCode)
-		}
-		if record.errorMessage != "network connection failed" {
-			t.Errorf("Expected error message 'network connection failed', got %s", record.errorMessage)
-		}
+		require.Equal(t, "GET", record.method)
+		require.Equal(t, 0, record.statusCode)
+		require.Equal(t, "network connection failed", record.errorMessage)
 	})
 }

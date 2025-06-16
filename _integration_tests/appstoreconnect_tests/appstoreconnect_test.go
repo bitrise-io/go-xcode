@@ -10,7 +10,7 @@ import (
 func TestListBundleIDs(t *testing.T) {
 	keyID, issuerID, privateKey, enterpriseAccount := getAPIKey(t)
 
-	client := appstoreconnect.NewClient(appstoreconnect.NewRetryableHTTPClient(), keyID, issuerID, []byte(privateKey), enterpriseAccount, appstoreconnect.StdoutTracker{})
+	client := appstoreconnect.NewClient(appstoreconnect.NewRetryableHTTPClient(), keyID, issuerID, []byte(privateKey), enterpriseAccount, appstoreconnect.NoOpAnalyticsTracker{})
 
 	response, err := client.Provisioning.ListBundleIDs(&appstoreconnect.ListBundleIDsOptions{})
 	require.NoError(t, err)
