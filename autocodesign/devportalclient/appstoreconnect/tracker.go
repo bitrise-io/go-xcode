@@ -25,9 +25,11 @@ type NoOpAnalyticsTracker struct{}
 // TrackAPIRequest ...
 func (n NoOpAnalyticsTracker) TrackAPIRequest(method, host, endpoint string, statusCode int, duration time.Duration) {
 }
+
 // TrackAPIError ...
 func (n NoOpAnalyticsTracker) TrackAPIError(method, host, endpoint string, statusCode int, errorMessage string) {
 }
+
 // TrackAuthError ...
 func (n NoOpAnalyticsTracker) TrackAuthError(errorMessage string) {}
 
@@ -44,32 +46,38 @@ func NewDefaultTracker(tracker analytics.Tracker, envRepo env.Repository) *Defau
 		envRepo: envRepo,
 	}
 }
+
 // TrackAPIRequest ...
 func (d *DefaultTracker) TrackAPIRequest(method, host, endpoint string, statusCode int, duration time.Duration) {
 	d.tracker.Enqueue("step_appstoreconnect_request", analytics.Properties{
-		"build_slug":  d.envRepo.Get("BITRISE_BUILD_SLUG"),
-		"http_method": method,
-		"host":        host, // Regular, enterprise, or any future third option
-		"endpoint":    endpoint,
-		"status_code": statusCode,
-		"duration_ms": duration.Truncate(time.Millisecond).Milliseconds(),
+		"build_slug":        d.envRepo.Get("BITRISE_BUILD_SLUG"),
+		"step_execution_id": d.envRepo.Get("BITRISE_STEP_EXECUTION_ID"),
+		"http_method":       method,
+		"host":              host, // Regular, enterprise, or any future third option
+		"endpoint":          endpoint,
+		"status_code":       statusCode,
+		"duration_ms":       duration.Truncate(time.Millisecond).Milliseconds(),
 	})
 }
+
 // TrackAPIError ...
 func (d *DefaultTracker) TrackAPIError(method, host, endpoint string, statusCode int, errorMessage string) {
 	d.tracker.Enqueue("step_appstoreconnect_error", analytics.Properties{
-		"build_slug":    d.envRepo.Get("BITRISE_BUILD_SLUG"),
-		"http_method":   method,
-		"host":          host, // Regular, enterprise, or any future third option
-		"endpoint":      endpoint,
-		"status_code":   statusCode,
-		"error_message": errorMessage,
+		"build_slug":        d.envRepo.Get("BITRISE_BUILD_SLUG"),
+		"step_execution_id": d.envRepo.Get("BITRISE_STEP_EXECUTION_ID"),
+		"http_method":       method,
+		"host":              host, // Regular, enterprise, or any future third option
+		"endpoint":          endpoint,
+		"status_code":       statusCode,
+		"error_message":     errorMessage,
 	})
 }
+
 // TrackAuthError ...
 func (d *DefaultTracker) TrackAuthError(errorMessage string) {
 	d.tracker.Enqueue("step_appstoreconnect_auth_error", analytics.Properties{
-		"build_slug":    d.envRepo.Get("BITRISE_BUILD_SLUG"),
-		"error_message": errorMessage,
+		"build_slug":        d.envRepo.Get("BITRISE_BUILD_SLUG"),
+		"step_execution_id": d.envRepo.Get("BITRISE_STEP_EXECUTION_ID"),
+		"error_message":     errorMessage,
 	})
 }
