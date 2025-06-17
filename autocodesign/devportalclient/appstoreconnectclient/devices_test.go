@@ -39,7 +39,7 @@ func TestDeviceClient_RegisterDevice_WhenInvaludUUID(t *testing.T) {
 		},
 	})
 
-	client := appstoreconnect.NewClient(&mockClient, "keyID", "issueID", []byte("privateKey"), false)
+	client := appstoreconnect.NewClient(&mockClient, "keyID", "issueID", []byte("privateKey"), false, appstoreconnect.NoOpAnalyticsTracker{})
 	deviceClient := NewDeviceClient(client)
 
 	got, err := deviceClient.RegisterDevice(devportalservice.TestDevice{
