@@ -276,6 +276,7 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	}()
 
 	if err := checkResponse(resp); err != nil {
+		c.tracker.TrackAPIRequest(req.Method, req.URL.Host, req.URL.Path, resp.StatusCode, duration)
 		c.tracker.TrackAPIError(req.Method, req.URL.Host, req.URL.Path, resp.StatusCode, err.Error())
 		return resp, err
 	}
