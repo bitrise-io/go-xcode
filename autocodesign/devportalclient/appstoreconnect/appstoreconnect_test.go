@@ -152,7 +152,7 @@ func TestTracking(t *testing.T) {
 
 		require.True(t, mockHTTPClient.called, "Expected HTTP client to be called")
 
-		require.Len(t, mockTracker.apiRequests, 0, "Expected 0 (successful) API requests tracked")
+		require.Len(t, mockTracker.apiRequests, 1, "Expected 1 (failed) API requests tracked")
 		require.Len(t, mockTracker.apiErrors, 1, "Expected 1 API error tracked")
 
 		errorRecord := mockTracker.apiErrors[0]
