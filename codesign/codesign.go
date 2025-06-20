@@ -292,7 +292,7 @@ func (m *Manager) selectCodeSigningStrategy(credentials devportalservice.Credent
 	return codeSigningXcode, "Automatically managed signing is enabled in Xcode for the project.", nil
 }
 
-func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfoModel, error) {
+func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfo, error) {
 	certificates, err := m.certDownloader.GetCertificates()
 	if err != nil {
 		return nil, fmt.Errorf("failed to download certificates: %s", err)
@@ -312,7 +312,7 @@ func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfoModel
 	return certificates, nil
 }
 
-func (m *Manager) installCertificates(certificates []certificateutil.CertificateInfoModel) error {
+func (m *Manager) installCertificates(certificates []certificateutil.CertificateInfo) error {
 	for _, cert := range certificates {
 		// Empty passphrase provided, as already parsed certificate + private key
 		if err := m.assetInstaller.InstallCertificate(cert); err != nil {
@@ -323,7 +323,7 @@ func (m *Manager) installCertificates(certificates []certificateutil.Certificate
 	return nil
 }
 
-func (m *Manager) validateCertificatesForXcodeManagedSigning(certificates []certificateutil.CertificateInfoModel) error {
+func (m *Manager) validateCertificatesForXcodeManagedSigning(certificates []certificateutil.CertificateInfo) error {
 	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates)
 	if err != nil {
 		return err
@@ -438,7 +438,7 @@ func (m *Manager) prepareAutomaticAssets(credentials devportalservice.Credential
 	return codesignAssets, nil
 }
 
-func (m *Manager) prepareManualAssets(certificates []certificateutil.CertificateInfoModel) error {
+func (m *Manager) prepareManualAssets(certificates []certificateutil.CertificateInfo) error {
 	if err := m.installCertificates(certificates); err != nil {
 		return err
 	}

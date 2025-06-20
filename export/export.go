@@ -13,7 +13,7 @@ import (
 
 // SelectableCodeSignGroup ...
 type SelectableCodeSignGroup struct {
-	Certificate         certificateutil.CertificateInfoModel
+	Certificate         certificateutil.CertificateInfo
 	BundleIDProfilesMap map[string][]profileutil.ProvisioningProfileInfoModel
 }
 
@@ -42,7 +42,7 @@ func (group SelectableCodeSignGroup) String() string {
 	return string(data)
 }
 
-func isCertificateInstalled(installedCertificates []certificateutil.CertificateInfoModel, certificate certificateutil.CertificateInfoModel) bool {
+func isCertificateInstalled(installedCertificates []certificateutil.CertificateInfo, certificate certificateutil.CertificateInfo) bool {
 	for _, cert := range installedCertificates {
 		if cert.Serial == certificate.Serial {
 			return true
@@ -52,11 +52,11 @@ func isCertificateInstalled(installedCertificates []certificateutil.CertificateI
 }
 
 // CreateSelectableCodeSignGroups ...
-func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
+func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateInfo, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
 	groups := []SelectableCodeSignGroup{}
 
 	serialProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
-	serialCertificateMap := map[string]certificateutil.CertificateInfoModel{}
+	serialCertificateMap := map[string]certificateutil.CertificateInfo{}
 	for _, profile := range profiles {
 		for _, certificate := range profile.DeveloperCertificates {
 			if !isCertificateInstalled(certificates, certificate) {

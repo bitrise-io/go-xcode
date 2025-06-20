@@ -39,8 +39,8 @@ func CheckValidity(certificate x509.Certificate) error {
 }
 
 // FilterCertificateInfoModelsByFilterFunc ...
-func FilterCertificateInfoModelsByFilterFunc(certificates []CertificateInfoModel, filterFunc func(certificate CertificateInfoModel) bool) []CertificateInfoModel {
-	filteredCertificates := []CertificateInfoModel{}
+func FilterCertificateInfoModelsByFilterFunc(certificates []CertificateInfo, filterFunc func(certificate CertificateInfo) bool) []CertificateInfo {
+	filteredCertificates := []CertificateInfo{}
 
 	for _, certificate := range certificates {
 		if filterFunc(certificate) {
@@ -55,13 +55,13 @@ func FilterCertificateInfoModelsByFilterFunc(certificates []CertificateInfoModel
 type ValidCertificateInfo struct {
 	ValidCertificates,
 	InvalidCertificates,
-	DuplicatedCertificates []CertificateInfoModel
+	DuplicatedCertificates []CertificateInfo
 }
 
 // FilterValidCertificateInfos filters out invalid and duplicated common name certificaates
-func FilterValidCertificateInfos(certificateInfos []CertificateInfoModel) ValidCertificateInfo {
-	var invalidCertificates []CertificateInfoModel
-	nameToCerts := map[string][]CertificateInfoModel{}
+func FilterValidCertificateInfos(certificateInfos []CertificateInfo) ValidCertificateInfo {
+	var invalidCertificates []CertificateInfo
+	nameToCerts := map[string][]CertificateInfo{}
 	for _, certificateInfo := range certificateInfos {
 		if certificateInfo.CheckValidity() != nil {
 			invalidCertificates = append(invalidCertificates, certificateInfo)
@@ -71,7 +71,7 @@ func FilterValidCertificateInfos(certificateInfos []CertificateInfoModel) ValidC
 		nameToCerts[certificateInfo.CommonName] = append(nameToCerts[certificateInfo.CommonName], certificateInfo)
 	}
 
-	var validCertificates, duplicatedCertificates []CertificateInfoModel
+	var validCertificates, duplicatedCertificates []CertificateInfo
 	for _, certs := range nameToCerts {
 		if len(certs) == 0 {
 			continue

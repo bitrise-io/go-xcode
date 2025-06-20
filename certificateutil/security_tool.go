@@ -11,13 +11,13 @@ import (
 )
 
 // InstalledCodesigningCertificateInfos ...
-func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
-	certificates, err := InstalledCodesigningCertificates()
+func InstalledCodesigningCertificateInfos() ([]CertificateInfo, error) {
+	certificates, err := installedCodesigningCertificates()
 	if err != nil {
 		return nil, err
 	}
 
-	infos := []CertificateInfoModel{}
+	infos := []CertificateInfo{}
 	for _, certificate := range certificates {
 		if certificate != nil {
 			infos = append(infos, NewCertificateInfo(*certificate, nil))
@@ -28,28 +28,28 @@ func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
 }
 
 // InstalledInstallerCertificateInfos ...
-func InstalledInstallerCertificateInfos() ([]CertificateInfoModel, error) {
+func InstalledInstallerCertificateInfos() ([]CertificateInfo, error) {
 	certificates, err := InstalledMacAppStoreCertificates()
 	if err != nil {
 		return nil, err
 	}
 
-	infos := []CertificateInfoModel{}
+	infos := []CertificateInfo{}
 	for _, certificate := range certificates {
 		if certificate != nil {
 			infos = append(infos, NewCertificateInfo(*certificate, nil))
 		}
 	}
 
-	installerCertificates := FilterCertificateInfoModelsByFilterFunc(infos, func(cert CertificateInfoModel) bool {
+	installerCertificates := FilterCertificateInfoModelsByFilterFunc(infos, func(cert CertificateInfo) bool {
 		return strings.Contains(cert.CommonName, "Installer")
 	})
 
 	return installerCertificates, nil
 }
 
-// InstalledCodesigningCertificates ...
-func InstalledCodesigningCertificates() ([]*x509.Certificate, error) {
+// installedCodesigningCertificates ...
+func installedCodesigningCertificates() ([]*x509.Certificate, error) {
 	certificateNames, err := InstalledCodesigningCertificateNames()
 	if err != nil {
 		return nil, err

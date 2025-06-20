@@ -177,7 +177,7 @@ func createTestObjects(t *testing.T) (Manager, []profileutil.ProvisioningProfile
 	return NewManager(mockProvider, mockConverter), profiles
 }
 
-func findCert(t *testing.T, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, serial string) certificateutil.CertificateInfoModel {
+func findCert(t *testing.T, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, serial string) certificateutil.CertificateInfo {
 	for _, certs := range certsByType {
 		for _, cert := range certs {
 			if cert.CertificateInfo.Serial == serial {
@@ -188,7 +188,7 @@ func findCert(t *testing.T, certsByType map[appstoreconnect.CertificateType][]au
 
 	t.Fatalf("missing certificate")
 
-	return certificateutil.CertificateInfoModel{}
+	return certificateutil.CertificateInfo{}
 }
 
 func findProvProfile(t *testing.T, profiles []profileutil.ProvisioningProfileInfoModel, uuid string) autocodesign.Profile {
@@ -228,7 +228,7 @@ func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
 		BundleID:              "io.ios.valid",
 		ExportType:            exportoptions.MethodDevelopment,
 		ProvisionedDevices:    []string{"device-1", "device-2", "device-3"},
-		DeveloperCertificates: []certificateutil.CertificateInfoModel{devCert(t, dateRelativeToNow(1, 0, 0))},
+		DeveloperCertificates: []certificateutil.CertificateInfo{devCert(t, dateRelativeToNow(1, 0, 0))},
 		CreationDate:          dateRelativeToNow(0, -1, 0),
 		ExpirationDate:        dateRelativeToNow(0, 1, 0),
 		Entitlements:          entitlements(),
@@ -243,7 +243,7 @@ func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
 		BundleID:              "io.tvos.valid",
 		ExportType:            exportoptions.MethodAppStore,
 		ProvisionedDevices:    nil,
-		DeveloperCertificates: []certificateutil.CertificateInfoModel{distCert(t, dateRelativeToNow(1, 0, 0))},
+		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, dateRelativeToNow(1, 0, 0))},
 		CreationDate:          dateRelativeToNow(0, -1, 0),
 		ExpirationDate:        dateRelativeToNow(0, 1, 0),
 		Entitlements:          nil,
@@ -258,7 +258,7 @@ func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
 		BundleID:              "io.tvos.expired",
 		ExportType:            exportoptions.MethodAppStore,
 		ProvisionedDevices:    nil,
-		DeveloperCertificates: []certificateutil.CertificateInfoModel{distCert(t, dateRelativeToNow(1, 0, 0))},
+		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, dateRelativeToNow(1, 0, 0))},
 		CreationDate:          dateRelativeToNow(0, -1, 0),
 		ExpirationDate:        dateRelativeToNow(0, 0, -1),
 		Entitlements:          nil,
@@ -273,7 +273,7 @@ func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
 		BundleID:              "io.ios.*",
 		ExportType:            exportoptions.MethodDevelopment,
 		ProvisionedDevices:    []string{"device-1", "device-2", "device-3"},
-		DeveloperCertificates: []certificateutil.CertificateInfoModel{devCert(t, dateRelativeToNow(1, 0, 0))},
+		DeveloperCertificates: []certificateutil.CertificateInfo{devCert(t, dateRelativeToNow(1, 0, 0))},
 		CreationDate:          dateRelativeToNow(0, -1, 0),
 		ExpirationDate:        dateRelativeToNow(0, 1, 0),
 		Entitlements:          entitlements(),
@@ -310,15 +310,15 @@ func certsByType(t *testing.T) map[appstoreconnect.CertificateType][]autocodesig
 	}
 }
 
-func devCert(t *testing.T, expiry time.Time) certificateutil.CertificateInfoModel {
+func devCert(t *testing.T, expiry time.Time) certificateutil.CertificateInfo {
 	return newCertificate(t, 1, teamID, teamName, "Development certificate", expiry)
 }
 
-func distCert(t *testing.T, expiry time.Time) certificateutil.CertificateInfoModel {
+func distCert(t *testing.T, expiry time.Time) certificateutil.CertificateInfo {
 	return newCertificate(t, 2, teamID, teamName, "Distribution certificate", expiry)
 }
 
-func newCertificate(t *testing.T, serial int, teamID, teamName, commonName string, expiry time.Time) certificateutil.CertificateInfoModel {
+func newCertificate(t *testing.T, serial int, teamID, teamName, commonName string, expiry time.Time) certificateutil.CertificateInfo {
 	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(serial), teamID, teamName, commonName, expiry)
 	if err != nil {
 		t.Fatalf("init: failed to generate certificate: %s", err)

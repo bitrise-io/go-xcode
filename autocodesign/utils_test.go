@@ -17,7 +17,7 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 	enterprise1Profile := profile("enterprise", "1")
 	adHoc1Profile := profile("ad-hoc", "1")
 
-	certificate := certificateutil.CertificateInfoModel{}
+	certificate := certificateutil.CertificateInfo{}
 	tests := []struct {
 		name     string
 		base     *AppCodesignAssets

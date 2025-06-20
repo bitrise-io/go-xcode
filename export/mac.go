@@ -8,18 +8,18 @@ import (
 
 // MacCodeSignGroup ...
 type MacCodeSignGroup struct {
-	certificate          certificateutil.CertificateInfoModel
-	installerCertificate *certificateutil.CertificateInfoModel
+	certificate          certificateutil.CertificateInfo
+	installerCertificate *certificateutil.CertificateInfo
 	bundleIDProfileMap   map[string]profileutil.ProvisioningProfileInfoModel
 }
 
 // Certificate ...
-func (signGroup *MacCodeSignGroup) Certificate() certificateutil.CertificateInfoModel {
+func (signGroup *MacCodeSignGroup) Certificate() certificateutil.CertificateInfo {
 	return signGroup.certificate
 }
 
 // InstallerCertificate ...
-func (signGroup *MacCodeSignGroup) InstallerCertificate() *certificateutil.CertificateInfoModel {
+func (signGroup *MacCodeSignGroup) InstallerCertificate() *certificateutil.CertificateInfo {
 	return signGroup.installerCertificate
 }
 
@@ -29,7 +29,7 @@ func (signGroup *MacCodeSignGroup) BundleIDProfileMap() map[string]profileutil.P
 }
 
 // NewMacGroup ...
-func NewMacGroup(certificate certificateutil.CertificateInfoModel, installerCertificate *certificateutil.CertificateInfoModel, bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel) *MacCodeSignGroup {
+func NewMacGroup(certificate certificateutil.CertificateInfo, installerCertificate *certificateutil.CertificateInfo, bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel) *MacCodeSignGroup {
 	return &MacCodeSignGroup{
 		certificate:          certificate,
 		installerCertificate: installerCertificate,
@@ -38,14 +38,14 @@ func NewMacGroup(certificate certificateutil.CertificateInfoModel, installerCert
 }
 
 // CreateMacCodeSignGroup ...
-func CreateMacCodeSignGroup(selectableGroups []SelectableCodeSignGroup, installedInstallerCertificates []certificateutil.CertificateInfoModel, exportMethod exportoptions.Method) []MacCodeSignGroup {
+func CreateMacCodeSignGroup(selectableGroups []SelectableCodeSignGroup, installedInstallerCertificates []certificateutil.CertificateInfo, exportMethod exportoptions.Method) []MacCodeSignGroup {
 	macosCodeSignGroups := []MacCodeSignGroup{}
 
 	iosCodesignGroups := CreateIosCodeSignGroups(selectableGroups)
 
 	for _, group := range iosCodesignGroups {
 		if exportMethod.IsAppStore() {
-			installerCertificates := []certificateutil.CertificateInfoModel{}
+			installerCertificates := []certificateutil.CertificateInfo{}
 
 			for _, installerCertificate := range installedInstallerCertificates {
 				if installerCertificate.TeamID == group.certificate.TeamID {

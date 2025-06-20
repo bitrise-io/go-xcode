@@ -10,11 +10,9 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-pkcs12"
-	"github.com/bitrise-io/go-utils/fileutil"
 )
 
-// CertificateInfoModel ...
-type CertificateInfoModel struct {
+type CertificateInfo struct {
 	CommonName string
 	TeamName   string
 	TeamID     string
@@ -28,12 +26,11 @@ type CertificateInfoModel struct {
 	PrivateKey  interface{}
 }
 
-// NewCertificateInfo ...
-func NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) CertificateInfoModel {
+func NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) CertificateInfo {
 	fingerprint := sha1.Sum(certificate.Raw)
 	fingerprintStr := fmt.Sprintf("%x", fingerprint)
 
-	return CertificateInfoModel{
+	return CertificateInfo{
 		CommonName:      certificate.Subject.CommonName,
 		TeamName:        strings.Join(certificate.Subject.Organization, " "),
 		TeamID:          strings.Join(certificate.Subject.OrganizationalUnit, " "),
@@ -47,9 +44,9 @@ func NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) Ce
 	}
 }
 
-// CertificatesFromPKCS12Content returns an array of CertificateInfoModel
+// CertificatesFromPKCS12Content returns an array of CertificateInfo
 // Used to parse p12 file containing multiple codesign identities (exported from macOS Keychain)
-func CertificatesFromPKCS12Content(content []byte, password string) ([]CertificateInfoModel, error) {
+func CertificatesFromPKCS12Content(content []byte, password string) ([]CertificateInfo, error) {
 	privateKeys, certificates, err := pkcs12.DecodeAll(content, password)
 	if err != nil {
 		return nil, err
@@ -63,7 +60,7 @@ func CertificatesFromPKCS12Content(content []byte, password string) ([]Certifica
 		return nil, errors.New("pkcs12: no certificate and private key pair found")
 	}
 
-	infos := []CertificateInfoModel{}
+	infos := []CertificateInfo{}
 	for i, certificate := range certificates {
 		if certificate != nil {
 			infos = append(infos, NewCertificateInfo(*certificate, privateKeys[i]))
@@ -73,18 +70,7 @@ func CertificatesFromPKCS12Content(content []byte, password string) ([]Certifica
 	return infos, nil
 }
 
-// CertificatesFromPKCS12File ...
-func CertificatesFromPKCS12File(pkcs12Pth, password string) ([]CertificateInfoModel, error) {
-	content, err := fileutil.ReadBytesFromFile(pkcs12Pth)
-	if err != nil {
-		return nil, err
-	}
-
-	return CertificatesFromPKCS12Content(content, password)
-}
-
-// String ...
-func (info CertificateInfoModel) String() string {
+func (info CertificateInfo) String() string {
 	team := fmt.Sprintf("%s (%s)", info.TeamName, info.TeamID)
 	certInfo := fmt.Sprintf("Serial: %s, Name: %s, Team: %s, Expiry: %s", info.Serial, info.CommonName, team, info.EndDate)
 
@@ -96,12 +82,11 @@ func (info CertificateInfoModel) String() string {
 	return certInfo
 }
 
-// CheckValidity ...
-func (info CertificateInfoModel) CheckValidity() error {
+func (info CertificateInfo) CheckValidity() error {
 	return CheckValidity(info.Certificate)
 }
 
-// EncodeToP12 encodes a CertificateInfoModel in pkcs12 (.p12) format.
-func (info CertificateInfoModel) EncodeToP12(passphrase string) ([]byte, error) {
+// EncodeToP12 encodes a CertificateInfo in pkcs12 (.p12) format.
+func (info CertificateInfo) EncodeToP12(passphrase string) ([]byte, error) {
 	return pkcs12.Encode(rand.Reader, info.PrivateKey, &info.Certificate, nil, passphrase)
 }

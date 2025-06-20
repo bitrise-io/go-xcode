@@ -70,7 +70,7 @@ func (w Writer) Write(codesignAssetsByDistributionType map[autocodesign.Distribu
 }
 
 // InstallCertificate installs the certificate to the Keychain
-func (w Writer) InstallCertificate(certificate certificateutil.CertificateInfoModel) error {
+func (w Writer) InstallCertificate(certificate certificateutil.CertificateInfo) error {
 	// Empty passphrase provided, as already parsed certificate + private key
 	return w.keychain.InstallCertificate(certificate, "")
 }

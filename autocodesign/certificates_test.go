@@ -364,13 +364,13 @@ func TestGetValidLocalCertificates(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		certificates []certificateutil.CertificateInfoModel
+		certificates []certificateutil.CertificateInfo
 		want         LocalCertificates
 		wantErr      bool
 	}{
 		{
 			name: "Duplicate certificate (same name)",
-			certificates: []certificateutil.CertificateInfoModel{
+			certificates: []certificateutil.CertificateInfo{
 				devCert,
 				devCert,
 				devCert2,
@@ -385,7 +385,7 @@ func TestGetValidLocalCertificates(t *testing.T) {
 		},
 		{
 			name: "dev + dist cert",
-			certificates: []certificateutil.CertificateInfoModel{
+			certificates: []certificateutil.CertificateInfo{
 				distributionCert,
 				devCert,
 			},

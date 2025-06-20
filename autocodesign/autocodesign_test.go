@@ -62,7 +62,7 @@ func newMockProfile(m profileArgs) Profile {
 	return profile
 }
 
-func newCertificate(t *testing.T, teamID, teamName, commonName string, expiry time.Time) certificateutil.CertificateInfoModel {
+func newCertificate(t *testing.T, teamID, teamName, commonName string, expiry time.Time) certificateutil.CertificateInfo {
 	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, commonName, expiry)
 	if err != nil {
 		t.Fatalf("init: failed to generate certificate: %s", err)
@@ -511,7 +511,7 @@ func Test_GivenLocalProfile_WhenCertificateIsMissing_ThenInstalled(t *testing.T)
 	require.Equal(t, wantAssets, gotAssets)
 }
 
-func newClientWithoutAppIDAndProfile(cert certificateutil.CertificateInfoModel) *MockDevPortalClient {
+func newClientWithoutAppIDAndProfile(cert certificateutil.CertificateInfo) *MockDevPortalClient {
 	client := newMockDevportalClient(devportalArgs{
 		certs: map[appstoreconnect.CertificateType][]Certificate{
 			appstoreconnect.IOSDevelopment: {{
@@ -528,7 +528,7 @@ func newClientWithoutAppIDAndProfile(cert certificateutil.CertificateInfoModel) 
 	return client
 }
 
-func newClientWithAppIDWithoutAppleSignIn(cert certificateutil.CertificateInfoModel, bundleID string) *MockDevPortalClient {
+func newClientWithAppIDWithoutAppleSignIn(cert certificateutil.CertificateInfo, bundleID string) *MockDevPortalClient {
 	appID := appstoreconnect.BundleID{
 		Attributes: appstoreconnect.BundleIDAttributes{
 			Identifier: bundleID,

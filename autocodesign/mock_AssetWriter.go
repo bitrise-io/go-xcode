@@ -13,11 +13,11 @@ type MockAssetWriter struct {
 }
 
 // InstallCertificate provides a mock function with given fields: certificate
-func (_m *MockAssetWriter) InstallCertificate(certificate certificateutil.CertificateInfoModel) error {
+func (_m *MockAssetWriter) InstallCertificate(certificate certificateutil.CertificateInfo) error {
 	ret := _m.Called(certificate)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(certificateutil.CertificateInfoModel) error); ok {
+	if rf, ok := ret.Get(0).(func(certificateutil.CertificateInfo) error); ok {
 		r0 = rf(certificate)
 	} else {
 		r0 = ret.Error(0)

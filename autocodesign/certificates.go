@@ -90,7 +90,7 @@ func getValidCertificates(typeToLocalCerts LocalCertificates, client DevPortalCl
 }
 
 // GetValidLocalCertificates returns validated and deduplicated local certificates
-func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoModel) (LocalCertificates, error) {
+func GetValidLocalCertificates(certificates []certificateutil.CertificateInfo) (LocalCertificates, error) {
 	preFilteredCerts := certificateutil.FilterValidCertificateInfos(certificates)
 
 	if len(preFilteredCerts.InvalidCertificates) != 0 {
@@ -113,7 +113,7 @@ func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoMod
 }
 
 // matchLocalToAPICertificates ...
-func matchLocalToAPICertificates(client DevPortalClient, localCertificates []certificateutil.CertificateInfoModel) []Certificate {
+func matchLocalToAPICertificates(client DevPortalClient, localCertificates []certificateutil.CertificateInfo) []Certificate {
 	var matchingCertificates []Certificate
 
 	for _, localCert := range localCertificates {
@@ -150,9 +150,9 @@ func logAllAPICertificates(client DevPortalClient) error {
 }
 
 // filterCertificates returns the certificates matching to the given common name, developer team ID, and distribution type.
-func filterCertificates(certificates []certificateutil.CertificateInfoModel, certificateType appstoreconnect.CertificateType) []certificateutil.CertificateInfoModel {
+func filterCertificates(certificates []certificateutil.CertificateInfo, certificateType appstoreconnect.CertificateType) []certificateutil.CertificateInfo {
 	// filter by distribution type
-	var filteredCertificates []certificateutil.CertificateInfoModel
+	var filteredCertificates []certificateutil.CertificateInfo
 	for _, certificate := range certificates {
 		if certificateType == appstoreconnect.IOSDistribution && isDistributionCertificate(certificate) {
 			filteredCertificates = append(filteredCertificates, certificate)
@@ -178,13 +178,13 @@ func filterCertificates(certificates []certificateutil.CertificateInfoModel, cer
 	return filteredCertificates
 }
 
-func isDistributionCertificate(cert certificateutil.CertificateInfoModel) bool {
+func isDistributionCertificate(cert certificateutil.CertificateInfo) bool {
 	// Apple certificate types: https://help.apple.com/xcode/mac/current/#/dev80c6204ec)
 	return strings.HasPrefix(strings.ToLower(cert.CommonName), strings.ToLower("iPhone Distribution")) ||
 		strings.HasPrefix(strings.ToLower(cert.CommonName), strings.ToLower("Apple Distribution"))
 }
 
-func certsToString(certs []certificateutil.CertificateInfoModel) (s string) {
+func certsToString(certs []certificateutil.CertificateInfo) (s string) {
 	for i, cert := range certs {
 		s += "- "
 		s += cert.String()

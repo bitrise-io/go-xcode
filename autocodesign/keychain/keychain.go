@@ -50,7 +50,7 @@ func New(pth string, pass stepconf.Secret, factory command.Factory) (*Keychain, 
 }
 
 // InstallCertificate ...
-func (k Keychain) InstallCertificate(cert certificateutil.CertificateInfoModel, pass stepconf.Secret) error {
+func (k Keychain) InstallCertificate(cert certificateutil.CertificateInfo, pass stepconf.Secret) error {
 	b, err := cert.EncodeToP12("bitrise")
 	if err != nil {
 		return err

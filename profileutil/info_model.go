@@ -26,7 +26,7 @@ type ProvisioningProfileInfoModel struct {
 	BundleID              string
 	ExportType            exportoptions.Method
 	ProvisionedDevices    []string
-	DeveloperCertificates []certificateutil.CertificateInfoModel
+	DeveloperCertificates []certificateutil.CertificateInfo
 	CreationDate          time.Time
 	ExpirationDate        time.Time
 	Entitlements          plistutil.MapData
@@ -48,7 +48,7 @@ func collectCapabilitesPrintableInfo(entitlements plistutil.MapData) map[string]
 }
 
 // PrintableProvisioningProfileInfo ...
-func (info ProvisioningProfileInfoModel) String(installedCertificates ...certificateutil.CertificateInfoModel) string {
+func (info ProvisioningProfileInfoModel) String(installedCertificates ...certificateutil.CertificateInfo) string {
 	printable := map[string]interface{}{}
 	printable["name"] = fmt.Sprintf("%s (%s)", info.Name, info.UUID)
 	printable["export_type"] = string(info.ExportType)
@@ -125,7 +125,7 @@ func (info ProvisioningProfileInfoModel) CheckValidity() error {
 }
 
 // HasInstalledCertificate ...
-func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertificates []certificateutil.CertificateInfoModel) bool {
+func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertificates []certificateutil.CertificateInfo) bool {
 	has := false
 	for _, certificate := range info.DeveloperCertificates {
 		for _, installedCertificate := range installedCertificates {

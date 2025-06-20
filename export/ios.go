@@ -10,17 +10,17 @@ import (
 
 // IosCodeSignGroup ...
 type IosCodeSignGroup struct {
-	certificate        certificateutil.CertificateInfoModel
+	certificate        certificateutil.CertificateInfo
 	bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel
 }
 
 // Certificate ...
-func (signGroup *IosCodeSignGroup) Certificate() certificateutil.CertificateInfoModel {
+func (signGroup *IosCodeSignGroup) Certificate() certificateutil.CertificateInfo {
 	return signGroup.certificate
 }
 
 // InstallerCertificate ...
-func (signGroup *IosCodeSignGroup) InstallerCertificate() *certificateutil.CertificateInfoModel {
+func (signGroup *IosCodeSignGroup) InstallerCertificate() *certificateutil.CertificateInfo {
 	return nil
 }
 
@@ -30,7 +30,7 @@ func (signGroup *IosCodeSignGroup) BundleIDProfileMap() map[string]profileutil.P
 }
 
 // NewIOSGroup ...
-func NewIOSGroup(certificate certificateutil.CertificateInfoModel, bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel) *IosCodeSignGroup {
+func NewIOSGroup(certificate certificateutil.CertificateInfo, bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel) *IosCodeSignGroup {
 	return &IosCodeSignGroup{
 		certificate:        certificate,
 		bundleIDProfileMap: bundleIDProfileMap,

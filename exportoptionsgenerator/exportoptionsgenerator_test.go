@@ -374,7 +374,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 		teamID       = "TEAM123"
 	)
 
-	certificate := certificateutil.CertificateInfoModel{Serial: "serial", CommonName: "Development Certificate", TeamID: teamID}
+	certificate := certificateutil.CertificateInfo{Serial: "serial", CommonName: "Development Certificate", TeamID: teamID}
 
 	tests := []struct {
 		name         string
@@ -422,21 +422,21 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 
 			g := New(newXcodeVersionReader(t, tt.xcodeVersion), logger)
 			g.certificateProvider = MockCodesignIdentityProvider{
-				[]certificateutil.CertificateInfoModel{certificate},
+				[]certificateutil.CertificateInfo{certificate},
 			}
 			profile := profileutil.ProvisioningProfileInfoModel{
 				BundleID:              bundleID,
 				TeamID:                teamID,
 				ExportType:            tt.exportMethod,
 				Name:                  "Development Application Profile",
-				DeveloperCertificates: []certificateutil.CertificateInfoModel{certificate},
+				DeveloperCertificates: []certificateutil.CertificateInfo{certificate},
 			}
 			profileForClip := profileutil.ProvisioningProfileInfoModel{
 				BundleID:              bundleIDClip,
 				TeamID:                teamID,
 				ExportType:            tt.exportMethod,
 				Name:                  "Development App Clip Profile",
-				DeveloperCertificates: []certificateutil.CertificateInfoModel{certificate},
+				DeveloperCertificates: []certificateutil.CertificateInfo{certificate},
 			}
 			g.profileProvider = MockProvisioningProfileProvider{
 				[]profileutil.ProvisioningProfileInfoModel{
@@ -483,7 +483,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 		teamID       = "TEAM123"
 	)
 
-	certificate := certificateutil.CertificateInfoModel{Serial: "serial", CommonName: "Development Certificate", TeamID: teamID}
+	certificate := certificateutil.CertificateInfo{Serial: "serial", CommonName: "Development Certificate", TeamID: teamID}
 
 	tests := []struct {
 		name         string
@@ -534,7 +534,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			g := New(xcodeVersionReader, logger)
 
 			g.certificateProvider = MockCodesignIdentityProvider{
-				[]certificateutil.CertificateInfoModel{certificate},
+				[]certificateutil.CertificateInfo{certificate},
 			}
 			g.profileProvider = MockProvisioningProfileProvider{}
 
@@ -570,10 +570,10 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 }
 
 type MockCodesignIdentityProvider struct {
-	codesignIdentities []certificateutil.CertificateInfoModel
+	codesignIdentities []certificateutil.CertificateInfo
 }
 
-func (p MockCodesignIdentityProvider) ListCodesignIdentities() ([]certificateutil.CertificateInfoModel, error) {
+func (p MockCodesignIdentityProvider) ListCodesignIdentities() ([]certificateutil.CertificateInfo, error) {
 	return p.codesignIdentities, nil
 }
 

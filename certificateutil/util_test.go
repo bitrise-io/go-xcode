@@ -10,33 +10,33 @@ import (
 )
 
 func TestFilterCertificateInfoModelsByFilterFunc(t *testing.T) {
-	filterableCerts := []CertificateInfoModel{
-		CertificateInfoModel{TeamID: "my-team-id"},
-		CertificateInfoModel{TeamID: "find-this-team-id"},
-		CertificateInfoModel{TeamID: "my--another-team-id"},
-		CertificateInfoModel{TeamID: "test-team-id", CommonName: "test common name"},
-		CertificateInfoModel{TeamID: "test-team-id2", CommonName: "find this common name"},
+	filterableCerts := []CertificateInfo{
+		CertificateInfo{TeamID: "my-team-id"},
+		CertificateInfo{TeamID: "find-this-team-id"},
+		CertificateInfo{TeamID: "my--another-team-id"},
+		CertificateInfo{TeamID: "test-team-id", CommonName: "test common name"},
+		CertificateInfo{TeamID: "test-team-id2", CommonName: "find this common name"},
 	}
-	expectedCertsByTeamID := []CertificateInfoModel{
-		CertificateInfoModel{TeamID: "find-this-team-id"},
+	expectedCertsByTeamID := []CertificateInfo{
+		CertificateInfo{TeamID: "find-this-team-id"},
 	}
 
-	foundCerts := FilterCertificateInfoModelsByFilterFunc(filterableCerts, func(cert CertificateInfoModel) bool { return cert.TeamID == "find-this-team-id" })
+	foundCerts := FilterCertificateInfoModelsByFilterFunc(filterableCerts, func(cert CertificateInfo) bool { return cert.TeamID == "find-this-team-id" })
 	require.Equal(t, expectedCertsByTeamID, foundCerts)
 
-	expectedCertsByCommonNameExact := []CertificateInfoModel{
-		CertificateInfoModel{TeamID: "test-team-id2", CommonName: "find this common name"},
+	expectedCertsByCommonNameExact := []CertificateInfo{
+		CertificateInfo{TeamID: "test-team-id2", CommonName: "find this common name"},
 	}
 
-	foundCerts = FilterCertificateInfoModelsByFilterFunc(filterableCerts, func(cert CertificateInfoModel) bool { return cert.CommonName == "find this common name" })
+	foundCerts = FilterCertificateInfoModelsByFilterFunc(filterableCerts, func(cert CertificateInfo) bool { return cert.CommonName == "find this common name" })
 	require.Equal(t, expectedCertsByCommonNameExact, foundCerts)
 
-	expectedCertsByCommonNameMatch := []CertificateInfoModel{
-		CertificateInfoModel{TeamID: "test-team-id", CommonName: "test common name"},
-		CertificateInfoModel{TeamID: "test-team-id2", CommonName: "find this common name"},
+	expectedCertsByCommonNameMatch := []CertificateInfo{
+		CertificateInfo{TeamID: "test-team-id", CommonName: "test common name"},
+		CertificateInfo{TeamID: "test-team-id2", CommonName: "find this common name"},
 	}
 
-	foundCerts = FilterCertificateInfoModelsByFilterFunc(filterableCerts, func(cert CertificateInfoModel) bool { return strings.Contains(cert.CommonName, "common name") })
+	foundCerts = FilterCertificateInfoModelsByFilterFunc(filterableCerts, func(cert CertificateInfo) bool { return strings.Contains(cert.CommonName, "common name") })
 	require.Equal(t, expectedCertsByCommonNameMatch, foundCerts)
 }
 
@@ -72,34 +72,34 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		certificateInfos []CertificateInfoModel
+		certificateInfos []CertificateInfo
 		want             ValidCertificateInfo
 	}{
 		{
 			name:             "one valid cert",
-			certificateInfos: []CertificateInfoModel{latestValidCertInfo},
+			certificateInfos: []CertificateInfo{latestValidCertInfo},
 			want: ValidCertificateInfo{
-				ValidCertificates:      []CertificateInfoModel{latestValidCertInfo},
+				ValidCertificates:      []CertificateInfo{latestValidCertInfo},
 				InvalidCertificates:    nil,
 				DuplicatedCertificates: nil,
 			},
 		},
 		{
 			name:             "one valid, one invalid cert with same name",
-			certificateInfos: []CertificateInfoModel{latestValidCertInfo, invalidCertInfo},
+			certificateInfos: []CertificateInfo{latestValidCertInfo, invalidCertInfo},
 			want: ValidCertificateInfo{
-				ValidCertificates:      []CertificateInfoModel{latestValidCertInfo},
-				InvalidCertificates:    []CertificateInfoModel{invalidCertInfo},
+				ValidCertificates:      []CertificateInfo{latestValidCertInfo},
+				InvalidCertificates:    []CertificateInfo{invalidCertInfo},
 				DuplicatedCertificates: nil,
 			},
 		},
 		{
 			name:             "2 valid, duplicated certs",
-			certificateInfos: []CertificateInfoModel{latestValidCertInfo, earlierValidCertInfo, invalidCertInfo},
+			certificateInfos: []CertificateInfo{latestValidCertInfo, earlierValidCertInfo, invalidCertInfo},
 			want: ValidCertificateInfo{
-				ValidCertificates:      []CertificateInfoModel{latestValidCertInfo},
-				InvalidCertificates:    []CertificateInfoModel{invalidCertInfo},
-				DuplicatedCertificates: []CertificateInfoModel{earlierValidCertInfo},
+				ValidCertificates:      []CertificateInfo{latestValidCertInfo},
+				InvalidCertificates:    []CertificateInfo{invalidCertInfo},
+				DuplicatedCertificates: []CertificateInfo{earlierValidCertInfo},
 			},
 		},
 	}

@@ -31,7 +31,7 @@ type Profile interface {
 type AppCodesignAssets struct {
 	ArchivableTargetProfilesByBundleID map[string]Profile
 	UITestTargetProfilesByBundleID     map[string]Profile
-	Certificate                        certificateutil.CertificateInfoModel
+	Certificate                        certificateutil.CertificateInfo
 }
 
 // Platform ...
@@ -63,7 +63,7 @@ type Entitlements serialized.Object
 
 // Certificate is certificate present on Apple App Store Connect API, could match a local certificate
 type Certificate struct {
-	CertificateInfo certificateutil.CertificateInfoModel
+	CertificateInfo certificateutil.CertificateInfo
 	ID              string
 }
 
@@ -96,7 +96,7 @@ type DevPortalClient interface {
 // AssetWriter ...
 type AssetWriter interface {
 	Write(codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets) error
-	InstallCertificate(certificate certificateutil.CertificateInfoModel) error
+	InstallCertificate(certificate certificateutil.CertificateInfo) error
 	InstallProfile(profile Profile) error
 }
 
@@ -114,11 +114,11 @@ type AppLayout struct {
 
 // CertificateProvider returns codesigning certificates (with private key)
 type CertificateProvider interface {
-	GetCertificates() ([]certificateutil.CertificateInfoModel, error)
+	GetCertificates() ([]certificateutil.CertificateInfo, error)
 }
 
 // LocalCertificates is a map from the certificate type (development, distribution) to an array of installed certs
-type LocalCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
+type LocalCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfo
 
 // LocalProfile ...
 type LocalProfile struct {

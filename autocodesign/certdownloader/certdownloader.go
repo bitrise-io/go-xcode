@@ -33,8 +33,8 @@ func NewDownloader(certs []CertificateAndPassphrase, client *http.Client) autoco
 }
 
 // GetCertificates ...
-func (d downloader) GetCertificates() ([]certificateutil.CertificateInfoModel, error) {
-	var certInfos []certificateutil.CertificateInfoModel
+func (d downloader) GetCertificates() ([]certificateutil.CertificateInfo, error) {
+	var certInfos []certificateutil.CertificateInfo
 
 	for i, p12 := range d.certs {
 		log.Debugf("Downloading p12 file number %d from %s", i, p12.URL)
@@ -52,7 +52,7 @@ func (d downloader) GetCertificates() ([]certificateutil.CertificateInfoModel, e
 }
 
 // downloadAndParsePKCS12 downloads a pkcs12 format file and parses certificates and matching private keys.
-func downloadAndParsePKCS12(httpClient *http.Client, certificateURL, passphrase string) ([]certificateutil.CertificateInfoModel, error) {
+func downloadAndParsePKCS12(httpClient *http.Client, certificateURL, passphrase string) ([]certificateutil.CertificateInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
@@ -74,7 +74,7 @@ func downloadAndParsePKCS12(httpClient *http.Client, certificateURL, passphrase 
 	return infos, nil
 }
 
-func certsToString(certs []certificateutil.CertificateInfoModel) (s string) {
+func certsToString(certs []certificateutil.CertificateInfo) (s string) {
 	for i, cert := range certs {
 		s += "- "
 		s += cert.String()

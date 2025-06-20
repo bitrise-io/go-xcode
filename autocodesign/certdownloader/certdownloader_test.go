@@ -44,7 +44,7 @@ func Test_downloader_GetCertificates_Local(t *testing.T) {
 	}
 	got, err := d.GetCertificates()
 
-	want := []certificateutil.CertificateInfoModel{
+	want := []certificateutil.CertificateInfo{
 		certInfo,
 	}
 
@@ -83,7 +83,7 @@ func Test_downloader_GetCertificates_Remote(t *testing.T) {
 	}
 	got, err := d.GetCertificates()
 
-	want := []certificateutil.CertificateInfoModel{
+	want := []certificateutil.CertificateInfo{
 		certInfo,
 	}
 
@@ -91,7 +91,7 @@ func Test_downloader_GetCertificates_Remote(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func createTestCert(t *testing.T) certificateutil.CertificateInfoModel {
+func createTestCert(t *testing.T) certificateutil.CertificateInfo {
 	const (
 		teamID     = "MYTEAMID"
 		commonName = "Apple Developer: test"
