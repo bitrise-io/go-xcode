@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"howett.net/plist"
+
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/fullsailor/pkcs7"
-	"howett.net/plist"
 )
 
 // ProvisioningProfileInfoModel ...
