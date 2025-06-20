@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-xcode/exportoptions"
-	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/certificateutil"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/stretchr/testify/assert"
 )
 
