@@ -5,8 +5,9 @@ import (
 	"strings"
 
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 )
 
 func selectCertificatesAndDistributionTypes(certificateSource DevPortalClient, typeToLocalCerts LocalCertificates, distribution DistributionType, signUITestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]Certificate, []DistributionType, error) {
@@ -90,8 +91,8 @@ func getValidCertificates(typeToLocalCerts LocalCertificates, client DevPortalCl
 }
 
 // GetValidLocalCertificates returns validated and deduplicated local certificates
-func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoModel) (LocalCertificates, error) {
-	preFilteredCerts := certificateutil.FilterValidCertificateInfos(certificates)
+func GetValidLocalCertificates(certificates []certificateutil.CertificateInfo, timeProvider timeutil.TimeProvider) (LocalCertificates, error) {
+	preFilteredCerts := certificateutil.FilterValidCertificateInfos(certificates, timeProvider)
 
 	if len(preFilteredCerts.InvalidCertificates) != 0 {
 		log.Warnf("Ignoring expired or not yet valid certificates: %s", preFilteredCerts.InvalidCertificates)
@@ -104,7 +105,7 @@ func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoMod
 
 	localCertificates := LocalCertificates{}
 	for _, certType := range []appstoreconnect.CertificateType{appstoreconnect.IOSDevelopment, appstoreconnect.IOSDistribution} {
-		localCertificates[certType] = filterCertificates(preFilteredCerts.ValidCertificates, certType)
+		localCertificates[certType] = filterCertificates(preFilteredCerts.ValidCertificates, certType, timeProvider)
 	}
 
 	log.Debugf("Valid and deduplicated certificates:\n%s", certsToString(preFilteredCerts.ValidCertificates))
@@ -113,7 +114,7 @@ func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoMod
 }
 
 // matchLocalToAPICertificates ...
-func matchLocalToAPICertificates(client DevPortalClient, localCertificates []certificateutil.CertificateInfoModel) []Certificate {
+func matchLocalToAPICertificates(client DevPortalClient, localCertificates []certificateutil.CertificateInfo) []Certificate {
 	var matchingCertificates []Certificate
 
 	for _, localCert := range localCertificates {
@@ -150,9 +151,9 @@ func logAllAPICertificates(client DevPortalClient) error {
 }
 
 // filterCertificates returns the certificates matching to the given common name, developer team ID, and distribution type.
-func filterCertificates(certificates []certificateutil.CertificateInfoModel, certificateType appstoreconnect.CertificateType) []certificateutil.CertificateInfoModel {
+func filterCertificates(certificates []certificateutil.CertificateInfo, certificateType appstoreconnect.CertificateType, timeProvider timeutil.TimeProvider) []certificateutil.CertificateInfo {
 	// filter by distribution type
-	var filteredCertificates []certificateutil.CertificateInfoModel
+	var filteredCertificates []certificateutil.CertificateInfo
 	for _, certificate := range certificates {
 		if certificateType == appstoreconnect.IOSDistribution && isDistributionCertificate(certificate) {
 			filteredCertificates = append(filteredCertificates, certificate)
@@ -178,13 +179,13 @@ func filterCertificates(certificates []certificateutil.CertificateInfoModel, cer
 	return filteredCertificates
 }
 
-func isDistributionCertificate(cert certificateutil.CertificateInfoModel) bool {
+func isDistributionCertificate(cert certificateutil.CertificateInfo) bool {
 	// Apple certificate types: https://help.apple.com/xcode/mac/current/#/dev80c6204ec)
 	return strings.HasPrefix(strings.ToLower(cert.CommonName), strings.ToLower("iPhone Distribution")) ||
 		strings.HasPrefix(strings.ToLower(cert.CommonName), strings.ToLower("Apple Distribution"))
 }
 
-func certsToString(certs []certificateutil.CertificateInfoModel) (s string) {
+func certsToString(certs []certificateutil.CertificateInfo) (s string) {
 	for i, cert := range certs {
 		s += "- "
 		s += cert.String()

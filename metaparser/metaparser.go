@@ -5,7 +5,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/exportoptions"
+	"github.com/bitrise-io/go-xcode/v2/exportoptions"
 )
 
 // ArtifactMetadata ...

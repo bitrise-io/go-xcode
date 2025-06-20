@@ -3,7 +3,7 @@
 package autocodesign
 
 import (
-	certificateutil "github.com/bitrise-io/go-xcode/certificateutil"
+	certificateutil "github.com/bitrise-io/go-xcode/v2/certificateutil"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -13,15 +13,15 @@ type MockCertificateProvider struct {
 }
 
 // GetCertificates provides a mock function with given fields:
-func (_m *MockCertificateProvider) GetCertificates() ([]certificateutil.CertificateInfoModel, error) {
+func (_m *MockCertificateProvider) GetCertificates() ([]certificateutil.CertificateInfo, error) {
 	ret := _m.Called()
 
-	var r0 []certificateutil.CertificateInfoModel
-	if rf, ok := ret.Get(0).(func() []certificateutil.CertificateInfoModel); ok {
+	var r0 []certificateutil.CertificateInfo
+	if rf, ok := ret.Get(0).(func() []certificateutil.CertificateInfo); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0, ok = ret.Get(0).([]certificateutil.CertificateInfoModel)
+			r0, ok = ret.Get(0).([]certificateutil.CertificateInfo)
 			if !ok {
 			}
 		}

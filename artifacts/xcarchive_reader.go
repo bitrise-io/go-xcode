@@ -1,7 +1,7 @@
 package artifacts
 
 import (
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
 // XCArchiveReader ...
@@ -15,13 +15,13 @@ func NewXCArchiveReader(reader ZipReadCloser) XCArchiveReader {
 }
 
 // InfoPlist ...
-func (reader XCArchiveReader) InfoPlist() (plistutil.PlistData, error) {
+func (reader XCArchiveReader) InfoPlist() (plistutil.MapData, error) {
 	b, err := reader.zipReader.ReadFile("*.xcarchive/Info.plist")
 	if err != nil {
 		return nil, err
 	}
 
-	return plistutil.NewPlistDataFromContent(string(b))
+	return plistutil.NewMapDataFromPlistContent(string(b))
 }
 
 // IsMacOS ...

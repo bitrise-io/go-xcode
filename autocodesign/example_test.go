@@ -18,6 +18,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/v2/codesign"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 )
 
 type config struct {
@@ -82,7 +83,7 @@ func Example() {
 		panic(fmt.Errorf("failed to download certificates: %w", err))
 	}
 
-	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs)
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs, timeutil.NewDefaultTimeProvider())
 	if err != nil {
 		panic(err)
 	}

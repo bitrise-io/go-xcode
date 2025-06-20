@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 )
 
 // CertificateSource ...
@@ -107,7 +107,7 @@ func (s *CertificateSource) getCertificates(devCerts bool) ([]autocodesign.Certi
 			return nil, err
 		}
 
-		cert, err := certificateutil.CeritifcateFromPemContent(pemContent)
+		cert, err := certificateutil.CertificateFromPemContent(pemContent)
 		if err != nil {
 			return nil, err
 		}

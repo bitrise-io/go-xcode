@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-io/go-xcode/exportoptions"
-	"github.com/bitrise-io/go-xcode/plistutil"
-	"github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
+	"github.com/bitrise-io/go-xcode/v2/exportoptions"
 	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/mocks"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 	"github.com/stretchr/testify/require"
 )
@@ -287,7 +287,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 			exportProduct: ExportProductApp,
 			archiveInfo: ArchiveInfo{
 				AppBundleID: bundleID,
-				EntitlementsByBundleID: map[string]plistutil.PlistData{
+				EntitlementsByBundleID: map[string]plistutil.MapData{
 					bundleID: {"com.apple.developer.icloud-services": []string{"CloudKit"}},
 				},
 			},
@@ -374,7 +374,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 		teamID       = "TEAM123"
 	)
 
-	certificate := certificateutil.CertificateInfoModel{Serial: "serial", CommonName: "Development Certificate", TeamID: teamID}
+	certificate := certificateutil.CertificateInfo{Serial: "serial", CommonName: "Development Certificate", TeamID: teamID}
 
 	tests := []struct {
 		name         string
@@ -422,21 +422,21 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 
 			g := New(newXcodeVersionReader(t, tt.xcodeVersion), logger)
 			g.certificateProvider = MockCodesignIdentityProvider{
-				[]certificateutil.CertificateInfoModel{certificate},
+				[]certificateutil.CertificateInfo{certificate},
 			}
 			profile := profileutil.ProvisioningProfileInfoModel{
 				BundleID:              bundleID,
 				TeamID:                teamID,
 				ExportType:            tt.exportMethod,
 				Name:                  "Development Application Profile",
-				DeveloperCertificates: []certificateutil.CertificateInfoModel{certificate},
+				DeveloperCertificates: []certificateutil.CertificateInfo{certificate},
 			}
 			profileForClip := profileutil.ProvisioningProfileInfoModel{
 				BundleID:              bundleIDClip,
 				TeamID:                teamID,
 				ExportType:            tt.exportMethod,
 				Name:                  "Development App Clip Profile",
-				DeveloperCertificates: []certificateutil.CertificateInfoModel{certificate},
+				DeveloperCertificates: []certificateutil.CertificateInfo{certificate},
 			}
 			g.profileProvider = MockProvisioningProfileProvider{
 				[]profileutil.ProvisioningProfileInfoModel{
@@ -447,7 +447,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 
 			archiveInfo := ArchiveInfo{
 				AppBundleID: bundleID,
-				EntitlementsByBundleID: map[string]plistutil.PlistData{
+				EntitlementsByBundleID: map[string]plistutil.MapData{
 					bundleID:     {"com.apple.developer.icloud-services": []string{"CloudKit"}},
 					bundleIDClip: nil,
 				},
@@ -483,7 +483,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 		teamID       = "TEAM123"
 	)
 
-	certificate := certificateutil.CertificateInfoModel{Serial: "serial", CommonName: "Development Certificate", TeamID: teamID}
+	certificate := certificateutil.CertificateInfo{Serial: "serial", CommonName: "Development Certificate", TeamID: teamID}
 
 	tests := []struct {
 		name         string
@@ -534,13 +534,13 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 			g := New(xcodeVersionReader, logger)
 
 			g.certificateProvider = MockCodesignIdentityProvider{
-				[]certificateutil.CertificateInfoModel{certificate},
+				[]certificateutil.CertificateInfo{certificate},
 			}
 			g.profileProvider = MockProvisioningProfileProvider{}
 
 			archiveInfo := ArchiveInfo{
 				AppBundleID: bundleID,
-				EntitlementsByBundleID: map[string]plistutil.PlistData{
+				EntitlementsByBundleID: map[string]plistutil.MapData{
 					bundleID:     cloudKitEntitlement,
 					bundleIDClip: nil,
 				},
@@ -570,10 +570,10 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 }
 
 type MockCodesignIdentityProvider struct {
-	codesignIdentities []certificateutil.CertificateInfoModel
+	codesignIdentities []certificateutil.CertificateInfo
 }
 
-func (p MockCodesignIdentityProvider) ListCodesignIdentities() ([]certificateutil.CertificateInfoModel, error) {
+func (p MockCodesignIdentityProvider) ListCodesignIdentities() ([]certificateutil.CertificateInfo, error) {
 	return p.codesignIdentities, nil
 }
 

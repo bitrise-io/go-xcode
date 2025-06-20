@@ -3,7 +3,7 @@ package exportoptionsgenerator
 import (
 	"fmt"
 
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
@@ -13,7 +13,7 @@ import (
 type ArchiveInfo struct {
 	AppBundleID            string
 	AppClipBundleID        string
-	EntitlementsByBundleID map[string]plistutil.PlistData
+	EntitlementsByBundleID map[string]plistutil.MapData
 }
 
 // ReadArchiveInfoFromXcodeproject reads the Bundle ID for the given scheme and configuration.
@@ -28,7 +28,7 @@ func ReadArchiveInfoFromXcodeproject(xcodeProj *xcodeproj.XcodeProj, scheme *xcs
 
 	mainTargetBundleID := ""
 	appClipBundleID := ""
-	entitlementsByBundleID := map[string]plistutil.PlistData{}
+	entitlementsByBundleID := map[string]plistutil.MapData{}
 	for i, target := range targets {
 		bundleID, err := xcodeProj.TargetBundleID(target.Name, configuration)
 		if err != nil {
@@ -40,7 +40,7 @@ func ReadArchiveInfoFromXcodeproject(xcodeProj *xcodeproj.XcodeProj, scheme *xcs
 			return ArchiveInfo{}, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
 		}
 
-		entitlementsByBundleID[bundleID] = plistutil.PlistData(entitlements)
+		entitlementsByBundleID[bundleID] = plistutil.MapData(entitlements)
 
 		if target.IsAppClipProduct() {
 			appClipBundleID = bundleID

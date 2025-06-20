@@ -3,9 +3,9 @@ package autocodesign
 import (
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +17,7 @@ func Test_GivenCodeSignAssets_WhenMergingTwo_ThenValuesAreCorrect(t *testing.T) 
 	enterprise1Profile := profile("enterprise", "1")
 	adHoc1Profile := profile("ad-hoc", "1")
 
-	certificate := certificateutil.CertificateInfoModel{}
+	certificate := certificateutil.CertificateInfo{}
 	tests := []struct {
 		name     string
 		base     *AppCodesignAssets

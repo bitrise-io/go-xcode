@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,7 +44,7 @@ func Test_downloader_GetCertificates_Local(t *testing.T) {
 	}
 	got, err := d.GetCertificates()
 
-	want := []certificateutil.CertificateInfoModel{
+	want := []certificateutil.CertificateInfo{
 		certInfo,
 	}
 
@@ -83,7 +83,7 @@ func Test_downloader_GetCertificates_Remote(t *testing.T) {
 	}
 	got, err := d.GetCertificates()
 
-	want := []certificateutil.CertificateInfoModel{
+	want := []certificateutil.CertificateInfo{
 		certInfo,
 	}
 
@@ -91,16 +91,17 @@ func Test_downloader_GetCertificates_Remote(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func createTestCert(t *testing.T) certificateutil.CertificateInfoModel {
+func createTestCert(t *testing.T) certificateutil.CertificateInfo {
 	const (
 		teamID     = "MYTEAMID"
 		commonName = "Apple Developer: test"
 		teamName   = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
 	)
-	expiry := time.Now().AddDate(1, 0, 0)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
 	serial := int64(1234)
 
-	cert, privateKey, err := certificateutil.GenerateTestCertificate(serial, teamID, teamName, commonName, expiry)
+	cert, privateKey, err := certificateutil.GenerateTestCertificate(serial, teamID, teamName, commonName, notBefore, expiry)
 	if err != nil {
 		t.Errorf("init: failed to generate certificate: %s", err)
 	}

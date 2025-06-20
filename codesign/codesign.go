@@ -5,12 +5,13 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 	"github.com/bitrise-io/go-xcode/v2/xcarchive"
 )
 
@@ -62,7 +63,8 @@ type Manager struct {
 	detailsProvider DetailsProvider
 	assetWriter     AssetWriter
 
-	logger log.Logger
+	timeProvider timeutil.TimeProvider
+	logger       log.Logger
 }
 
 // NewManagerWithArchive creates a codesign manager, which reads the code signing asset requirements from an XCArchive file.
@@ -76,6 +78,7 @@ func NewManagerWithArchive(
 	assetInstaller autocodesign.AssetWriter,
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager,
 	archive xcarchive.IosArchive,
+	timeProvider timeutil.TimeProvider,
 	logger log.Logger,
 ) Manager {
 	return Manager{
@@ -88,6 +91,7 @@ func NewManagerWithArchive(
 		assetInstaller:            assetInstaller,
 		localCodeSignAssetManager: localCodeSignAssetManager,
 		detailsProvider:           archive,
+		timeProvider:              timeProvider,
 		logger:                    logger,
 	}
 }
@@ -292,7 +296,7 @@ func (m *Manager) selectCodeSigningStrategy(credentials devportalservice.Credent
 	return codeSigningXcode, "Automatically managed signing is enabled in Xcode for the project.", nil
 }
 
-func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfoModel, error) {
+func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfo, error) {
 	certificates, err := m.certDownloader.GetCertificates()
 	if err != nil {
 		return nil, fmt.Errorf("failed to download certificates: %s", err)
@@ -312,7 +316,7 @@ func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfoModel
 	return certificates, nil
 }
 
-func (m *Manager) installCertificates(certificates []certificateutil.CertificateInfoModel) error {
+func (m *Manager) installCertificates(certificates []certificateutil.CertificateInfo) error {
 	for _, cert := range certificates {
 		// Empty passphrase provided, as already parsed certificate + private key
 		if err := m.assetInstaller.InstallCertificate(cert); err != nil {
@@ -323,8 +327,8 @@ func (m *Manager) installCertificates(certificates []certificateutil.Certificate
 	return nil
 }
 
-func (m *Manager) validateCertificatesForXcodeManagedSigning(certificates []certificateutil.CertificateInfoModel) error {
-	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates)
+func (m *Manager) validateCertificatesForXcodeManagedSigning(certificates []certificateutil.CertificateInfo) error {
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates, m.timeProvider)
 	if err != nil {
 		return err
 	}
@@ -379,7 +383,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials devportalservice.Cre
 		return err
 	}
 
-	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs)
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs, m.timeProvider)
 	if err != nil {
 		return err
 	}
@@ -438,7 +442,7 @@ func (m *Manager) prepareAutomaticAssets(credentials devportalservice.Credential
 	return codesignAssets, nil
 }
 
-func (m *Manager) prepareManualAssets(certificates []certificateutil.CertificateInfoModel) error {
+func (m *Manager) prepareManualAssets(certificates []certificateutil.CertificateInfo) error {
 	if err := m.installCertificates(certificates); err != nil {
 		return err
 	}

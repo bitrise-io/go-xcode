@@ -10,8 +10,8 @@ import (
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/codesign/mocks"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 	"github.com/stretchr/testify/mock"
@@ -132,19 +132,19 @@ func TestManager_checkXcodeManagedCertificates(t *testing.T) {
 	tests := []struct {
 		name               string
 		distributionMethod autocodesign.DistributionType
-		certificates       []certificateutil.CertificateInfoModel
+		certificates       []certificateutil.CertificateInfo
 		wantErr            bool
 	}{
 		{
 			name:               "no certs uploaded, development",
 			distributionMethod: autocodesign.Development,
-			certificates:       []certificateutil.CertificateInfoModel{},
+			certificates:       []certificateutil.CertificateInfo{},
 			wantErr:            true,
 		},
 		{
 			name:               "development, no matching cert",
 			distributionMethod: autocodesign.Development,
-			certificates: []certificateutil.CertificateInfoModel{
+			certificates: []certificateutil.CertificateInfo{
 				distCert,
 			},
 			wantErr: true,
@@ -152,19 +152,19 @@ func TestManager_checkXcodeManagedCertificates(t *testing.T) {
 		{
 			name:               "no certs uploaded, distribution",
 			distributionMethod: autocodesign.AppStore,
-			certificates:       []certificateutil.CertificateInfoModel{},
+			certificates:       []certificateutil.CertificateInfo{},
 		},
 		{
 			name:               "1 certs uploaded, development",
 			distributionMethod: autocodesign.Development,
-			certificates: []certificateutil.CertificateInfoModel{
+			certificates: []certificateutil.CertificateInfo{
 				devCert,
 			},
 		},
 		{
 			name:               "1 certs uploaded, distribution",
 			distributionMethod: autocodesign.AdHoc,
-			certificates: []certificateutil.CertificateInfoModel{
+			certificates: []certificateutil.CertificateInfo{
 				distCert,
 			},
 		},
@@ -185,14 +185,15 @@ func TestManager_checkXcodeManagedCertificates(t *testing.T) {
 	}
 }
 
-func generateCert(t *testing.T, commonName string) certificateutil.CertificateInfoModel {
+func generateCert(t *testing.T, commonName string) certificateutil.CertificateInfo {
 	const (
 		teamID   = "MYTEAMID"
 		teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
 	)
-	expiry := time.Now().AddDate(1, 0, 0)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
 
-	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, commonName, expiry)
+	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, commonName, notBefore, expiry)
 	if err != nil {
 		t.Fatalf("init: failed to generate certificate: %s", err)
 	}

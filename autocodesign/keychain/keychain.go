@@ -11,7 +11,7 @@ import (
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/command"
-	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/hashicorp/go-version"
 )
 
@@ -50,7 +50,7 @@ func New(pth string, pass stepconf.Secret, factory command.Factory) (*Keychain, 
 }
 
 // InstallCertificate ...
-func (k Keychain) InstallCertificate(cert certificateutil.CertificateInfoModel, pass stepconf.Secret) error {
+func (k Keychain) InstallCertificate(cert certificateutil.CertificateInfo, pass stepconf.Secret) error {
 	b, err := cert.EncodeToP12("bitrise")
 	if err != nil {
 		return err
