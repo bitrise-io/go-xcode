@@ -3,8 +3,10 @@ package xcarchive
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-xcode/plistutil"
 )
 
@@ -43,4 +45,24 @@ func entitlementsFromExecutable(basePath, executableRelativePath string) (*plist
 	}
 
 	return &plist, nil
+}
+
+func findDSYMs(archivePath string) ([]string, []string, error) {
+	dsymsDirPth := filepath.Join(archivePath, "dSYMs")
+	dsyms, err := pathutil.ListEntries(dsymsDirPth, pathutil.ExtensionFilter(".dsym", true))
+	if err != nil {
+		return []string{}, []string{}, err
+	}
+
+	appDSYMs := []string{}
+	frameworkDSYMs := []string{}
+	for _, dsym := range dsyms {
+		if strings.HasSuffix(dsym, ".app.dSYM") {
+			appDSYMs = append(appDSYMs, dsym)
+		} else {
+			frameworkDSYMs = append(frameworkDSYMs, dsym)
+		}
+	}
+
+	return appDSYMs, frameworkDSYMs, nil
 }

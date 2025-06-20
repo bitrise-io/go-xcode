@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -15,37 +16,66 @@ const (
 	DSYMSDirName = "dSYMs"
 )
 
-func TestIsMacOS(t *testing.T) {
-	tests := []struct {
-		name     string
-		archPath string
-		want     bool
-		wantErr  bool
-	}{
-		{
-			name:     "macOS",
-			archPath: filepath.Join(sampleRepoPath(t), "archives/macos.xcarchive"),
-			want:     true,
-			wantErr:  false,
-		},
-		{
-			name:     "iOS",
-			archPath: filepath.Join(sampleRepoPath(t), "archives/ios.xcarchive"),
-			want:     false,
-			wantErr:  false,
-		},
+func TestGiveniOS_WhenAskingForEntitlements_ThenReadsItFromTheExecutable(t *testing.T) {
+	// Given
+	appPath := filepath.Join(sampleRepoPath(t), "archives/Fruta.xcarchive/Products/Applications/Fruta.app")
+	executable := executableRelativePath(appPath, "Info.plist", "")
+
+	// When
+	entitlements, err := getEntitlements(appPath, executable)
+
+	// Then
+	assert.NoError(t, err)
+	assert.Equal(t, iosEntitlements(), entitlements)
+}
+
+func TestGivenMacos_WhenAskingForEntitlements_ThenReadsItFromTheExecutable(t *testing.T) {
+	// Given
+	appPath := filepath.Join(sampleRepoPath(t), "archives/macos.xcarchive/Products/Applications/Test.app")
+	executable := executableRelativePath(appPath, "Contents/Info.plist", "Contents/MacOS/")
+
+	// When
+	entitlements, err := getEntitlements(appPath, executable)
+
+	// Then
+	assert.NoError(t, err)
+	assert.Equal(t, macosEntitlements(), entitlements)
+}
+
+func executableRelativePath(basePath, infoPlistRelativePath, executableFolderRelativePath string) string {
+	infoPlistPath := filepath.Join(basePath, infoPlistRelativePath)
+	exist, err := pathutil.IsPathExists(infoPlistPath)
+	if err != nil {
+		return ""
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := IsMacOS(tt.archPath)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("IsMacOS() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("IsMacOS() = %v, want %v", got, tt.want)
-			}
-		})
+
+	if exist == false {
+		return ""
+	}
+
+	plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+	if err != nil {
+		return ""
+	}
+
+	return filepath.Join(executableFolderRelativePath, executableNameFromInfoPlist(plist))
+}
+
+func iosEntitlements() plistutil.PlistData {
+	return map[string]interface{}{
+		"application-identifier":                           "72SA8V3WYL.io.bitrise.appcliptest",
+		"com.apple.developer.applesignin":                  []interface{}{"Default"},
+		"com.apple.developer.icloud-container-identifiers": []interface{}{},
+		"com.apple.developer.team-identifier":              "72SA8V3WYL",
+		"com.apple.security.application-groups":            []interface{}{"group.io.bitrise.appcliptest"},
+		"get-task-allow":                                   false,
+	}
+}
+
+func macosEntitlements() plistutil.PlistData {
+	return map[string]interface{}{
+		"com.apple.security.app-sandbox":                   true,
+		"com.apple.security.files.user-selected.read-only": true,
 	}
 }
 
