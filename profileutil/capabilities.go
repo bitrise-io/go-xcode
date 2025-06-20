@@ -2,11 +2,11 @@ package profileutil
 
 import (
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
 // MatchTargetAndProfileEntitlements ...
-func MatchTargetAndProfileEntitlements(targetEntitlements plistutil.PlistData, profileEntitlements plistutil.PlistData, profileType ProfileType) []string {
+func MatchTargetAndProfileEntitlements(targetEntitlements plistutil.MapData, profileEntitlements plistutil.MapData, profileType ProfileType) []string {
 	missingEntitlements := []string{}
 
 	for key := range targetEntitlements {

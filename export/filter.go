@@ -2,8 +2,8 @@ package export
 
 import (
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/exportoptions"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
@@ -33,7 +33,7 @@ func FilterSelectableCodeSignGroups(groups []SelectableCodeSignGroup, filterFunc
 }
 
 // CreateEntitlementsSelectableCodeSignGroupFilter ...
-func CreateEntitlementsSelectableCodeSignGroupFilter(bundleIDEntitlementsMap map[string]plistutil.PlistData) SelectableCodeSignGroupFilter {
+func CreateEntitlementsSelectableCodeSignGroupFilter(bundleIDEntitlementsMap map[string]plistutil.MapData) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
 		log.Debugf("Entitlements filter - removes profile if has missing capabilities")
 

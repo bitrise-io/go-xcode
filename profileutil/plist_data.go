@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-plist"
-	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/exportoptions"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
 // PlistData ...
-type PlistData plistutil.PlistData
+type PlistData plistutil.MapData
 
 // NewPlistDataFromFile ...
 func NewPlistDataFromFile(provisioningProfilePth string) (PlistData, error) {
@@ -19,7 +19,7 @@ func NewPlistDataFromFile(provisioningProfilePth string) (PlistData, error) {
 		return PlistData{}, err
 	}
 
-	var plistData plistutil.PlistData
+	var plistData plistutil.MapData
 	if _, err := plist.Unmarshal(provisioningProfilePKCS7.Content, &plistData); err != nil {
 		return PlistData{}, err
 	}
@@ -29,21 +29,21 @@ func NewPlistDataFromFile(provisioningProfilePth string) (PlistData, error) {
 
 // GetUUID ...
 func (profile PlistData) GetUUID() string {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	uuid, _ := data.GetString("UUID")
 	return uuid
 }
 
 // GetName ...
 func (profile PlistData) GetName() string {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	uuid, _ := data.GetString("Name")
 	return uuid
 }
 
 // GetApplicationIdentifier ...
 func (profile PlistData) GetApplicationIdentifier() string {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	entitlements, ok := data.GetMapStringInterface("Entitlements")
 	if !ok {
 		return ""
@@ -63,7 +63,7 @@ func (profile PlistData) GetApplicationIdentifier() string {
 func (profile PlistData) GetBundleIdentifier() string {
 	applicationID := profile.GetApplicationIdentifier()
 
-	plistData := plistutil.PlistData(profile)
+	plistData := plistutil.MapData(profile)
 	prefixes, found := plistData.GetStringArray("ApplicationIdentifierPrefix")
 	if found {
 		for _, prefix := range prefixes {
@@ -77,7 +77,7 @@ func (profile PlistData) GetBundleIdentifier() string {
 
 // GetExportMethod ...
 func (profile PlistData) GetExportMethod() exportoptions.Method {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	entitlements, _ := data.GetMapStringInterface("Entitlements")
 	platform, _ := data.GetStringArray("Platform")
 
@@ -111,15 +111,15 @@ func (profile PlistData) GetExportMethod() exportoptions.Method {
 }
 
 // GetEntitlements ...
-func (profile PlistData) GetEntitlements() plistutil.PlistData {
-	data := plistutil.PlistData(profile)
+func (profile PlistData) GetEntitlements() plistutil.MapData {
+	data := plistutil.MapData(profile)
 	entitlements, _ := data.GetMapStringInterface("Entitlements")
 	return entitlements
 }
 
 // GetTeamID ...
 func (profile PlistData) GetTeamID() string {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	entitlements, ok := data.GetMapStringInterface("Entitlements")
 	if ok {
 		teamID, _ := entitlements.GetString("com.apple.developer.team-identifier")
@@ -130,42 +130,42 @@ func (profile PlistData) GetTeamID() string {
 
 // GetExpirationDate ...
 func (profile PlistData) GetExpirationDate() time.Time {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	expiry, _ := data.GetTime("ExpirationDate")
 	return expiry
 }
 
 // GetProvisionedDevices ...
 func (profile PlistData) GetProvisionedDevices() []string {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	devices, _ := data.GetStringArray("ProvisionedDevices")
 	return devices
 }
 
 // GetDeveloperCertificates ...
 func (profile PlistData) GetDeveloperCertificates() [][]byte {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	developerCertificates, _ := data.GetByteArrayArray("DeveloperCertificates")
 	return developerCertificates
 }
 
 // GetTeamName ...
 func (profile PlistData) GetTeamName() string {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	teamName, _ := data.GetString("TeamName")
 	return teamName
 }
 
 // GetCreationDate ...
 func (profile PlistData) GetCreationDate() time.Time {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	creationDate, _ := data.GetTime("CreationDate")
 	return creationDate
 }
 
 // GetProvisionsAllDevices ...
 func (profile PlistData) GetProvisionsAllDevices() bool {
-	data := plistutil.PlistData(profile)
+	data := plistutil.MapData(profile)
 	provisionsAlldevices, _ := data.GetBool("ProvisionsAllDevices")
 	return provisionsAlldevices
 }

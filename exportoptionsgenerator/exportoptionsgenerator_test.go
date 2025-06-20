@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/exportoptions"
 	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/mocks"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 	"github.com/stretchr/testify/require"
@@ -287,7 +287,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_ForAutomaticSig
 			exportProduct: ExportProductApp,
 			archiveInfo: ArchiveInfo{
 				AppBundleID: bundleID,
-				EntitlementsByBundleID: map[string]plistutil.PlistData{
+				EntitlementsByBundleID: map[string]plistutil.MapData{
 					bundleID: {"com.apple.developer.icloud-services": []string{"CloudKit"}},
 				},
 			},
@@ -447,7 +447,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions(t *testing.T) {
 
 			archiveInfo := ArchiveInfo{
 				AppBundleID: bundleID,
-				EntitlementsByBundleID: map[string]plistutil.PlistData{
+				EntitlementsByBundleID: map[string]plistutil.MapData{
 					bundleID:     {"com.apple.developer.icloud-services": []string{"CloudKit"}},
 					bundleIDClip: nil,
 				},
@@ -540,7 +540,7 @@ func TestExportOptionsGenerator_GenerateApplicationExportOptions_WhenNoProfileFo
 
 			archiveInfo := ArchiveInfo{
 				AppBundleID: bundleID,
-				EntitlementsByBundleID: map[string]plistutil.PlistData{
+				EntitlementsByBundleID: map[string]plistutil.MapData{
 					bundleID:     cloudKitEntitlement,
 					bundleIDClip: nil,
 				},

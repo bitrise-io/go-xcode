@@ -3,7 +3,7 @@ package artifacts
 import (
 	"fmt"
 
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
@@ -38,11 +38,11 @@ func (reader IPAReader) ProvisioningProfileInfo() (*profileutil.ProvisioningProf
 }
 
 // AppInfoPlist ...
-func (reader IPAReader) AppInfoPlist() (plistutil.PlistData, error) {
+func (reader IPAReader) AppInfoPlist() (plistutil.MapData, error) {
 	b, err := reader.zipReader.ReadFile("Payload/*.app/Info.plist")
 	if err != nil {
 		return nil, err
 	}
 
-	return plistutil.NewPlistDataFromContent(string(b))
+	return plistutil.NewMapDataFromPlistContent(string(b))
 }

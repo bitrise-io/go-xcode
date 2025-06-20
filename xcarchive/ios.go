@@ -6,16 +6,16 @@ import (
 	"path/filepath"
 
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
 // IosBaseApplication ...
 type IosBaseApplication struct {
 	Path                string
-	InfoPlist           plistutil.PlistData
-	Entitlements        plistutil.PlistData
+	InfoPlist           plistutil.MapData
+	Entitlements        plistutil.MapData
 	ProvisioningProfile profileutil.ProvisioningProfileInfoModel
 }
 
@@ -27,7 +27,7 @@ func (app IosBaseApplication) BundleIdentifier() string {
 
 // NewIosBaseApplication ...
 func NewIosBaseApplication(path string) (IosBaseApplication, error) {
-	var infoPlist plistutil.PlistData
+	var infoPlist plistutil.MapData
 	{
 		infoPlistPath := filepath.Join(path, "Info.plist")
 		if exist, err := pathutil.IsPathExists(infoPlistPath); err != nil {
@@ -35,7 +35,7 @@ func NewIosBaseApplication(path string) (IosBaseApplication, error) {
 		} else if !exist {
 			return IosBaseApplication{}, fmt.Errorf("Info.plist not exists at: %s", infoPlistPath)
 		}
-		plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+		plist, err := plistutil.NewMapDataFromPlistFile(infoPlistPath)
 		if err != nil {
 			return IosBaseApplication{}, err
 		}
@@ -217,13 +217,13 @@ func NewIosApplication(path string) (IosApplication, error) {
 // IosArchive ...
 type IosArchive struct {
 	Path        string
-	InfoPlist   plistutil.PlistData
+	InfoPlist   plistutil.MapData
 	Application IosApplication
 }
 
 // NewIosArchive ...
 func NewIosArchive(path string) (IosArchive, error) {
-	var infoPlist plistutil.PlistData
+	var infoPlist plistutil.MapData
 	{
 		infoPlistPath := filepath.Join(path, "Info.plist")
 		if exist, err := pathutil.IsPathExists(infoPlistPath); err != nil {
@@ -231,7 +231,7 @@ func NewIosArchive(path string) (IosArchive, error) {
 		} else if !exist {
 			return IosArchive{}, fmt.Errorf("Info.plist not exists at: %s", infoPlistPath)
 		}
-		plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+		plist, err := plistutil.NewMapDataFromPlistFile(infoPlistPath)
 		if err != nil {
 			return IosArchive{}, err
 		}
@@ -269,7 +269,7 @@ func NewIosArchive(path string) (IosArchive, error) {
 	}, nil
 }
 
-func applicationFromPlist(InfoPlist plistutil.PlistData) (string, bool) {
+func applicationFromPlist(InfoPlist plistutil.MapData) (string, bool) {
 	if properties, found := InfoPlist.GetMapStringInterface("ApplicationProperties"); found {
 		return properties.GetString("ApplicationPath")
 	}
@@ -303,8 +303,8 @@ func (archive IosArchive) SigningIdentity() string {
 }
 
 // BundleIDEntitlementsMap ...
-func (archive IosArchive) BundleIDEntitlementsMap() map[string]plistutil.PlistData {
-	bundleIDEntitlementsMap := map[string]plistutil.PlistData{}
+func (archive IosArchive) BundleIDEntitlementsMap() map[string]plistutil.MapData {
+	bundleIDEntitlementsMap := map[string]plistutil.MapData{}
 
 	bundleID := archive.Application.BundleIdentifier()
 	bundleIDEntitlementsMap[bundleID] = archive.Application.Entitlements

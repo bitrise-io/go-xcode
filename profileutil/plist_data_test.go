@@ -3,15 +3,15 @@ package profileutil
 import (
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/exportoptions"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/stretchr/testify/require"
 )
 
 func TestPlistData(t *testing.T) {
 	t.Log("development profile specifies development export method")
 	{
-		profile, err := plistutil.NewPlistDataFromContent(developmentProfileContent)
+		profile, err := plistutil.NewMapDataFromPlistContent(developmentProfileContent)
 		require.NoError(t, err)
 		require.Equal(t, "4b617a5f-e31e-4edc-9460-718a5abacd05", PlistData(profile).GetUUID())
 		require.Equal(t, "Bitrise Test Development", PlistData(profile).GetName())
@@ -29,7 +29,7 @@ func TestPlistData(t *testing.T) {
 
 	t.Log("app store profile specifies app-store export method")
 	{
-		profile, err := plistutil.NewPlistDataFromContent(appStoreProfileContent)
+		profile, err := plistutil.NewMapDataFromPlistContent(appStoreProfileContent)
 		require.NoError(t, err)
 		require.Equal(t, "a60668dd-191a-4770-8b1e-b453b87aa60b", PlistData(profile).GetUUID())
 		require.Equal(t, "Bitrise Test App Store", PlistData(profile).GetName())
@@ -47,7 +47,7 @@ func TestPlistData(t *testing.T) {
 
 	t.Log("ad hoc profile specifies ad-hoc export method")
 	{
-		profile, err := plistutil.NewPlistDataFromContent(adHocProfileContent)
+		profile, err := plistutil.NewMapDataFromPlistContent(adHocProfileContent)
 		require.NoError(t, err)
 		require.Equal(t, "26668300-5743-46a1-8e00-7023e2e35c7d", PlistData(profile).GetUUID())
 		require.Equal(t, "Bitrise Test Ad Hoc", PlistData(profile).GetName())
@@ -65,7 +65,7 @@ func TestPlistData(t *testing.T) {
 
 	t.Log("it creates model from enterprise profile content")
 	{
-		profile, err := plistutil.NewPlistDataFromContent(enterpriseProfileContent)
+		profile, err := plistutil.NewMapDataFromPlistContent(enterpriseProfileContent)
 		require.NoError(t, err)
 		require.Equal(t, "8d6caa15-ac49-48f9-9bd3-ce9244add6a0", PlistData(profile).GetUUID())
 		require.Equal(t, "Bitrise Test Enterprise", PlistData(profile).GetName())
@@ -85,7 +85,7 @@ func TestPlistData(t *testing.T) {
 func TestTVOSPlistData(t *testing.T) {
 	t.Log("it creates model from tvOS appstore profile content")
 	{
-		profile, err := plistutil.NewPlistDataFromContent(tvOSAppStoreProfileContent)
+		profile, err := plistutil.NewMapDataFromPlistContent(tvOSAppStoreProfileContent)
 		require.NoError(t, err)
 		require.Equal(t, "dec523d5-624b-44bd-8d16-6d1d69c63276", PlistData(profile).GetUUID())
 		require.Equal(t, "Bitrise app-store - (bdh.NPO-Live.bitrise.sample)", PlistData(profile).GetName())

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,7 +53,7 @@ func executableRelativePath(basePath, infoPlistRelativePath, executableFolderRel
 		return ""
 	}
 
-	plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+	plist, err := plistutil.NewMapDataFromPlistFile(infoPlistPath)
 	if err != nil {
 		return ""
 	}
@@ -61,7 +61,7 @@ func executableRelativePath(basePath, infoPlistRelativePath, executableFolderRel
 	return filepath.Join(executableFolderRelativePath, executableNameFromInfoPlist(plist))
 }
 
-func iosEntitlements() plistutil.PlistData {
+func iosEntitlements() plistutil.MapData {
 	return map[string]interface{}{
 		"application-identifier":                           "72SA8V3WYL.io.bitrise.appcliptest",
 		"com.apple.developer.applesignin":                  []interface{}{"Default"},
@@ -72,7 +72,7 @@ func iosEntitlements() plistutil.PlistData {
 	}
 }
 
-func macosEntitlements() plistutil.PlistData {
+func macosEntitlements() plistutil.MapData {
 	return map[string]interface{}{
 		"com.apple.security.app-sandbox":                   true,
 		"com.apple.security.files.user-selected.read-only": true,

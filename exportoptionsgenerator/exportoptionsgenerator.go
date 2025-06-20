@@ -6,9 +6,9 @@ import (
 
 	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/export"
 	"github.com/bitrise-io/go-xcode/v2/exportoptions"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 )
@@ -127,7 +127,7 @@ func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 
 // determineCodesignGroup finds the best codesign group (certificate + profiles)
 // based on the installed Provisioning Profiles and Codesign Certificates.
-func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*export.IosCodeSignGroup, error) {
+func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap map[string]plistutil.MapData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*export.IosCodeSignGroup, error) {
 	fmt.Println()
 	g.logger.Printf("Target Bundle ID - Entitlements map")
 	var bundleIDs []string
@@ -272,7 +272,7 @@ func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap m
 }
 
 // determineIcloudContainerEnvironment calculates the value of iCloudContainerEnvironment.
-func determineIcloudContainerEnvironment(desiredIcloudContainerEnvironment string, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, xcodeMajorVersion int64) (string, error) {
+func determineIcloudContainerEnvironment(desiredIcloudContainerEnvironment string, bundleIDEntitlementsMap map[string]plistutil.MapData, exportMethod exportoptions.Method, xcodeMajorVersion int64) (string, error) {
 	// iCloudContainerEnvironment: If the app is using CloudKit, this configures the "com.apple.developer.icloud-container-environment" entitlement.
 	// Available options vary depending on the type of provisioning profile used, but may include: Development and Production.
 	usesCloudKit := projectUsesCloudKit(bundleIDEntitlementsMap)
@@ -298,7 +298,7 @@ func determineIcloudContainerEnvironment(desiredIcloudContainerEnvironment strin
 }
 
 // projectUsesCloudKit determines whether the project uses any CloudKit capability or not.
-func projectUsesCloudKit(bundleIDEntitlementsMap map[string]plistutil.PlistData) bool {
+func projectUsesCloudKit(bundleIDEntitlementsMap map[string]plistutil.MapData) bool {
 	fmt.Printf("Checking if project uses CloudKit")
 
 	for _, entitlements := range bundleIDEntitlementsMap {

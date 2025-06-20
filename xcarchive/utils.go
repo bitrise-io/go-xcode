@@ -7,30 +7,30 @@ import (
 
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
-func executableNameFromInfoPlist(infoPlist plistutil.PlistData) string {
+func executableNameFromInfoPlist(infoPlist plistutil.MapData) string {
 	if name, ok := infoPlist.GetString("CFBundleExecutable"); ok {
 		return name
 	}
 	return ""
 }
 
-func getEntitlements(basePath, executableRelativePath string) (plistutil.PlistData, error) {
+func getEntitlements(basePath, executableRelativePath string) (plistutil.MapData, error) {
 	entitlements, err := entitlementsFromExecutable(basePath, executableRelativePath)
 	if err != nil {
-		return plistutil.PlistData{}, err
+		return plistutil.MapData{}, err
 	}
 
 	if entitlements != nil {
 		return *entitlements, nil
 	}
 
-	return plistutil.PlistData{}, nil
+	return plistutil.MapData{}, nil
 }
 
-func entitlementsFromExecutable(basePath, executableRelativePath string) (*plistutil.PlistData, error) {
+func entitlementsFromExecutable(basePath, executableRelativePath string) (*plistutil.MapData, error) {
 	fmt.Printf("Fetching entitlements from executable")
 
 	cmd := command.New("codesign", "--display", "--entitlements", ":-", filepath.Join(basePath, executableRelativePath))
@@ -39,7 +39,7 @@ func entitlementsFromExecutable(basePath, executableRelativePath string) (*plist
 		return nil, err
 	}
 
-	plist, err := plistutil.NewPlistDataFromContent(entitlementsString)
+	plist, err := plistutil.NewMapDataFromPlistContent(entitlementsString)
 	if err != nil {
 		return nil, err
 	}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 
 	"github.com/bitrise-io/go-utils/pathutil"
@@ -12,8 +12,8 @@ import (
 
 type macosBaseApplication struct {
 	Path                string
-	InfoPlist           plistutil.PlistData
-	Entitlements        plistutil.PlistData
+	InfoPlist           plistutil.MapData
+	Entitlements        plistutil.MapData
 	ProvisioningProfile *profileutil.ProvisioningProfileInfoModel
 }
 
@@ -24,7 +24,7 @@ func (app macosBaseApplication) BundleIdentifier() string {
 }
 
 func newMacosBaseApplication(path string) (macosBaseApplication, error) {
-	var infoPlist plistutil.PlistData
+	var infoPlist plistutil.MapData
 	{
 		infoPlistPath := filepath.Join(path, "Contents/Info.plist")
 		if exist, err := pathutil.IsPathExists(infoPlistPath); err != nil {
@@ -32,7 +32,7 @@ func newMacosBaseApplication(path string) (macosBaseApplication, error) {
 		} else if !exist {
 			return macosBaseApplication{}, fmt.Errorf("Info.plist not exists at: %s", infoPlistPath)
 		}
-		plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+		plist, err := plistutil.NewMapDataFromPlistFile(infoPlistPath)
 		if err != nil {
 			return macosBaseApplication{}, err
 		}
@@ -123,13 +123,13 @@ func NewMacosApplication(path string) (MacosApplication, error) {
 // MacosArchive ...
 type MacosArchive struct {
 	Path        string
-	InfoPlist   plistutil.PlistData
+	InfoPlist   plistutil.MapData
 	Application MacosApplication
 }
 
 // NewMacosArchive ...
 func NewMacosArchive(path string) (MacosArchive, error) {
-	var infoPlist plistutil.PlistData
+	var infoPlist plistutil.MapData
 	{
 		infoPlistPath := filepath.Join(path, "Info.plist")
 		if exist, err := pathutil.IsPathExists(infoPlistPath); err != nil {
@@ -137,7 +137,7 @@ func NewMacosArchive(path string) (MacosArchive, error) {
 		} else if !exist {
 			return MacosArchive{}, fmt.Errorf("Info.plist not exists at: %s", infoPlistPath)
 		}
-		plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+		plist, err := plistutil.NewMapDataFromPlistFile(infoPlistPath)
 		if err != nil {
 			return MacosArchive{}, err
 		}
@@ -192,8 +192,8 @@ func (archive MacosArchive) SigningIdentity() string {
 }
 
 // BundleIDEntitlementsMap ...
-func (archive MacosArchive) BundleIDEntitlementsMap() map[string]plistutil.PlistData {
-	bundleIDEntitlementsMap := map[string]plistutil.PlistData{}
+func (archive MacosArchive) BundleIDEntitlementsMap() map[string]plistutil.MapData {
+	bundleIDEntitlementsMap := map[string]plistutil.MapData{}
 
 	bundleID := archive.Application.BundleIdentifier()
 	bundleIDEntitlementsMap[bundleID] = archive.Application.Entitlements

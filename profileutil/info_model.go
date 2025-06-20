@@ -11,9 +11,9 @@ import (
 	"github.com/bitrise-io/go-plist"
 
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/exportoptions"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/fullsailor/pkcs7"
 )
 
@@ -29,12 +29,12 @@ type ProvisioningProfileInfoModel struct {
 	DeveloperCertificates []certificateutil.CertificateInfoModel
 	CreationDate          time.Time
 	ExpirationDate        time.Time
-	Entitlements          plistutil.PlistData
+	Entitlements          plistutil.MapData
 	ProvisionsAllDevices  bool
 	Type                  ProfileType
 }
 
-func collectCapabilitesPrintableInfo(entitlements plistutil.PlistData) map[string]interface{} {
+func collectCapabilitesPrintableInfo(entitlements plistutil.MapData) map[string]interface{} {
 	capabilities := map[string]interface{}{}
 
 	for key, value := range entitlements {
@@ -140,7 +140,7 @@ func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertif
 
 // NewProvisioningProfileInfo ...
 func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningProfileInfoModel, error) {
-	var data plistutil.PlistData
+	var data plistutil.MapData
 	if _, err := plist.Unmarshal(provisioningProfile.Content, &data); err != nil {
 		return ProvisioningProfileInfoModel{}, err
 	}

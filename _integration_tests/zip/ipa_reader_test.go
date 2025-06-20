@@ -6,10 +6,10 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/_integration_tests"
 	"github.com/bitrise-io/go-xcode/v2/artifacts"
 	internalzip "github.com/bitrise-io/go-xcode/v2/internal/zip"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/zip"
 	"github.com/stretchr/testify/require"
@@ -57,10 +57,10 @@ func Benchmark_ZipReaders(b *testing.B) {
 	watchTestIPAPath := filepath.Join(sampleArtifactsDir, "ipas", "watch-test.ipa")
 
 	for name, zipFunc := range map[string]readIPAFunc{
-		"dittoReader": func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+		"dittoReader": func() (plistutil.MapData, *profileutil.ProvisioningProfileInfoModel) {
 			return readIPAWithDittoZipReader(b, watchTestIPAPath)
 		},
-		"stdlibReader": func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+		"stdlibReader": func() (plistutil.MapData, *profileutil.ProvisioningProfileInfoModel) {
 			return readIPAWithStdlibZipReader(b, watchTestIPAPath)
 		},
 	} {
@@ -70,9 +70,9 @@ func Benchmark_ZipReaders(b *testing.B) {
 	}
 }
 
-type readIPAFunc func() (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel)
+type readIPAFunc func() (plistutil.MapData, *profileutil.ProvisioningProfileInfoModel)
 
-func readIPAWithStdlibZipReader(t require.TestingT, archivePth string) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+func readIPAWithStdlibZipReader(t require.TestingT, archivePth string) (plistutil.MapData, *profileutil.ProvisioningProfileInfoModel) {
 	r, err := internalzip.NewStdlibRead(archivePth, log.NewLogger())
 	require.NoError(t, err)
 	defer func() {
@@ -83,7 +83,7 @@ func readIPAWithStdlibZipReader(t require.TestingT, archivePth string) (plistuti
 	return readIPA(t, r)
 }
 
-func readIPAWithDittoZipReader(t require.TestingT, archivePth string) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+func readIPAWithDittoZipReader(t require.TestingT, archivePth string) (plistutil.MapData, *profileutil.ProvisioningProfileInfoModel) {
 	r := internalzip.NewDittoReader(archivePth, log.NewLogger())
 	defer func() {
 		err := r.Close()
@@ -93,7 +93,7 @@ func readIPAWithDittoZipReader(t require.TestingT, archivePth string) (plistutil
 	return readIPA(t, r)
 }
 
-func readIPA(t require.TestingT, zipReader artifacts.ZipReadCloser) (plistutil.PlistData, *profileutil.ProvisioningProfileInfoModel) {
+func readIPA(t require.TestingT, zipReader artifacts.ZipReadCloser) (plistutil.MapData, *profileutil.ProvisioningProfileInfoModel) {
 	ipaReader := artifacts.NewIPAReader(zipReader)
 	plist, err := ipaReader.AppInfoPlist()
 	require.NoError(t, err)
