@@ -107,7 +107,7 @@ func (s *CertificateSource) getCertificates(devCerts bool) ([]autocodesign.Certi
 			return nil, err
 		}
 
-		cert, err := certificateutil.CeritifcateFromPemContent(pemContent)
+		cert, err := certificateutil.CertificateFromPemContent(pemContent)
 		if err != nil {
 			return nil, err
 		}

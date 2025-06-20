@@ -7,12 +7,19 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/v2/command"
 )
 
-// InstalledCodesigningCertificateInfos ...
-func InstalledCodesigningCertificateInfos() ([]CertificateInfo, error) {
-	certificates, err := installedCodesigningCertificates()
+type SecurityTool struct {
+	commandFactory command.Factory
+}
+
+func NewSecurityTool(commandFactory command.Factory) SecurityTool {
+	return SecurityTool{commandFactory: commandFactory}
+}
+
+func (t SecurityTool) InstalledCodesigningCertificateInfos() ([]CertificateInfo, error) {
+	certificates, err := t.installedCodesigningCertificates()
 	if err != nil {
 		return nil, err
 	}
@@ -27,14 +34,13 @@ func InstalledCodesigningCertificateInfos() ([]CertificateInfo, error) {
 	return infos, nil
 }
 
-// InstalledInstallerCertificateInfos ...
-func InstalledInstallerCertificateInfos() ([]CertificateInfo, error) {
-	certificates, err := InstalledMacAppStoreCertificates()
+func (t SecurityTool) InstalledInstallerCertificateInfos() ([]CertificateInfo, error) {
+	certificates, err := t.installedMacAppStoreCertificates()
 	if err != nil {
 		return nil, err
 	}
 
-	infos := []CertificateInfo{}
+	var infos []CertificateInfo
 	for _, certificate := range certificates {
 		if certificate != nil {
 			infos = append(infos, NewCertificateInfo(*certificate, nil))
@@ -48,51 +54,48 @@ func InstalledInstallerCertificateInfos() ([]CertificateInfo, error) {
 	return installerCertificates, nil
 }
 
-// installedCodesigningCertificates ...
-func installedCodesigningCertificates() ([]*x509.Certificate, error) {
-	certificateNames, err := InstalledCodesigningCertificateNames()
-	if err != nil {
-		return nil, err
-	}
-	return getInstalledCertificatesByNameSlice(certificateNames)
-}
-
-// InstalledMacAppStoreCertificates ...
-func InstalledMacAppStoreCertificates() ([]*x509.Certificate, error) {
-	certificateNames, err := InstalledMacAppStoreCertificateNames()
-	if err != nil {
-		return nil, err
-	}
-	return getInstalledCertificatesByNameSlice(certificateNames)
-}
-
-// InstalledCodesigningCertificateNames ...
-func InstalledCodesigningCertificateNames() ([]string, error) {
-	cmd := command.New("security", "find-identity", "-v", "-p", "codesigning")
+func (t SecurityTool) InstalledCodesigningCertificateNames() ([]string, error) {
+	cmd := t.commandFactory.Create("security", []string{"find-identity", "-v", "-p", "codesigning"}, nil)
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		return nil, commandError(cmd.PrintableCommandArgs(), out, err)
+		return nil, err
 	}
 	return installedCodesigningCertificateNamesFromOutput(out)
 }
 
-// InstalledMacAppStoreCertificateNames ...
-func InstalledMacAppStoreCertificateNames() ([]string, error) {
-	cmd := command.New("security", "find-identity", "-v", "-p", "macappstore")
+func (t SecurityTool) InstalledMacAppStoreCertificateNames() ([]string, error) {
+	cmd := t.commandFactory.Create("security", []string{"find-identity", "-v", "-p", "macappstore"}, nil)
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		return nil, commandError(cmd.PrintableCommandArgs(), out, err)
+		return nil, err
 	}
 	return installedCodesigningCertificateNamesFromOutput(out)
 }
 
-func getInstalledCertificatesByNameSlice(certificateNames []string) ([]*x509.Certificate, error) {
-	certificates := []*x509.Certificate{}
+func (t SecurityTool) installedCodesigningCertificates() ([]*x509.Certificate, error) {
+	certificateNames, err := t.InstalledCodesigningCertificateNames()
+	if err != nil {
+		return nil, err
+	}
+	return t.getInstalledCertificatesByNameSlice(certificateNames)
+}
+
+func (t SecurityTool) installedMacAppStoreCertificates() ([]*x509.Certificate, error) {
+	certificateNames, err := t.InstalledMacAppStoreCertificateNames()
+	if err != nil {
+		return nil, err
+	}
+	return t.getInstalledCertificatesByNameSlice(certificateNames)
+}
+
+func (t SecurityTool) getInstalledCertificatesByNameSlice(certificateNames []string) ([]*x509.Certificate, error) {
+	var certificates []*x509.Certificate
+
 	for _, name := range certificateNames {
-		cmd := command.New("security", "find-certificate", "-c", name, "-p", "-a")
+		cmd := t.commandFactory.Create("security", []string{"find-certificate", "-c", name, "-p", "-a"}, nil)
 		out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 		if err != nil {
-			return nil, commandError(cmd.PrintableCommandArgs(), out, err)
+			return nil, err
 		}
 
 		normalizedOuts, err := normalizeFindCertificateOut(out)
@@ -101,7 +104,7 @@ func getInstalledCertificatesByNameSlice(certificateNames []string) ([]*x509.Cer
 		}
 
 		for _, normalizedOut := range normalizedOuts {
-			certificate, err := CeritifcateFromPemContent([]byte(normalizedOut))
+			certificate, err := CertificateFromPemContent([]byte(normalizedOut))
 			if err != nil {
 				return nil, err
 			}
@@ -156,8 +159,4 @@ func normalizeFindCertificateOut(out string) ([]string, error) {
 	}
 
 	return certificateContents, nil
-}
-
-func commandError(printableCmd string, cmdOut string, cmdErr error) error {
-	return fmt.Errorf("%s failed, out: %s, err: %w", printableCmd, cmdOut, cmdErr)
 }

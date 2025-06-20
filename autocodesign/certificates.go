@@ -7,6 +7,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/v2/certificateutil"
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 )
 
 func selectCertificatesAndDistributionTypes(certificateSource DevPortalClient, typeToLocalCerts LocalCertificates, distribution DistributionType, signUITestTargets bool, verboseLog bool) (map[appstoreconnect.CertificateType][]Certificate, []DistributionType, error) {
@@ -90,8 +91,8 @@ func getValidCertificates(typeToLocalCerts LocalCertificates, client DevPortalCl
 }
 
 // GetValidLocalCertificates returns validated and deduplicated local certificates
-func GetValidLocalCertificates(certificates []certificateutil.CertificateInfo) (LocalCertificates, error) {
-	preFilteredCerts := certificateutil.FilterValidCertificateInfos(certificates)
+func GetValidLocalCertificates(certificates []certificateutil.CertificateInfo, timeProvider timeutil.TimeProvider) (LocalCertificates, error) {
+	preFilteredCerts := certificateutil.FilterValidCertificateInfos(certificates, timeProvider)
 
 	if len(preFilteredCerts.InvalidCertificates) != 0 {
 		log.Warnf("Ignoring expired or not yet valid certificates: %s", preFilteredCerts.InvalidCertificates)
@@ -104,7 +105,7 @@ func GetValidLocalCertificates(certificates []certificateutil.CertificateInfo) (
 
 	localCertificates := LocalCertificates{}
 	for _, certType := range []appstoreconnect.CertificateType{appstoreconnect.IOSDevelopment, appstoreconnect.IOSDistribution} {
-		localCertificates[certType] = filterCertificates(preFilteredCerts.ValidCertificates, certType)
+		localCertificates[certType] = filterCertificates(preFilteredCerts.ValidCertificates, certType, timeProvider)
 	}
 
 	log.Debugf("Valid and deduplicated certificates:\n%s", certsToString(preFilteredCerts.ValidCertificates))
@@ -150,7 +151,7 @@ func logAllAPICertificates(client DevPortalClient) error {
 }
 
 // filterCertificates returns the certificates matching to the given common name, developer team ID, and distribution type.
-func filterCertificates(certificates []certificateutil.CertificateInfo, certificateType appstoreconnect.CertificateType) []certificateutil.CertificateInfo {
+func filterCertificates(certificates []certificateutil.CertificateInfo, certificateType appstoreconnect.CertificateType, timeProvider timeutil.TimeProvider) []certificateutil.CertificateInfo {
 	// filter by distribution type
 	var filteredCertificates []certificateutil.CertificateInfo
 	for _, certificate := range certificates {

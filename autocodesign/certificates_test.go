@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/v2/certificateutil"
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -101,19 +102,20 @@ func Test_getValidCertificates(t *testing.T) {
 		teamID   = "MYTEAMID"
 		teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
 	)
-	expiry := time.Now().AddDate(1, 0, 0)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
 
-	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, "Apple Development: test", expiry)
+	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, "Apple Development: test", notBefore, expiry)
 	require.NoError(t, err, "init: failed to generate certificate: %s", err)
 	devCert := certificateutil.NewCertificateInfo(*cert, privateKey)
 	t.Logf("Test certificate generated. %s", devCert)
 
-	cert, privateKey, err = certificateutil.GenerateTestCertificate(int64(2), teamID, teamName, "iPhone Developer: test2", expiry)
+	cert, privateKey, err = certificateutil.GenerateTestCertificate(int64(2), teamID, teamName, "iPhone Developer: test2", notBefore, expiry)
 	require.NoError(t, err, "init: failed to generate certificate: %s", err)
 	devCert2 := certificateutil.NewCertificateInfo(*cert, privateKey)
 	t.Logf("Test certificate generated. %s", devCert2)
 
-	distCert, privateKey, err := certificateutil.GenerateTestCertificate(int64(10), teamID, teamName, "Apple Distribution: test", expiry)
+	distCert, privateKey, err := certificateutil.GenerateTestCertificate(int64(10), teamID, teamName, "Apple Distribution: test", notBefore, expiry)
 	require.NoError(t, err, "init: failed to generate certificate: %s", err)
 	distributionCert := certificateutil.NewCertificateInfo(*distCert, privateKey)
 	t.Logf("Test certificate generated. %s", distributionCert)
@@ -345,19 +347,20 @@ func TestGetValidLocalCertificates(t *testing.T) {
 		teamID   = "MYTEAMID"
 		teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
 	)
-	expiry := time.Now().AddDate(1, 0, 0)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
 
-	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, "Apple Development: test", expiry)
+	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, "Apple Development: test", notBefore, expiry)
 	require.NoError(t, err, "init: failed to generate certificate: %s", err)
 	devCert := certificateutil.NewCertificateInfo(*cert, privateKey)
 	t.Logf("Test certificate generated. %s", devCert)
 
-	cert, privateKey, err = certificateutil.GenerateTestCertificate(int64(2), teamID, teamName, "iPhone Developer: test2", expiry)
+	cert, privateKey, err = certificateutil.GenerateTestCertificate(int64(2), teamID, teamName, "iPhone Developer: test2", notBefore, expiry)
 	require.NoError(t, err, "init: failed to generate certificate: %s", err)
 	devCert2 := certificateutil.NewCertificateInfo(*cert, privateKey)
 	t.Logf("Test certificate generated. %s", devCert2)
 
-	distCert, privateKey, err := certificateutil.GenerateTestCertificate(int64(10), teamID, teamName, "Apple Distribution: test", expiry)
+	distCert, privateKey, err := certificateutil.GenerateTestCertificate(int64(10), teamID, teamName, "Apple Distribution: test", notBefore, expiry)
 	require.NoError(t, err, "init: failed to generate certificate: %s", err)
 	distributionCert := certificateutil.NewCertificateInfo(*distCert, privateKey)
 	t.Logf("Test certificate generated. %s", distributionCert)
@@ -401,7 +404,7 @@ func TestGetValidLocalCertificates(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetValidLocalCertificates(tt.certificates)
+			got, err := GetValidLocalCertificates(tt.certificates, timeutil.NewDefaultTimeProvider())
 
 			require.NoError(t, err)
 			for _, certType := range []appstoreconnect.CertificateType{appstoreconnect.IOSDevelopment, appstoreconnect.IOSDistribution} {

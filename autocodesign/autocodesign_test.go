@@ -62,22 +62,16 @@ func newMockProfile(m profileArgs) Profile {
 	return profile
 }
 
-func newCertificate(t *testing.T, teamID, teamName, commonName string, expiry time.Time) certificateutil.CertificateInfo {
-	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, commonName, expiry)
-	if err != nil {
-		t.Fatalf("init: failed to generate certificate: %s", err)
-	}
-	return certificateutil.NewCertificateInfo(*cert, privateKey)
-}
-
 func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 	log.SetEnableDebugLog(true)
 
 	const teamID = "MYTEAMID"
 	const commonNameIOSDevelopment = "Apple Development: test"
 	const teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
-	expiry := time.Now().AddDate(1, 0, 0)
-	devCert := newCertificate(t, teamID, teamName, commonNameIOSDevelopment, expiry)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
+	devCert, err := certificateutil.GenerateTestCertificateInfo(1, teamID, teamName, commonNameIOSDevelopment, notBefore, expiry)
+	require.NoError(t, err)
 
 	t.Logf("Test certificate generated. %s", devCert)
 
@@ -287,8 +281,10 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	// Given
 	const teamID = "MY_TEAM_ID"
-	expiry := time.Now().AddDate(1, 0, 0)
-	devCert := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test", expiry)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
+	devCert, err := certificateutil.GenerateTestCertificateInfo(1, teamID, "MY_TEAM", "Apple Development: test", notBefore, expiry)
+	require.NoError(t, err)
 
 	client := newClientWithoutAppIDAndProfile(devCert)
 	assetWriter := newDefaultMockAssetWriter()
@@ -311,7 +307,7 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	}
 
 	// When
-	_, err := manager.EnsureCodesignAssets(appLayout, opts)
+	_, err = manager.EnsureCodesignAssets(appLayout, opts)
 
 	// Then
 	require.ErrorAs(t, err, &ErrAppClipAppID{})
@@ -322,8 +318,10 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 	const teamID = "MY_TEAM_ID"
 	const appClipBundleID = "io.bitrise.appclip"
 
-	expiry := time.Now().AddDate(1, 0, 0)
-	devCert := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test", expiry)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
+	devCert, err := certificateutil.GenerateTestCertificateInfo(1, teamID, "MY_TEAM", "Apple Development: test", notBefore, expiry)
+	require.NoError(t, err)
 
 	client := newClientWithAppIDWithoutAppleSignIn(devCert, appClipBundleID)
 	assetWriter := newDefaultMockAssetWriter()
@@ -349,7 +347,7 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 	}
 
 	// When
-	_, err := manager.EnsureCodesignAssets(appLayout, opts)
+	_, err = manager.EnsureCodesignAssets(appLayout, opts)
 
 	// Then
 	require.ErrorAs(t, err, &ErrAppClipAppIDWithAppleSigning{})
@@ -358,8 +356,10 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.T) {
 	// Given
 	const teamID = "MY_TEAM_ID"
-	expiry := time.Now().AddDate(1, 0, 0)
-	devCert := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test", expiry)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
+	devCert, err := certificateutil.GenerateTestCertificateInfo(1, teamID, "MY_TEAM", "Apple Development: test", notBefore, expiry)
+	require.NoError(t, err)
 
 	expiredProfile := newMockProfile(profileArgs{
 		attributes: appstoreconnect.ProfileAttributes{
@@ -423,7 +423,7 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 	}
 
 	// When
-	_, err := manager.EnsureCodesignAssets(appLayout, opts)
+	_, err = manager.EnsureCodesignAssets(appLayout, opts)
 
 	// Then
 	require.NoError(t, err)
@@ -432,9 +432,12 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 func Test_GivenLocalProfile_WhenCertificateIsMissing_ThenInstalled(t *testing.T) {
 	// Given
 	const teamID = "MY_TEAM_ID"
-	expiry := time.Now().AddDate(1, 0, 0)
-	devCert1 := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test 1", expiry)
-	devCert2 := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test 2", expiry)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
+	devCert1, err := certificateutil.GenerateTestCertificateInfo(1, teamID, "MY_TEAM", "Apple Development: test 1", notBefore, expiry)
+	require.NoError(t, err)
+	devCert2, err := certificateutil.GenerateTestCertificateInfo(1, teamID, "MY_TEAM", "Apple Development: test 2", notBefore, expiry)
+	require.NoError(t, err)
 
 	validProfile := newMockProfile(profileArgs{
 		attributes: appstoreconnect.ProfileAttributes{

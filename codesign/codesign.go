@@ -11,6 +11,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 	"github.com/bitrise-io/go-xcode/v2/xcarchive"
 )
 
@@ -62,7 +63,8 @@ type Manager struct {
 	detailsProvider DetailsProvider
 	assetWriter     AssetWriter
 
-	logger log.Logger
+	timeProvider timeutil.TimeProvider
+	logger       log.Logger
 }
 
 // NewManagerWithArchive creates a codesign manager, which reads the code signing asset requirements from an XCArchive file.
@@ -76,6 +78,7 @@ func NewManagerWithArchive(
 	assetInstaller autocodesign.AssetWriter,
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager,
 	archive xcarchive.IosArchive,
+	timeProvider timeutil.TimeProvider,
 	logger log.Logger,
 ) Manager {
 	return Manager{
@@ -88,6 +91,7 @@ func NewManagerWithArchive(
 		assetInstaller:            assetInstaller,
 		localCodeSignAssetManager: localCodeSignAssetManager,
 		detailsProvider:           archive,
+		timeProvider:              timeProvider,
 		logger:                    logger,
 	}
 }
@@ -324,7 +328,7 @@ func (m *Manager) installCertificates(certificates []certificateutil.Certificate
 }
 
 func (m *Manager) validateCertificatesForXcodeManagedSigning(certificates []certificateutil.CertificateInfo) error {
-	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates)
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certificates, m.timeProvider)
 	if err != nil {
 		return err
 	}
@@ -379,7 +383,7 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials devportalservice.Cre
 		return err
 	}
 
-	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs)
+	typeToLocalCerts, err := autocodesign.GetValidLocalCertificates(certs, m.timeProvider)
 	if err != nil {
 		return err
 	}

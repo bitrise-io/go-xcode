@@ -5,6 +5,7 @@ import (
 	"time"
 
 	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
+	"github.com/stretchr/testify/require"
 
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
@@ -220,6 +221,7 @@ func profileFromModel(profileInfo profileutil.ProvisioningProfileInfoModel) auto
 }
 
 func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
+	now := time.Now()
 	iosDevProfile := profileutil.ProvisioningProfileInfoModel{
 		UUID:                  "uuid-1",
 		Name:                  "Valid development profile",
@@ -228,9 +230,9 @@ func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
 		BundleID:              "io.ios.valid",
 		ExportType:            exportoptions.MethodDevelopment,
 		ProvisionedDevices:    []string{"device-1", "device-2", "device-3"},
-		DeveloperCertificates: []certificateutil.CertificateInfo{devCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, -1, 0),
-		ExpirationDate:        dateRelativeToNow(0, 1, 0),
+		DeveloperCertificates: []certificateutil.CertificateInfo{devCert(t, now, now.AddDate(1, 0, 0))},
+		CreationDate:          now.AddDate(0, -1, 0),
+		ExpirationDate:        now.AddDate(0, 1, 0),
 		Entitlements:          entitlements(),
 		ProvisionsAllDevices:  false,
 		Type:                  profileutil.ProfileTypeIos,
@@ -243,9 +245,9 @@ func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
 		BundleID:              "io.tvos.valid",
 		ExportType:            exportoptions.MethodAppStore,
 		ProvisionedDevices:    nil,
-		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, -1, 0),
-		ExpirationDate:        dateRelativeToNow(0, 1, 0),
+		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, now, now.AddDate(1, 0, 0))},
+		CreationDate:          now.AddDate(0, -1, 0),
+		ExpirationDate:        now.AddDate(0, 1, 0),
 		Entitlements:          nil,
 		ProvisionsAllDevices:  true,
 		Type:                  profileutil.ProfileTypeTvOs,
@@ -258,9 +260,9 @@ func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
 		BundleID:              "io.tvos.expired",
 		ExportType:            exportoptions.MethodAppStore,
 		ProvisionedDevices:    nil,
-		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, -1, 0),
-		ExpirationDate:        dateRelativeToNow(0, 0, -1),
+		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, now, now.AddDate(1, 0, 0))},
+		CreationDate:          now.AddDate(0, -1, 0),
+		ExpirationDate:        now.AddDate(0, 0, -1),
 		Entitlements:          nil,
 		ProvisionsAllDevices:  true,
 		Type:                  profileutil.ProfileTypeIos,
@@ -273,9 +275,9 @@ func profiles(t *testing.T) []profileutil.ProvisioningProfileInfoModel {
 		BundleID:              "io.ios.*",
 		ExportType:            exportoptions.MethodDevelopment,
 		ProvisionedDevices:    []string{"device-1", "device-2", "device-3"},
-		DeveloperCertificates: []certificateutil.CertificateInfo{devCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, -1, 0),
-		ExpirationDate:        dateRelativeToNow(0, 1, 0),
+		DeveloperCertificates: []certificateutil.CertificateInfo{devCert(t, now, now.AddDate(1, 0, 0))},
+		CreationDate:          now.AddDate(0, -1, 0),
+		ExpirationDate:        now.AddDate(0, 1, 0),
 		Entitlements:          entitlements(),
 		ProvisionsAllDevices:  false,
 		Type:                  profileutil.ProfileTypeIos,
@@ -294,13 +296,14 @@ func entitlements() map[string]interface{} {
 }
 
 func certsByType(t *testing.T) map[appstoreconnect.CertificateType][]autocodesign.Certificate {
-	expiry := dateRelativeToNow(1, 0, 0)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
 	devCert := autocodesign.Certificate{
-		CertificateInfo: devCert(t, expiry),
+		CertificateInfo: devCert(t, notBefore, expiry),
 		ID:              "dev",
 	}
 	distCert := autocodesign.Certificate{
-		CertificateInfo: distCert(t, expiry),
+		CertificateInfo: distCert(t, notBefore, expiry),
 		ID:              "dist",
 	}
 
@@ -310,22 +313,14 @@ func certsByType(t *testing.T) map[appstoreconnect.CertificateType][]autocodesig
 	}
 }
 
-func devCert(t *testing.T, expiry time.Time) certificateutil.CertificateInfo {
-	return newCertificate(t, 1, teamID, teamName, "Development certificate", expiry)
+func devCert(t *testing.T, notBefore, expiry time.Time) certificateutil.CertificateInfo {
+	certInfo, err := certificateutil.GenerateTestCertificateInfo(1, teamID, teamName, "Development certificate", notBefore, expiry)
+	require.NoError(t, err)
+	return certInfo
 }
 
-func distCert(t *testing.T, expiry time.Time) certificateutil.CertificateInfo {
-	return newCertificate(t, 2, teamID, teamName, "Distribution certificate", expiry)
-}
-
-func newCertificate(t *testing.T, serial int, teamID, teamName, commonName string, expiry time.Time) certificateutil.CertificateInfo {
-	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(serial), teamID, teamName, commonName, expiry)
-	if err != nil {
-		t.Fatalf("init: failed to generate certificate: %s", err)
-	}
-	return certificateutil.NewCertificateInfo(*cert, privateKey)
-}
-
-func dateRelativeToNow(years, months, days int) time.Time {
-	return time.Now().AddDate(years, months, days)
+func distCert(t *testing.T, notBefore, expiry time.Time) certificateutil.CertificateInfo {
+	certInfo, err := certificateutil.GenerateTestCertificateInfo(1, teamID, teamName, "Distribution certificate", notBefore, expiry)
+	require.NoError(t, err)
+	return certInfo
 }

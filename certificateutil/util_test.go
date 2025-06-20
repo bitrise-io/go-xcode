@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,25 +46,26 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 	const teamID = "MYTEAMID"
 	const teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
 	const commonName = "Apple Developer: test"
-	validExpiry := time.Now().AddDate(1, 0, 0)
-	earlierValidExpiry := time.Now().AddDate(0, 1, 0)
-	invalidExpiry := time.Now().AddDate(-1, 0, 0)
+	notBefore := time.Now()
+	validExpiry := notBefore.AddDate(1, 0, 0)
+	earlierValidExpiry := notBefore.AddDate(0, 1, 0)
+	invalidExpiry := notBefore.AddDate(-1, 0, 0)
 
-	latestValidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, validExpiry)
+	latestValidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, notBefore, validExpiry)
 	if err != nil {
 		t.Errorf("init: failed to generate certificate, error: %s", err)
 	}
 	latestValidCertInfo := NewCertificateInfo(*latestValidCert, privateKey)
 	t.Logf("Test certificate generated: %s", latestValidCertInfo)
 
-	earlierValidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, earlierValidExpiry)
+	earlierValidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, notBefore, earlierValidExpiry)
 	if err != nil {
 		t.Errorf("init: failed to generate certificate, error: %s", err)
 	}
 	earlierValidCertInfo := NewCertificateInfo(*earlierValidCert, privateKey)
 	t.Logf("Test certificate generated: %s", earlierValidCertInfo)
 
-	invalidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, invalidExpiry)
+	invalidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, notBefore, invalidExpiry)
 	if err != nil {
 		t.Errorf("init: failed to generate certificate, error: %s", err)
 	}
@@ -105,7 +107,7 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := FilterValidCertificateInfos(tt.certificateInfos); !reflect.DeepEqual(got, tt.want) {
+			if got := FilterValidCertificateInfos(tt.certificateInfos, timeutil.NewDefaultTimeProvider()); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("FilterValidCertificateInfos() = %v, want %v", got, tt.want)
 			}
 		})

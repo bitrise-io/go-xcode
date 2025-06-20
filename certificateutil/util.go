@@ -10,6 +10,8 @@ import (
 	"math/big"
 	"sort"
 	"time"
+
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 )
 
 // CertificateFromDERContent ...
@@ -17,8 +19,8 @@ func CertificateFromDERContent(content []byte) (*x509.Certificate, error) {
 	return x509.ParseCertificate(content)
 }
 
-// CeritifcateFromPemContent ...
-func CeritifcateFromPemContent(content []byte) (*x509.Certificate, error) {
+// CertificateFromPemContent ...
+func CertificateFromPemContent(content []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(content)
 	if block == nil || block.Bytes == nil || len(block.Bytes) == 0 {
 		return nil, fmt.Errorf("failed to parse profile from: %s", string(content))
@@ -27,27 +29,25 @@ func CeritifcateFromPemContent(content []byte) (*x509.Certificate, error) {
 }
 
 // CheckValidity ...
-func CheckValidity(certificate x509.Certificate) error {
-	timeNow := time.Now()
+func CheckValidity(certificate x509.Certificate, timeProvider timeutil.TimeProvider) error {
+	timeNow := timeProvider.CurrentTime()
 	if !timeNow.After(certificate.NotBefore) {
-		return fmt.Errorf("Certificate is not yet valid - validity starts at: %s", certificate.NotBefore)
+		return fmt.Errorf("certificate is not yet valid - validity starts at: %s", certificate.NotBefore)
 	}
 	if !timeNow.Before(certificate.NotAfter) {
-		return fmt.Errorf("Certificate is not valid anymore - validity ended at: %s", certificate.NotAfter)
+		return fmt.Errorf("certificate is not valid anymore - validity ended at: %s", certificate.NotAfter)
 	}
 	return nil
 }
 
 // FilterCertificateInfoModelsByFilterFunc ...
 func FilterCertificateInfoModelsByFilterFunc(certificates []CertificateInfo, filterFunc func(certificate CertificateInfo) bool) []CertificateInfo {
-	filteredCertificates := []CertificateInfo{}
-
+	var filteredCertificates []CertificateInfo
 	for _, certificate := range certificates {
 		if filterFunc(certificate) {
 			filteredCertificates = append(filteredCertificates, certificate)
 		}
 	}
-
 	return filteredCertificates
 }
 
@@ -58,12 +58,12 @@ type ValidCertificateInfo struct {
 	DuplicatedCertificates []CertificateInfo
 }
 
-// FilterValidCertificateInfos filters out invalid and duplicated common name certificaates
-func FilterValidCertificateInfos(certificateInfos []CertificateInfo) ValidCertificateInfo {
+// FilterValidCertificateInfos filters out invalid and duplicated common name certificates
+func FilterValidCertificateInfos(certificateInfos []CertificateInfo, timeProvider timeutil.TimeProvider) ValidCertificateInfo {
 	var invalidCertificates []CertificateInfo
 	nameToCerts := map[string][]CertificateInfo{}
 	for _, certificateInfo := range certificateInfos {
-		if certificateInfo.CheckValidity() != nil {
+		if certificateInfo.CheckValidity(timeProvider) != nil {
 			invalidCertificates = append(invalidCertificates, certificateInfo)
 			continue
 		}
@@ -94,7 +94,7 @@ func FilterValidCertificateInfos(certificateInfos []CertificateInfo) ValidCertif
 }
 
 // GenerateTestCertificate creates a certificate (signed by a self-signed CA cert) for test purposes
-func GenerateTestCertificate(serial int64, teamID, teamName, commonName string, expiry time.Time) (*x509.Certificate, *rsa.PrivateKey, error) {
+func GenerateTestCertificate(serial int64, teamID, teamName, commonName string, notBefore, notAfter time.Time) (*x509.Certificate, *rsa.PrivateKey, error) {
 	CAtemplate := &x509.Certificate{
 		IsCA:                  true,
 		BasicConstraintsValid: true,
@@ -105,8 +105,8 @@ func GenerateTestCertificate(serial int64, teamID, teamName, commonName string, 
 			Organization: []string{"Pear Worldwide Developer Relations"},
 			CommonName:   "Pear Worldwide Developer Relations CA",
 		},
-		NotBefore: time.Now(),
-		NotAfter:  time.Now().AddDate(1, 0, 0),
+		NotBefore: notBefore,
+		NotAfter:  notBefore.AddDate(1, 0, 0),
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:    x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
@@ -137,8 +137,8 @@ func GenerateTestCertificate(serial int64, teamID, teamName, commonName string, 
 			OrganizationalUnit: []string{teamID},
 			CommonName:         commonName,
 		},
-		NotBefore: time.Now(),
-		NotAfter:  expiry,
+		NotBefore: notBefore,
+		NotAfter:  notAfter,
 		// see http://golang.org/pkg/crypto/x509/#KeyUsage
 		KeyUsage: x509.KeyUsageDigitalSignature,
 	}
@@ -159,4 +159,12 @@ func GenerateTestCertificate(serial int64, teamID, teamName, commonName string, 
 	}
 
 	return cert, privatekey, nil
+}
+
+func GenerateTestCertificateInfo(serial int64, teamID, teamName, commonName string, notBefore, notAfter time.Time) (CertificateInfo, error) {
+	cert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, notBefore, notAfter)
+	if err != nil {
+		return CertificateInfo{}, err
+	}
+	return NewCertificateInfo(*cert, privateKey), nil
 }

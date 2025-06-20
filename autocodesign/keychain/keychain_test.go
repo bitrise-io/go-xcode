@@ -66,9 +66,10 @@ func TestKeychain_importCertificate(t *testing.T) {
 	const teamID = "MYTEAMID"
 	const commonNameIOSDevelopment = "iPhone Developer: test"
 	const teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
-	expiry := time.Now().AddDate(1, 0, 0)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
 
-	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, commonNameIOSDevelopment, expiry)
+	cert, privateKey, err := certificateutil.GenerateTestCertificate(int64(1), teamID, teamName, commonNameIOSDevelopment, notBefore, expiry)
 	if err != nil {
 		t.Fatalf("init: failed to generate certificate: %s", err)
 	}

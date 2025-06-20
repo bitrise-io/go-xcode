@@ -97,10 +97,11 @@ func createTestCert(t *testing.T) certificateutil.CertificateInfo {
 		commonName = "Apple Developer: test"
 		teamName   = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
 	)
-	expiry := time.Now().AddDate(1, 0, 0)
+	notBefore := time.Now()
+	expiry := notBefore.AddDate(1, 0, 0)
 	serial := int64(1234)
 
-	cert, privateKey, err := certificateutil.GenerateTestCertificate(serial, teamID, teamName, commonName, expiry)
+	cert, privateKey, err := certificateutil.GenerateTestCertificate(serial, teamID, teamName, commonName, notBefore, expiry)
 	if err != nil {
 		t.Errorf("init: failed to generate certificate: %s", err)
 	}

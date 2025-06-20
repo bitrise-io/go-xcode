@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-pkcs12"
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 )
 
 type CertificateInfo struct {
@@ -74,16 +75,17 @@ func (info CertificateInfo) String() string {
 	team := fmt.Sprintf("%s (%s)", info.TeamName, info.TeamID)
 	certInfo := fmt.Sprintf("Serial: %s, Name: %s, Team: %s, Expiry: %s", info.Serial, info.CommonName, team, info.EndDate)
 
-	err := info.CheckValidity()
-	if err != nil {
-		certInfo = certInfo + fmt.Sprintf(", error: %s", err)
-	}
+	//if timeProvider != nil {
+	//	if err := info.CheckValidity(*timeProvider); err != nil {
+	//		certInfo = certInfo + fmt.Sprintf(", error: %s", err)
+	//	}
+	//}
 
 	return certInfo
 }
 
-func (info CertificateInfo) CheckValidity() error {
-	return CheckValidity(info.Certificate)
+func (info CertificateInfo) CheckValidity(timeProvider timeutil.TimeProvider) error {
+	return CheckValidity(info.Certificate, timeProvider)
 }
 
 // EncodeToP12 encodes a CertificateInfo in pkcs12 (.p12) format.

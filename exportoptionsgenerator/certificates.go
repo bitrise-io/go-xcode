@@ -1,6 +1,10 @@
 package exportoptionsgenerator
 
-import "github.com/bitrise-io/go-xcode/v2/certificateutil"
+import (
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
+)
 
 // CodesignIdentityProvider can list certificate infos.
 type CodesignIdentityProvider interface {
@@ -8,14 +12,25 @@ type CodesignIdentityProvider interface {
 }
 
 // LocalCodesignIdentityProvider ...
-type LocalCodesignIdentityProvider struct{}
+type LocalCodesignIdentityProvider struct {
+	commandFactory command.Factory
+	timeProvider   timeutil.TimeProvider
+}
+
+func NewLocalCodesignIdentityProvider(commandFactory command.Factory, timeProvider timeutil.TimeProvider) LocalCodesignIdentityProvider {
+	return LocalCodesignIdentityProvider{
+		commandFactory: commandFactory,
+		timeProvider:   timeProvider,
+	}
+}
 
 // ListCodesignIdentities ...
 func (p LocalCodesignIdentityProvider) ListCodesignIdentities() ([]certificateutil.CertificateInfo, error) {
-	certs, err := certificateutil.InstalledCodesigningCertificateInfos()
+	securityTool := certificateutil.NewSecurityTool(p.commandFactory)
+	certs, err := securityTool.InstalledCodesigningCertificateInfos()
 	if err != nil {
 		return nil, err
 	}
-	certInfo := certificateutil.FilterValidCertificateInfos(certs)
+	certInfo := certificateutil.FilterValidCertificateInfos(certs, p.timeProvider)
 	return append(certInfo.ValidCertificates, certInfo.DuplicatedCertificates...), nil
 }

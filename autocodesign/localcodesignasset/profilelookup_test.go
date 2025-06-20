@@ -2,6 +2,7 @@ package localcodesignasset
 
 import (
 	"testing"
+	"time"
 
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/certificateutil"
@@ -198,6 +199,7 @@ func Test_GivenProfiles_WhenFiltersForNonExisting_ThenItIsMissing(t *testing.T) 
 // Helpers
 
 func iosXcodeManagedDevelopmentProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
+	now := time.Now()
 	return profileutil.ProvisioningProfileInfoModel{
 		UUID:                  "uuid-1",
 		Name:                  "iOS Team Provisioning Profile: io.ios.managed",
@@ -206,9 +208,9 @@ func iosXcodeManagedDevelopmentProfile(t *testing.T) profileutil.ProvisioningPro
 		BundleID:              "io.ios.managed",
 		ExportType:            exportoptions.MethodDevelopment,
 		ProvisionedDevices:    []string{"ios-device-1", "ios-device-2", "ios-device-3"},
-		DeveloperCertificates: []certificateutil.CertificateInfo{devCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, 0, -1),
-		ExpirationDate:        dateRelativeToNow(0, 0, 5),
+		DeveloperCertificates: []certificateutil.CertificateInfo{devCert(t, now, now.AddDate(1, 0, 0))},
+		CreationDate:          now.AddDate(0, 0, -1),
+		ExpirationDate:        now.AddDate(0, 0, 5),
 		Entitlements:          firstSetOfEntitlements(),
 		ProvisionsAllDevices:  false,
 		Type:                  profileutil.ProfileTypeIos,
@@ -216,6 +218,7 @@ func iosXcodeManagedDevelopmentProfile(t *testing.T) profileutil.ProvisioningPro
 }
 
 func iosDevelopmentProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
+	now := time.Now()
 	return profileutil.ProvisioningProfileInfoModel{
 		UUID:                  "uuid-1",
 		Name:                  "iOS development profile",
@@ -224,9 +227,9 @@ func iosDevelopmentProfile(t *testing.T) profileutil.ProvisioningProfileInfoMode
 		BundleID:              "io.ios",
 		ExportType:            exportoptions.MethodDevelopment,
 		ProvisionedDevices:    []string{"ios-device-1", "ios-device-2", "ios-device-3"},
-		DeveloperCertificates: []certificateutil.CertificateInfo{devCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, 0, -1),
-		ExpirationDate:        dateRelativeToNow(0, 0, 5),
+		DeveloperCertificates: []certificateutil.CertificateInfo{devCert(t, now, now.AddDate(1, 0, 0))},
+		CreationDate:          now.AddDate(0, 0, -1),
+		ExpirationDate:        now.AddDate(0, 0, 5),
 		Entitlements:          firstSetOfEntitlements(),
 		ProvisionsAllDevices:  false,
 		Type:                  profileutil.ProfileTypeIos,
@@ -234,6 +237,7 @@ func iosDevelopmentProfile(t *testing.T) profileutil.ProvisioningProfileInfoMode
 }
 
 func iosAppStoreProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
+	now := time.Now()
 	return profileutil.ProvisioningProfileInfoModel{
 		UUID:                  "uuid-2",
 		Name:                  "iOS app store profile",
@@ -242,9 +246,9 @@ func iosAppStoreProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
 		BundleID:              "io.ios",
 		ExportType:            exportoptions.MethodAppStore,
 		ProvisionedDevices:    nil,
-		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, 0, -1),
-		ExpirationDate:        dateRelativeToNow(0, 0, 5),
+		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, now, now.AddDate(1, 0, 0))},
+		CreationDate:          now.AddDate(0, 0, -1),
+		ExpirationDate:        now.AddDate(0, 0, 5),
 		Entitlements:          nil,
 		ProvisionsAllDevices:  true,
 		Type:                  profileutil.ProfileTypeIos,
@@ -252,6 +256,7 @@ func iosAppStoreProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
 }
 
 func tvosAdHocProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
+	now := time.Now()
 	return profileutil.ProvisioningProfileInfoModel{
 		UUID:                  "uuid-3",
 		Name:                  "tvOS ad hoc profile",
@@ -260,9 +265,9 @@ func tvosAdHocProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
 		BundleID:              "io.tvos",
 		ExportType:            exportoptions.MethodAdHoc,
 		ProvisionedDevices:    []string{"tvos-device-1", "tvos-device-2", "tvos-device-3"},
-		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, 0, -1),
-		ExpirationDate:        dateRelativeToNow(0, 0, 10),
+		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, now, now.AddDate(1, 0, 0))},
+		CreationDate:          now.AddDate(0, 0, -1),
+		ExpirationDate:        now.AddDate(0, 0, 10),
 		Entitlements:          nil,
 		ProvisionsAllDevices:  false,
 		Type:                  profileutil.ProfileTypeTvOs,
@@ -270,6 +275,7 @@ func tvosAdHocProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
 }
 
 func tvosEnterpriseProfile(t *testing.T) profileutil.ProvisioningProfileInfoModel {
+	now := time.Now()
 	return profileutil.ProvisioningProfileInfoModel{
 		UUID:                  "uuid-4",
 		Name:                  "tvOS enterprise profile",
@@ -278,9 +284,9 @@ func tvosEnterpriseProfile(t *testing.T) profileutil.ProvisioningProfileInfoMode
 		BundleID:              "io.tvos",
 		ExportType:            exportoptions.MethodEnterprise,
 		ProvisionedDevices:    nil,
-		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, dateRelativeToNow(1, 0, 0))},
-		CreationDate:          dateRelativeToNow(0, 0, -1),
-		ExpirationDate:        dateRelativeToNow(0, 0, 10),
+		DeveloperCertificates: []certificateutil.CertificateInfo{distCert(t, now, now.AddDate(1, 0, 0))},
+		CreationDate:          now.AddDate(0, 0, -1),
+		ExpirationDate:        now.AddDate(0, 0, 10),
 		Entitlements:          secondSetOfEntitlements(),
 		ProvisionsAllDevices:  true,
 		Type:                  profileutil.ProfileTypeTvOs,
