@@ -10,9 +10,9 @@ import (
 	"math/big"
 
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )

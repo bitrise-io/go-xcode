@@ -3,9 +3,9 @@ package autocodesign
 import (
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/stretchr/testify/assert"
 )
 

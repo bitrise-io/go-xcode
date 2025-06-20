@@ -7,6 +7,7 @@ toolchain go1.23.2
 require (
 	cloud.google.com/go/secretmanager v1.14.3
 	cloud.google.com/go/storage v1.50.0
+	github.com/bitrise-io/go-pkcs12 v0.0.0-20230815095624-feb898696e02
 	github.com/bitrise-io/go-steputils v1.0.5
 	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.18
 	github.com/bitrise-io/go-utils v1.0.12
@@ -35,7 +36,6 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
-	github.com/bitrise-io/go-pkcs12 v0.0.0-20230815095624-feb898696e02 // indirect
 	github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 // indirect
