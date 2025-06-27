@@ -3,7 +3,7 @@ package exportoptions
 import (
 	"fmt"
 
-	"howett.net/plist"
+	"github.com/bitrise-io/go-plist"
 )
 
 // NonAppStoreOptionsModel ...

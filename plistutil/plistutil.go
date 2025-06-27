@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/fileutil"
-	"howett.net/plist"
 )
 
 // PlistData ...
