@@ -9,6 +9,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
@@ -22,7 +23,9 @@ func sampleRepoPath(t *testing.T) string {
 	if tmpDir != "" {
 		dir = tmpDir
 	} else {
-		dir = t.TempDir()
+		var err error
+		dir, err = pathutil.NewPathProvider().CreateTempDir(tempDirName)
+		require.NoError(t, err)
 		sampleArtifactsGitURI := "https://github.com/bitrise-io/sample-artifacts.git"
 
 		cmd := command.NewFactory(env.NewRepository()).Create("git", []string{"clone", sampleArtifactsGitURI, dir}, nil)
