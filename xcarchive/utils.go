@@ -2,11 +2,11 @@ package xcarchive
 
 import (
 	"fmt"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-xcode/plistutil"
 )
 
@@ -17,8 +17,8 @@ func executableNameFromInfoPlist(infoPlist plistutil.PlistData) string {
 	return ""
 }
 
-func getEntitlements(basePath, executableRelativePath string) (plistutil.PlistData, error) {
-	entitlements, err := entitlementsFromExecutable(basePath, executableRelativePath)
+func getEntitlements(cmdFactory command.Factory, basePath, executableRelativePath string) (plistutil.PlistData, error) {
+	entitlements, err := entitlementsFromExecutable(cmdFactory, basePath, executableRelativePath)
 	if err != nil {
 		return plistutil.PlistData{}, err
 	}
@@ -30,10 +30,10 @@ func getEntitlements(basePath, executableRelativePath string) (plistutil.PlistDa
 	return plistutil.PlistData{}, nil
 }
 
-func entitlementsFromExecutable(basePath, executableRelativePath string) (*plistutil.PlistData, error) {
+func entitlementsFromExecutable(cmdFactory command.Factory, basePath, executableRelativePath string) (*plistutil.PlistData, error) {
 	fmt.Printf("Fetching entitlements from executable")
 
-	cmd := command.New("codesign", "--display", "--entitlements", ":-", filepath.Join(basePath, executableRelativePath))
+	cmd := cmdFactory.Create("codesign", []string{"--display", "--entitlements", ":-", filepath.Join(basePath, executableRelativePath)}, nil)
 	entitlementsString, err := cmd.RunAndReturnTrimmedOutput()
 	if err != nil {
 		return nil, err
@@ -49,7 +49,7 @@ func entitlementsFromExecutable(basePath, executableRelativePath string) (*plist
 
 func findDSYMs(archivePath string) ([]string, []string, error) {
 	dsymsDirPth := filepath.Join(archivePath, "dSYMs")
-	dsyms, err := pathutil.ListEntries(dsymsDirPth, pathutil.ExtensionFilter(".dsym", true))
+	dsyms, err := listEntries(dsymsDirPth, extensionFilter(".dsym", true))
 	if err != nil {
 		return []string{}, []string{}, err
 	}
@@ -65,4 +65,65 @@ func findDSYMs(archivePath string) ([]string, []string, error) {
 	}
 
 	return appDSYMs, frameworkDSYMs, nil
+}
+
+func escapeGlobPath(path string) string {
+	var escaped string
+	for _, ch := range path {
+		if ch == '[' || ch == ']' || ch == '-' || ch == '*' || ch == '?' || ch == '\\' {
+			escaped += "\\"
+		}
+		escaped += string(ch)
+	}
+	return escaped
+}
+
+type filterFunc func(string) (bool, error)
+
+func listEntries(dir string, filters ...filterFunc) ([]string, error) {
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return []string{}, err
+	}
+
+	entries, err := ioutil.ReadDir(absDir)
+	if err != nil {
+		return []string{}, err
+	}
+
+	var paths []string
+	for _, entry := range entries {
+		pth := filepath.Join(absDir, entry.Name())
+		paths = append(paths, pth)
+	}
+
+	return filterPaths(paths, filters...)
+}
+
+func filterPaths(fileList []string, filters ...filterFunc) ([]string, error) {
+	var filtered []string
+
+	for _, pth := range fileList {
+		allowed := true
+		for _, filter := range filters {
+			if allows, err := filter(pth); err != nil {
+				return []string{}, err
+			} else if !allows {
+				allowed = false
+				break
+			}
+		}
+		if allowed {
+			filtered = append(filtered, pth)
+		}
+	}
+
+	return filtered, nil
+}
+
+func extensionFilter(ext string, allowed bool) filterFunc {
+	return func(pth string) (bool, error) {
+		e := filepath.Ext(pth)
+		return allowed == strings.EqualFold(ext, e), nil
+	}
 }

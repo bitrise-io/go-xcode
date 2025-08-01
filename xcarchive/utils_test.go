@@ -6,19 +6,21 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bitrise-io/go-utils/pathutil"
-
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestGiveniOS_WhenAskingForEntitlements_ThenReadsItFromTheExecutable(t *testing.T) {
 	// Given
+	cmdFactory := command.NewFactory(env.NewRepository())
 	appPath := filepath.Join(sampleRepoPath(t), "archives/Fruta.xcarchive/Products/Applications/Fruta.app")
 	executable := executableRelativePath(appPath, "Info.plist", "")
 
 	// When
-	entitlements, err := getEntitlements(appPath, executable)
+	entitlements, err := getEntitlements(cmdFactory, appPath, executable)
 
 	// Then
 	assert.NoError(t, err)
@@ -27,11 +29,12 @@ func TestGiveniOS_WhenAskingForEntitlements_ThenReadsItFromTheExecutable(t *test
 
 func TestGivenMacos_WhenAskingForEntitlements_ThenReadsItFromTheExecutable(t *testing.T) {
 	// Given
+	cmdFactory := command.NewFactory(env.NewRepository())
 	appPath := filepath.Join(sampleRepoPath(t), "archives/macos.xcarchive/Products/Applications/Test.app")
 	executable := executableRelativePath(appPath, "Contents/Info.plist", "Contents/MacOS/")
 
 	// When
-	entitlements, err := getEntitlements(appPath, executable)
+	entitlements, err := getEntitlements(cmdFactory, appPath, executable)
 
 	// Then
 	assert.NoError(t, err)
@@ -40,7 +43,7 @@ func TestGivenMacos_WhenAskingForEntitlements_ThenReadsItFromTheExecutable(t *te
 
 func executableRelativePath(basePath, infoPlistRelativePath, executableFolderRelativePath string) string {
 	infoPlistPath := filepath.Join(basePath, infoPlistRelativePath)
-	exist, err := pathutil.IsPathExists(infoPlistPath)
+	exist, err := pathutil.NewPathChecker().IsPathExists(infoPlistPath)
 	if err != nil {
 		return ""
 	}
@@ -177,7 +180,7 @@ func createDSYMFilePath(archivePath, dSYMType string, index int) string {
 }
 
 func createArchive(archivePath string) (string, error) {
-	tempDirPath, err := pathutil.NormalizedOSTempDirPath(tempDirName)
+	tempDirPath, err := pathutil.NewPathProvider().CreateTempDir(tempDirName)
 	if err != nil {
 		return "", err
 	}

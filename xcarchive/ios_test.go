@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
@@ -22,11 +22,10 @@ func sampleRepoPath(t *testing.T) string {
 	if tmpDir != "" {
 		dir = tmpDir
 	} else {
-		var err error
-		dir, err = pathutil.NormalizedOSTempDirPath(tempDirName)
-		require.NoError(t, err)
+		dir = t.TempDir()
 		sampleArtifactsGitURI := "https://github.com/bitrise-io/sample-artifacts.git"
-		cmd := command.New("git", "clone", sampleArtifactsGitURI, dir)
+
+		cmd := command.NewFactory(env.NewRepository()).Create("git", []string{"clone", sampleArtifactsGitURI, dir}, nil)
 		output, err := cmd.RunAndReturnTrimmedCombinedOutput()
 		if err != nil {
 			t.Log(output)
@@ -165,16 +164,12 @@ func TestFindDSYMs(t *testing.T) {
 }
 
 func Test_applicationFromArchive(t *testing.T) {
-	var err error
-	tempDir, err := pathutil.NormalizedOSTempDirPath(t.Name())
-	if err != nil {
-		t.Errorf("setup: failed to create temp dir")
-	}
+	tempDir := t.TempDir()
 	archivePath := filepath.Join(tempDir, "{}GlobControlChars:a-b[ab]?*", "test.xcarchive")
 	appDir := filepath.Join(archivePath, "Products", "Applications")
 	appPath := filepath.Join(appDir, "test.app")
 	t.Logf("Test app path: %s", appPath)
-	err = os.MkdirAll(appDir, os.ModePerm)
+	err := os.MkdirAll(appDir, os.ModePerm)
 	if err != nil {
 		t.Errorf("setup: failed to create directory: %s, error: %s", appDir, err)
 	}

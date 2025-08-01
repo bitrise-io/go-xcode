@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
@@ -27,10 +29,14 @@ func (app IosBaseApplication) BundleIdentifier() string {
 
 // NewIosBaseApplication ...
 func NewIosBaseApplication(path string) (IosBaseApplication, error) {
+	pathChecker := pathutil.NewPathChecker()
+	envRepo := env.NewRepository()
+	cmdFactory := command.NewFactory(envRepo)
+
 	var infoPlist plistutil.PlistData
 	{
 		infoPlistPath := filepath.Join(path, "Info.plist")
-		if exist, err := pathutil.IsPathExists(infoPlistPath); err != nil {
+		if exist, err := pathChecker.IsPathExists(infoPlistPath); err != nil {
 			return IosBaseApplication{}, fmt.Errorf("failed to check if Info.plist exists at: %s, error: %s", infoPlistPath, err)
 		} else if !exist {
 			return IosBaseApplication{}, fmt.Errorf("Info.plist not exists at: %s", infoPlistPath)
@@ -45,7 +51,7 @@ func NewIosBaseApplication(path string) (IosBaseApplication, error) {
 	var provisioningProfile profileutil.ProvisioningProfileInfoModel
 	{
 		provisioningProfilePath := filepath.Join(path, "embedded.mobileprovision")
-		if exist, err := pathutil.IsPathExists(provisioningProfilePath); err != nil {
+		if exist, err := pathChecker.IsPathExists(provisioningProfilePath); err != nil {
 			return IosBaseApplication{}, fmt.Errorf("failed to check if profile exists at: %s, error: %s", provisioningProfilePath, err)
 		} else if !exist {
 			return IosBaseApplication{}, fmt.Errorf("profile not exists at: %s", provisioningProfilePath)
@@ -59,7 +65,7 @@ func NewIosBaseApplication(path string) (IosBaseApplication, error) {
 	}
 
 	executable := executableNameFromInfoPlist(infoPlist)
-	entitlements, err := getEntitlements(path, executable)
+	entitlements, err := getEntitlements(cmdFactory, path, executable)
 	if err != nil {
 		return IosBaseApplication{}, err
 	}
@@ -102,13 +108,14 @@ type IosClipApplication struct {
 
 // NewIosWatchApplication ...
 func NewIosWatchApplication(path string) (IosWatchApplication, error) {
+
 	baseApp, err := NewIosBaseApplication(path)
 	if err != nil {
 		return IosWatchApplication{}, err
 	}
 
 	extensions := []IosExtension{}
-	pattern := filepath.Join(pathutil.EscapeGlobPath(path), "PlugIns/*.appex")
+	pattern := filepath.Join(escapeGlobPath(path), "PlugIns/*.appex")
 	pths, err := filepath.Glob(pattern)
 	if err != nil {
 		return IosWatchApplication{}, fmt.Errorf("failed to search for watch application's extensions using pattern: %s, error: %s", pattern, err)
@@ -157,7 +164,7 @@ func NewIosApplication(path string) (IosApplication, error) {
 
 	var watchApp *IosWatchApplication
 	{
-		pattern := filepath.Join(pathutil.EscapeGlobPath(path), "Watch/*.app")
+		pattern := filepath.Join(escapeGlobPath(path), "Watch/*.app")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
 			return IosApplication{}, err
@@ -174,7 +181,7 @@ func NewIosApplication(path string) (IosApplication, error) {
 
 	var clipApp *IosClipApplication
 	{
-		pattern := filepath.Join(pathutil.EscapeGlobPath(path), "AppClips/*.app")
+		pattern := filepath.Join(escapeGlobPath(path), "AppClips/*.app")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
 			return IosApplication{}, err
@@ -191,7 +198,7 @@ func NewIosApplication(path string) (IosApplication, error) {
 
 	extensions := []IosExtension{}
 	{
-		pattern := filepath.Join(pathutil.EscapeGlobPath(path), "PlugIns/*.appex")
+		pattern := filepath.Join(escapeGlobPath(path), "PlugIns/*.appex")
 		pths, err := filepath.Glob(pattern)
 		if err != nil {
 			return IosApplication{}, fmt.Errorf("failed to search for watch application's extensions using pattern: %s, error: %s", pattern, err)
@@ -223,10 +230,12 @@ type IosArchive struct {
 
 // NewIosArchive ...
 func NewIosArchive(path string) (IosArchive, error) {
+	pathChecker := pathutil.NewPathChecker()
+
 	var infoPlist plistutil.PlistData
 	{
 		infoPlistPath := filepath.Join(path, "Info.plist")
-		if exist, err := pathutil.IsPathExists(infoPlistPath); err != nil {
+		if exist, err := pathChecker.IsPathExists(infoPlistPath); err != nil {
 			return IosArchive{}, fmt.Errorf("failed to check if Info.plist exists at: %s, error: %s", infoPlistPath, err)
 		} else if !exist {
 			return IosArchive{}, fmt.Errorf("Info.plist not exists at: %s", infoPlistPath)
@@ -249,7 +258,7 @@ func NewIosArchive(path string) (IosArchive, error) {
 				return IosArchive{}, err
 			}
 		}
-		if exist, err := pathutil.IsPathExists(appPath); err != nil {
+		if exist, err := pathChecker.IsPathExists(appPath); err != nil {
 			return IosArchive{}, fmt.Errorf("failed to check if app exists, path: %s, error: %s", appPath, err)
 		} else if !exist {
 			return IosArchive{}, fmt.Errorf("application not found on path: %s, error: %s", appPath, err)
@@ -277,7 +286,7 @@ func applicationFromPlist(InfoPlist plistutil.PlistData) (string, bool) {
 }
 
 func applicationFromArchive(path string) (string, error) {
-	pattern := filepath.Join(pathutil.EscapeGlobPath(path), "Products/Applications/*.app")
+	pattern := filepath.Join(escapeGlobPath(path), "Products/Applications/*.app")
 	pths, err := filepath.Glob(pattern)
 	if err != nil {
 		return "", err
