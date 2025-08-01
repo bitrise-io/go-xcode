@@ -3,9 +3,8 @@ package exportoptions
 import (
 	"fmt"
 
-	"howett.net/plist"
-
-	"github.com/bitrise-io/go-utils/fileutil"
+	"github.com/bitrise-io/go-plist"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 )
 
 // ExportOptions ...
@@ -17,11 +16,12 @@ type ExportOptions interface {
 
 // WritePlistToFile ...
 func WritePlistToFile(options map[string]interface{}, pth string) error {
+	fileManager := fileutil.NewFileManager()
 	plistBytes, err := plist.MarshalIndent(options, plist.XMLFormat, "\t")
 	if err != nil {
 		return fmt.Errorf("failed to marshal export options model, error: %s", err)
 	}
-	if err := fileutil.WriteBytesToFile(pth, plistBytes); err != nil {
+	if err := fileManager.WriteBytes(pth, plistBytes); err != nil {
 		return fmt.Errorf("failed to write export options, error: %s", err)
 	}
 
