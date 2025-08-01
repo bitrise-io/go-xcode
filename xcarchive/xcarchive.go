@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-io/go-xcode/plistutil"
 )
 
+// ArchiveReader ...
 type ArchiveReader struct{}
 
 // IsMacOS try to find the Contents dir under the .app/.
