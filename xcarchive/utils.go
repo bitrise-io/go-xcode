@@ -2,7 +2,7 @@ package xcarchive
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -86,7 +86,7 @@ func listEntries(dir string, filters ...filterFunc) ([]string, error) {
 		return []string{}, err
 	}
 
-	entries, err := ioutil.ReadDir(absDir)
+	entries, err := os.ReadDir(absDir)
 	if err != nil {
 		return []string{}, err
 	}

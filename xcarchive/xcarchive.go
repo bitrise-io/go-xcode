@@ -14,6 +14,7 @@ type ArchiveReader struct {
 	logger      log.Logger
 }
 
+// NewArchiveReader ...
 func NewArchiveReader(pathChecker pathutil.PathChecker, logger log.Logger) ArchiveReader {
 	return ArchiveReader{
 		pathChecker: pathChecker,
