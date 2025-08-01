@@ -3,6 +3,9 @@ package xcarchive
 import (
 	"path/filepath"
 	"testing"
+
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
 const (
@@ -32,7 +35,10 @@ func TestIsMacOS(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ArchiveReader{}.IsMacOS(tt.archPath)
+			pathChecker := pathutil.NewPathChecker()
+			logger := log.NewLogger()
+			archiveReader := NewArchiveReader(pathChecker, logger)
+			got, err := archiveReader.IsMacOS(tt.archPath)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("IsMacOS() error = %v, wantErr %v", err, tt.wantErr)
 				return
