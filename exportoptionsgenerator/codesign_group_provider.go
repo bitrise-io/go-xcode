@@ -11,6 +11,7 @@ import (
 	"github.com/bitrise-io/go-xcode/profileutil"
 )
 
+// CodeSignGroupProvider ...
 type CodeSignGroupProvider interface {
 	DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*export.IosCodeSignGroup, error)
 }
@@ -19,10 +20,12 @@ type codeSignGroupProvider struct {
 	logger log.Logger
 }
 
+// NewCodeSignGroupProvider ...
 func NewCodeSignGroupProvider(logger log.Logger) CodeSignGroupProvider {
 	return &codeSignGroupProvider{logger: logger}
 }
 
+// DetermineCodesignGroup ....
 func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*export.IosCodeSignGroup, error) {
 	fmt.Println()
 	g.logger.Printf("Target Bundle ID - Entitlements map")
