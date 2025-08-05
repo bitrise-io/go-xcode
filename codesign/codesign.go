@@ -7,6 +7,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
+	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient"
@@ -14,7 +15,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
-	"github.com/bitrise-io/go-xcode/v2/export"
+	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator"
 	"github.com/bitrise-io/go-xcode/v2/xcarchive"
 )
 
@@ -465,20 +466,13 @@ func (m *Manager) prepareManualAssets(appLayout autocodesign.AppLayout, typeToLo
 	return assets, nil
 }
 
-var distributionTypeToExportMethod = map[autocodesign.DistributionType]exportoptions.Method{
-	autocodesign.Development: exportoptions.MethodDevelopment,
-	autocodesign.AppStore:    exportoptions.MethodAppStore,
-	autocodesign.AdHoc:       exportoptions.MethodAdHoc,
-	autocodesign.Enterprise:  exportoptions.MethodEnterprise,
-}
-
 func (m *Manager) createCodeSignAssetMap(appLayout autocodesign.AppLayout, certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel) (map[autocodesign.DistributionType]autocodesign.AppCodesignAssets, error) {
+	provider := exportoptionsgenerator.NewCodeSignGroupProvider(m.logger)
 
-	var bundleIDs []string
-	for bundleID, _ := range appLayout.EntitlementsByArchivableTargetBundleID {
-		bundleIDs = append(bundleIDs, bundleID)
+	bundleIDEntitlementsMap := map[string]plistutil.PlistData{}
+	for bundleID, entitlements := range appLayout.EntitlementsByArchivableTargetBundleID {
+		bundleIDEntitlementsMap[bundleID] = plistutil.PlistData(entitlements)
 	}
-	groups := export.CreateSelectableCodeSignGroups(certificates, profiles, bundleIDs)
 
 	distributionTypes := []autocodesign.DistributionType{m.opts.ExportMethod}
 	if m.opts.ExportMethod != autocodesign.Development {
@@ -487,43 +481,34 @@ func (m *Manager) createCodeSignAssetMap(appLayout autocodesign.AppLayout, certi
 	}
 
 	assetsByDistributionType := map[autocodesign.DistributionType]autocodesign.AppCodesignAssets{}
-
 	for _, distributionType := range distributionTypes {
-		exportMethod := distributionTypeToExportMethod[distributionType]
-		groups = export.FilterSelectableCodeSignGroups(groups,
-			// TODO: for now we only filter for the export method
-			export.CreateExportMethodSelectableCodeSignGroupFilter(exportMethod),
-		)
-
-		isRequiredMethod := distributionType == m.opts.ExportMethod
-		if len(groups) == 0 {
-			if isRequiredMethod {
-				return nil, fmt.Errorf("no code signing assets found for %s distribution", distributionType)
-			} else {
-				m.logger.Warnf("No code signing assets found for %s distribution, skipping", distributionType)
-				continue
+		signingAssets, err := provider.DetermineCodesignGroup(certificates, profiles, nil, bundleIDEntitlementsMap, exportoptions.Method(distributionType), m.opts.TeamID, true)
+		if err != nil {
+			if distributionType == m.opts.ExportMethod {
+				return nil, fmt.Errorf("failed to determine codesign group for %s distribution: %w", distributionType, err)
 			}
+			m.logger.Warnf("Failed to determine codesign group for %s distribution, skipping: %s", distributionType, err)
+			continue
 		}
 
-		group := groups[0]
-
-		var signingAssets autocodesign.AppCodesignAssets
-		signingAssets.Certificate = group.Certificate
-
-		signingAssets.ArchivableTargetProfilesByBundleID = map[string]autocodesign.Profile{}
-		for bundleID, profiles := range group.BundleIDProfilesMap {
-			profile := profiles[0]
+		bundleIDProfileInfoMap := signingAssets.BundleIDProfileMap()
+		bundleIDProfileMap := map[string]autocodesign.Profile{}
+		for bundleID, profileInfo := range bundleIDProfileInfoMap {
 			converter := localcodesignasset.NewProvisioningProfileConverter()
-			signingProfile, err := converter.ProfileInfoToProfile(profile)
+			signingProfile, err := converter.ProfileInfoToProfile(profileInfo)
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert profile info: %w", err)
 			}
-
-			signingAssets.ArchivableTargetProfilesByBundleID[bundleID] = signingProfile
+			bundleIDProfileMap[bundleID] = signingProfile
 		}
 
-		assetsByDistributionType[distributionType] = signingAssets
+		assetsByDistributionType[distributionType] = autocodesign.AppCodesignAssets{
+			Certificate:                        signingAssets.Certificate(),
+			ArchivableTargetProfilesByBundleID: bundleIDProfileMap,
+		}
 	}
+
+	// TODO: UI test targets are not supported yet
 
 	return assetsByDistributionType, nil
 
