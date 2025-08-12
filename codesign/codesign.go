@@ -1,6 +1,7 @@
 package codesign
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -63,6 +64,7 @@ type Manager struct {
 	fallbackProfileDownloader autocodesign.ProfileProvider
 	assetInstaller            autocodesign.AssetWriter
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager
+	profileConverter          localcodesignasset.ProvisioningProfileConverter
 
 	detailsProvider DetailsProvider
 	assetWriter     AssetWriter
@@ -80,6 +82,7 @@ func NewManagerWithArchive(
 	fallbackProfileDownloader autocodesign.ProfileProvider,
 	assetInstaller autocodesign.AssetWriter,
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager,
+	profileConverter localcodesignasset.ProvisioningProfileConverter,
 	archive xcarchive.IosArchive,
 	logger log.Logger,
 ) Manager {
@@ -92,6 +95,7 @@ func NewManagerWithArchive(
 		fallbackProfileDownloader: fallbackProfileDownloader,
 		assetInstaller:            assetInstaller,
 		localCodeSignAssetManager: localCodeSignAssetManager,
+		profileConverter:          profileConverter,
 		detailsProvider:           archive,
 		logger:                    logger,
 	}
@@ -107,6 +111,7 @@ func NewManagerWithProject(
 	fallbackProfileDownloader autocodesign.ProfileProvider,
 	assetInstaller autocodesign.AssetWriter,
 	localCodeSignAssetManager autocodesign.LocalCodeSignAssetManager,
+	profileConverter localcodesignasset.ProvisioningProfileConverter,
 	project projectmanager.Project,
 	logger log.Logger,
 ) Manager {
@@ -119,6 +124,7 @@ func NewManagerWithProject(
 		fallbackProfileDownloader: fallbackProfileDownloader,
 		assetInstaller:            assetInstaller,
 		localCodeSignAssetManager: localCodeSignAssetManager,
+		profileConverter:          profileConverter,
 		detailsProvider:           project,
 		assetWriter:               project,
 		logger:                    logger,
@@ -483,19 +489,21 @@ func (m *Manager) createCodeSignAssetMap(appLayout autocodesign.AppLayout, certi
 	assetsByDistributionType := map[autocodesign.DistributionType]autocodesign.AppCodesignAssets{}
 	for _, distributionType := range distributionTypes {
 		signingAssets, err := provider.DetermineCodesignGroup(certificates, profiles, nil, bundleIDEntitlementsMap, exportoptions.Method(distributionType), m.opts.TeamID, true)
-		if err != nil {
+		if err != nil || signingAssets == nil {
+			if err == nil {
+				err = errors.New("no signing assets found")
+			}
 			if distributionType == m.opts.ExportMethod {
 				return nil, fmt.Errorf("failed to determine codesign group for %s distribution: %w", distributionType, err)
 			}
-			m.logger.Warnf("Failed to determine codesign group for %s distribution, skipping: %s", distributionType, err)
+			m.logger.Warnf("Failed to determine codesign group for %s distribution: %s, skipping", distributionType, err)
 			continue
 		}
 
 		bundleIDProfileInfoMap := signingAssets.BundleIDProfileMap()
 		bundleIDProfileMap := map[string]autocodesign.Profile{}
 		for bundleID, profileInfo := range bundleIDProfileInfoMap {
-			converter := localcodesignasset.NewProvisioningProfileConverter()
-			signingProfile, err := converter.ProfileInfoToProfile(profileInfo)
+			signingProfile, err := m.profileConverter.ProfileInfoToProfile(profileInfo)
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert profile info: %w", err)
 			}

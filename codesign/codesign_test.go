@@ -11,7 +11,11 @@ import (
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
+	"github.com/bitrise-io/go-xcode/exportoptions"
+	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset"
+	localcodesignassetMocks "github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset/mocks"
 	"github.com/bitrise-io/go-xcode/v2/codesign/mocks"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 	"github.com/stretchr/testify/mock"
@@ -387,6 +391,119 @@ func TestSelectConnectionCredentials(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("SelectConnectionCredentials() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestManager_createCodeSignAssetMap(t *testing.T) {
+	bundleID := "com.example.app"
+	teamID := "team_1"
+	certificate := certificateutil.CertificateInfoModel{
+		Serial: "serial_1",
+		TeamID: teamID,
+	}
+	profile := profileutil.ProvisioningProfileInfoModel{
+		DeveloperCertificates: []certificateutil.CertificateInfoModel{certificate},
+		BundleID:              bundleID,
+		TeamID:                teamID,
+		ExportType:            exportoptions.MethodDevelopment,
+	}
+	localProfile := localcodesignasset.NewProfile(profile, nil)
+
+	tests := []struct {
+		name         string
+		appLayout    autocodesign.AppLayout
+		certificates []certificateutil.CertificateInfoModel
+		profiles     []profileutil.ProvisioningProfileInfoModel
+
+		opts Opts
+
+		want    map[autocodesign.DistributionType]autocodesign.AppCodesignAssets
+		wantErr string
+	}{
+		{
+			name: "Creates codesign assets map with single development profile",
+			appLayout: autocodesign.AppLayout{
+				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
+					bundleID: nil,
+				},
+			},
+			certificates: []certificateutil.CertificateInfoModel{certificate},
+			profiles:     []profileutil.ProvisioningProfileInfoModel{profile},
+			opts: Opts{
+				ExportMethod: autocodesign.Development,
+				TeamID:       teamID,
+			},
+			want: map[autocodesign.DistributionType]autocodesign.AppCodesignAssets{
+				autocodesign.Development: {
+					ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
+						bundleID: localProfile,
+					},
+					UITestTargetProfilesByBundleID: map[string]autocodesign.Profile(nil),
+					Certificate:                    certificate,
+				},
+			},
+		},
+		{
+			name: "Throws an error when no code signing assets are found for the provided Developer Team",
+			appLayout: autocodesign.AppLayout{
+				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
+					bundleID: {},
+				},
+			},
+			certificates: []certificateutil.CertificateInfoModel{certificate},
+			profiles:     []profileutil.ProvisioningProfileInfoModel{profile},
+			opts: Opts{
+				ExportMethod: autocodesign.Development,
+				TeamID:       "team_2",
+			},
+			wantErr: "failed to determine codesign group for development distribution: no signing assets found",
+		},
+		{
+			name: "Project entitlements are not filtering the profiles",
+			appLayout: autocodesign.AppLayout{
+				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
+					bundleID: {"key1": "value1"},
+				},
+			},
+			certificates: []certificateutil.CertificateInfoModel{certificate},
+			profiles:     []profileutil.ProvisioningProfileInfoModel{profile},
+			opts: Opts{
+				ExportMethod: autocodesign.Development,
+				TeamID:       teamID,
+			},
+			want: map[autocodesign.DistributionType]autocodesign.AppCodesignAssets{
+				autocodesign.Development: {
+					ArchivableTargetProfilesByBundleID: map[string]autocodesign.Profile{
+						bundleID: localProfile,
+					},
+					UITestTargetProfilesByBundleID: map[string]autocodesign.Profile(nil),
+					Certificate:                    certificate,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			logger := log.NewLogger()
+			profileConverter := new(localcodesignassetMocks.ProvisioningProfileConverter)
+			profileConverter.On("ProfileInfoToProfile", profile).Return(localProfile, nil)
+
+			m := &Manager{
+				opts:             tt.opts,
+				profileConverter: profileConverter,
+				logger:           logger,
+			}
+
+			got, err := m.createCodeSignAssetMap(tt.appLayout, tt.certificates, tt.profiles)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+				require.Nil(t, got)
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.want, got)
 			}
 		})
 	}
