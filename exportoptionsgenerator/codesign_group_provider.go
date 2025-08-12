@@ -1,8 +1,6 @@
 package exportoptionsgenerator
 
 import (
-	"fmt"
-
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/export"
@@ -27,7 +25,7 @@ func NewCodeSignGroupProvider(logger log.Logger) CodeSignGroupProvider {
 
 // DetermineCodesignGroup ....
 func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*export.IosCodeSignGroup, error) {
-	fmt.Println()
+	g.logger.Println()
 	g.logger.Printf("Target Bundle ID - Entitlements map")
 	var bundleIDs []string
 	for bundleID, entitlements := range bundleIDEntitlementsMap {
@@ -40,7 +38,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 		g.logger.Printf("%s: %s", bundleID, entitlementKeys)
 	}
 
-	fmt.Println()
+	g.logger.Println()
 	g.logger.Printf("Resolving CodeSignGroups...")
 
 	g.logger.Debugf("Installed certificates:")

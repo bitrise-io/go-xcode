@@ -400,21 +400,22 @@ func (m *Manager) prepareCodeSigningWithBitrise(credentials devportalservice.Cre
 		testDevicesToRegister = testDevices
 	}
 
-	codesignAssetsByDistributionType, err := m.prepareAutomaticAssets(credentials, appLayout, typeToLocalCerts, testDevicesToRegister)
-	if err != nil {
+	codesignAssetsByDistributionType, autoCodesignErr := m.prepareAutomaticAssets(credentials, appLayout, typeToLocalCerts, testDevicesToRegister)
+	if autoCodesignErr != nil {
 		if !m.fallbackProfileDownloader.IsAvailable() {
-			return err
+			return autoCodesignErr
 		}
 
 		m.logger.Println()
-		m.logger.Warnf("Automatic code signing failed: %s", err)
+		m.logger.Warnf("Automatic code signing failed: %s", autoCodesignErr)
 		m.logger.Println()
 		m.logger.Infof("Falling back to manually managed codesigning assets.")
 
-		// TODO: return codesignAssetsByDistributionType based on the manually provided profiles and certificates
 		codesignAssetsByDistributionType, err = m.prepareManualAssets(appLayout, typeToLocalCerts)
 		if err != nil {
-			return err
+			m.logger.Println()
+			m.logger.Warnf("Manual code signing failed: %s", err)
+			return autoCodesignErr
 		}
 	}
 
