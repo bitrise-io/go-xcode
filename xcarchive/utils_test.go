@@ -52,7 +52,11 @@ func executableRelativePath(basePath, infoPlistRelativePath, executableFolderRel
 		return ""
 	}
 
-	plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+	infoPlistContent, err := os.ReadFile(infoPlistPath)
+	if err != nil {
+		return ""
+	}
+	plist, err := plistutil.NewPlistDataFromContent(string(infoPlistContent))
 	if err != nil {
 		return ""
 	}

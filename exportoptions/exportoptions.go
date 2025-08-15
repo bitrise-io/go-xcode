@@ -4,23 +4,26 @@ import (
 	"fmt"
 
 	"github.com/bitrise-io/go-plist"
-	"github.com/bitrise-io/go-utils/fileutil"
 )
+
+type FileWriter interface {
+	WriteBytes(pth string, data []byte) error
+}
 
 // ExportOptions ...
 type ExportOptions interface {
 	Hash() map[string]interface{}
 	String() (string, error)
-	WriteToFile(pth string) error
+	WriteToFile(pth string, fileWriter FileWriter) error
 }
 
 // WritePlistToFile ...
-func WritePlistToFile(options map[string]interface{}, pth string) error {
+func WritePlistToFile(options map[string]interface{}, pth string, fileWriter FileWriter) error {
 	plistBytes, err := plist.MarshalIndent(options, plist.XMLFormat, "\t")
 	if err != nil {
 		return fmt.Errorf("failed to marshal export options model, error: %s", err)
 	}
-	if err := fileutil.WriteBytesToFile(pth, plistBytes); err != nil {
+	if err := fileWriter.WriteBytes(pth, plistBytes); err != nil {
 		return fmt.Errorf("failed to write export options, error: %s", err)
 	}
 

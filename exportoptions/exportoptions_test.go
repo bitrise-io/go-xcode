@@ -2,11 +2,12 @@ package exportoptions
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -192,15 +193,15 @@ func TestAppStoreOptionsToHash(t *testing.T) {
 func TestAppStoreOptionsWriteToFile(t *testing.T) {
 	t.Log("default app-store type options overrides only method")
 	{
-		tmpDir, err := pathutil.NormalizedOSTempDirPath("output")
+		tmpDir, err := pathutil.NewPathProvider().CreateTempDir("output")
 		require.NoError(t, err)
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
 		options := NewAppStoreConnectOptions(MethodAppStoreConnect)
 		options.ManageAppVersion = true
-		require.NoError(t, options.WriteToFile(pth))
+		require.NoError(t, options.WriteToFile(pth, fileutil.NewFileManager()))
 
-		content, err := fileutil.ReadStringFromFile(pth)
+		content, err := os.ReadFile(pth)
 		require.NoError(t, err)
 		desired := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -210,12 +211,12 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 		<string>app-store-connect</string>
 	</dict>
 </plist>`
-		require.Equal(t, desired, content)
+		require.Equal(t, desired, string(content))
 	}
 
 	t.Log("custom app-store type options overrides all properties")
 	{
-		tmpDir, err := pathutil.NormalizedOSTempDirPath("output")
+		tmpDir, err := pathutil.NewPathProvider().CreateTempDir("output")
 		require.NoError(t, err)
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
@@ -224,9 +225,9 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 		options.UploadBitcode = false
 		options.UploadSymbols = false
 		options.ManageAppVersion = false
-		require.NoError(t, options.WriteToFile(pth))
+		require.NoError(t, options.WriteToFile(pth, fileutil.NewFileManager()))
 
-		content, err := fileutil.ReadStringFromFile(pth)
+		content, err := os.ReadFile(pth)
 		require.NoError(t, err)
 		desired := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -244,7 +245,7 @@ func TestAppStoreOptionsWriteToFile(t *testing.T) {
 		<false/>
 	</dict>
 </plist>`
-		require.Equal(t, desired, content)
+		require.Equal(t, desired, string(content))
 	}
 }
 
@@ -360,14 +361,14 @@ func TestNonAppStoreOptionsToHash(t *testing.T) {
 func TestNonAppStoreOptionsWriteToFile(t *testing.T) {
 	t.Log("default NON app-store type options overrides only method")
 	{
-		tmpDir, err := pathutil.NormalizedOSTempDirPath("output")
+		tmpDir, err := pathutil.NewPathProvider().CreateTempDir("output")
 		require.NoError(t, err)
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
 		options := NewNonAppStoreOptions(MethodEnterprise)
-		require.NoError(t, options.WriteToFile(pth))
+		require.NoError(t, options.WriteToFile(pth, fileutil.NewFileManager()))
 
-		content, err := fileutil.ReadStringFromFile(pth)
+		content, err := os.ReadFile(pth)
 		require.NoError(t, err)
 		desired := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -377,12 +378,12 @@ func TestNonAppStoreOptionsWriteToFile(t *testing.T) {
 		<string>enterprise</string>
 	</dict>
 </plist>`
-		require.Equal(t, desired, content)
+		require.Equal(t, desired, string(content))
 	}
 
 	t.Log("custom app-store type options overrides all properties")
 	{
-		tmpDir, err := pathutil.NormalizedOSTempDirPath("output")
+		tmpDir, err := pathutil.NewPathProvider().CreateTempDir("output")
 		require.NoError(t, err)
 		pth := filepath.Join(tmpDir, "exportOptions.plist")
 
@@ -400,9 +401,9 @@ func TestNonAppStoreOptionsWriteToFile(t *testing.T) {
 			AssetPackManifestURL: "assetPackManifestURL",
 		}
 
-		require.NoError(t, options.WriteToFile(pth))
+		require.NoError(t, options.WriteToFile(pth, fileutil.NewFileManager()))
 
-		content, err := fileutil.ReadStringFromFile(pth)
+		content, err := os.ReadFile(pth)
 		require.NoError(t, err)
 		desired := `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -435,6 +436,6 @@ func TestNonAppStoreOptionsWriteToFile(t *testing.T) {
 		<string>thin-for-all-variants</string>
 	</dict>
 </plist>`
-		require.Equal(t, desired, content)
+		require.Equal(t, desired, string(content))
 	}
 }

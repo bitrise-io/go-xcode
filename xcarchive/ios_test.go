@@ -217,7 +217,11 @@ func Test_applicationFromArchive(t *testing.T) {
 }
 
 func Test_applicationFromPlist(t *testing.T) {
-	infoPlist, err := plistutil.NewPlistDataFromFile(filepath.Join(sampleRepoPath(t), "archives/ios.xcarchive/Info.plist"))
+	infoPlistContent, err := os.ReadFile(filepath.Join(sampleRepoPath(t), "archives/ios.xcarchive/Info.plist"))
+	if err != nil {
+		t.Errorf("setup: could not read plist, error: %s", err)
+	}
+	infoPlist, err := plistutil.NewPlistDataFromContent(string(infoPlistContent))
 	const appRelativePathToProduct = "Applications/code-sign-test.app"
 	if err != nil {
 		t.Errorf("setup: could not read plist, error: %s", infoPlist)
