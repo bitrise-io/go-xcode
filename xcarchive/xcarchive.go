@@ -1,6 +1,7 @@
 package xcarchive
 
 import (
+	"os"
 	"path/filepath"
 
 	"github.com/bitrise-io/go-utils/v2/log"
@@ -28,7 +29,11 @@ func (r ArchiveReader) IsMacOS(archPath string) (bool, error) {
 	r.logger.Debugf("Checking archive is MacOS or iOS")
 	infoPlistPath := filepath.Join(archPath, "Info.plist")
 
-	plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+	infoPlistContent, err := os.ReadFile(infoPlistPath)
+	if err != nil {
+		return false, err
+	}
+	plist, err := plistutil.NewPlistDataFromContent(string(infoPlistContent))
 	if err != nil {
 		return false, err
 	}

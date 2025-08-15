@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-plist"
-	"github.com/bitrise-io/go-utils/fileutil"
 )
 
 // PlistData ...
@@ -18,15 +17,6 @@ func NewPlistDataFromContent(plistContent string) (PlistData, error) {
 		return PlistData{}, err
 	}
 	return data, nil
-}
-
-// NewPlistDataFromFile ...
-func NewPlistDataFromFile(plistPth string) (PlistData, error) {
-	content, err := fileutil.ReadStringFromFile(plistPth)
-	if err != nil {
-		return PlistData{}, err
-	}
-	return NewPlistDataFromContent(content)
 }
 
 // GetString ...

@@ -3,6 +3,7 @@ package xcarchive
 import (
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -41,7 +42,11 @@ func NewIosBaseApplication(path string) (IosBaseApplication, error) {
 		} else if !exist {
 			return IosBaseApplication{}, fmt.Errorf("Info.plist not exists at: %s", infoPlistPath)
 		}
-		plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+		infoPlistContent, err := os.ReadFile(infoPlistPath)
+		if err != nil {
+			return IosBaseApplication{}, fmt.Errorf("failed to read Info.plist at: %s, error: %s", infoPlistPath, err)
+		}
+		plist, err := plistutil.NewPlistDataFromContent(string(infoPlistContent))
 		if err != nil {
 			return IosBaseApplication{}, err
 		}
@@ -240,7 +245,11 @@ func NewIosArchive(path string) (IosArchive, error) {
 		} else if !exist {
 			return IosArchive{}, fmt.Errorf("Info.plist not exists at: %s", infoPlistPath)
 		}
-		plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+		infoPlistContent, err := os.ReadFile(infoPlistPath)
+		if err != nil {
+			return IosArchive{}, fmt.Errorf("failed to read Info.plist at: %s, error: %s", infoPlistPath, err)
+		}
+		plist, err := plistutil.NewPlistDataFromContent(string(infoPlistContent))
 		if err != nil {
 			return IosArchive{}, err
 		}

@@ -12,7 +12,6 @@ type ExportOptions interface {
 	Hash() map[string]interface{}
 	String() (string, error)
 	WriteToFile(pth string) error
-	WriteToTmpFile() (string, error)
 }
 
 // WritePlistToFile ...
