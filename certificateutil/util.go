@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -11,11 +12,10 @@ import (
 	"github.com/bitrise-io/go-pkcs12"
 	"github.com/bitrise-io/go-utils/command"
 	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/pkg/errors"
 )
 
 func commandError(printableCmd string, cmdOut string, cmdErr error) error {
-	return errors.Wrapf(cmdErr, "%s failed, out: %s", printableCmd, cmdOut)
+	return fmt.Errorf("%s failed, out: %s, err: %w", printableCmd, cmdOut, cmdErr)
 }
 
 // CertificatesFromPKCS12Content returns an array of CertificateInfoModel
