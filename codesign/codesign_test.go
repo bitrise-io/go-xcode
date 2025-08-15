@@ -408,6 +408,7 @@ func TestManager_createCodeSignAssetMap(t *testing.T) {
 		BundleID:              bundleID,
 		TeamID:                teamID,
 		ExportType:            exportoptions.MethodDevelopment,
+		Type:                  profileutil.ProfileTypeIos,
 	}
 	localProfile := localcodesignasset.NewProfile(profile, nil)
 
@@ -461,7 +462,22 @@ func TestManager_createCodeSignAssetMap(t *testing.T) {
 			wantErr: "failed to determine codesign group for development distribution: no signing assets found",
 		},
 		{
-			name: "Project entitlements are not filtering the profiles",
+			name: "Known project entitlements are filtering the profiles",
+			appLayout: autocodesign.AppLayout{
+				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
+					bundleID: {"com.apple.developer.in-app-payments": "true"},
+				},
+			},
+			certificates: []certificateutil.CertificateInfoModel{certificate},
+			profiles:     []profileutil.ProvisioningProfileInfoModel{profile},
+			opts: Opts{
+				ExportMethod: autocodesign.Development,
+				TeamID:       teamID,
+			},
+			wantErr: "failed to determine codesign group for development distribution: no signing assets found",
+		},
+		{
+			name: "Unknown project entitlements are not filtering the profiles",
 			appLayout: autocodesign.AppLayout{
 				EntitlementsByArchivableTargetBundleID: map[string]autocodesign.Entitlements{
 					bundleID: {"key1": "value1"},
