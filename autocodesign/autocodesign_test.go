@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
