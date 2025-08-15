@@ -3,7 +3,7 @@ package exportoptions
 import (
 	"fmt"
 
-	"howett.net/plist"
+	"github.com/bitrise-io/go-plist"
 )
 
 // NonAppStoreOptionsModel ...
@@ -95,9 +95,4 @@ func (options NonAppStoreOptionsModel) String() (string, error) {
 // WriteToFile ...
 func (options NonAppStoreOptionsModel) WriteToFile(pth string) error {
 	return WritePlistToFile(options.Hash(), pth)
-}
-
-// WriteToTmpFile ...
-func (options NonAppStoreOptionsModel) WriteToTmpFile() (string, error) {
-	return WritePlistToTmpFile(options.Hash())
 }

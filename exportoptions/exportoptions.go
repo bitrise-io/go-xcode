@@ -2,11 +2,9 @@ package exportoptions
 
 import (
 	"fmt"
-	"path/filepath"
 
+	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/pathutil"
-	"howett.net/plist"
 )
 
 // ExportOptions ...
@@ -28,19 +26,4 @@ func WritePlistToFile(options map[string]interface{}, pth string) error {
 	}
 
 	return nil
-}
-
-// WritePlistToTmpFile ...
-func WritePlistToTmpFile(options map[string]interface{}) (string, error) {
-	tmpDir, err := pathutil.NormalizedOSTempDirPath("output")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir, error: %s", err)
-	}
-	pth := filepath.Join(tmpDir, "exportOptions.plist")
-
-	if err := WritePlistToFile(options, pth); err != nil {
-		return "", fmt.Errorf("failed to write to file options, error: %s", err)
-	}
-
-	return pth, nil
 }
