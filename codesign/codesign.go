@@ -518,7 +518,37 @@ func (m *Manager) createCodeSignAssetMap(appLayout autocodesign.AppLayout, certi
 		}
 	}
 
-	// TODO: UI test targets are not supported yet
+	if len(appLayout.UITestTargetBundleIDs) > 0 && m.opts.ExportMethod == autocodesign.Development {
+		// Capabilities are not supported for UITest targets.
+		// Xcode managed signing uses Wildcard Provisioning Profiles for UITest target signing.
+
+		uiTestTargetBundleIDEntitlementsMap := map[string]plistutil.PlistData{}
+		for _, bundleID := range appLayout.UITestTargetBundleIDs {
+			// UITest targets do not have entitlements, so we use an empty plist.
+			uiTestTargetBundleIDEntitlementsMap[bundleID] = plistutil.PlistData{}
+		}
+
+		uiTestSigningAssets, err := provider.DetermineCodesignGroup(certificates, profiles, nil, uiTestTargetBundleIDEntitlementsMap, exportoptions.Method(autocodesign.Development), m.opts.TeamID, true)
+		if err != nil || uiTestSigningAssets == nil {
+			if err == nil {
+				err = errors.New("no signing assets found for UITest targets")
+			}
+			return nil, fmt.Errorf("failed to determine codesign group for UITest targets: %w", err)
+		}
+
+		bundleIDProfileInfoMap := uiTestSigningAssets.BundleIDProfileMap()
+		bundleIDProfileMap := map[string]autocodesign.Profile{}
+		for bundleID, profileInfo := range bundleIDProfileInfoMap {
+			signingProfile, err := m.profileConverter.ProfileInfoToProfile(profileInfo)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert profile info: %w", err)
+			}
+			bundleIDProfileMap[bundleID] = signingProfile
+		}
+
+		developmentAssets := assetsByDistributionType[autocodesign.Development]
+		developmentAssets.UITestTargetProfilesByBundleID = bundleIDProfileMap
+	}
 
 	return assetsByDistributionType, nil
 
