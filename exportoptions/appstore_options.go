@@ -106,5 +106,5 @@ func (options AppStoreOptionsModel) String() (string, error) {
 
 // WriteToFile ...
 func (options AppStoreOptionsModel) WriteToFile(pth string, fileWriter FileWriter) error {
-	return WritePlistToFile(options.Hash(), pth, fileWriter)
+	return writePlistToFile(options.Hash(), pth, fileWriter)
 }

@@ -17,8 +17,7 @@ type ExportOptions interface {
 	WriteToFile(pth string, fileWriter FileWriter) error
 }
 
-// WritePlistToFile ...
-func WritePlistToFile(options map[string]interface{}, pth string, fileWriter FileWriter) error {
+func writePlistToFile(options map[string]interface{}, pth string, fileWriter FileWriter) error {
 	plistBytes, err := plist.MarshalIndent(options, plist.XMLFormat, "\t")
 	if err != nil {
 		return fmt.Errorf("failed to marshal export options model, error: %s", err)
