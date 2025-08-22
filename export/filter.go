@@ -1,7 +1,6 @@
 package export
 
 import (
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/v2/exportoptions"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
@@ -35,15 +34,13 @@ func FilterSelectableCodeSignGroups(groups []SelectableCodeSignGroup, filterFunc
 // CreateEntitlementsSelectableCodeSignGroupFilter ...
 func CreateEntitlementsSelectableCodeSignGroupFilter(bundleIDEntitlementsMap map[string]plistutil.PlistData) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Entitlements filter - removes profile if has missing capabilities")
-
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
 			filteredProfiles := []profileutil.ProvisioningProfileInfoModel{}
 
 			for _, profile := range profiles {
-				missingEntitlements := profileutil.MatchTargetAndProfileEntitlements(bundleIDEntitlementsMap[bundleID], profile.Entitlements, profile.Type)
+				missingEntitlements := MatchTargetAndProfileEntitlements(bundleIDEntitlementsMap[bundleID], profile.Entitlements, profile.Type)
 				if len(missingEntitlements) == 0 {
 					filteredProfiles = append(filteredProfiles, profile)
 				}
@@ -68,8 +65,6 @@ func CreateEntitlementsSelectableCodeSignGroupFilter(bundleIDEntitlementsMap map
 // CreateExportMethodSelectableCodeSignGroupFilter ...
 func CreateExportMethodSelectableCodeSignGroupFilter(exportMethod exportoptions.Method) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Export method filter - removes profile if distribution type is not: %s", exportMethod)
-
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
@@ -100,8 +95,6 @@ func CreateExportMethodSelectableCodeSignGroupFilter(exportMethod exportoptions.
 // CreateTeamSelectableCodeSignGroupFilter ...
 func CreateTeamSelectableCodeSignGroupFilter(teamID string) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Development Team filter - restrict group if team is not: %s", teamID)
-
 		return group.Certificate.TeamID == teamID
 	}
 }
@@ -109,8 +102,6 @@ func CreateTeamSelectableCodeSignGroupFilter(teamID string) SelectableCodeSignGr
 // CreateNotXcodeManagedSelectableCodeSignGroupFilter ...
 func CreateNotXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Xcode managed filter - removes profile if xcode managed")
-
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
@@ -141,8 +132,6 @@ func CreateNotXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGrou
 // CreateXcodeManagedSelectableCodeSignGroupFilter ...
 func CreateXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Xcode managed filter - removes profile if not xcode managed")
-
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
@@ -173,8 +162,6 @@ func CreateXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFi
 // CreateExcludeProfileNameSelectableCodeSignGroupFilter ...
 func CreateExcludeProfileNameSelectableCodeSignGroupFilter(name string) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Profile name filter - removes profile with name: %s", name)
-
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
@@ -200,4 +187,22 @@ func CreateExcludeProfileNameSelectableCodeSignGroupFilter(name string) Selectab
 
 		return false
 	}
+}
+
+// MatchTargetAndProfileEntitlements ...
+func MatchTargetAndProfileEntitlements(targetEntitlements plistutil.PlistData, profileEntitlements plistutil.PlistData, profileType profileutil.ProfileType) []string {
+	missingEntitlements := []string{}
+
+	for key := range targetEntitlements {
+		_, known := profileutil.KnownProfileCapabilitiesMap[profileType][key]
+		if !known {
+			continue
+		}
+		_, found := profileEntitlements[key]
+		if !found {
+			missingEntitlements = append(missingEntitlements, key)
+		}
+	}
+
+	return missingEntitlements
 }

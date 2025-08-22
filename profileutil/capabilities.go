@@ -1,30 +1,5 @@
 package profileutil
 
-import (
-	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-xcode/v2/plistutil"
-)
-
-// MatchTargetAndProfileEntitlements ...
-func MatchTargetAndProfileEntitlements(targetEntitlements plistutil.PlistData, profileEntitlements plistutil.PlistData, profileType ProfileType) []string {
-	missingEntitlements := []string{}
-
-	for key := range targetEntitlements {
-		_, known := KnownProfileCapabilitiesMap[profileType][key]
-		if !known {
-			continue
-		}
-		_, found := profileEntitlements[key]
-		if !found {
-			missingEntitlements = append(missingEntitlements, key)
-		}
-	}
-
-	log.Debugf("Found %v entitlements from %v target", len(missingEntitlements), len(targetEntitlements))
-
-	return missingEntitlements
-}
-
 // KnownProfileCapabilitiesMap ...
 var KnownProfileCapabilitiesMap = map[ProfileType]map[string]bool{
 	ProfileTypeMacOs: map[string]bool{

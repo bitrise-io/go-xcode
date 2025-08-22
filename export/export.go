@@ -1,11 +1,9 @@
 package export
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/ryanuber/go-glob"
@@ -15,40 +13,6 @@ import (
 type SelectableCodeSignGroup struct {
 	Certificate         certificateutil.CertificateInfoModel
 	BundleIDProfilesMap map[string][]profileutil.ProvisioningProfileInfoModel
-}
-
-// String ...
-func (group SelectableCodeSignGroup) String() string {
-	printable := map[string]interface{}{}
-	printable["team"] = fmt.Sprintf("%s (%s)", group.Certificate.TeamName, group.Certificate.TeamID)
-	printable["certificate"] = fmt.Sprintf("%s (%s)", group.Certificate.CommonName, group.Certificate.Serial)
-
-	bundleIDProfiles := map[string][]string{}
-	for bundleID, profileInfos := range group.BundleIDProfilesMap {
-		printableProfiles := []string{}
-		for _, profileInfo := range profileInfos {
-			printableProfiles = append(printableProfiles, fmt.Sprintf("%s (%s)", profileInfo.Name, profileInfo.UUID))
-		}
-		bundleIDProfiles[bundleID] = printableProfiles
-	}
-	printable["bundle_id_profiles"] = bundleIDProfiles
-
-	data, err := json.MarshalIndent(printable, "", "\t")
-	if err != nil {
-		log.Errorf("Failed to marshal: %v, error: %s", printable, err)
-		return ""
-	}
-
-	return string(data)
-}
-
-func isCertificateInstalled(installedCertificates []certificateutil.CertificateInfoModel, certificate certificateutil.CertificateInfoModel) bool {
-	for _, cert := range installedCertificates {
-		if cert.Serial == certificate.Serial {
-			return true
-		}
-	}
-	return false
 }
 
 // CreateSelectableCodeSignGroups ...
@@ -104,6 +68,31 @@ func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateIn
 	}
 
 	return groups
+}
+
+// String ...
+func (group SelectableCodeSignGroup) String() string {
+	result := fmt.Sprintf("Team: %s (%s)\n", group.Certificate.TeamName, group.Certificate.TeamID)
+	result += fmt.Sprintf("Certificate: %s (%s)\n", group.Certificate.CommonName, group.Certificate.Serial)
+
+	result += "Bundle ID - Profiles mapping:\n"
+	for bundleID, profileInfos := range group.BundleIDProfilesMap {
+		result += fmt.Sprintf("- %s:\n", bundleID)
+		for _, profileInfo := range profileInfos {
+			result += fmt.Sprintf("  - %s (%s)\n", profileInfo.Name, profileInfo.UUID)
+		}
+	}
+
+	return result
+}
+
+func isCertificateInstalled(installedCertificates []certificateutil.CertificateInfoModel, certificate certificateutil.CertificateInfoModel) bool {
+	for _, cert := range installedCertificates {
+		if cert.Serial == certificate.Serial {
+			return true
+		}
+	}
+	return false
 }
 
 // ByBundleIDLength ...
