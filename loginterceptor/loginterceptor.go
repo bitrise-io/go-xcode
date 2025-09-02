@@ -57,11 +57,6 @@ func (i *PrefixInterceptor) Close() error {
 
 // run reads lines (and partial final chunk) and writes them.
 func (i *PrefixInterceptor) run() {
-	defer func() {
-		// Ensure pipe reader is closed when goroutine exits
-		_ = i.pr.Close()
-	}()
-
 	// Use a scanner but with a large buffer to handle long lines.
 	scanner := bufio.NewScanner(i.pr)
 	const maxTokenSize = 10 * 1024 * 1024
