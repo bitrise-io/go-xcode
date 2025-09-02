@@ -41,16 +41,6 @@ func NewPrefixInterceptor(re *regexp.Regexp, intercepted, original io.Writer) *P
 
 // Write implements io.Writer. It writes into an internal pipe which the interceptor goroutine consumes.
 func (i *PrefixInterceptor) Write(p []byte) (int, error) {
-	// Check if already closed to prevent writing to closed pipe
-	select {
-	case <-i.pr.Done(): // Add a done channel to track closure
-		return 0, io.ErrClosedPipe
-	default:
-		// write into pipe; pipe writer preserves order
-		return i.pw.Write(p)
-	}
-}
-	// write into pipe; pipe writer preserves order
 	return i.pw.Write(p)
 }
 
@@ -71,7 +61,7 @@ func (i *PrefixInterceptor) run() {
 		// Ensure pipe reader is closed when goroutine exits
 		_ = i.pr.Close()
 	}()
-	
+
 	// Use a scanner but with a large buffer to handle long lines.
 	scanner := bufio.NewScanner(i.pr)
 	const maxTokenSize = 10 * 1024 * 1024
