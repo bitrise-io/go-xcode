@@ -64,6 +64,11 @@ func (c CommandModel) Run() (string, error) {
 
 	re := regexp.MustCompile(prefixed)
 	interceptor := loginterceptor.NewPrefixInterceptor(re, os.Stdout, outWriter)
+	defer func() {
+		if err := interceptor.Close(); err != nil {
+			loggerV1.Warnf("Failed to close log interceptor, error: %s", err)
+		}
+	}()
 
 	xcodebuildCmd := c.xcodebuildCommand.Command(&command.Opts{
 		Stdin:  nil,

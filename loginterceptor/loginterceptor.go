@@ -68,9 +68,14 @@ func (i *PrefixInterceptor) run() {
 		// re-append newline to preserve same output format
 		outLine := line + "\n"
 		if i.re.MatchString(line) {
-			_, _ = io.WriteString(i.intercepted, outLine)
+			if _, err := io.WriteString(i.intercepted, outLine); err != nil {
+				_, _ = fmt.Fprintf(i.original, "intercepted writer error: %v\n", err)
+			}
 		}
-		_, _ = io.WriteString(i.original, outLine)
+		if _, err := io.WriteString(i.original, outLine); err != nil {
+			// Log error but continue processing
+			_, _ = fmt.Fprintf(i.original, "original writer error: %v\n", err)
+		}
 	}
 	// handle any scanner error
 	if err := scanner.Err(); err != nil && err != io.EOF {
