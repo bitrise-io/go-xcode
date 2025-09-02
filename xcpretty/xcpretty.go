@@ -19,7 +19,7 @@ import (
 
 const (
 	toolName = "xcpretty"
-	prefixed = `^[Bitrise.*].*`
+	prefixed = `^\\[Bitrise.*\\].*`
 )
 
 // CommandModel ...
