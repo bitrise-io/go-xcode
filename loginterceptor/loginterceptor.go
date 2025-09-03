@@ -54,18 +54,32 @@ func (i *PrefixInterceptor) Close() error {
 	return i.closeErr
 }
 
-// run reads lines (and partial final chunk) and writes them.
-func (i *PrefixInterceptor) run() {
+func (i *PrefixInterceptor) closeAfterRun() {
 	// Close writers if able
 	if interceptedCloser, ok := i.intercepted.(io.Closer); ok {
-		//nolint:errCheck
-		defer interceptedCloser.Close()
+		if err := interceptedCloser.Close(); err != nil {
+			i.logger.Errorf("closing intercepted writer: %v", err)
+		}
 	}
 	if originalCloser, ok := i.target.(io.Closer); ok {
-		//nolint:errCheck
-		defer originalCloser.Close()
+		if err := originalCloser.Close(); err != nil {
+			i.logger.Errorf("closing original writer: %v", err)
+		}
 	}
-	defer i.internalWriter.Close()
+
+	// Close internals (writer might be closed already by the Close() above)
+	if err := i.internalWriter.Close(); err != nil {
+		i.logger.Errorf("internal writer: %v", err)
+	}
+
+	if err := i.internalReader.Close(); err != nil {
+		i.logger.Errorf("internal reader: %v", err)
+	}
+}
+
+// run reads lines (and partial final chunk) and writes them.
+func (i *PrefixInterceptor) run() {
+	defer i.closeAfterRun()
 
 	// Use a scanner but with a large buffer to handle long lines.
 	scanner := bufio.NewScanner(i.internalReader)
