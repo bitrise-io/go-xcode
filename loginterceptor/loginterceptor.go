@@ -67,11 +67,6 @@ func (i *PrefixInterceptor) closeAfterRun() {
 		}
 	}
 
-	// Close internals (writer might be closed already by the Close() above)
-	if err := i.internalWriter.Close(); err != nil {
-		i.logger.Errorf("internal writer: %v", err)
-	}
-
 	if err := i.internalReader.Close(); err != nil {
 		i.logger.Errorf("internal reader: %v", err)
 	}
