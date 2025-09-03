@@ -24,12 +24,13 @@ func TestPrefixInterceptor(t *testing.T) {
 	msg4 := "Stuff [Bitrise Build Cache] Log message without prefix\n"
 
 	go func() {
+		//nolint:errCheck
 		defer sut.Close()
 
-		sut.Write([]byte(msg1))
-		sut.Write([]byte(msg2))
-		sut.Write([]byte(msg3))
-		sut.Write([]byte(msg4))
+		_, _ = sut.Write([]byte(msg1))
+		_, _ = sut.Write([]byte(msg2))
+		_, _ = sut.Write([]byte(msg3))
+		_, _ = sut.Write([]byte(msg4))
 	}()
 
 	intercepted, target, err := readTwo(ir, tr)
