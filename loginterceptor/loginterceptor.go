@@ -13,8 +13,8 @@ import (
 // both writers. Partial writes without newline are buffered until a newline.
 type PrefixInterceptor struct {
 	re          *regexp.Regexp
-	intercepted io.Writer
-	original    io.Writer
+	intercepted io.WriteCloser
+	original    io.WriteCloser
 
 	// internal pipe and goroutine to scan and route
 	pr *io.PipeReader
@@ -26,7 +26,7 @@ type PrefixInterceptor struct {
 }
 
 // NewPrefixInterceptor returns an io.WriteCloser. Writes are based on line prefix.
-func NewPrefixInterceptor(re *regexp.Regexp, intercepted, original io.Writer) *PrefixInterceptor {
+func NewPrefixInterceptor(re *regexp.Regexp, intercepted, original io.WriteCloser) *PrefixInterceptor {
 	pr, pw := io.Pipe()
 	interceptor := &PrefixInterceptor{
 		re:          re,
@@ -57,6 +57,8 @@ func (i *PrefixInterceptor) Close() error {
 
 // run reads lines (and partial final chunk) and writes them.
 func (i *PrefixInterceptor) run() {
+	defer i.intercepted.Close()
+	defer i.original.Close()
 	// Use a scanner but with a large buffer to handle long lines.
 	scanner := bufio.NewScanner(i.pr)
 	const maxTokenSize = 10 * 1024 * 1024
