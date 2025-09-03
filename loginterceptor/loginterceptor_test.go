@@ -7,16 +7,17 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/loginterceptor"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPrefixInterceptor(t *testing.T) {
-	ir, iw := io.Pipe()
-	tr, tw := io.Pipe()
+	interceptReader, interceptWriter := io.Pipe()
+	targetReader, targetWriter := io.Pipe()
 	re := regexp.MustCompile(`^\[Bitrise.*\].*`)
 
-	sut := loginterceptor.NewPrefixInterceptor(re, iw, tw)
+	sut := loginterceptor.NewPrefixInterceptor(re, interceptWriter, targetWriter, log.NewLogger())
 
 	msg1 := "Log message without prefix\n"
 	msg2 := "[Bitrise Analytics] Log message with prefix\n"
@@ -33,7 +34,7 @@ func TestPrefixInterceptor(t *testing.T) {
 		_, _ = sut.Write([]byte(msg4))
 	}()
 
-	intercepted, target, err := readTwo(ir, tr)
+	intercepted, target, err := readTwo(interceptReader, targetReader)
 	assert.NoError(t, err)
 	assert.Equal(t, msg2+msg3, string(intercepted))
 	assert.Equal(t, msg1+msg2+msg3+msg4, string(target))

@@ -2,23 +2,24 @@ package loginterceptor
 
 import (
 	"bufio"
-	"fmt"
 	"io"
-	"os"
 	"regexp"
 	"sync"
+
+	"github.com/bitrise-io/go-utils/v2/log"
 )
 
 // PrefixInterceptor intercept writes: if a line begins with prefix, it will be written to
 // both writers. Partial writes without newline are buffered until a newline.
 type PrefixInterceptor struct {
-	re          *regexp.Regexp
-	intercepted io.Writer
-	original    io.Writer
+	prefixRegexp *regexp.Regexp
+	intercepted  io.Writer
+	target       io.Writer
+	logger       log.Logger
 
 	// internal pipe and goroutine to scan and route
-	pr *io.PipeReader
-	pw *io.PipeWriter
+	internalReader *io.PipeReader
+	internalWriter *io.PipeWriter
 
 	// close once
 	closeOnce sync.Once
@@ -26,14 +27,15 @@ type PrefixInterceptor struct {
 }
 
 // NewPrefixInterceptor returns an io.WriteCloser. Writes are based on line prefix.
-func NewPrefixInterceptor(re *regexp.Regexp, intercepted, original io.Writer) *PrefixInterceptor {
-	pr, pw := io.Pipe()
+func NewPrefixInterceptor(prefixRegexp *regexp.Regexp, intercepted, target io.Writer, logger log.Logger) *PrefixInterceptor {
+	pipeReader, pipeWriter := io.Pipe()
 	interceptor := &PrefixInterceptor{
-		re:          re,
-		intercepted: intercepted,
-		original:    original,
-		pr:          pr,
-		pw:          pw,
+		prefixRegexp:   prefixRegexp,
+		intercepted:    intercepted,
+		target:         target,
+		logger:         logger,
+		internalReader: pipeReader,
+		internalWriter: pipeWriter,
 	}
 	go interceptor.run()
 	return interceptor
@@ -41,32 +43,32 @@ func NewPrefixInterceptor(re *regexp.Regexp, intercepted, original io.Writer) *P
 
 // Write implements io.Writer. It writes into an internal pipe which the interceptor goroutine consumes.
 func (i *PrefixInterceptor) Write(p []byte) (int, error) {
-	return i.pw.Write(p)
+	return i.internalWriter.Write(p)
 }
 
 // Close stops the interceptor and closes the pipe.
 func (i *PrefixInterceptor) Close() error {
 	i.closeOnce.Do(func() {
-		// close the writer side which causes reader side to EOF
-		i.closeErr = i.pw.Close()
-		// ensure reader is drained (run goroutine will finish)
-		_ = i.pr.Close()
+		i.closeErr = i.internalWriter.Close()
 	})
 	return i.closeErr
 }
 
 // run reads lines (and partial final chunk) and writes them.
 func (i *PrefixInterceptor) run() {
+	// Close writers if able
 	if interceptedCloser, ok := i.intercepted.(io.Closer); ok {
 		//nolint:errCheck
 		defer interceptedCloser.Close()
 	}
-	if originalCloser, ok := i.original.(io.Closer); ok {
+	if originalCloser, ok := i.target.(io.Closer); ok {
 		//nolint:errCheck
 		defer originalCloser.Close()
 	}
+	defer i.internalWriter.Close()
+
 	// Use a scanner but with a large buffer to handle long lines.
-	scanner := bufio.NewScanner(i.pr)
+	scanner := bufio.NewScanner(i.internalReader)
 	const maxTokenSize = 10 * 1024 * 1024
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, maxTokenSize)
@@ -75,18 +77,21 @@ func (i *PrefixInterceptor) run() {
 		line := scanner.Text() // note: newline removed
 		// re-append newline to preserve same output format
 		outLine := line + "\n"
-		if i.re.MatchString(line) {
+
+		// Write to intercepted channel if matching regexp
+		if i.prefixRegexp.MatchString(line) {
 			if _, err := io.WriteString(i.intercepted, outLine); err != nil {
-				_, _ = fmt.Fprintf(os.Stderr, "intercepted writer error: %v\n", err)
+				i.logger.Errorf("intercept writer error: %v", err)
 			}
 		}
-		if _, err := io.WriteString(i.original, outLine); err != nil {
-			// Log error but continue processing
-			_, _ = fmt.Fprintf(os.Stderr, "original writer error: %v\n", err)
+		// Always write to target channel
+		if _, err := io.WriteString(i.target, outLine); err != nil {
+			i.logger.Errorf("writer error: %v", err)
 		}
 	}
+
 	// handle any scanner error
-	if err := scanner.Err(); err != nil && err != io.EOF {
-		_, _ = fmt.Fprintf(os.Stderr, "router scanner error: %v\n", err)
+	if err := scanner.Err(); err != nil {
+		i.logger.Errorf("router scanner error: %v\n", err)
 	}
 }

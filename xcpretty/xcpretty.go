@@ -62,11 +62,12 @@ func (c CommandModel) Run() (string, error) {
 	var outBuffer bytes.Buffer
 	outWriter := io.MultiWriter(&outBuffer, pipeWriter)
 
+	logger := log.NewLogger()
 	re := regexp.MustCompile(prefixed)
-	interceptor := loginterceptor.NewPrefixInterceptor(re, os.Stdout, outWriter)
+	interceptor := loginterceptor.NewPrefixInterceptor(re, os.Stdout, outWriter, logger)
 	defer func() {
 		if err := interceptor.Close(); err != nil {
-			loggerV1.Warnf("Failed to close log interceptor, error: %s", err)
+			logger.Warnf("Failed to close log interceptor, error: %s", err)
 		}
 	}()
 
