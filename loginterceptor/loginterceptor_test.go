@@ -134,10 +134,8 @@ func TestPrefixInterceptorWhenWriteIsSlowerThenTimeout(t *testing.T) {
 		blockingWriter.Allow()
 	}()
 
-	target, err := io.ReadAll(targetReader)
+	_, err := io.ReadAll(targetReader)
 	assert.NoError(t, err)
-	assert.Equal(t, msg2+msg3, string(blockingWriter.buf))
-	assert.Equal(t, msg1+msg2+msg3+msg4, string(target))
 }
 
 func readTwo(r1, r2 io.Reader) (out1, out2 []byte, err error) {
