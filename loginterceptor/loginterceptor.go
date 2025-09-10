@@ -108,7 +108,7 @@ func (i *PrefixInterceptor) scan(reqChIntercepted, reqChTarget chan<- writeReq) 
 			cancel()
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), i.writeTimeout)
 		if _, err := WriteWithContext(ctx, reqChTarget, []byte(msg)); err != nil {
 			i.logger.Errorf("writer error: %v", err)
 		}
