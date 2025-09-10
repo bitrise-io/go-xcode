@@ -2,9 +2,11 @@ package loginterceptor
 
 import (
 	"bufio"
+	"context"
 	"io"
 	"regexp"
 	"sync"
+	"time"
 
 	"github.com/bitrise-io/go-utils/v2/log"
 )
@@ -20,14 +22,19 @@ type PrefixInterceptor struct {
 	// internal pipe and goroutine to scan and route
 	internalReader *io.PipeReader
 	internalWriter *io.PipeWriter
+	writeTimeout   time.Duration
 
 	// close once
 	closeOnce sync.Once
 	closeErr  error
 }
 
-// NewPrefixInterceptor returns an io.WriteCloser. Writes are based on line prefix.
 func NewPrefixInterceptor(prefixRegexp *regexp.Regexp, intercepted, target io.Writer, logger log.Logger) *PrefixInterceptor {
+	return NewPrefixInterceptorWithTimeout(prefixRegexp, intercepted, target, logger, 1*time.Second)
+}
+
+// NewPrefixInterceptor returns an io.WriteCloser. Writes are based on line prefix.
+func NewPrefixInterceptorWithTimeout(prefixRegexp *regexp.Regexp, intercepted, target io.Writer, logger log.Logger, writeTimeout time.Duration) *PrefixInterceptor {
 	pipeReader, pipeWriter := io.Pipe()
 	interceptor := &PrefixInterceptor{
 		prefixRegexp:   prefixRegexp,
@@ -36,8 +43,14 @@ func NewPrefixInterceptor(prefixRegexp *regexp.Regexp, intercepted, target io.Wr
 		logger:         logger,
 		internalReader: pipeReader,
 		internalWriter: pipeWriter,
+		writeTimeout:   writeTimeout,
 	}
-	go interceptor.run()
+
+	interceptCh := WriterWorker(interceptor.intercepted)
+	targetCh := WriterWorker(interceptor.target)
+
+	go interceptor.scan(interceptCh, targetCh)
+
 	return interceptor
 }
 
@@ -51,30 +64,29 @@ func (i *PrefixInterceptor) Close() error {
 	i.closeOnce.Do(func() {
 		i.closeErr = i.internalWriter.Close()
 	})
+
 	return i.closeErr
 }
 
-func (i *PrefixInterceptor) closeAfterRun() {
-	// Close writers if able
-	if interceptedCloser, ok := i.intercepted.(io.Closer); ok {
-		if err := interceptedCloser.Close(); err != nil {
-			i.logger.Errorf("closing intercepted writer: %v", err)
+func (i *PrefixInterceptor) scan(reqChIntercepted, reqChTarget chan<- writeReq) {
+	defer func() {
+		if err := i.internalReader.Close(); err != nil {
+			i.logger.Errorf("internal reader: %v", err)
 		}
-	}
-	if originalCloser, ok := i.target.(io.Closer); ok {
-		if err := originalCloser.Close(); err != nil {
-			i.logger.Errorf("closing original writer: %v", err)
+		// Close writers if able
+		if interceptedCloser, ok := i.intercepted.(io.Closer); ok {
+			if err := interceptedCloser.Close(); err != nil {
+				i.logger.Errorf("closing intercepted writer: %v", err)
+			}
 		}
-	}
-
-	if err := i.internalReader.Close(); err != nil {
-		i.logger.Errorf("internal reader: %v", err)
-	}
-}
-
-// run reads lines (and partial final chunk) and writes them.
-func (i *PrefixInterceptor) run() {
-	defer i.closeAfterRun()
+		if originalCloser, ok := i.target.(io.Closer); ok {
+			if err := originalCloser.Close(); err != nil {
+				i.logger.Errorf("closing original writer: %v", err)
+			}
+		}
+		defer close(reqChIntercepted) // stop the worker when done
+		defer close(reqChTarget)      // stop the worker when done
+	}()
 
 	// Use a scanner but with a large buffer to handle long lines.
 	scanner := bufio.NewScanner(i.internalReader)
@@ -85,22 +97,91 @@ func (i *PrefixInterceptor) run() {
 	for scanner.Scan() {
 		line := scanner.Text() // note: newline removed
 		// re-append newline to preserve same output format
-		outLine := line + "\n"
+		msg := line + "\n"
 
-		// Write to intercepted channel if matching regexp
-		if i.prefixRegexp.MatchString(line) {
-			if _, err := io.WriteString(i.intercepted, outLine); err != nil {
+		if i.prefixRegexp.MatchString(msg) {
+			ctx, cancel := context.WithTimeout(context.Background(), i.writeTimeout)
+			defer cancel()
+			if _, err := WriteWithContext(ctx, reqChIntercepted, []byte(msg)); err != nil {
 				i.logger.Errorf("intercept writer error: %v", err)
 			}
 		}
-		// Always write to target channel
-		if _, err := io.WriteString(i.target, outLine); err != nil {
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		if _, err := WriteWithContext(ctx, reqChTarget, []byte(msg)); err != nil {
 			i.logger.Errorf("writer error: %v", err)
 		}
 	}
 
 	// handle any scanner error
 	if err := scanner.Err(); err != nil {
-		i.logger.Errorf("router scanner error: %v\n", err)
+		i.logger.Errorf("interceptor scanner error: %v\n", err)
+	}
+}
+
+// writeReq represents a single write request.
+type writeReq struct {
+	ctx  context.Context
+	data []byte
+	resp chan writeResp
+}
+
+type writeResp struct {
+	n   int
+	err error
+}
+
+// WriterWorker serializes writes to w. It returns a channel to submit requests.
+// Close the returned channel to stop the worker (it will finish current request and exit).
+func WriterWorker(w io.Writer) chan<- writeReq {
+	reqCh := make(chan writeReq)
+	go func() {
+		for req := range reqCh {
+			// perform the blocking write in a helper goroutine so we can honor req.ctx
+			done := make(chan writeResp, 1)
+
+			go func(r writeReq) {
+				n, err := w.Write(r.data)
+				done <- writeResp{n: n, err: err}
+			}(req)
+
+			select {
+			case <-req.ctx.Done():
+				// Caller gave up. We still need to wait for the underlying write goroutine
+				// to finish to avoid leaking it, but we return the ctx error to caller.
+				// Option A: just wait and discard result
+				go func() {
+					<-done // let the write goroutine finish and drop the result
+				}()
+				req.resp <- writeResp{n: 0, err: req.ctx.Err()}
+			case res := <-done:
+				// Write finished before context done.
+				req.resp <- res
+			}
+			close(req.resp)
+		}
+	}()
+	return reqCh
+}
+
+// Helper to submit a write and wait respecting ctx
+func WriteWithContext(ctx context.Context, reqCh chan<- writeReq, data []byte) (int, error) {
+	resp := make(chan writeResp, 1)
+	select {
+	case reqCh <- writeReq{ctx: ctx, data: data, resp: resp}:
+		// request submitted
+	case <-ctx.Done():
+		return 0, ctx.Err()
+	}
+
+	select {
+	case r := <-resp:
+		return r.n, r.err
+	case <-ctx.Done():
+		// If context expires after the request was submitted but before we read the resp,
+		// we still return ctx.Err(). The worker side will also return ctx.Err. to resp
+		// in the previous select if it sees ctx.Done() before write completes.
+		return 0, ctx.Err()
 	}
 }
