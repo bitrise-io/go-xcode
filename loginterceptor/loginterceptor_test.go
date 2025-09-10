@@ -58,7 +58,7 @@ func TestPrefixInterceptorWithPrematureClose(t *testing.T) {
 		_, _ = sut.Write([]byte(msg1))
 		_, _ = sut.Write([]byte(msg2))
 		_, _ = sut.Write([]byte(msg3))
-		sut.Close()
+		_ = sut.Close()
 		_, _ = sut.Write([]byte(msg4))
 	}()
 

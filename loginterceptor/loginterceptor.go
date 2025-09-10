@@ -29,11 +29,12 @@ type PrefixInterceptor struct {
 	closeErr  error
 }
 
+// NewPrefixInterceptor returns an io.WriteCloser. Writes are based on line prefix.
 func NewPrefixInterceptor(prefixRegexp *regexp.Regexp, intercepted, target io.Writer, logger log.Logger) *PrefixInterceptor {
 	return NewPrefixInterceptorWithTimeout(prefixRegexp, intercepted, target, logger, 1*time.Second)
 }
 
-// NewPrefixInterceptor returns an io.WriteCloser. Writes are based on line prefix.
+// NewPrefixInterceptorWithTimeout returns an io.WriteCloser. Writes are based on line prefix.
 func NewPrefixInterceptorWithTimeout(prefixRegexp *regexp.Regexp, intercepted, target io.Writer, logger log.Logger, writeTimeout time.Duration) *PrefixInterceptor {
 	pipeReader, pipeWriter := io.Pipe()
 	interceptor := &PrefixInterceptor{
@@ -165,7 +166,7 @@ func WriterWorker(w io.Writer) chan<- writeReq {
 	return reqCh
 }
 
-// Helper to submit a write and wait respecting ctx
+// WriteWithContext is a helper to submit a write and wait respecting ctx
 func WriteWithContext(ctx context.Context, reqCh chan<- writeReq, data []byte) (int, error) {
 	resp := make(chan writeResp, 1)
 	select {
