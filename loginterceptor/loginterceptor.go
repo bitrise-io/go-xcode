@@ -102,17 +102,17 @@ func (i *PrefixInterceptor) scan(reqChIntercepted, reqChTarget chan<- writeReq) 
 
 		if i.prefixRegexp.MatchString(msg) {
 			ctx, cancel := context.WithTimeout(context.Background(), i.writeTimeout)
-			defer cancel()
 			if _, err := WriteWithContext(ctx, reqChIntercepted, []byte(msg)); err != nil {
 				i.logger.Errorf("intercept writer error: %v", err)
 			}
+			cancel()
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
 		if _, err := WriteWithContext(ctx, reqChTarget, []byte(msg)); err != nil {
 			i.logger.Errorf("writer error: %v", err)
 		}
+		cancel()
 	}
 
 	// handle any scanner error
