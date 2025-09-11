@@ -137,7 +137,7 @@ func (i *NonBlockingWriter) Close() error {
 // Run consumes the channel and writes to the wrapped writer.
 func (i *NonBlockingWriter) Run() {
 	for msg := range i.channel {
-		if _, err := io.WriteString(i.wrapped, msg); err != nil {
+		if _, err := i.wrapped.Write(msg); err != nil {
 			i.logger.Errorf("NonBlockingWriter: wrapped writer error: %v", err)
 		}
 	}
