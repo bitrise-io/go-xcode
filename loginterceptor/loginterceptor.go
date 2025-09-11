@@ -102,7 +102,7 @@ func (i *PrefixInterceptor) run() {
 
 // NonBlockingWriter is an io.Writer that writes to a wrapped io.Writer in a non-blocking way.
 type NonBlockingWriter struct {
-	channel chan string
+	channel chan []byte
 	wrapped io.Writer
 	logger  log.Logger
 }
@@ -110,7 +110,7 @@ type NonBlockingWriter struct {
 // NewNonBlockingWriter creates a new NonBlockingWriter.
 func NewNonBlockingWriter(w io.Writer, logger log.Logger) *NonBlockingWriter {
 	writer := &NonBlockingWriter{
-		channel: make(chan string, 100), // buffered channel to avoid blocking
+		channel: make(chan []byte, 100), // buffered channel to avoid blocking
 		wrapped: w,
 		logger:  logger,
 	}
@@ -121,7 +121,7 @@ func NewNonBlockingWriter(w io.Writer, logger log.Logger) *NonBlockingWriter {
 // Write implements io.Writer. It writes into an internal pipe which the interceptor goroutine consumes.
 func (i *NonBlockingWriter) Write(p []byte) (int, error) {
 	select {
-	case i.channel <- string(p):
+	case i.channel <- p:
 		return len(p), nil
 	default:
 		return 0, fmt.Errorf("buffer full, dropping log")
