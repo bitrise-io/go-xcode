@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/bitrise-io/go-utils/errorutil"
-	"github.com/bitrise-io/go-utils/retry"
 	"os"
 	"time"
+
+	"github.com/bitrise-io/go-utils/errorutil"
+	"github.com/bitrise-io/go-utils/retry"
 
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"

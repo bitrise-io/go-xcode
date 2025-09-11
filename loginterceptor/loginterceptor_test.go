@@ -40,6 +40,64 @@ func TestPrefixInterceptor(t *testing.T) {
 	assert.Equal(t, msg1+msg2+msg3+msg4, string(target))
 }
 
+func TestPrefixInterceptorWithPrematureClose(t *testing.T) {
+	interceptReader, interceptWriter := io.Pipe()
+	targetReader, targetWriter := io.Pipe()
+	re := regexp.MustCompile(`^\[Bitrise.*\].*`)
+
+	sut := loginterceptor.NewPrefixInterceptor(re, interceptWriter, targetWriter, log.NewLogger())
+
+	msg1 := "Log message without prefix\n"
+	msg2 := "[Bitrise Analytics] Log message with prefix\n"
+	msg3 := "[Bitrise Build Cache] Log message with prefix\n"
+	msg4 := "Last message that won't be sent\n"
+
+	go func() {
+		_, _ = sut.Write([]byte(msg1))
+		_, _ = sut.Write([]byte(msg2))
+		_, _ = sut.Write([]byte(msg3))
+		_ = sut.Close()
+		_, _ = sut.Write([]byte(msg4))
+	}()
+
+	intercepted, target, err := readTwo(interceptReader, targetReader)
+	assert.NoError(t, err)
+	assert.Equal(t, msg2+msg3, string(intercepted))
+	assert.Equal(t, msg1+msg2+msg3, string(target))
+}
+
+func TestPrefixInterceptorWithBlockedPipe(t *testing.T) {
+	interceptReader, interceptWriter := io.Pipe()
+	targetReader, targetWriter := io.Pipe()
+	re := regexp.MustCompile(`^\[Bitrise.*\].*`)
+
+	sut := loginterceptor.NewPrefixInterceptor(re, interceptWriter, targetWriter, log.NewLogger())
+
+	msg1 := "Log message without prefix\n"
+	msg2 := "[Bitrise Analytics] Log message with prefix\n"
+	msg3 := "[Bitrise Build Cache] Log message with prefix\n"
+	msg4 := "Stuff [Bitrise Build Cache] Log message without prefix\n"
+
+	go func() {
+		//nolint:errCheck
+		defer sut.Close()
+
+		_, _ = sut.Write([]byte(msg1))
+		_, _ = sut.Write([]byte(msg2))
+		_, _ = sut.Write([]byte(msg3))
+		_, _ = sut.Write([]byte(msg4))
+	}()
+
+	target, err := io.ReadAll(targetReader)
+	assert.NoError(t, err)
+	assert.Equal(t, msg1+msg2+msg3+msg4, string(target))
+
+	// Reading from interceptReader should block until targetWriter is read
+	intercepted, err := io.ReadAll(interceptReader)
+	assert.NoError(t, err)
+	assert.Equal(t, msg2+msg3, string(intercepted))
+}
+
 func readTwo(r1, r2 io.Reader) (out1, out2 []byte, err error) {
 	var (
 		wg     sync.WaitGroup

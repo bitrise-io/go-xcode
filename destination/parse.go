@@ -2,11 +2,12 @@ package destination
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/bitrise-io/go-utils/errorutil"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/hashicorp/go-version"
-	"os"
-	"strings"
 )
 
 // DeviceList ...
