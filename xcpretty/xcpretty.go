@@ -5,18 +5,21 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 
 	"github.com/bitrise-io/go-steputils/v2/ruby"
 	loggerV1 "github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/loginterceptor"
 	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/hashicorp/go-version"
 )
 
 const (
 	toolName = "xcpretty"
+	prefixed = `^\[Bitrise.*\].*`
 )
 
 // CommandModel ...
@@ -53,17 +56,25 @@ func (c CommandModel) PrintableCmd() string {
 
 // Run ...
 func (c CommandModel) Run() (string, error) {
-
 	// Configure cmd in- and outputs
 	pipeReader, pipeWriter := io.Pipe()
 
 	var outBuffer bytes.Buffer
 	outWriter := io.MultiWriter(&outBuffer, pipeWriter)
 
+	logger := log.NewLogger()
+	re := regexp.MustCompile(prefixed)
+	interceptor := loginterceptor.NewPrefixInterceptor(re, os.Stdout, outWriter, logger)
+	defer func() {
+		if err := interceptor.Close(); err != nil {
+			logger.Warnf("Failed to close log interceptor, error: %s", err)
+		}
+	}()
+
 	xcodebuildCmd := c.xcodebuildCommand.Command(&command.Opts{
 		Stdin:  nil,
-		Stdout: outWriter,
-		Stderr: outWriter,
+		Stdout: interceptor,
+		Stderr: interceptor,
 	})
 
 	prettyCmd := c.Command(&command.Opts{
