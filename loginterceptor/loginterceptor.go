@@ -141,10 +141,4 @@ func (i *NonBlockingWriter) Run() {
 			i.logger.Errorf("NonBlockingWriter: wrapped writer error: %v", err)
 		}
 	}
-
-	if closer, ok := i.wrapped.(io.Closer); ok {
-		if err := closer.Close(); err != nil {
-			i.logger.Errorf("NonBlockingWriter: closing wrapped writer: %v", err)
-		}
-	}
 }
