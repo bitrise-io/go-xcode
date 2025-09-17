@@ -1,7 +1,6 @@
 package loginterceptor_test
 
 import (
-	"bytes"
 	"io"
 	"regexp"
 	"sync"
@@ -12,45 +11,42 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	msg1 = "Log message without prefix\n"
+	msg2 = "[Bitrise Analytics] Log message with prefixs\n"
+	msg3 = "[Bitrise Build Cache] Log message with prefix\n"
+	msg4 = "Stuff [Bitrise Build Cache] Log message without prefix\n"
+)
+
 func TestPrefixInterceptor(t *testing.T) {
-	interceptReader, interceptWriter := io.Pipe()
-	targetReader, targetWriter := io.Pipe()
+	interceptedMsgs := NewChanWriterCloser()
+	targetMsgs := NewChanWriterCloser()
 	re := regexp.MustCompile(`^\[Bitrise.*\].*`)
 
-	sut := loginterceptor.NewPrefixInterceptor(re, interceptWriter, targetWriter, log.NewLogger())
-
-	msg1 := "Log message without prefix\n"
-	msg2 := "[Bitrise Analytics] Log message with prefix\n"
-	msg3 := "[Bitrise Build Cache] Log message with prefix\n"
-	msg4 := "Stuff [Bitrise Build Cache] Log message without prefix\n"
+	sut := loginterceptor.NewPrefixInterceptor(re, &interceptedMsgs, &targetMsgs, log.NewLogger())
 
 	go func() {
-		//nolint:errCheck
-		defer sut.Close()
-
+		defer func() { _ = sut.Close() }()
 		_, _ = sut.Write([]byte(msg1))
 		_, _ = sut.Write([]byte(msg2))
 		_, _ = sut.Write([]byte(msg3))
 		_, _ = sut.Write([]byte(msg4))
 	}()
 
-	intercepted, target, err := readTwo(interceptReader, targetReader)
-	assert.NoError(t, err)
-	assert.Equal(t, msg2+msg3, string(intercepted))
-	assert.Equal(t, msg1+msg2+msg3+msg4, string(target))
+	waitForBoth(sut)
+	_ = interceptedMsgs.Close()
+	_ = targetMsgs.Close()
+
+	assert.Equal(t, msg2+msg3, interceptedMsgs.Messages())
+	assert.Equal(t, msg1+msg2+msg3+msg4, targetMsgs.Messages())
 }
 
 func TestPrefixInterceptorWithPrematureClose(t *testing.T) {
-	interceptReader, interceptWriter := io.Pipe()
-	targetReader, targetWriter := io.Pipe()
+	interceptedMsgs := NewChanWriterCloser()
+	targetMsgs := NewChanWriterCloser()
 	re := regexp.MustCompile(`^\[Bitrise.*\].*`)
 
-	sut := loginterceptor.NewPrefixInterceptor(re, interceptWriter, targetWriter, log.NewLogger())
-
-	msg1 := "Log message without prefix\n"
-	msg2 := "[Bitrise Analytics] Log message with prefix\n"
-	msg3 := "[Bitrise Build Cache] Log message with prefix\n"
-	msg4 := "Last message that won't be sent\n"
+	sut := loginterceptor.NewPrefixInterceptor(re, &interceptedMsgs, &targetMsgs, log.NewLogger())
 
 	go func() {
 		_, _ = sut.Write([]byte(msg1))
@@ -60,71 +56,80 @@ func TestPrefixInterceptorWithPrematureClose(t *testing.T) {
 		_, _ = sut.Write([]byte(msg4))
 	}()
 
-	intercepted, target, err := readTwo(interceptReader, targetReader)
-	assert.NoError(t, err)
-	assert.Equal(t, msg2+msg3, string(intercepted))
-	assert.Equal(t, msg1+msg2+msg3, string(target))
+	waitForBoth(sut)
+	_ = interceptedMsgs.Close()
+	_ = targetMsgs.Close()
+
+	assert.Equal(t, msg2+msg3, interceptedMsgs.Messages())
+	assert.Equal(t, msg1+msg2+msg3, targetMsgs.Messages())
 }
 
 func TestPrefixInterceptorWithBlockedPipe(t *testing.T) {
-	interceptReader, interceptWriter := io.Pipe()
-	targetReader, targetWriter := io.Pipe()
+	_, interceptWriter := io.Pipe()
+	targetMsgs := NewChanWriterCloser()
 	re := regexp.MustCompile(`^\[Bitrise.*\].*`)
 
-	sut := loginterceptor.NewPrefixInterceptor(re, interceptWriter, targetWriter, log.NewLogger())
-
-	msg1 := "Log message without prefix\n"
-	msg2 := "[Bitrise Analytics] Log message with prefix\n"
-	msg3 := "[Bitrise Build Cache] Log message with prefix\n"
-	msg4 := "Stuff [Bitrise Build Cache] Log message without prefix\n"
+	sut := loginterceptor.NewPrefixInterceptor(re, interceptWriter, &targetMsgs, log.NewLogger())
 
 	go func() {
-		//nolint:errCheck
-		defer sut.Close()
-
 		_, _ = sut.Write([]byte(msg1))
 		_, _ = sut.Write([]byte(msg2))
 		_, _ = sut.Write([]byte(msg3))
+		_ = sut.Close()
 		_, _ = sut.Write([]byte(msg4))
 	}()
 
-	target, err := io.ReadAll(targetReader)
-	assert.NoError(t, err)
-	assert.Equal(t, msg1+msg2+msg3+msg4, string(target))
+	<-sut.TargetDelivered
+	_ = targetMsgs.Close()
 
-	// Reading from interceptReader should block until targetWriter is read
-	intercepted, err := io.ReadAll(interceptReader)
-	assert.NoError(t, err)
-	assert.Equal(t, msg2+msg3, string(intercepted))
+	assert.Equal(t, msg1+msg2+msg3, targetMsgs.Messages())
 }
 
-func readTwo(r1, r2 io.Reader) (out1, out2 []byte, err error) {
-	var (
-		wg     sync.WaitGroup
-		e1, e2 error
-	)
+// --------------------------------
+// Helpers
+// --------------------------------
+func waitForBoth(sut *loginterceptor.PrefixInterceptor) {
+	var wg sync.WaitGroup
 	wg.Add(2)
 
-	var b1, b2 bytes.Buffer
+	go func(wg *sync.WaitGroup) {
+		<-sut.TargetDelivered
+		wg.Done()
+	}(&wg)
 
-	go func() {
-		defer wg.Done()
-		_, e1 = io.Copy(&b1, r1)
-	}()
-
-	go func() {
-		defer wg.Done()
-		_, e2 = io.Copy(&b2, r2)
-	}()
+	go func(wg *sync.WaitGroup) {
+		<-sut.InterceptedDelivered
+		wg.Done()
+	}(&wg)
 
 	wg.Wait()
+}
 
-	// prefer to return the first non-nil error
-	if e1 != nil {
-		return b1.Bytes(), b2.Bytes(), e1
+type ChanWriterCloser struct {
+	channel chan string
+}
+
+func NewChanWriterCloser() ChanWriterCloser {
+	return ChanWriterCloser{
+		channel: make(chan string, 1000),
 	}
-	if e2 != nil {
-		return b1.Bytes(), b2.Bytes(), e2
+}
+
+func (ch *ChanWriterCloser) Write(p []byte) (int, error) {
+	ch.channel <- string(p)
+	return len(p), nil
+}
+
+// Close stops the interceptor and closes the pipe.
+func (ch *ChanWriterCloser) Close() error {
+	close(ch.channel)
+	return nil
+}
+
+func (ch *ChanWriterCloser) Messages() string {
+	var result string
+	for msg := range ch.channel {
+		result += msg
 	}
-	return b1.Bytes(), b2.Bytes(), nil
+	return result
 }
