@@ -48,8 +48,8 @@ func NewPrefixInterceptor(prefixRegexp *regexp.Regexp, intercepted, target io.Wr
 	interceptedCh := make(chan string, 10000)
 	interceptedDoneCh := make(chan struct{}, 1)
 
-	go sendingTo(targetCh, targetDoneCh, target, nil, logger)
-	go sendingTo(interceptedCh, interceptedDoneCh, intercepted, prefixRegexp, logger)
+	go sendingTo(targetCh, targetDoneCh, target, logger)
+	go sendingTo(interceptedCh, interceptedDoneCh, intercepted, logger)
 
 	interceptor := &PrefixInterceptor{
 		prefixRegexp:         prefixRegexp,
@@ -107,10 +107,12 @@ func (i *PrefixInterceptor) run() {
 			i.logger.Warnf("target channel full, dropping message")
 		}
 
-		select {
-		case i.interceptedCh <- logLine:
-		default:
-			i.logger.Warnf("intercepted channel full, dropping message")
+		if i.prefixRegexp.MatchString(logLine) {
+			select {
+			case i.interceptedCh <- logLine:
+			default:
+				i.logger.Warnf("intercepted channel full, dropping message")
+			}
 		}
 	}
 
@@ -124,14 +126,9 @@ func sendingTo(
 	srcCh <-chan string,
 	done chan<- struct{},
 	writer io.Writer,
-	regexp *regexp.Regexp,
 	logger log.Logger,
 ) {
 	for msg := range srcCh {
-		if regexp != nil && !regexp.MatchString(msg) {
-			continue
-		}
-
 		if _, err := io.WriteString(writer, msg); err != nil {
 			logger.Errorf(" writer error: %v", err)
 		}
