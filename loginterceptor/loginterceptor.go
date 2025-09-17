@@ -104,14 +104,14 @@ func (i *PrefixInterceptor) run() {
 		select {
 		case i.targetCh <- logLine:
 		default:
-			i.logger.Warnf("target channel full, dropping message")
+			i.logger.Debugf("target channel full, dropping message")
 		}
 
-		if i.prefixRegexp.MatchString(logLine) {
+		if i.prefixRegexp.MatchString(line) {
 			select {
 			case i.interceptedCh <- logLine:
 			default:
-				i.logger.Warnf("intercepted channel full, dropping message")
+				i.logger.Debugf("intercepted channel full, dropping message")
 			}
 		}
 	}
