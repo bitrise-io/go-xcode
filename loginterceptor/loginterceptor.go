@@ -27,9 +27,14 @@ type PrefixInterceptor struct {
 	closeOnce sync.Once
 	closeErr  error
 
-	// signals
-	TargetDelivered      chan bool
-	InterceptedDelivered chan bool
+	// TargetDelivered receives a single value when the target goroutine
+	// finishes processing all messages. Callers should consume from this
+	// channel to avoid goroutine leaks, or use Close() and ignore it.
+	TargetDelivered <-chan struct{}
+	// InterceptedDelivered receives a single value when the intercepted goroutine
+	// finishes processing all messages. Callers should consume from this
+	// channel to avoid goroutine leaks, or use Close() and ignore it.
+	InterceptedDelivered <-chan struct{}
 }
 
 // NewPrefixInterceptor returns an io.WriteCloser. Writes are based on line prefix.
@@ -39,9 +44,9 @@ func NewPrefixInterceptor(prefixRegexp *regexp.Regexp, intercepted, target io.Wr
 	pipeReader, pipeWriter := io.Pipe()
 
 	targetCh := make(chan string, 10000)
-	targetDoneCh := make(chan bool, 1)
+	targetDoneCh := make(chan struct{}, 1)
 	interceptedCh := make(chan string, 10000)
-	interceptedDoneCh := make(chan bool, 1)
+	interceptedDoneCh := make(chan struct{}, 1)
 
 	go sendingTo(targetCh, targetDoneCh, target, nil, logger)
 	go sendingTo(interceptedCh, interceptedDoneCh, intercepted, prefixRegexp, logger)
@@ -96,8 +101,17 @@ func (i *PrefixInterceptor) run() {
 		// re-append newline to preserve same output format
 		logLine := line + "\n"
 
-		i.targetCh <- logLine
-		i.interceptedCh <- logLine
+		select {
+		case i.targetCh <- logLine:
+		default:
+			i.logger.Warnf("target channel full, dropping message")
+		}
+
+		select {
+		case i.interceptedCh <- logLine:
+		default:
+			i.logger.Warnf("intercepted channel full, dropping message")
+		}
 	}
 
 	// handle any scanner error
@@ -108,7 +122,7 @@ func (i *PrefixInterceptor) run() {
 
 func sendingTo(
 	srcCh <-chan string,
-	done chan<- bool,
+	done chan<- struct{},
 	writer io.Writer,
 	regexp *regexp.Regexp,
 	logger log.Logger,
@@ -123,5 +137,6 @@ func sendingTo(
 		}
 	}
 
-	done <- true
+	done <- struct{}{}
+	close(done)
 }

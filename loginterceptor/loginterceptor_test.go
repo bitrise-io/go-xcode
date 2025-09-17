@@ -85,6 +85,9 @@ func TestPrefixInterceptorWithBlockedPipe(t *testing.T) {
 	assert.Equal(t, msg1+msg2+msg3, targetMsgs.Messages())
 }
 
+// --------------------------------
+// Helpers
+// --------------------------------
 func waitForBoth(sut *loginterceptor.PrefixInterceptor) {
 	var wg sync.WaitGroup
 	wg.Add(2)
