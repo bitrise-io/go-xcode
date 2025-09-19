@@ -9,7 +9,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,7 +52,11 @@ func executableRelativePath(basePath, infoPlistRelativePath, executableFolderRel
 		return ""
 	}
 
-	plist, err := plistutil.NewPlistDataFromFile(infoPlistPath)
+	infoPlistContent, err := os.ReadFile(infoPlistPath)
+	if err != nil {
+		return ""
+	}
+	plist, err := plistutil.NewPlistDataFromContent(string(infoPlistContent))
 	if err != nil {
 		return ""
 	}

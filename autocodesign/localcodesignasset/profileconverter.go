@@ -3,8 +3,8 @@ package localcodesignasset
 import (
 	"os"
 
-	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
 // ProvisioningProfileConverter ...
