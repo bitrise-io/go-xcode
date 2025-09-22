@@ -129,7 +129,10 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 
 	dependencyIDs, err := rawTarget.StringSlice("dependencies")
 	if err != nil {
-		return Target{}, err
+		if !serialized.IsKeyNotFoundError(err) {
+			return Target{}, err
+		}
+		dependencyIDs = []string{} // If the key is omitted, there are no dependencies.
 	}
 
 	var dependencies []TargetDependency
