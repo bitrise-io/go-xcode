@@ -4,28 +4,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-xcode/v2/exportoptions"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
 // PlistData ...
 type PlistData plistutil.PlistData
-
-// NewPlistDataFromFile ...
-func NewPlistDataFromFile(provisioningProfilePth string) (PlistData, error) {
-	provisioningProfilePKCS7, err := ProvisioningProfileFromFile(provisioningProfilePth)
-	if err != nil {
-		return PlistData{}, err
-	}
-
-	var plistData plistutil.PlistData
-	if _, err := plist.Unmarshal(provisioningProfilePKCS7.Content, &plistData); err != nil {
-		return PlistData{}, err
-	}
-
-	return PlistData(plistData), nil
-}
 
 // GetUUID ...
 func (profile PlistData) GetUUID() string {

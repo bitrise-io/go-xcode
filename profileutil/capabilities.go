@@ -2,7 +2,7 @@ package profileutil
 
 // KnownProfileCapabilitiesMap ...
 var KnownProfileCapabilitiesMap = map[ProfileType]map[string]bool{
-	ProfileTypeMacOs: map[string]bool{
+	ProfileTypeMacOs: {
 		"com.apple.developer.networking.networkextension":                        true,
 		"com.apple.developer.icloud-container-environment":                       true,
 		"com.apple.developer.icloud-container-development-container-identifiers": true,
@@ -18,7 +18,7 @@ var KnownProfileCapabilitiesMap = map[ProfileType]map[string]bool{
 		"com.apple.developer.team-identifier":                                    true,
 		"com.apple.developer.maps":                                               true,
 	},
-	ProfileTypeIos: map[string]bool{
+	ProfileTypeIos: {
 		"com.apple.developer.in-app-payments":                 true,
 		"com.apple.security.application-groups":               true,
 		"com.apple.developer.default-data-protection":         true,

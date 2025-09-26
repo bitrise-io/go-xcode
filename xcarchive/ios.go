@@ -8,6 +8,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
@@ -62,7 +63,8 @@ func NewIosBaseApplication(path string) (IosBaseApplication, error) {
 			return IosBaseApplication{}, fmt.Errorf("profile not exists at: %s", provisioningProfilePath)
 		}
 
-		profile, err := profileutil.NewProvisioningProfileInfoFromFile(provisioningProfilePath)
+		profileProvider := profileutil.NewProfileProvider(fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathChecker())
+		profile, err := profileProvider.ProvisioningProfileInfoFromFile(provisioningProfilePath)
 		if err != nil {
 			return IosBaseApplication{}, err
 		}

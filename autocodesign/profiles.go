@@ -386,7 +386,7 @@ func ParseRawProfileDeviceUDIDs(profileContents []byte) (DeviceUDIDs, error) {
 		return nil, fmt.Errorf("failed to parse pkcs7 from profile content: %s", err)
 	}
 
-	profile, err := profileutil.NewProvisioningProfileInfo(*pkcs)
+	profile, err := profileutil.ProvisioningProfileInfoFromPKCS7(*pkcs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse profile info from pkcs7 content: %s", err)
 	}
@@ -401,7 +401,7 @@ func ParseRawProfileEntitlements(profileContents []byte) (Entitlements, error) {
 		return nil, fmt.Errorf("failed to parse pkcs7 from profile content: %s", err)
 	}
 
-	profile, err := profileutil.NewProvisioningProfileInfo(*pkcs)
+	profile, err := profileutil.ProvisioningProfileInfoFromPKCS7(*pkcs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse profile info from pkcs7 content: %s", err)
 	}

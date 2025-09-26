@@ -12,7 +12,7 @@ require (
 	github.com/bitrise-io/go-steputils v1.0.5
 	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.18
 	github.com/bitrise-io/go-utils v1.0.12
-	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.23
+	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.27.0.20250919141445-c75794045c42
 	github.com/bitrise-io/go-xcode v1.3.0
 	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
 	github.com/golang-jwt/jwt/v4 v4.5.0

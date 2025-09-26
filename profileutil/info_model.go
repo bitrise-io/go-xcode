@@ -1,19 +1,13 @@
 package profileutil
 
 import (
-	"crypto/x509"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/bitrise-io/go-plist"
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/exportoptions"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
-	"github.com/fullsailor/pkcs7"
 )
 
 // ProvisioningProfileInfoModel ...
@@ -33,68 +27,80 @@ type ProvisioningProfileInfoModel struct {
 	Type                  ProfileType
 }
 
-func collectCapabilitesPrintableInfo(entitlements plistutil.PlistData) map[string]interface{} {
-	capabilities := map[string]interface{}{}
+func (info ProvisioningProfileInfoModel) String(installedCertificates ...certificateutil.CertificateInfoModel) string {
+	var builder strings.Builder
 
-	for key, value := range entitlements {
-		if KnownProfileCapabilitiesMap[ProfileTypeIos][key] ||
-			KnownProfileCapabilitiesMap[ProfileTypeMacOs][key] {
-			capabilities[key] = value
+	builder.WriteString(fmt.Sprintf("Name: %s (%s)\n", info.Name, info.UUID))
+	builder.WriteString(fmt.Sprintf("Export Type: %s\n", info.ExportType))
+	builder.WriteString(fmt.Sprintf("Team: %s (%s)\n", info.TeamName, info.TeamID))
+	builder.WriteString(fmt.Sprintf("Bundle ID: %s\n", info.BundleID))
+	builder.WriteString(fmt.Sprintf("Expiry: %s\n", info.ExpirationDate))
+	builder.WriteString(fmt.Sprintf("Is Xcode Managed: %t\n", info.IsXcodeManaged()))
+
+	builder.WriteString("Capabilities:\n")
+	for key, value := range collectCapabilitiesPrintableInfo(info.Entitlements) {
+		builder.WriteString(fmt.Sprintf("  - %s: %v\n", key, value))
+	}
+
+	if info.ProvisionedDevices != nil {
+		builder.WriteString("Devices:\n")
+		for _, device := range info.ProvisionedDevices {
+			builder.WriteString(fmt.Sprintf("  - %s\n", device))
 		}
 	}
 
-	return capabilities
-}
-
-// PrintableProvisioningProfileInfo ...
-func (info ProvisioningProfileInfoModel) String(installedCertificates ...certificateutil.CertificateInfoModel) string {
-	printable := map[string]interface{}{}
-	printable["name"] = fmt.Sprintf("%s (%s)", info.Name, info.UUID)
-	printable["export_type"] = string(info.ExportType)
-	printable["team"] = fmt.Sprintf("%s (%s)", info.TeamName, info.TeamID)
-	printable["bundle_id"] = info.BundleID
-	printable["expiry"] = info.ExpirationDate.String()
-	printable["is_xcode_managed"] = info.IsXcodeManaged()
-
-	printable["capabilities"] = collectCapabilitesPrintableInfo(info.Entitlements)
-
-	if info.ProvisionedDevices != nil {
-		printable["devices"] = info.ProvisionedDevices
-	}
-
-	certificates := []map[string]interface{}{}
+	builder.WriteString("Certificates:\n")
 	for _, certificateInfo := range info.DeveloperCertificates {
-		certificate := map[string]interface{}{}
-		certificate["name"] = certificateInfo.CommonName
-		certificate["serial"] = certificateInfo.Serial
-		certificate["team_id"] = certificateInfo.TeamID
-		certificates = append(certificates, certificate)
-	}
-	printable["certificates"] = certificates
-
-	errors := []string{}
-	if installedCertificates != nil && !info.HasInstalledCertificate(installedCertificates) {
-		errors = append(errors, "none of the profile's certificates are installed")
+		builder.WriteString(fmt.Sprintf("  - Name: %s, Serial: %s, Team ID: %s\n",
+			certificateInfo.CommonName, certificateInfo.Serial, certificateInfo.TeamID))
 	}
 
+	var errors []string
+	if installedCertificates != nil && !info.hasInstalledCertificate(installedCertificates) {
+		errors = append(errors, "None of the profile's certificates are installed")
+	}
 	if err := info.CheckValidity(); err != nil {
 		errors = append(errors, err.Error())
 	}
 	if len(errors) > 0 {
-		printable["errors"] = errors
+		builder.WriteString("Errors:\n")
+		for _, err := range errors {
+			builder.WriteString(fmt.Sprintf("  - %s\n", err))
+		}
 	}
 
-	data, err := json.MarshalIndent(printable, "", "\t")
-	if err != nil {
-		log.Errorf("Failed to marshal: %v, error: %s", printable, err)
-		return ""
-	}
-
-	return string(data)
+	return builder.String()
 }
 
-// IsXcodeManaged ...
-func IsXcodeManaged(profileName string) bool {
+func (info ProvisioningProfileInfoModel) IsXcodeManaged() bool {
+	return isXcodeManaged(info.Name)
+}
+
+// CheckValidity ...
+func (info ProvisioningProfileInfoModel) CheckValidity() error {
+	// TODO: directly using time.Now() makes testing difficult
+	timeNow := time.Now()
+	if !timeNow.Before(info.ExpirationDate) {
+		return fmt.Errorf("provisioning profile expired at: %s", info.ExpirationDate)
+	}
+	return nil
+}
+
+// hasInstalledCertificate ...
+func (info ProvisioningProfileInfoModel) hasInstalledCertificate(installedCertificates []certificateutil.CertificateInfoModel) bool {
+	has := false
+	for _, certificate := range info.DeveloperCertificates {
+		for _, installedCertificate := range installedCertificates {
+			if certificate.Serial == installedCertificate.Serial {
+				has = true
+				break
+			}
+		}
+	}
+	return has
+}
+
+func isXcodeManaged(profileName string) bool {
 	if strings.HasPrefix(profileName, "XC") {
 		return true
 	}
@@ -109,146 +115,15 @@ func IsXcodeManaged(profileName string) bool {
 	return false
 }
 
-// IsXcodeManaged ...
-func (info ProvisioningProfileInfoModel) IsXcodeManaged() bool {
-	return IsXcodeManaged(info.Name)
-}
+func collectCapabilitiesPrintableInfo(entitlements plistutil.PlistData) map[string]interface{} {
+	capabilities := map[string]interface{}{}
 
-// CheckValidity ...
-func (info ProvisioningProfileInfoModel) CheckValidity() error {
-	timeNow := time.Now()
-	if !timeNow.Before(info.ExpirationDate) {
-		return fmt.Errorf("Provisioning Profile is not valid anymore - validity ended at: %s", info.ExpirationDate)
-	}
-	return nil
-}
-
-// HasInstalledCertificate ...
-func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertificates []certificateutil.CertificateInfoModel) bool {
-	has := false
-	for _, certificate := range info.DeveloperCertificates {
-		for _, installedCertificate := range installedCertificates {
-			if certificate.Serial == installedCertificate.Serial {
-				has = true
-				break
-			}
-		}
-	}
-	return has
-}
-
-// NewProvisioningProfileInfo ...
-func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningProfileInfoModel, error) {
-	var data plistutil.PlistData
-	if _, err := plist.Unmarshal(provisioningProfile.Content, &data); err != nil {
-		return ProvisioningProfileInfoModel{}, err
-	}
-
-	platforms, _ := data.GetStringArray("Platform")
-	if len(platforms) == 0 {
-		return ProvisioningProfileInfoModel{}, fmt.Errorf("missing Platform array in profile")
-	}
-
-	platform := strings.ToLower(platforms[0])
-	var profileType ProfileType
-
-	switch platform {
-	case string(ProfileTypeIos):
-		profileType = ProfileTypeIos
-	case string(ProfileTypeMacOs):
-		profileType = ProfileTypeMacOs
-	case string(ProfileTypeTvOs):
-		profileType = ProfileTypeTvOs
-	default:
-		return ProvisioningProfileInfoModel{}, fmt.Errorf("unknown platform type: %s", platform)
-	}
-
-	profile := PlistData(data)
-	info := ProvisioningProfileInfoModel{
-		UUID:                 profile.GetUUID(),
-		Name:                 profile.GetName(),
-		TeamName:             profile.GetTeamName(),
-		TeamID:               profile.GetTeamID(),
-		BundleID:             profile.GetBundleIdentifier(),
-		CreationDate:         profile.GetCreationDate(),
-		ExpirationDate:       profile.GetExpirationDate(),
-		ProvisionsAllDevices: profile.GetProvisionsAllDevices(),
-		Type:                 profileType,
-	}
-
-	info.ExportType = profile.GetExportMethod()
-
-	if devicesList := profile.GetProvisionedDevices(); devicesList != nil {
-		info.ProvisionedDevices = devicesList
-	}
-
-	developerCertificates, found := data.GetByteArrayArray("DeveloperCertificates")
-	if found {
-		certificates := []*x509.Certificate{}
-		for _, certificateBytes := range developerCertificates {
-			certificate, err := certificateutil.CertificateFromDERContent(certificateBytes)
-			if err == nil && certificate != nil {
-				certificates = append(certificates, certificate)
-			}
-		}
-
-		for _, certificate := range certificates {
-			if certificate != nil {
-				info.DeveloperCertificates = append(info.DeveloperCertificates, certificateutil.NewCertificateInfo(*certificate, nil))
-			}
+	for key, value := range entitlements {
+		if KnownProfileCapabilitiesMap[ProfileTypeIos][key] ||
+			KnownProfileCapabilitiesMap[ProfileTypeMacOs][key] {
+			capabilities[key] = value
 		}
 	}
 
-	info.Entitlements = profile.GetEntitlements()
-
-	return info, nil
-}
-
-// NewProvisioningProfileInfoFromFile ...
-func NewProvisioningProfileInfoFromFile(pth string) (ProvisioningProfileInfoModel, error) {
-	provisioningProfile, err := ProvisioningProfileFromFile(pth)
-	if err != nil {
-		return ProvisioningProfileInfoModel{}, err
-	}
-	if provisioningProfile != nil {
-		return NewProvisioningProfileInfo(*provisioningProfile)
-	}
-	return ProvisioningProfileInfoModel{}, errors.New("failed to parse provisioning profile infos")
-}
-
-// InstalledProvisioningProfileInfos ...
-func InstalledProvisioningProfileInfos(profileType ProfileType) ([]ProvisioningProfileInfoModel, error) {
-	provisioningProfiles, err := InstalledProvisioningProfiles(profileType)
-	if err != nil {
-		return nil, err
-	}
-
-	infos := []ProvisioningProfileInfoModel{}
-	for _, provisioningProfile := range provisioningProfiles {
-		if provisioningProfile != nil {
-			info, err := NewProvisioningProfileInfo(*provisioningProfile)
-			if err != nil {
-				return nil, err
-			}
-			infos = append(infos, info)
-		}
-	}
-	return infos, nil
-}
-
-// FindProvisioningProfileInfo ...
-func FindProvisioningProfileInfo(uuid string) (ProvisioningProfileInfoModel, string, error) {
-	profile, pth, err := FindProvisioningProfile(uuid)
-	if err != nil {
-		return ProvisioningProfileInfoModel{}, "", err
-	}
-	if pth == "" || profile == nil {
-		return ProvisioningProfileInfoModel{}, "", nil
-	}
-
-	info, err := NewProvisioningProfileInfo(*profile)
-	if err != nil {
-		return ProvisioningProfileInfoModel{}, "", err
-	}
-	return info, pth, nil
+	return capabilities
 }

@@ -275,8 +275,7 @@ func addManualSigningFields(exportOpts exportoptions.ExportOptions, codeSignGrou
 	for bundleID, profileInfo := range codeSignGroup.BundleIDProfileMap() {
 		exportProfileMapping[bundleID] = profileInfo.Name
 
-		isXcodeManaged := profileutil.IsXcodeManaged(profileInfo.Name)
-		if isXcodeManaged {
+		if profileInfo.IsXcodeManaged() {
 			if exportCodeSignStyle != "" && exportCodeSignStyle != "automatic" {
 				logger.Errorf("Both Xcode managed and NON Xcode managed profiles in code signing group")
 			}

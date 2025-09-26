@@ -31,11 +31,11 @@ func TestIsXcodeManaged(t *testing.T) {
 	}
 
 	for _, profileName := range xcodeManagedNames {
-		require.Equal(t, true, IsXcodeManaged(profileName))
+		require.Equal(t, true, isXcodeManaged(profileName))
 	}
 
 	for _, profileName := range nonXcodeManagedNames {
-		require.Equal(t, false, IsXcodeManaged(profileName))
+		require.Equal(t, false, isXcodeManaged(profileName))
 	}
 }
 
@@ -60,7 +60,7 @@ func TestProvisioningProfilePlatform(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			profilePkcs7 := pkcs7.PKCS7{Content: []byte(tt.profileContent)}
-			got, err := NewProvisioningProfileInfo(profilePkcs7)
+			got, err := ProvisioningProfileInfoFromPKCS7(profilePkcs7)
 
 			require.NoError(t, err)
 			require.Equal(t, tt.want, got.Type)
@@ -139,7 +139,7 @@ const macosProfileContent = `<?xml version="1.0" encoding="UTF-8"?>
 	<array>
 			<string>OSX</string>
 	</array>
-	<key>IsXcodeManaged</key>
+	<key>isXcodeManaged</key>
 	<false/>
 	<key>DeveloperCertificates</key>
 	<array>

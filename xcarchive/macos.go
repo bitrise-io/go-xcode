@@ -7,6 +7,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
@@ -55,7 +56,8 @@ func newMacosBaseApplication(path string) (macosBaseApplication, error) {
 		if exist, err := pathChecker.IsPathExists(provisioningProfilePath); err != nil {
 			return macosBaseApplication{}, fmt.Errorf("failed to check if profile exists at: %s, error: %s", provisioningProfilePath, err)
 		} else if exist {
-			profile, err := profileutil.NewProvisioningProfileInfoFromFile(provisioningProfilePath)
+			profileProvider := profileutil.NewProfileProvider(fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathChecker())
+			profile, err := profileProvider.ProvisioningProfileInfoFromFile(provisioningProfilePath)
 			if err != nil {
 				return macosBaseApplication{}, err
 			}
