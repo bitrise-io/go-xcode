@@ -3,8 +3,8 @@ package artifacts
 import (
 	"fmt"
 
-	"github.com/bitrise-io/go-xcode/plistutil"
-	"github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
 // IPAReader ...
@@ -29,7 +29,7 @@ func (reader IPAReader) ProvisioningProfileInfo() (*profileutil.ProvisioningProf
 		return nil, fmt.Errorf("failed to parse embedded.mobilprovision: %w", err)
 	}
 
-	provisioningProfileInfo, err := profileutil.NewProvisioningProfileInfo(*profilePKCS7)
+	provisioningProfileInfo, err := profileutil.ProvisioningProfileInfoFromPKCS7(*profilePKCS7)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read profile info: %w", err)
 	}

@@ -10,9 +10,9 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
-	"github.com/bitrise-io/go-xcode/plistutil"
-	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -217,7 +217,11 @@ func Test_applicationFromArchive(t *testing.T) {
 }
 
 func Test_applicationFromPlist(t *testing.T) {
-	infoPlist, err := plistutil.NewPlistDataFromFile(filepath.Join(sampleRepoPath(t), "archives/ios.xcarchive/Info.plist"))
+	infoPlistContent, err := os.ReadFile(filepath.Join(sampleRepoPath(t), "archives/ios.xcarchive/Info.plist"))
+	if err != nil {
+		t.Errorf("setup: could not read plist, error: %s", err)
+	}
+	infoPlist, err := plistutil.NewPlistDataFromContent(string(infoPlistContent))
 	const appRelativePathToProduct = "Applications/code-sign-test.app"
 	if err != nil {
 		t.Errorf("setup: could not read plist, error: %s", infoPlist)

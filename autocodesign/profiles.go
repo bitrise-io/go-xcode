@@ -10,8 +10,8 @@ import (
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/sliceutil"
-	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
@@ -386,7 +386,7 @@ func ParseRawProfileDeviceUDIDs(profileContents []byte) (DeviceUDIDs, error) {
 		return nil, fmt.Errorf("failed to parse pkcs7 from profile content: %s", err)
 	}
 
-	profile, err := profileutil.NewProvisioningProfileInfo(*pkcs)
+	profile, err := profileutil.ProvisioningProfileInfoFromPKCS7(*pkcs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse profile info from pkcs7 content: %s", err)
 	}
@@ -401,7 +401,7 @@ func ParseRawProfileEntitlements(profileContents []byte) (Entitlements, error) {
 		return nil, fmt.Errorf("failed to parse pkcs7 from profile content: %s", err)
 	}
 
-	profile, err := profileutil.NewProvisioningProfileInfo(*pkcs)
+	profile, err := profileutil.ProvisioningProfileInfoFromPKCS7(*pkcs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse profile info from pkcs7 content: %s", err)
 	}

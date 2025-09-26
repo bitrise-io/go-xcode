@@ -8,9 +8,9 @@ import (
 
 	"github.com/bitrise-io/go-steputils/input"
 	"github.com/bitrise-io/go-utils/filedownloader"
-	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
 type downloader struct {
@@ -54,7 +54,7 @@ func (d downloader) GetProfiles() ([]autocodesign.LocalProfile, error) {
 			return nil, fmt.Errorf("invalid pkcs7 file format: %w", err)
 		}
 
-		profileInfo, err := profileutil.NewProvisioningProfileInfo(*parsedProfile)
+		profileInfo, err := profileutil.ProvisioningProfileInfoFromPKCS7(*parsedProfile)
 		if err != nil {
 			return nil, fmt.Errorf("unknown provisioning profile format: %w", err)
 		}

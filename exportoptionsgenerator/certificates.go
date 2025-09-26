@@ -1,6 +1,6 @@
 package exportoptionsgenerator
 
-import "github.com/bitrise-io/go-xcode/certificateutil"
+import "github.com/bitrise-io/go-xcode/v2/certificateutil"
 
 // CodesignIdentityProvider can list certificate infos.
 type CodesignIdentityProvider interface {
