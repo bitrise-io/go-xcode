@@ -2,6 +2,7 @@ package loginterceptor
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"regexp"
 	"sync"
@@ -35,6 +36,8 @@ type PrefixInterceptor struct {
 	// finishes processing all messages. Callers should consume from this
 	// channel to avoid goroutine leaks, or use Close() and ignore it.
 	InterceptedDelivered <-chan struct{}
+
+	MessageLost chan error
 }
 
 // NewPrefixInterceptor returns an io.WriteCloser. Writes are based on line prefix.
@@ -60,6 +63,7 @@ func NewPrefixInterceptor(prefixRegexp *regexp.Regexp, intercepted, target io.Wr
 		internalWriter:       pipeWriter,
 		TargetDelivered:      targetDoneCh,
 		InterceptedDelivered: interceptedDoneCh,
+		MessageLost:          make(chan error, 10),
 	}
 	go interceptor.run()
 	return interceptor
@@ -84,6 +88,7 @@ func (i *PrefixInterceptor) closeAfterRun() {
 	}
 	close(i.targetCh)
 	close(i.interceptedCh)
+	close(i.MessageLost)
 }
 
 // run reads lines (and partial final chunk) and writes them.
@@ -104,14 +109,14 @@ func (i *PrefixInterceptor) run() {
 		select {
 		case i.targetCh <- logLine:
 		default:
-			i.logger.Debugf("target channel full, dropping message")
+			i.MessageLost <- fmt.Errorf("target channel full, dropping message: %s", logLine)
 		}
 
 		if i.prefixRegexp.MatchString(line) {
 			select {
 			case i.interceptedCh <- logLine:
 			default:
-				i.logger.Debugf("intercepted channel full, dropping message")
+				i.MessageLost <- fmt.Errorf("intercepted channel full, dropping message: %s", logLine)
 			}
 		}
 	}
