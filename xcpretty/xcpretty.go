@@ -1,25 +1,19 @@
 package xcpretty
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"os"
-	"regexp"
 
 	"github.com/bitrise-io/go-steputils/v2/ruby"
-	loggerV1 "github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/v2/loginterceptor"
+	"github.com/bitrise-io/go-xcode/v2/loggingtools"
 	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/hashicorp/go-version"
 )
 
 const (
 	toolName = "xcpretty"
-	prefixed = `^\[Bitrise.*\].*`
 )
 
 // CommandModel ...
@@ -56,60 +50,46 @@ func (c CommandModel) PrintableCmd() string {
 
 // Run ...
 func (c CommandModel) Run() (string, error) {
-	// Configure cmd in- and outputs
-	pipeReader, pipeWriter := io.Pipe()
-
-	var outBuffer bytes.Buffer
-	outWriter := io.MultiWriter(&outBuffer, pipeWriter)
-
+	loggingIO := loggingtools.SetupLoggingIO()
 	logger := log.NewLogger()
-	re := regexp.MustCompile(prefixed)
-	interceptor := loginterceptor.NewPrefixInterceptor(re, os.Stdout, outWriter, logger)
-	defer func() {
-		if err := interceptor.Close(); err != nil {
-			logger.Warnf("Failed to close log interceptor, error: %s", err)
-		}
-	}()
 
 	xcodebuildCmd := c.xcodebuildCommand.Command(&command.Opts{
 		Stdin:  nil,
-		Stdout: interceptor,
-		Stderr: interceptor,
+		Stdout: loggingIO.XcbuildStdout,
+		Stderr: loggingIO.XcbuildStderr,
 	})
 
 	prettyCmd := c.Command(&command.Opts{
-		Stdin:  pipeReader,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Stdin:  loggingIO.ToolStdin,
+		Stdout: loggingIO.ToolStdout,
+		Stderr: loggingIO.ToolStderr,
 	})
-
-	// Run
-	if err := xcodebuildCmd.Start(); err != nil {
-		out := outBuffer.String()
-		return out, err
-	}
-	if err := prettyCmd.Start(); err != nil {
-		out := outBuffer.String()
-		return out, err
-	}
 
 	// Always close xcpretty outputs
 	defer func() {
-		if err := pipeWriter.Close(); err != nil {
-			loggerV1.Warnf("Failed to close xcodebuild-xcpretty pipe, error: %s", err)
-		}
+		loggingIO.Close(logger)
 
 		if err := prettyCmd.Wait(); err != nil {
 			fmt.Printf("xcpretty command failed, error: %s", err)
 		}
 	}()
 
-	if err := xcodebuildCmd.Wait(); err != nil {
-		out := outBuffer.String()
+	// Run
+	if err := xcodebuildCmd.Start(); err != nil {
+		out := loggingIO.XcbuildRawout.String()
+		return out, err
+	}
+	if err := prettyCmd.Start(); err != nil {
+		out := loggingIO.XcbuildRawout.String()
 		return out, err
 	}
 
-	return outBuffer.String(), nil
+	if err := xcodebuildCmd.Wait(); err != nil {
+		out := loggingIO.XcbuildRawout.String()
+		return out, err
+	}
+
+	return loggingIO.XcbuildRawout.String(), nil
 }
 
 // Xcpretty ...
