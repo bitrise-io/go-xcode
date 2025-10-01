@@ -11,14 +11,18 @@ import (
 // default buffer sizes for convenience.
 type Sink interface {
 	io.WriteCloser
+	Errors() <-chan error
 }
 
 type sink struct {
 	buffer *buffer.Buffer
+	err    chan error
 }
 
 // NewSink creates a new Sink instance
 func NewSink(downstream io.Writer) Sink {
+	errors := make(chan error, 10)
+
 	return &sink{
 		buffer: buffer.New(
 			// Flush after five writes
@@ -28,10 +32,16 @@ func NewSink(downstream io.Writer) Sink {
 			// Flush writes to downstream
 			buffer.WithFlusher(buffer.FlusherFunc(func(items []interface{}) {
 				for _, item := range items {
-					downstream.Write(item.([]byte))
+					_, err := downstream.Write(item.([]byte))
+
+					select {
+					case errors <- err:
+					default:
+					}
 				}
 			})),
 		),
+		err: errors,
 	}
 }
 
@@ -43,4 +53,10 @@ func (s *sink) Write(p []byte) (int, error) {
 // Close conformance
 func (s *sink) Close() error {
 	return s.buffer.Close()
+}
+
+// Errors is a receive only channel where the sink can communicate
+// errors happened on sending, should the user be interested in them
+func (s *sink) Errors() <-chan error {
+	return s.err
 }
