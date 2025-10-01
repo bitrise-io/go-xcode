@@ -129,7 +129,7 @@ func (i *prefixFilter) run() {
 		logLine := line + "\n"
 
 		if i.prefixRegexp.MatchString(line) {
-			if _, err := i.matching.WriteString(logLine); err != nil {
+			if _, err := i.matching.Write([]byte(logLine)); err != nil {
 				i.messageLost <- fmt.Errorf("intercepting message: %w", err)
 			}
 		} else {

@@ -179,6 +179,9 @@ github.com/felixge/httpsnoop
 # github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
 ## explicit
 github.com/fullsailor/pkcs7
+# github.com/globocom/go-buffer/v2 v2.0.0
+## explicit; go 1.13
+github.com/globocom/go-buffer/v2
 # github.com/go-logr/logr v1.4.2
 ## explicit; go 1.18
 github.com/go-logr/logr
