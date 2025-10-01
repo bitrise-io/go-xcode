@@ -99,13 +99,18 @@ func (i *prefixFilter) Close() error {
 			errString += fmt.Sprintf("failed to flush xcbuildoutput (%v)", err.Error())
 		}
 		if err := i.pipeW.Close(); err != nil {
-			if len(errString) != 0 {
+			if len(errString) > 0 {
 				errString += ", "
 			}
 			errString += fmt.Sprintf("failed to close scanner input (%v)", err.Error())
 		}
 	})
-	return fmt.Errorf("failed to close prefixFilter: %s", errString)
+
+	if len(errString) > 0 {
+		return fmt.Errorf("failed to close prefixFilter: %s", errString)
+	}
+
+	return nil
 }
 
 // run reads lines (and partial final chunk) and writes them.
