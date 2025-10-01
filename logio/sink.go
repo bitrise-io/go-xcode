@@ -1,4 +1,4 @@
-package loggingtools
+package logio
 
 import (
 	"io"

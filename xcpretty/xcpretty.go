@@ -7,7 +7,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/v2/loggingtools"
+	"github.com/bitrise-io/go-xcode/v2/logio"
 	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/hashicorp/go-version"
 )
@@ -50,7 +50,7 @@ func (c CommandModel) PrintableCmd() string {
 
 // Run ...
 func (c CommandModel) Run() (string, error) {
-	loggingIO := loggingtools.SetupLoggingIO()
+	loggingIO := logio.SetupLoggingIO()
 
 	xcodebuildCmd := c.xcodebuildCommand.Command(&command.Opts{
 		Stdin:  nil,

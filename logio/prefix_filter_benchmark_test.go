@@ -1,4 +1,4 @@
-package loggingtools_test
+package logio_test
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/v2/loggingtools"
+	"github.com/bitrise-io/go-xcode/v2/logio"
 )
 
 func BenchmarkPrefixFilterWithMultiWriter(b *testing.B) {
@@ -18,9 +18,9 @@ func BenchmarkPrefixFilterWithMultiWriter(b *testing.B) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	var buildOutBuffer bytes.Buffer
-	stdout := loggingtools.NewSink(os.Stdout)
-	var buildOutWriter = loggingtools.NewSink(io.MultiWriter(&buildOutBuffer, stdout))
-	sut := loggingtools.NewPrefixFilter(
+	stdout := logio.NewSink(os.Stdout)
+	var buildOutWriter = logio.NewSink(io.MultiWriter(&buildOutBuffer, stdout))
+	sut := logio.NewPrefixFilter(
 		re,
 		stdout,
 		buildOutWriter,

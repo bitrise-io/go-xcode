@@ -1,12 +1,12 @@
 //nolint:errcheck
-package loggingtools_test
+package logio_test
 
 import (
 	"io"
 	"regexp"
 	"testing"
 
-	"github.com/bitrise-io/go-xcode/v2/loggingtools"
+	"github.com/bitrise-io/go-xcode/v2/logio"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,11 +20,11 @@ const (
 func TestPrefixInterceptor(t *testing.T) {
 	re := regexp.MustCompile(`^\[Bitrise.*\].*`)
 	matching := NewChanWriterCloser()
-	matchingSink := loggingtools.NewSink(matching)
+	matchingSink := logio.NewSink(matching)
 	rest := NewChanWriterCloser()
-	restSink := loggingtools.NewSink(rest)
+	restSink := logio.NewSink(rest)
 
-	sut := loggingtools.NewPrefixFilter(
+	sut := logio.NewPrefixFilter(
 		re,
 		matchingSink,
 		restSink,
@@ -49,11 +49,11 @@ func TestPrefixInterceptor(t *testing.T) {
 func TestPrefixInterceptorWithPrematureClose(t *testing.T) {
 	re := regexp.MustCompile(`^\[Bitrise.*\].*`)
 	matching := NewChanWriterCloser()
-	matchingSink := loggingtools.NewSink(matching)
+	matchingSink := logio.NewSink(matching)
 	rest := NewChanWriterCloser()
-	restSink := loggingtools.NewSink(rest)
+	restSink := logio.NewSink(rest)
 
-	sut := loggingtools.NewPrefixFilter(
+	sut := logio.NewPrefixFilter(
 		re,
 		matchingSink,
 		restSink,
@@ -79,11 +79,11 @@ func TestPrefixInterceptorWithPrematureClose(t *testing.T) {
 func TestPrefixInterceptorWithBlockedPipe(t *testing.T) {
 	re := regexp.MustCompile(`^\[Bitrise.*\].*`)
 	_, matching := io.Pipe()
-	matchingSink := loggingtools.NewSink(matching)
+	matchingSink := logio.NewSink(matching)
 	rest := NewChanWriterCloser()
-	restSink := loggingtools.NewSink(rest)
+	restSink := logio.NewSink(rest)
 
-	sut := loggingtools.NewPrefixFilter(
+	sut := logio.NewPrefixFilter(
 		re,
 		matchingSink,
 		restSink,

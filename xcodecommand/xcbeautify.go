@@ -8,7 +8,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/errorfinder"
-	"github.com/bitrise-io/go-xcode/v2/loggingtools"
+	"github.com/bitrise-io/go-xcode/v2/logio"
 	version "github.com/hashicorp/go-version"
 )
 
@@ -32,7 +32,7 @@ func NewXcbeautifyRunner(logger log.Logger, commandFactory command.Factory) Runn
 
 // Run runs xcodebuild using xcbeautify as an output formatter
 func (c *XcbeautifyRunner) Run(workDir string, xcodebuildArgs []string, xcbeautifyArgs []string) (Output, error) {
-	loggingIO := loggingtools.SetupLoggingIO()
+	loggingIO := logio.SetupLoggingIO()
 
 	// For parallel and concurrent destination testing, it helps to use unbuffered I/O for stdout and to redirect stderr to stdout.
 	// NSUnbufferedIO=YES xcodebuild [args] 2>&1 | xcbeautify

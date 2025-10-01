@@ -10,7 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/errorfinder"
-	"github.com/bitrise-io/go-xcode/v2/loggingtools"
+	"github.com/bitrise-io/go-xcode/v2/logio"
 )
 
 // XcprettyCommandRunner is an xcodebuild command runner that uses xcpretty as log formatter
@@ -39,7 +39,7 @@ func NewXcprettyCommandRunner(logger log.Logger, commandFactory command.Factory,
 
 // Run runs xcodebuild using xcpretty as a log formatter
 func (c *XcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcprettyArgs []string) (Output, error) {
-	loggingIO := loggingtools.SetupLoggingIO()
+	loggingIO := logio.SetupLoggingIO()
 
 	c.cleanOutputFile(xcprettyArgs)
 

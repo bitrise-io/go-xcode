@@ -1,4 +1,4 @@
-package loggingtools
+package logio
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ import (
 // xcbuild with a filter and stdout. It is purely boilerplate reduction and it is the
 // users responsibility to choose between this and manual hooking of the in/outputs.
 // It also provides a convenient Close() method that only closes things that can/should be closed.
-type LoggingIO struct {
+type IO struct {
 	XcbuildRawout bytes.Buffer
 	XcbuildStdout io.Writer
 	XcbuildStderr io.Writer
@@ -28,14 +28,14 @@ type LoggingIO struct {
 //
 // In reality it can only clos the filter and the tool input as everything else is
 // managed by a command or the os.
-func (l *LoggingIO) Close() error {
-	return l.closer()
+func (i *IO) Close() error {
+	return i.closer()
 }
 
 // SetupLoggingIO creates a new XCBuildWithLoggingToolIO instance that contains the usual
 // input/outputs that an xcodebuild command and a logging tool needs when we are also
 // using a logging filter.
-func SetupLoggingIO() *LoggingIO {
+func SetupLoggingIO() *IO {
 	// Create a buffer to store raw xcbuild output
 	var rawXcbuild bytes.Buffer
 	// Pipe filtered logs to tool
@@ -55,7 +55,7 @@ func SetupLoggingIO() *LoggingIO {
 	// Send raw xcbuild out to raw out and filter
 	rawInputDuplication := io.MultiWriter(&rawXcbuild, bitrisePrefixFilter)
 
-	return &LoggingIO{
+	return &IO{
 		XcbuildRawout: rawXcbuild,
 		XcbuildStdout: rawInputDuplication,
 		XcbuildStderr: rawInputDuplication,
