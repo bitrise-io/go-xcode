@@ -28,17 +28,18 @@ type XCBuildWithLoggingToolIO struct {
 // In reality it can only clos the filter and the tool input as everything else is
 // managed by a command or the os.
 func (x *XCBuildWithLoggingToolIO) Close(logger log.Logger) {
-	// XcbuildRawout - no need to close
-	// XcbuildStdout - Multiwriter, meaning we need to close the subwriters
-	// XcbuildStderr - Multiwriter, meaning we need to close the subwriters
-	if err := x.ToolStdin.Close(); err != nil {
-		logger.Warnf("Failed to close xcodebuild-xcpretty pipe, error: %s", err)
-	}
-	// ToolStdout - We are not closing stdout
-	// ToolSterr - We are not closing stderr
 	if err := x.Filter.Close(); err != nil {
 		logger.Warnf("Failed to close log interceptor, error: %s", err)
 	}
+	if err := x.ToolStdin.Close(); err != nil {
+		logger.Warnf("Failed to close xcodebuild-xcpretty pipe, error: %s", err)
+	}
+
+	// XcbuildRawout - no need to close
+	// XcbuildStdout - Multiwriter, meaning we need to close the subwriters
+	// XcbuildStderr - Multiwriter, meaning we need to close the subwriters
+	// ToolStdout - We are not closing stdout
+	// ToolSterr - We are not closing stderr
 }
 
 // SetupLoggingIO creates a new XCBuildWithLoggingToolIO instance that contains the usual
