@@ -52,7 +52,9 @@ func (c *XcbeautifyRunner) Run(workDir string, xcodebuildArgs []string, xcbeauti
 	})
 
 	defer func() {
-		loggingIO.Close(c.logger)
+		if err := loggingIO.Close(); err != nil {
+			c.logger.Warnf("logging IO failure, error: %s", err)
+		}
 
 		if err := beautifyCmd.Wait(); err != nil {
 			c.logger.Warnf("xcbeautify command failed: %s", err)

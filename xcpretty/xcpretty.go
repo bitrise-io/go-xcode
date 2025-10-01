@@ -51,7 +51,6 @@ func (c CommandModel) PrintableCmd() string {
 // Run ...
 func (c CommandModel) Run() (string, error) {
 	loggingIO := loggingtools.SetupLoggingIO()
-	logger := log.NewLogger()
 
 	xcodebuildCmd := c.xcodebuildCommand.Command(&command.Opts{
 		Stdin:  nil,
@@ -67,7 +66,9 @@ func (c CommandModel) Run() (string, error) {
 
 	// Always close xcpretty outputs
 	defer func() {
-		loggingIO.Close(logger)
+		if err := loggingIO.Close(); err != nil {
+			fmt.Printf("logging IO failure, error: %s", err)
+		}
 
 		if err := prettyCmd.Wait(); err != nil {
 			fmt.Printf("xcpretty command failed, error: %s", err)
