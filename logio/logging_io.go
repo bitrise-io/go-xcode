@@ -9,11 +9,11 @@ import (
 	"regexp"
 )
 
-// IO is a helper struct to define the setup and binding of tools and
+// PipeWiring is a helper struct to define the setup and binding of tools and
 // xcbuild with a filter and stdout. It is purely boilerplate reduction and it is the
 // users responsibility to choose between this and manual hooking of the in/outputs.
 // It also provides a convenient Close() method that only closes things that can/should be closed.
-type IO struct {
+type PipeWiring struct {
 	XcbuildRawout bytes.Buffer
 	XcbuildStdout io.Writer
 	XcbuildStderr io.Writer
@@ -24,18 +24,18 @@ type IO struct {
 	closer func() error
 }
 
-// Close closes the IO instances that needs to be closing as part of this instance.
+// Close closes the PipeWiring instances that needs to be closing as part of this instance.
 //
-// In reality it can only clos the filter and the tool input as everything else is
+// In reality it can only close the filter and the tool input as everything else is
 // managed by a command or the os.
-func (i *IO) Close() error {
+func (i *PipeWiring) Close() error {
 	return i.closer()
 }
 
-// SetupLoggingIO creates a new XCBuildWithLoggingToolIO instance that contains the usual
+// SetupPipeWiring creates a new PipeWiring instance that contains the usual
 // input/outputs that an xcodebuild command and a logging tool needs when we are also
 // using a logging filter.
-func SetupLoggingIO() *IO {
+func SetupPipeWiring(filter *regexp.Regexp) *PipeWiring {
 	// Create a buffer to store raw xcbuild output
 	var rawXcbuild bytes.Buffer
 	// Pipe filtered logs to tool
@@ -47,7 +47,7 @@ func SetupLoggingIO() *IO {
 	xcbuildLogs := NewSink(toolPipeW)
 	// Create a filter for [Bitrise ...] prefixes
 	bitrisePrefixFilter := NewPrefixFilter(
-		regexp.MustCompile(`^\[Bitrise.*\].*`),
+		filter,
 		bufferedStdout,
 		xcbuildLogs,
 	)
@@ -55,7 +55,7 @@ func SetupLoggingIO() *IO {
 	// Send raw xcbuild out to raw out and filter
 	rawInputDuplication := io.MultiWriter(&rawXcbuild, bitrisePrefixFilter)
 
-	return &IO{
+	return &PipeWiring{
 		XcbuildRawout: rawXcbuild,
 		XcbuildStdout: rawInputDuplication,
 		XcbuildStderr: rawInputDuplication,

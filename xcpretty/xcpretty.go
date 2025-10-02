@@ -2,6 +2,7 @@ package xcpretty
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/bitrise-io/go-steputils/v2/ruby"
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -50,7 +51,7 @@ func (c CommandModel) PrintableCmd() string {
 
 // Run ...
 func (c CommandModel) Run() (string, error) {
-	loggingIO := logio.SetupLoggingIO()
+	loggingIO := logio.SetupPipeWiring(regexp.MustCompile(`^\[Bitrise.*\].*`))
 
 	xcodebuildCmd := c.xcodebuildCommand.Command(&command.Opts{
 		Stdin:  nil,

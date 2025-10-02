@@ -12,93 +12,68 @@ import (
 // regexp it writes into the `Matching` sink, otherwise to the `Filtered` sink.
 //
 // Note: Callers are responsible for closing `Matching` and `Filtered` Sinks
-type PrefixFilter interface {
-	io.WriteCloser
-
-	// A Sink (buffered io.Writer) that will emit only matching lines
-	Matching() Sink
-	// A Sink (buffered io.Writer) that will emit only non-matching lines
-	Filtered() Sink
-	// A channel that will signal when the filter is done processing messages
-	// (ie safe to close downstream io)
-	Done() <-chan struct{}
-	// A channel that will emit errors on each message lost. Intended for tests.
-	MessageLost() <-chan error
-	// An error field that should contain the scanner error if any after done.
-	ScannerError() error
-}
-
-type prefixFilter struct {
+type PrefixFilter struct {
 	prefixRegexp *regexp.Regexp
 
 	// internal buffered middleman between xcbuild and scan
-	xcBuildOutput bufio.ReadWriter
-	pipeR         *io.PipeReader
-	pipeW         *io.PipeWriter
+	filterInput bufio.ReadWriter
+	pipeW       *io.PipeWriter
 
-	matching Sink
-	filtered Sink
+	Matching *Sink
+	Filtered *Sink
 
 	// closing
 	closeOnce sync.Once
 
 	done         chan struct{}
 	messageLost  chan error
-	scannerError error
+	scannerError chan error
 }
 
-// Matching conformance
-func (p *prefixFilter) Matching() Sink { return p.matching }
-
-// Filtered conformance
-func (p *prefixFilter) Filtered() Sink { return p.filtered }
-
-// Done conformance
-func (p *prefixFilter) Done() <-chan struct{} { return p.done }
-
-// MessageLost conformance
-func (p *prefixFilter) MessageLost() <-chan error { return p.messageLost }
-
-// ScannerError conformance
-func (p *prefixFilter) ScannerError() error { return p.scannerError }
+func (p *PrefixFilter) Done() <-chan struct{}      { return p.done }
+func (p *PrefixFilter) MessageLost() <-chan error  { return p.messageLost }
+func (p *PrefixFilter) ScannerError() <-chan error { return p.scannerError }
 
 // NewPrefixFilter returns a new PrefixFilter. Writes are based on line prefix.
 //
 // Note: Callers are responsible for closing intercepted and target writers that implement io.Closer
-func NewPrefixFilter(prefixRegexp *regexp.Regexp, matching, filtered Sink) PrefixFilter {
+func NewPrefixFilter(prefixRegexp *regexp.Regexp, matching, filtered *Sink) *PrefixFilter {
+	// This is the backing field of the bufio.ReadWriter
 	pipeR, pipeW := io.Pipe()
-	xcbuildOut := bufio.NewReader(pipeR)
-	scanIn := bufio.NewWriter(pipeW)
+	messageLost := make(chan error, 1)
+	done := make(chan struct{}, 1)
+	scannerError := make(chan error, 1)
 
-	filter := &prefixFilter{
-		prefixRegexp:  prefixRegexp,
-		xcBuildOutput: *bufio.NewReadWriter(xcbuildOut, scanIn),
-		pipeR:         pipeR,
-		pipeW:         pipeW,
-		matching:      matching,
-		filtered:      filtered,
-		closeOnce:     sync.Once{},
-		messageLost:   make(chan error, 1),
-		done:          make(chan struct{}, 1),
+	filter := &PrefixFilter{
+		prefixRegexp: prefixRegexp,
+		filterInput:  *bufio.NewReadWriter(bufio.NewReader(pipeR), bufio.NewWriter(pipeW)),
+		pipeW:        pipeW,
+		closeOnce:    sync.Once{},
+		messageLost:  messageLost,
+		done:         done,
+		scannerError: scannerError,
+
+		Matching: matching,
+		Filtered: filtered,
 	}
 	go filter.run()
 	return filter
 }
 
 // Write implements io.Writer. It writes into an internal pipe which the interceptor goroutine consumes.
-func (i *prefixFilter) Write(p []byte) (int, error) {
-	return i.xcBuildOutput.Write(p)
+func (p *PrefixFilter) Write(data []byte) (int, error) {
+	return p.filterInput.Write(data)
 }
 
 // Close stops the interceptor and closes the pipe.
-func (i *prefixFilter) Close() error {
+func (p *PrefixFilter) Close() error {
 	var errString string
-	i.closeOnce.Do(func() {
+	p.closeOnce.Do(func() {
 		// Flush and close scanner input
-		if err := i.xcBuildOutput.Flush(); err != nil {
+		if err := p.filterInput.Flush(); err != nil {
 			errString += fmt.Sprintf("failed to flush xcbuildoutput (%v)", err.Error())
 		}
-		if err := i.pipeW.Close(); err != nil {
+		if err := p.pipeW.Close(); err != nil {
 			if len(errString) > 0 {
 				errString += ", "
 			}
@@ -114,16 +89,17 @@ func (i *prefixFilter) Close() error {
 }
 
 // run reads lines (and partial final chunk) and writes them.
-func (i *prefixFilter) run() {
+func (p *PrefixFilter) run() {
 	defer func() {
 		// Signal done and close signaling channels
-		i.done <- struct{}{}
-		close(i.done)
-		close(i.messageLost)
+		p.done <- struct{}{}
+		close(p.done)
+		close(p.messageLost)
+		close(p.scannerError)
 	}()
 
 	// Use a scanner but with a large buffer to handle long lines.
-	scanner := bufio.NewScanner(i.xcBuildOutput)
+	scanner := bufio.NewScanner(p.filterInput)
 	const maxTokenSize = 10 * 1024 * 1024
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, maxTokenSize)
@@ -133,17 +109,19 @@ func (i *prefixFilter) run() {
 		// re-append newline to preserve same output format
 		logLine := line + "\n"
 
-		if i.prefixRegexp.MatchString(line) {
-			if _, err := i.matching.Write([]byte(logLine)); err != nil {
-				i.messageLost <- fmt.Errorf("intercepting message: %w", err)
+		if p.prefixRegexp.MatchString(line) {
+			if _, err := p.Matching.Write([]byte(logLine)); err != nil {
+				p.messageLost <- fmt.Errorf("intercepting message: %w", err)
 			}
 		} else {
-			if _, err := i.filtered.Write([]byte(logLine)); err != nil {
-				i.messageLost <- fmt.Errorf("intercepting message: %w", err)
+			if _, err := p.Filtered.Write([]byte(logLine)); err != nil {
+				p.messageLost <- fmt.Errorf("intercepting message: %w", err)
 			}
 		}
 	}
 
 	// handle any scanner error
-	i.scannerError = scanner.Err()
+	if err := scanner.Err(); err != nil {
+		p.scannerError <- err
+	}
 }

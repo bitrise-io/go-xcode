@@ -8,23 +8,19 @@ import (
 )
 
 // Sink is an io.WriteCloser that uses a bufio.Writer to wrap the downstream and
-// default buffer sizes for convenience.
-type Sink interface {
+// default buffer sizes and the regular flushing of the buffer for convenience.
+type Sink struct {
 	io.WriteCloser
-	Errors() <-chan error
-}
-
-type sink struct {
-	buffer *buffer.Buffer
-	err    chan error
+	bufferedWriter bufferedWriter
+	err            chan error
 }
 
 // NewSink creates a new Sink instance
-func NewSink(downstream io.Writer) Sink {
+func NewSink(downstream io.Writer) *Sink {
 	errors := make(chan error, 10)
 
-	return &sink{
-		buffer: buffer.New(
+	return &Sink{
+		bufferedWriter: buffer.New(
 			// Flush after five writes
 			buffer.WithSize(5),
 			// Flushed every second if not full
@@ -45,18 +41,23 @@ func NewSink(downstream io.Writer) Sink {
 	}
 }
 
+// Errors is a receive only channel where the sink can communicate
+// errors happened on sending, should the user be interested in them
+func (s *Sink) Errors() <-chan error {
+	return s.err
+}
+
 // Write conformance
-func (s *sink) Write(p []byte) (int, error) {
-	return len(p), s.buffer.Push(p)
+func (s *Sink) Write(p []byte) (int, error) {
+	return len(p), s.bufferedWriter.Push(p)
 }
 
 // Close conformance
-func (s *sink) Close() error {
-	return s.buffer.Close()
+func (s *Sink) Close() error {
+	return s.bufferedWriter.Close()
 }
 
-// Errors is a receive only channel where the sink can communicate
-// errors happened on sending, should the user be interested in them
-func (s *sink) Errors() <-chan error {
-	return s.err
+type bufferedWriter interface {
+	Push(item interface{}) error
+	Close() error
 }

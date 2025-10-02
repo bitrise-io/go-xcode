@@ -3,6 +3,7 @@ package xcodecommand
 import (
 	"errors"
 	"os/exec"
+	"regexp"
 
 	"github.com/bitrise-io/go-steputils/v2/ruby"
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -39,7 +40,7 @@ func NewXcprettyCommandRunner(logger log.Logger, commandFactory command.Factory,
 
 // Run runs xcodebuild using xcpretty as a log formatter
 func (c *XcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcprettyArgs []string) (Output, error) {
-	loggingIO := logio.SetupLoggingIO()
+	loggingIO := logio.SetupPipeWiring(regexp.MustCompile(`^\[Bitrise.*\].*`))
 
 	c.cleanOutputFile(xcprettyArgs)
 
