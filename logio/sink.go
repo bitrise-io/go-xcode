@@ -58,6 +58,6 @@ func (s *Sink) Close() error {
 }
 
 type bufferedWriter interface {
-	Push(item interface{}) error
+	Push(item any) error
 	Close() error
 }

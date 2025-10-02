@@ -30,8 +30,19 @@ type PrefixFilter struct {
 	scannerError chan error
 }
 
-func (p *PrefixFilter) Done() <-chan struct{}      { return p.done }
-func (p *PrefixFilter) MessageLost() <-chan error  { return p.messageLost }
+// Done returns a channel on which the user can observe when the last messages are
+// written to the outputs. The channel has a buffer of one to prevent early unreceived
+// messages or late subscriptions to the channel.
+func (p *PrefixFilter) Done() <-chan struct{} { return p.done }
+
+// MessageLost returns a channel on which the user can observe if there were
+// messages lost. The channel has a buffer of one to prevent early unreceived
+// messages or late subscriptions to the channel.
+func (p *PrefixFilter) MessageLost() <-chan error { return p.messageLost }
+
+// ScannerError returns a channel on which the user can observe if there were
+// any scanner errors. The channel has a buffer of one to prevent early unreceived
+// messages or late subscriptions to the channel.
 func (p *PrefixFilter) ScannerError() <-chan error { return p.scannerError }
 
 // NewPrefixFilter returns a new PrefixFilter. Writes are based on line prefix.
