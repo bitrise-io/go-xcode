@@ -4,3 +4,5 @@ _tmp/
 **/.idea/*
 .DS_Store
 .env
+**/vendor/*
+go-xcode
