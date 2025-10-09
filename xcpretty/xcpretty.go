@@ -67,11 +67,7 @@ func (c CommandModel) Run() (string, error) {
 
 	// Always close xcpretty outputs
 	defer func() {
-		if err := loggingIO.CloseFilter(); err != nil {
-			fmt.Printf("logging IO failure, error: %s", err)
-		}
-
-		if err := loggingIO.CloseToolInput(); err != nil {
+		if err := loggingIO.Close(); err != nil {
 			fmt.Printf("logging IO failure, error: %s", err)
 		}
 
