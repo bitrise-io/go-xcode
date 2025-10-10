@@ -1,6 +1,6 @@
 module github.com/bitrise-io/go-xcode/v2
 
-go 1.22
+go 1.23.0
 
 toolchain go1.23.2
 
@@ -19,7 +19,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/stretchr/testify v1.10.0
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/oauth2 v0.27.0
 	golang.org/x/text v0.21.0
 	google.golang.org/api v0.214.0
 	howett.net/plist v1.0.0
