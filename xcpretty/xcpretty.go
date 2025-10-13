@@ -80,6 +80,7 @@ func (c CommandModel) Run() (string, error) {
 		return out, err
 	}
 
+	// Wait for the filtering to finish
 	if err := loggingIO.Close(); err != nil {
 		fmt.Printf("logging IO failure, error: %s", err)
 	}

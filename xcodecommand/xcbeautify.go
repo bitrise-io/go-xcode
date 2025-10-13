@@ -72,6 +72,7 @@ func (c *XcbeautifyRunner) Run(workDir string, xcodebuildArgs []string, xcbeauti
 		}
 	}
 
+	// Wait for the filtering to finish
 	if err := loggingIO.Close(); err != nil {
 		c.logger.Warnf("logging IO failure, error: %s", err)
 	}
