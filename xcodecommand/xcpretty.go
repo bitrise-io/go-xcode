@@ -64,7 +64,7 @@ func (c *XcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcp
 		}
 
 		if err := prettyCmd.Wait(); err != nil {
-			c.logger.Warnf("xcbeautify command failed: %s", err)
+			c.logger.Warnf("xcpretty command failed: %s", err)
 		}
 	}()
 
