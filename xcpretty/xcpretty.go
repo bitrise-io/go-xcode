@@ -65,30 +65,48 @@ func (c CommandModel) Run() (string, error) {
 		Stderr: loggingIO.ToolStderr,
 	})
 
+	// Wait for the filtering to finish
+	defer func() {
+		if err := loggingIO.Close(); err != nil {
+			fmt.Printf("logging IO failure, error: %s", err)
+		}
+
+		if err := prettyCmd.Wait(); err != nil {
+			fmt.Printf("xcpretty command failed, error: %s", err)
+		}
+	}()
+
 	// Run
 	if err := xcodebuildCmd.Start(); err != nil {
+		// Closing the filter to ensure all output is flushed and processed
+		if err := loggingIO.CloseFilter(); err != nil {
+			fmt.Printf("logging IO failure, error: %s", err)
+		}
 		out := loggingIO.XcbuildRawout.String()
 		return out, err
 	}
 	if err := prettyCmd.Start(); err != nil {
+		// Closing the filter to ensure all output is flushed and processed
+		if err := loggingIO.CloseFilter(); err != nil {
+			fmt.Printf("logging IO failure, error: %s", err)
+		}
 		out := loggingIO.XcbuildRawout.String()
 		return out, err
 	}
 
 	if err := xcodebuildCmd.Wait(); err != nil {
+		// Closing the filter to ensure all output is flushed and processed
+		if err := loggingIO.CloseFilter(); err != nil {
+			fmt.Printf("logging IO failure, error: %s", err)
+		}
 		out := loggingIO.XcbuildRawout.String()
 		return out, err
 	}
 
-	// Wait for the filtering to finish
-	if err := loggingIO.Close(); err != nil {
+	// Closing the filter to ensure all output is flushed and processed
+	if err := loggingIO.CloseFilter(); err != nil {
 		fmt.Printf("logging IO failure, error: %s", err)
 	}
-
-	if err := prettyCmd.Wait(); err != nil {
-		fmt.Printf("xcpretty command failed, error: %s", err)
-	}
-
 	return loggingIO.XcbuildRawout.String(), nil
 }
 
