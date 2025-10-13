@@ -76,37 +76,32 @@ func (c CommandModel) Run() (string, error) {
 		}
 	}()
 
-	// Run
-	if err := xcodebuildCmd.Start(); err != nil {
+	closeAndFlushFilter := func() {
 		// Closing the filter to ensure all output is flushed and processed
 		if err := loggingIO.CloseFilter(); err != nil {
 			fmt.Printf("logging IO failure, error: %s", err)
 		}
+	}
+
+	// Run
+	if err := xcodebuildCmd.Start(); err != nil {
+		closeAndFlushFilter()
 		out := loggingIO.XcbuildRawout.String()
 		return out, err
 	}
 	if err := prettyCmd.Start(); err != nil {
-		// Closing the filter to ensure all output is flushed and processed
-		if err := loggingIO.CloseFilter(); err != nil {
-			fmt.Printf("logging IO failure, error: %s", err)
-		}
+		closeAndFlushFilter()
 		out := loggingIO.XcbuildRawout.String()
 		return out, err
 	}
 
 	if err := xcodebuildCmd.Wait(); err != nil {
-		// Closing the filter to ensure all output is flushed and processed
-		if err := loggingIO.CloseFilter(); err != nil {
-			fmt.Printf("logging IO failure, error: %s", err)
-		}
+		closeAndFlushFilter()
 		out := loggingIO.XcbuildRawout.String()
 		return out, err
 	}
 
-	// Closing the filter to ensure all output is flushed and processed
-	if err := loggingIO.CloseFilter(); err != nil {
-		fmt.Printf("logging IO failure, error: %s", err)
-	}
+	closeAndFlushFilter()
 	return loggingIO.XcbuildRawout.String(), nil
 }
 
