@@ -65,17 +65,6 @@ func (c CommandModel) Run() (string, error) {
 		Stderr: loggingIO.ToolStderr,
 	})
 
-	// Always close xcpretty outputs
-	defer func() {
-		if err := loggingIO.Close(); err != nil {
-			fmt.Printf("logging IO failure, error: %s", err)
-		}
-
-		if err := prettyCmd.Wait(); err != nil {
-			fmt.Printf("xcpretty command failed, error: %s", err)
-		}
-	}()
-
 	// Run
 	if err := xcodebuildCmd.Start(); err != nil {
 		out := loggingIO.XcbuildRawout.String()
@@ -89,6 +78,14 @@ func (c CommandModel) Run() (string, error) {
 	if err := xcodebuildCmd.Wait(); err != nil {
 		out := loggingIO.XcbuildRawout.String()
 		return out, err
+	}
+
+	if err := loggingIO.Close(); err != nil {
+		fmt.Printf("logging IO failure, error: %s", err)
+	}
+
+	if err := prettyCmd.Wait(); err != nil {
+		fmt.Printf("xcpretty command failed, error: %s", err)
 	}
 
 	return loggingIO.XcbuildRawout.String(), nil
