@@ -3,10 +3,10 @@ package logio
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"regexp"
+	"sync"
 )
 
 // PipeWiring is a helper struct to define the setup and binding of tools and
@@ -14,22 +14,40 @@ import (
 // users responsibility to choose between this and manual hooking of the in/outputs.
 // It also provides a convenient Close() method that only closes things that can/should be closed.
 type PipeWiring struct {
-	XcbuildRawout bytes.Buffer
+	XcbuildRawout *bytes.Buffer
 	XcbuildStdout io.Writer
 	XcbuildStderr io.Writer
 	ToolStdin     io.ReadCloser
 	ToolStdout    io.WriteCloser
 	ToolStderr    io.WriteCloser
 
-	closer func() error
+	toolPipeW      *io.PipeWriter
+	bufferedStdout *Sink
+	toolInSink     *Sink
+	filter         *PrefixFilter
+
+	closeFilterOnce sync.Once
 }
 
-// Close closes the PipeWiring instances that needs to be closing as part of this instance.
-//
-// In reality it can only close the filter and the tool input as everything else is
-// managed by a command or the os.
-func (i *PipeWiring) Close() error {
-	return i.closer()
+// CloseFilter closes the filter and waits for it to finish
+func (p *PipeWiring) CloseFilter() error {
+	err := error(nil)
+	p.closeFilterOnce.Do(func() {
+		err = p.filter.Close()
+		<-p.filter.Done()
+
+	})
+	return err
+}
+
+// Close ...
+func (p *PipeWiring) Close() error {
+	filterErr := p.CloseFilter()
+	toolSinkErr := p.toolInSink.Close()
+	pipeWErr := p.toolPipeW.Close()
+	bufferedStdoutErr := p.bufferedStdout.Close()
+
+	return errors.Join(filterErr, toolSinkErr, pipeWErr, bufferedStdoutErr)
 }
 
 // SetupPipeWiring creates a new PipeWiring instance that contains the usual
@@ -37,14 +55,15 @@ func (i *PipeWiring) Close() error {
 // using a logging filter.
 func SetupPipeWiring(filter *regexp.Regexp) *PipeWiring {
 	// Create a buffer to store raw xcbuild output
-	var rawXcbuild bytes.Buffer
+	rawXcbuild := bytes.NewBuffer(nil)
 	// Pipe filtered logs to tool
 	toolPipeR, toolPipeW := io.Pipe()
 
 	// Add a buffer before stdout
 	bufferedStdout := NewSink(os.Stdout)
 	// Add a buffer before tool input
-	xcbuildLogs := NewSink(toolPipeW)
+	toolInSink := NewSink(toolPipeW)
+	xcbuildLogs := io.MultiWriter(rawXcbuild, toolInSink)
 	// Create a filter for [Bitrise ...] prefixes
 	bitrisePrefixFilter := NewPrefixFilter(
 		filter,
@@ -52,40 +71,19 @@ func SetupPipeWiring(filter *regexp.Regexp) *PipeWiring {
 		xcbuildLogs,
 	)
 
-	// Send raw xcbuild out to raw out and filter
-	rawInputDuplication := io.MultiWriter(&rawXcbuild, bitrisePrefixFilter)
-
 	return &PipeWiring{
 		XcbuildRawout: rawXcbuild,
-		XcbuildStdout: rawInputDuplication,
-		XcbuildStderr: rawInputDuplication,
+		XcbuildStdout: bitrisePrefixFilter,
+		XcbuildStderr: bitrisePrefixFilter,
 		ToolStdin:     toolPipeR,
 		ToolStdout:    os.Stdout,
 		ToolStderr:    os.Stderr,
-		closer: func() error {
-			// XcbuildRawout - no need to close
-			// XcbuildStdout - Multiwriter, meaning we need to close the subwriters
-			// XcbuildStderr - Multiwriter, meaning we need to close the subwriters
-			// ToolStdout - We are not closing stdout
-			// ToolSterr - We are not closing stderr
 
-			var errStr string
+		toolPipeW:      toolPipeW,
+		bufferedStdout: bufferedStdout,
+		toolInSink:     toolInSink,
+		filter:         bitrisePrefixFilter,
 
-			if err := bitrisePrefixFilter.Close(); err != nil {
-				errStr += fmt.Sprintf("failed to close log filter, error: %s", err.Error())
-			}
-			if err := toolPipeW.Close(); err != nil {
-				if len(errStr) > 0 {
-					errStr += ", "
-				}
-				errStr += fmt.Sprintf("failed to close xcodebuild-xcpretty pipe, error: %s", err.Error())
-			}
-
-			if len(errStr) > 0 {
-				return errors.New(errStr)
-			}
-
-			return nil
-		},
+		closeFilterOnce: sync.Once{},
 	}
 }
