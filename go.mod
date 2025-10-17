@@ -7,10 +7,11 @@ toolchain go1.23.2
 require (
 	cloud.google.com/go/secretmanager v1.14.3
 	cloud.google.com/go/storage v1.50.0
+	github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
 	github.com/bitrise-io/go-steputils v1.0.5
-	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.18
-	github.com/bitrise-io/go-utils v1.0.12
-	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.23
+	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.40
+	github.com/bitrise-io/go-utils v1.0.13
+	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.26
 	github.com/bitrise-io/go-xcode v1.3.0
 	github.com/globocom/go-buffer/v2 v2.0.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
@@ -22,7 +23,6 @@ require (
 	golang.org/x/oauth2 v0.24.0
 	golang.org/x/text v0.21.0
 	google.golang.org/api v0.214.0
-	howett.net/plist v1.0.0
 )
 
 require (
@@ -37,7 +37,6 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
 	github.com/bitrise-io/go-pkcs12 v0.0.0-20230815095624-feb898696e02 // indirect
-	github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -80,4 +79,5 @@ require (
 	google.golang.org/grpc v1.67.3 // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	howett.net/plist v1.0.0 // indirect
 )
