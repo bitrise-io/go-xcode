@@ -88,6 +88,11 @@ func (c *XcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcp
 		}
 	}
 
+	// Closing the filter to ensure all output is flushed and processed
+	if err := loggingIO.CloseFilter(); err != nil {
+		c.logger.Warnf("logging IO failure, error: %s", err)
+	}
+
 	return Output{
 		RawOut:   loggingIO.XcbuildRawout.Bytes(),
 		ExitCode: exitCode,

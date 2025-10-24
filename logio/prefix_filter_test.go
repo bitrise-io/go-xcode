@@ -12,7 +12,7 @@ import (
 
 const (
 	msg1 = "Log message without prefix\n"
-	msg2 = "[Bitrise Analytics] Log message with prefixs\n"
+	msg2 = "[Bitrise Analytics] Log message with prefix\n"
 	msg3 = "[Bitrise Build Cache] Log message with prefix\n"
 	msg4 = "Stuff [Bitrise Build Cache] Log message without prefix\n"
 )
