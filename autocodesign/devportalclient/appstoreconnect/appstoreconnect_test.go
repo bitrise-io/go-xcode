@@ -17,7 +17,8 @@ import (
 )
 
 func TestNewClient(t *testing.T) {
-	got := NewClient(NewRetryableHTTPClient(), "keyID", "issuerID", []byte{}, false, NoOpAnalyticsTracker{})
+	tracker := NoOpAnalyticsTracker{}
+	got := NewClient(NewRetryableHTTPClient(tracker), "keyID", "issuerID", []byte{}, false, tracker)
 
 	require.Equal(t, "appstoreconnect-v1", got.audience)
 
@@ -27,7 +28,8 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestNewEnterpriseClient(t *testing.T) {
-	got := NewClient(NewRetryableHTTPClient(), "keyID", "issuerID", []byte{}, true, NoOpAnalyticsTracker{})
+	tracker := NoOpAnalyticsTracker{}
+	got := NewClient(NewRetryableHTTPClient(tracker), "keyID", "issuerID", []byte{}, true, tracker)
 
 	require.Equal(t, "apple-developer-enterprise-v1", got.audience)
 
@@ -48,6 +50,7 @@ type apiRequestRecord struct {
 	endpoint   string
 	statusCode int
 	duration   time.Duration
+	isRetry    bool
 }
 
 type apiErrorRecord struct {
@@ -58,13 +61,14 @@ type apiErrorRecord struct {
 	errorMessage string
 }
 
-func (m *mockAnalyticsTracker) TrackAPIRequest(method, host, endpoint string, statusCode int, duration time.Duration) {
+func (m *mockAnalyticsTracker) TrackAPIRequest(method, host, endpoint string, statusCode int, duration time.Duration, isRetry bool) {
 	m.apiRequests = append(m.apiRequests, apiRequestRecord{
 		method:     method,
 		host:       host,
 		endpoint:   endpoint,
 		statusCode: statusCode,
 		duration:   duration,
+		isRetry:    isRetry,
 	})
 }
 
@@ -93,6 +97,11 @@ func (m *mockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return m.resp, m.err
 }
 
+func (m *mockHTTPClient) RoundTrip(req *http.Request) (*http.Response, error) {
+	m.called = true
+	return m.resp, m.err
+}
+
 func TestTracking(t *testing.T) {
 	t.Run("successful request", func(t *testing.T) {
 		mockTracker := &mockAnalyticsTracker{}
@@ -103,8 +112,11 @@ func TestTracking(t *testing.T) {
 		}))
 		defer server.Close()
 
+		httpClient := &http.Client{}
+		httpClient.Transport = newTrackingRoundTripper(httpClient.Transport, mockTracker)
+
 		client := &Client{
-			client:  &http.Client{},
+			client:  httpClient,
 			tracker: mockTracker,
 		}
 
@@ -132,7 +144,7 @@ func TestTracking(t *testing.T) {
 
 	t.Run("error response", func(t *testing.T) {
 		mockTracker := &mockAnalyticsTracker{}
-		mockHTTPClient := &mockHTTPClient{
+		mockTransport := &mockHTTPClient{
 			resp: &http.Response{
 				StatusCode: 400,
 				Body:       io.NopCloser(strings.NewReader(`{"errors": [{"code": "PARAMETER_ERROR.INVALID", "title": "Invalid parameter"}]}`)),
@@ -140,8 +152,11 @@ func TestTracking(t *testing.T) {
 			},
 		}
 
+		httpClient := &http.Client{}
+		httpClient.Transport = newTrackingRoundTripper(mockTransport, mockTracker)
+
 		client := &Client{
-			client:  mockHTTPClient,
+			client:  httpClient,
 			tracker: mockTracker,
 		}
 
@@ -150,7 +165,7 @@ func TestTracking(t *testing.T) {
 		_, err = client.Do(req, nil)
 		require.Error(t, err, "Expected error due to 400 Bad Request response")
 
-		require.True(t, mockHTTPClient.called, "Expected HTTP client to be called")
+		require.True(t, mockTransport.called, "Expected HTTP client to be called")
 
 		require.Len(t, mockTracker.apiRequests, 1, "Expected 1 (failed) API requests tracked")
 		require.Len(t, mockTracker.apiErrors, 1, "Expected 1 API error tracked")
@@ -163,12 +178,15 @@ func TestTracking(t *testing.T) {
 	t.Run("network error", func(t *testing.T) {
 		mockTracker := &mockAnalyticsTracker{}
 
-		mockHTTPClient := &mockHTTPClient{
+		mockTransport := &mockHTTPClient{
 			err: errors.New("network connection failed"),
 		}
 
+		httpClient := &http.Client{}
+		httpClient.Transport = newTrackingRoundTripper(mockTransport, mockTracker)
+
 		client := &Client{
-			client:  mockHTTPClient,
+			client:  httpClient,
 			tracker: mockTracker,
 		}
 
@@ -177,12 +195,12 @@ func TestTracking(t *testing.T) {
 		_, err = client.Do(req, nil)
 		require.Error(t, err)
 
-		require.Len(t, mockTracker.apiRequests, 0, "Expected 0 API requests tracked")
+		require.Len(t, mockTracker.apiRequests, 1, "Expected 1 API request tracked (even though it failed)")
 		require.Len(t, mockTracker.apiErrors, 1, "Expected 1 API error tracked")
 
 		record := mockTracker.apiErrors[0]
 		require.Equal(t, "GET", record.method)
 		require.Equal(t, 0, record.statusCode)
-		require.Equal(t, "network connection failed", record.errorMessage)
+		require.Contains(t, record.errorMessage, "network connection failed")
 	})
 }
