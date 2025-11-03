@@ -15,7 +15,6 @@ import (
 
 var schemeCases []string
 var targetCases []string
-var xcProjCases []xcodeproj.XcodeProj
 var projectCases []string
 var projHelpCases []ProjectHelper
 var configCases []string
@@ -24,7 +23,7 @@ func TestNew(t *testing.T) {
 	var err error
 	logger := log.NewLogger()
 	logger.EnableDebugLog(true)
-	schemeCases, _, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
+	schemeCases, _, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
@@ -96,7 +95,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projHelp, err := NewProjectHelper(tt.projOrWSPath, logger, tt.schemeName, tt.configurationName, false)
+			projHelp, err := NewProjectHelper(tt.projOrWSPath, logger, tt.schemeName, buildActionArchive, tt.configurationName, false)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -118,7 +117,7 @@ func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
 		Logger:     logger,
 		MainTarget: xcodeproj.Target{Name: "AppTarget"},
 		// bypass calling xcodebuild -showBuildSettings
-		buildSettingsCache: map[string]map[string]buildSettings{"AppTarget": {"Debug": {}}},
+		buildSettingsCache: map[string]map[string][]buildSettings{"AppTarget": {"Debug": []buildSettings{}}},
 		// project withouth TargetAttributes
 		XcProj: xcodeproj.XcodeProj{Proj: xcodeproj.Proj{Attributes: xcodeproj.ProjectAtributes{TargetAttributes: nil}}},
 	}
@@ -131,7 +130,7 @@ func TestProjectHelper_ProjectTeamID(t *testing.T) {
 	logger.EnableDebugLog(true)
 
 	var err error
-	schemeCases, _, _, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
+	schemeCases, _, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
@@ -310,26 +309,17 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 	var err error
 	logger := log.NewLogger()
 	logger.EnableDebugLog(true)
-	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
+	schemeCases, targetCases, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
 
 	for i, schemeCase := range schemeCases {
-		xcProj, _, err := findBuiltProject(
-			logger,
-			projectCases[i],
-			schemeCase,
-		)
-		if err != nil {
-			t.Fatalf("Failed to generate XcodeProj for test case: %s", err)
-		}
-		xcProjCases = append(xcProjCases, xcProj)
-
 		projHelp, err := NewProjectHelper(
 			projectCases[i],
 			logger,
 			schemeCase,
+			buildActionArchive,
 			configCases[i],
 			false,
 		)
@@ -405,13 +395,12 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 	}
 }
 
-func initTestCases(t *testing.T, logger log.Logger) ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper, []string, []string, error) {
+func initTestCases(t *testing.T, logger log.Logger) ([]string, []string, []ProjectHelper, []string, []string, error) {
 	// If the test cases already initialized return them
 	if len(schemeCases) > 0 {
-		return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, nil
+		return schemeCases, targetCases, projHelpCases, configCases, projectCases, nil
 	}
 
-	xcProjCases = []xcodeproj.XcodeProj{}
 	projHelpCases = []ProjectHelper{}
 
 	p, err := pathutil.NormalizedOSTempDirPath("_autoprov")
@@ -470,16 +459,6 @@ func initTestCases(t *testing.T, logger log.Logger) ([]string, []string, []xcode
 	}
 
 	for i, schemeCase := range schemeCases {
-		xcProj, _, err := findBuiltProject(
-			logger,
-			projectCases[i],
-			schemeCase,
-		)
-		if err != nil {
-			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate XcodeProj for test case: %s", err)
-		}
-		xcProjCases = append(xcProjCases, xcProj)
-
 		if logger == nil {
 			panic("logger is nil")
 		}
@@ -487,23 +466,24 @@ func initTestCases(t *testing.T, logger log.Logger) ([]string, []string, []xcode
 			projectCases[i],
 			logger,
 			schemeCase,
+			buildActionArchive,
 			configCases[i],
 			false,
 		)
 		if err != nil {
-			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate projectHelper for test case: %s", err)
+			return nil, nil, nil, nil, nil, fmt.Errorf("failed to generate projectHelper for test case: %s", err)
 		}
 		projHelpCases = append(projHelpCases, *projHelp)
 	}
 
-	return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, nil
+	return schemeCases, targetCases, projHelpCases, configCases, projectCases, nil
 }
 
 func TestProjectHelper_targetEntitlements(t *testing.T) {
 	var err error
 	logger := log.NewLogger()
 	logger.EnableDebugLog(true)
-	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
+	schemeCases, targetCases, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}

@@ -21,6 +21,14 @@ import (
 	"howett.net/plist"
 )
 
+type BuildAction string
+
+const (
+	buildActionArchive BuildAction = "archive"
+	buildActionBuild   BuildAction = "build"
+	buildActionTest    BuildAction = "test"
+)
+
 type buildSettings struct {
 	settings serialized.Object
 	basePath string
@@ -43,7 +51,7 @@ type ProjectHelper struct {
 // NewProjectHelper checks the provided project or workspace and generate a ProjectHelper with the provided scheme and configuration
 // Previously in the ruby version the initialize method did the same
 // It returns a new ProjectHelper, whose Configuration field contains is the selected configuration (even when configurationName parameter is empty)
-func NewProjectHelper(projOrWSPath string, logger log.Logger, schemeName, configurationName string, isDebug bool) (*ProjectHelper, error) {
+func NewProjectHelper(projOrWSPath string, logger log.Logger, schemeName string, buildAction BuildAction, configurationName string, isDebug bool) (*ProjectHelper, error) {
 	if exits, err := pathutil.IsPathExists(projOrWSPath); err != nil {
 		return nil, err
 	} else if !exits {
@@ -53,14 +61,9 @@ func NewProjectHelper(projOrWSPath string, logger log.Logger, schemeName, config
 	// Get the project and scheme of the provided .xcodeproj or .xcworkspace
 	// It is important to keep the returned scheme, as it can be located under the .xcworkspace and not the .xcodeproj.
 	// Fetching the scheme from the project based on name is not possible later.
-	xcproj, scheme, err := findBuiltProject(logger, projOrWSPath, schemeName)
+	xcproj, scheme, mainTarget, err := findBuiltProject(logger, projOrWSPath, schemeName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find build project: %s", err)
-	}
-
-	mainTarget, err := mainTargetOfScheme(logger, xcproj, scheme)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find the main target of the scheme (%s): %s", schemeName, err)
+		return nil, err
 	}
 
 	var dependentTargets []xcodeproj.Target
@@ -563,56 +566,72 @@ func configuration(logger log.Logger, configurationName string, scheme xcscheme.
 	return configuration, nil
 }
 
-// mainTargetOfScheme return the main target
-func mainTargetOfScheme(logger log.Logger, proj xcodeproj.XcodeProj, scheme xcscheme.Scheme) (xcodeproj.Target, error) {
-	logger.Debugf("buildSettings: Searching %d for scheme main target: %s", len(scheme.BuildAction.BuildActionEntries), scheme.Name)
+func getBuildActionEntryFromScheme(logger log.Logger, scheme *xcscheme.Scheme, buildAction BuildAction) (xcscheme.BuildActionEntry, error) {
+	logger.Debugf("Searching %d for scheme main target: %s", len(scheme.BuildAction.BuildActionEntries), scheme.Name)
 
-	var blueIdent string
+	var buildActionEntry xcscheme.BuildActionEntry
 	for _, entry := range scheme.BuildAction.BuildActionEntries {
+		switch buildAction {
+		case buildActionArchive:
+			if entry.BuildForArchiving != "YES" {
+				continue
+			}
+		case buildActionBuild:
+			if entry.BuildForRunning != "YES" {
+				continue
+			}
+		case buildActionTest:
+			if entry.BuildForTesting != "YES" {
+				continue
+			}
+		}
 		if entry.BuildableReference.IsAppReference() {
-			blueIdent = entry.BuildableReference.BlueprintIdentifier
+			buildActionEntry = entry
 			break
 		}
 	}
 
-	logger.Debugf("buildSettings: Searching %d targets for: %s", len(proj.Proj.Targets), blueIdent)
-
-	// Search for the main target
-	for _, t := range proj.Proj.Targets {
-		if t.ID == blueIdent {
-			return t, nil
-		}
+	if buildActionEntry.BuildableReference.BlueprintIdentifier == "" {
+		return xcscheme.BuildActionEntry{}, fmt.Errorf("%s action not defined for scheme `%s`", buildAction, scheme.Name)
 	}
-
-	return xcodeproj.Target{}, fmt.Errorf("failed to find the project's main target for scheme (%v)", scheme)
+	return buildActionEntry, nil
 }
 
 // findBuiltProject returns the Xcode project which will be built for the provided scheme, plus the scheme.
 // The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the XcodeProj would fail.
-func findBuiltProject(logger log.Logger, pth, schemeName string) (xcodeproj.XcodeProj, xcscheme.Scheme, error) {
-	logger.TInfof("buildSettings: Locating built project for xcode project: %s, scheme: %s", pth, schemeName)
+func findBuiltProject(logger log.Logger, pth, schemeName string) (xcodeproj.XcodeProj, xcscheme.Scheme, xcodeproj.Target, error) {
+	logger.TInfof("Locating built project for scheme `%s`, Xcode project (%s)", schemeName, pth)
 
 	scheme, schemeContainerDir, err := schemeint.Scheme(pth, schemeName)
 	if err != nil {
-		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, fmt.Errorf("could not get scheme with name %s from path %s: %w", schemeName, pth, err)
+		return xcodeproj.XcodeProj{}, *scheme, xcodeproj.Target{}, fmt.Errorf("could not get scheme `%s` from path (%s): %w", schemeName, pth, err)
 	}
 
-	archiveEntry, archivable := scheme.AppBuildActionEntry()
-	if !archivable {
-		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, fmt.Errorf("archive action not defined for scheme: %s", scheme.Name)
-	}
-
-	projectPth, err := archiveEntry.BuildableReference.ReferencedContainerAbsPath(filepath.Dir(schemeContainerDir))
+	entry, err := getBuildActionEntryFromScheme(logger, scheme, buildActionArchive)
 	if err != nil {
-		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, err
+		return xcodeproj.XcodeProj{}, *scheme, xcodeproj.Target{}, err
+	}
+
+	projectPth, err := entry.BuildableReference.ReferencedContainerAbsPath(filepath.Dir(schemeContainerDir))
+	if err != nil {
+		return xcodeproj.XcodeProj{}, *scheme, xcodeproj.Target{}, err
 	}
 
 	xcodeProj, err := xcodeproj.Open(projectPth)
 	if err != nil {
-		return xcodeproj.XcodeProj{}, xcscheme.Scheme{}, err
+		return xcodeProj, *scheme, xcodeproj.Target{}, fmt.Errorf("failed to open Xcode project at path (%s): %s", projectPth, err)
 	}
 
 	logger.TInfof("Located built project for scheme: %s", schemeName)
 
-	return xcodeProj, *scheme, nil
+	targets := xcodeProj.Proj.Targets
+	blueIdent := entry.BuildableReference.BlueprintIdentifier
+	logger.Debugf("buildSettings: Searching %d targets for: %s", len(targets), blueIdent)
+	for _, t := range targets {
+		if t.ID == blueIdent {
+			return xcodeProj, *scheme, t, nil
+		}
+	}
+
+	return xcodeProj, *scheme, xcodeproj.Target{}, fmt.Errorf("failed to find target with ID `%s`, project targets: `%+v`", blueIdent, targets)
 }
