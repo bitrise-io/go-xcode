@@ -34,6 +34,7 @@ type ProjectHelper struct {
 	XcWorkspace      *xcworkspace.Workspace // nil if working with standalone project
 	XcProj           xcodeproj.XcodeProj
 	Configuration    string
+	IsDebug          bool
 
 	buildSettingsCache map[string]map[string]buildSettings // target/config/buildSettings
 }
@@ -41,7 +42,7 @@ type ProjectHelper struct {
 // NewProjectHelper checks the provided project or workspace and generate a ProjectHelper with the provided scheme and configuration
 // Previously in the ruby version the initialize method did the same
 // It returns a new ProjectHelper, whose Configuration field contains is the selected configuration (even when configurationName parameter is empty)
-func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*ProjectHelper, error) {
+func NewProjectHelper(projOrWSPath, schemeName, configurationName string, isDebug bool) (*ProjectHelper, error) {
 	if exits, err := pathutil.IsPathExists(projOrWSPath); err != nil {
 		return nil, err
 	} else if !exits {
@@ -99,6 +100,7 @@ func NewProjectHelper(projOrWSPath, schemeName, configurationName string) (*Proj
 		XcWorkspace:      workspace,
 		XcProj:           xcproj,
 		Configuration:    conf,
+		IsDebug:          isDebug,
 	}, nil
 }
 
@@ -230,6 +232,11 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string, customOption
 
 	settings, err := p.XcWorkspace.SchemeBuildSettings(targetName, conf, customOptions...)
 	if err == nil {
+		if !p.IsDebug {
+			return []serialized.Object{settings}, p.XcWorkspace.Path, nil
+		}
+
+		// In debug mode, also fetch project build settings to compare values
 		settingsList := []serialized.Object{settings}
 		projectSettings, err := p.XcProj.TargetBuildSettings(targetName, conf, customOptions...)
 		if err == nil {
