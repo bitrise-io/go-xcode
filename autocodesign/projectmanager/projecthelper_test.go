@@ -94,7 +94,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projHelp, err := NewProjectHelper(tt.projOrWSPath, tt.schemeName, tt.configurationName)
+			projHelp, err := NewProjectHelper(tt.projOrWSPath, tt.schemeName, tt.configurationName, false)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -322,6 +322,7 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 			projectCases[i],
 			schemeCase,
 			configCases[i],
+			false,
 		)
 		if err != nil {
 			t.Fatalf("Failed to generate projectHelper for test case: %s", err)
@@ -473,6 +474,7 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 			projectCases[i],
 			schemeCase,
 			configCases[i],
+			false,
 		)
 		if err != nil {
 			return nil, nil, nil, nil, nil, nil, fmt.Errorf("failed to generate projectHelper for test case: %s", err)
