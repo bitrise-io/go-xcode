@@ -61,7 +61,7 @@ func NewProjectHelper(projOrWSPath string, logger log.Logger, schemeName string,
 	// Get the project and scheme of the provided .xcodeproj or .xcworkspace
 	// It is important to keep the returned scheme, as it can be located under the .xcworkspace and not the .xcodeproj.
 	// Fetching the scheme from the project based on name is not possible later.
-	xcproj, scheme, mainTarget, err := findBuiltProject(logger, projOrWSPath, schemeName)
+	xcproj, scheme, mainTarget, err := findBuiltProject(logger, projOrWSPath, buildAction, schemeName)
 	if err != nil {
 		return nil, err
 	}
@@ -572,15 +572,15 @@ func getBuildActionEntryFromScheme(logger log.Logger, scheme *xcscheme.Scheme, b
 	var buildActionEntry xcscheme.BuildActionEntry
 	for _, entry := range scheme.BuildAction.BuildActionEntries {
 		switch buildAction {
-		case buildActionArchive:
+		case BuildActionArchive:
 			if entry.BuildForArchiving != "YES" {
 				continue
 			}
-		case buildActionBuild:
+		case BuildActionBuild:
 			if entry.BuildForRunning != "YES" {
 				continue
 			}
-		case buildActionTest:
+		case BuildActionTest:
 			if entry.BuildForTesting != "YES" {
 				continue
 			}
@@ -599,7 +599,7 @@ func getBuildActionEntryFromScheme(logger log.Logger, scheme *xcscheme.Scheme, b
 
 // findBuiltProject returns the Xcode project which will be built for the provided scheme, plus the scheme.
 // The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the XcodeProj would fail.
-func findBuiltProject(logger log.Logger, pth, schemeName string) (xcodeproj.XcodeProj, xcscheme.Scheme, xcodeproj.Target, error) {
+func findBuiltProject(logger log.Logger, pth string, buildAction BuildAction, schemeName string) (xcodeproj.XcodeProj, xcscheme.Scheme, xcodeproj.Target, error) {
 	logger.TInfof("Locating built project for scheme `%s`, Xcode project (%s)", schemeName, pth)
 
 	scheme, schemeContainerDir, err := schemeint.Scheme(pth, schemeName)
@@ -607,7 +607,7 @@ func findBuiltProject(logger log.Logger, pth, schemeName string) (xcodeproj.Xcod
 		return xcodeproj.XcodeProj{}, *scheme, xcodeproj.Target{}, fmt.Errorf("could not get scheme `%s` from path (%s): %w", schemeName, pth, err)
 	}
 
-	entry, err := getBuildActionEntryFromScheme(logger, scheme, buildActionArchive)
+	entry, err := getBuildActionEntryFromScheme(logger, scheme, buildAction)
 	if err != nil {
 		return xcodeproj.XcodeProj{}, *scheme, xcodeproj.Target{}, err
 	}
