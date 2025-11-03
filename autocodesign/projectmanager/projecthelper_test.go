@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/command/git"
-	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/stretchr/testify/require"
@@ -22,7 +22,9 @@ var configCases []string
 
 func TestNew(t *testing.T) {
 	var err error
-	schemeCases, _, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases()
+	logger := log.NewLogger()
+	logger.EnableDebugLog(true)
+	schemeCases, _, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
@@ -94,7 +96,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projHelp, err := NewProjectHelper(tt.projOrWSPath, tt.schemeName, tt.configurationName, false)
+			projHelp, err := NewProjectHelper(tt.projOrWSPath, logger, tt.schemeName, tt.configurationName, false)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -109,9 +111,11 @@ func TestNew(t *testing.T) {
 }
 
 func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
-	log.SetEnableDebugLog(true)
+	logger := log.NewLogger()
+	logger.EnableDebugLog(true)
 
 	helper := ProjectHelper{
+		Logger:     logger,
 		MainTarget: xcodeproj.Target{Name: "AppTarget"},
 		// bypass calling xcodebuild -showBuildSettings
 		buildSettingsCache: map[string]map[string]buildSettings{"AppTarget": {"Debug": {}}},
@@ -123,10 +127,11 @@ func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
 }
 
 func TestProjectHelper_ProjectTeamID(t *testing.T) {
-	log.SetEnableDebugLog(true)
+	logger := log.NewLogger()
+	logger.EnableDebugLog(true)
 
 	var err error
-	schemeCases, _, _, projHelpCases, configCases, projectCases, err = initTestCases()
+	schemeCases, _, _, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
@@ -303,13 +308,16 @@ func Test_expandTargetSetting(t *testing.T) {
 
 func TestProjectHelper_TargetBundleID(t *testing.T) {
 	var err error
-	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases()
+	logger := log.NewLogger()
+	logger.EnableDebugLog(true)
+	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
 
 	for i, schemeCase := range schemeCases {
 		xcProj, _, err := findBuiltProject(
+			logger,
 			projectCases[i],
 			schemeCase,
 		)
@@ -320,6 +328,7 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 
 		projHelp, err := NewProjectHelper(
 			projectCases[i],
+			logger,
 			schemeCase,
 			configCases[i],
 			false,
@@ -396,27 +405,29 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 	}
 }
 
-func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper, []string, []string, error) {
-	//
+func initTestCases(t *testing.T, logger log.Logger) ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper, []string, []string, error) {
 	// If the test cases already initialized return them
-	if schemeCases != nil {
+	if len(schemeCases) > 0 {
 		return schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, nil
 	}
 
+	xcProjCases = []xcodeproj.XcodeProj{}
+	projHelpCases = []ProjectHelper{}
+
 	p, err := pathutil.NormalizedOSTempDirPath("_autoprov")
 	if err != nil {
-		log.Errorf("Failed to create tmp dir error: %s", err)
+		t.Errorf("Failed to create tmp dir error: %s", err)
 	}
 
 	gitRepo, err := git.New(p)
 	if err != nil {
-		log.Errorf("failed to init git repo: %w", err)
+		t.Errorf("failed to init git repo: %s", err)
 	}
 
 	branch := "project"
 	cmd := gitRepo.CloneTagOrBranch("https://github.com/bitrise-io/sample-artifacts.git", branch)
 	if err := cmd.Run(); err != nil {
-		log.Errorf("Failed to git clone the sample project files error: %s", err)
+		t.Errorf("Failed to git clone the sample project files error: %s", err)
 	}
 	//
 	// Init test cases
@@ -457,11 +468,10 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		p + "/ios_project_files/TV_OS.xcodeproj",
 		p + "/ios_project_files/Xcode-10_with_scheme.xcworkspace",
 	}
-	var xcProjCases []xcodeproj.XcodeProj
-	var projHelpCases []ProjectHelper
 
 	for i, schemeCase := range schemeCases {
 		xcProj, _, err := findBuiltProject(
+			logger,
 			projectCases[i],
 			schemeCase,
 		)
@@ -470,8 +480,12 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 		}
 		xcProjCases = append(xcProjCases, xcProj)
 
+		if logger == nil {
+			panic("logger is nil")
+		}
 		projHelp, err := NewProjectHelper(
 			projectCases[i],
+			logger,
 			schemeCase,
 			configCases[i],
 			false,
@@ -487,7 +501,9 @@ func initTestCases() ([]string, []string, []xcodeproj.XcodeProj, []ProjectHelper
 
 func TestProjectHelper_targetEntitlements(t *testing.T) {
 	var err error
-	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases()
+	logger := log.NewLogger()
+	logger.EnableDebugLog(true)
+	schemeCases, targetCases, xcProjCases, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
 	if err != nil {
 		t.Fatalf("Failed to initialize test cases: %s", err)
 	}
@@ -559,6 +575,9 @@ func TestProjectHelper_targetEntitlements(t *testing.T) {
 }
 
 func Test_resolveEntitlementVariables(t *testing.T) {
+	logger := log.NewLogger()
+	logger.EnableDebugLog(true)
+
 	type args struct {
 		entitlements autocodesign.Entitlements
 		bundleID     string
@@ -635,7 +654,7 @@ func Test_resolveEntitlementVariables(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := resolveEntitlementVariables(tt.args.entitlements, tt.args.bundleID)
+			got, err := resolveEntitlementVariables(logger, tt.args.entitlements, tt.args.bundleID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("resolveEntitlementVariables() error = %v, wantErr %v", err, tt.wantErr)
 				return
