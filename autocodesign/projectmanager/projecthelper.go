@@ -321,7 +321,8 @@ func (p *ProjectHelper) buildSettingForKey(targetName, conf string, key string, 
 		log.Debugf("Matching values for workspace and project build setting %s: '%s'", key, value)
 	}
 
-	return value, err
+	// Return alternate value to be consistent with old project based target build setting fetch
+	return alternateValue, err
 }
 
 func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key string, customOptions ...string) (string, error) {
