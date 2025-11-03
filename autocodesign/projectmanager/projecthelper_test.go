@@ -95,7 +95,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projHelp, err := NewProjectHelper(tt.projOrWSPath, logger, tt.schemeName, buildActionArchive, tt.configurationName, false)
+			projHelp, err := NewProjectHelper(tt.projOrWSPath, logger, tt.schemeName, BuildActionArchive, tt.configurationName, false)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -319,7 +319,7 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 			projectCases[i],
 			logger,
 			schemeCase,
-			buildActionArchive,
+			BuildActionArchive,
 			configCases[i],
 			false,
 		)
@@ -466,7 +466,7 @@ func initTestCases(t *testing.T, logger log.Logger) ([]string, []string, []Proje
 			projectCases[i],
 			logger,
 			schemeCase,
-			buildActionArchive,
+			BuildActionArchive,
 			configCases[i],
 			false,
 		)
