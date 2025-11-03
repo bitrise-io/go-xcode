@@ -24,9 +24,9 @@ import (
 type BuildAction string
 
 const (
-	buildActionArchive BuildAction = "archive"
-	buildActionBuild   BuildAction = "build"
-	buildActionTest    BuildAction = "test"
+	BuildActionArchive BuildAction = "archive"
+	BuildActionBuild   BuildAction = "build"
+	BuildActionTest    BuildAction = "test"
 )
 
 type buildSettings struct {
