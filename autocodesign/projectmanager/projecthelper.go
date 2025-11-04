@@ -457,7 +457,7 @@ func (p *ProjectHelper) targetEntitlements(name, config, bundleID string) (autoc
 	if err != nil {
 		if serialized.IsKeyNotFoundError(err) {
 			p.Logger.Debugf("buildSettings: Target (%s) does not have CODE_SIGN_ENTITLEMENTS in build settings", name)
-			return autocodesign.Entitlements{}, nil
+			return nil, nil
 		}
 		return nil, err
 	}
