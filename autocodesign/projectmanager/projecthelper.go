@@ -21,12 +21,16 @@ import (
 	"howett.net/plist"
 )
 
+// BuildAction is the type of build action to be performed on the scheme.
 type BuildAction string
 
 const (
+	// BuildActionArchive is the archive build action.
 	BuildActionArchive BuildAction = "archive"
-	BuildActionBuild   BuildAction = "build"
-	BuildActionTest    BuildAction = "test"
+	// BuiqldActionBuild is the build build action.
+	BuildActionBuild BuildAction = "build"
+	// BuildActionTest is the test build action.
+	BuildActionTest BuildAction = "test"
 )
 
 type buildSettings struct {
