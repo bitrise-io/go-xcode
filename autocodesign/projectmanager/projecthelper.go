@@ -27,7 +27,7 @@ type BuildAction string
 const (
 	// BuildActionArchive is the archive build action.
 	BuildActionArchive BuildAction = "archive"
-	// BuiqldActionBuild is the build build action.
+	// BuildActionBuild is the build build action.
 	BuildActionBuild BuildAction = "build"
 	// BuildActionTest is the test build action.
 	BuildActionTest BuildAction = "test"
