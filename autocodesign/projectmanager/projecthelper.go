@@ -33,6 +33,11 @@ const (
 	BuildActionTest BuildAction = "test"
 )
 
+type buildSettingsCacheKey struct {
+	targetName    string
+	configuration string
+}
+
 type buildSettings struct {
 	settings serialized.Object
 	basePath string
@@ -49,7 +54,8 @@ type ProjectHelper struct {
 	Configuration             string
 	IsDebugProjectBasedLookup bool
 
-	buildSettingsCache map[string]map[string][]buildSettings // target/config/buildSettings
+	// Buildsettings is an array as it can contain both workspace and project build settings in that order
+	buildSettingsCache map[buildSettingsCacheKey][]buildSettings
 }
 
 // NewProjectHelper checks the provided project or workspace and generate a ProjectHelper with the provided scheme and configuration
@@ -262,13 +268,11 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string, customOption
 }
 
 func (p *ProjectHelper) cachedBuildSettings(targetName, conf string, customOptions ...string) ([]buildSettings, error) {
-	targetCache, ok := p.buildSettingsCache[targetName]
+	key := buildSettingsCacheKey{targetName: targetName, configuration: conf}
+	settings, ok := p.buildSettingsCache[key]
 	if ok {
-		confCache, ok := targetCache[conf]
-		if ok {
-			p.Logger.Debugf("buildSettings: Using cached settings for target='%s'", targetName)
-			return confCache, nil
-		}
+		p.Logger.Debugf("buildSettings: Using cached settings for target='%s'", targetName)
+		return settings, nil
 	}
 
 	settingsList, err := p.fetchBuildSettings(targetName, conf, customOptions...)
@@ -276,15 +280,10 @@ func (p *ProjectHelper) cachedBuildSettings(targetName, conf string, customOptio
 		return settingsList, err
 	}
 
-	if targetCache == nil {
-		targetCache = map[string][]buildSettings{}
-	}
-	targetCache[conf] = settingsList
-
 	if p.buildSettingsCache == nil {
-		p.buildSettingsCache = map[string]map[string][]buildSettings{}
+		p.buildSettingsCache = map[buildSettingsCacheKey][]buildSettings{}
 	}
-	p.buildSettingsCache[targetName] = targetCache
+	p.buildSettingsCache[key] = settingsList
 
 	return settingsList, nil
 }
