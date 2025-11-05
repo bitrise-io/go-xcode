@@ -3,7 +3,6 @@ package projectmanager
 import (
 	"errors"
 	"fmt"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -358,7 +357,7 @@ func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key stri
 	}
 
 	if pathutil.IsRelativePath(wsValue) {
-		wsValue = filepath.Join(path.Dir(wsSettings.basePath), wsValue)
+		wsValue = filepath.Join(filepath.Dir(wsSettings.basePath), wsValue)
 	}
 
 	if len(settingsList) == 1 {
@@ -372,7 +371,7 @@ func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key stri
 	}
 
 	if pathutil.IsRelativePath(projectValue) {
-		projectValue = filepath.Join(path.Dir(projectSettings.basePath), projectValue)
+		projectValue = filepath.Join(filepath.Dir(projectSettings.basePath), projectValue)
 	}
 
 	if projectValue != wsValue {
