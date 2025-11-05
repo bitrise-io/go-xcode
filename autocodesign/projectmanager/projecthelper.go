@@ -240,31 +240,37 @@ func (p *ProjectHelper) targetTeamID(targetName, config string) (string, error) 
 }
 
 func (p *ProjectHelper) fetchBuildSettings(targetName, conf string, customOptions ...string) ([]buildSettings, error) {
-	if p.XcWorkspace == nil {
-		settings, err := p.XcProj.TargetBuildSettings(targetName, conf, customOptions...)
-		return []buildSettings{{settings: settings, basePath: p.XcProj.Path}}, err
-	}
-
-	settings, err := p.XcWorkspace.SchemeBuildSettings(targetName, conf, customOptions...)
-	if err == nil {
-		wsSettings := buildSettings{settings: settings, basePath: p.XcWorkspace.Path}
-		if !p.IsDebugProjectBasedLookup {
-			return []buildSettings{wsSettings}, nil
+	settingsList := []buildSettings{}
+	if p.XcWorkspace != nil { // workspace available
+		settings, err := p.XcWorkspace.SchemeBuildSettings(targetName, conf, customOptions...)
+		if err == nil {
+			settingsList = append(settingsList, buildSettings{settings: settings, basePath: p.XcWorkspace.Path})
 		}
 
 		// In debug mode, also fetch project build settings to compare values
-		projectSettings, err := p.XcProj.TargetBuildSettings(targetName, conf, customOptions...)
-		if err != nil {
-			p.Logger.Errorf("buildSettings: Failed to fetch build settings from project for target (%s): %s", targetName, err)
+		if !p.IsDebugProjectBasedLookup {
+			return settingsList, err
 		}
-
-		return []buildSettings{wsSettings, {settings: projectSettings, basePath: p.XcProj.Path}}, nil
+		if err != nil {
+			p.Logger.Warnf("buildSettings: Failed to fetch build settings from workspace for target (%s): %s", targetName, err)
+			p.Logger.Printf("buildSettings: Falling back to project build settings")
+		}
 	}
 
-	p.Logger.Warnf("buildSettings: Failed to fetch build settings from workspace for target (%s): %s", targetName, err)
-	p.Logger.Printf("buildSettings: Falling back to project build settings")
-	settings, err = p.XcProj.TargetBuildSettings(targetName, conf, customOptions...)
-	return []buildSettings{{settings: settings, basePath: p.XcProj.Path}}, err
+	projectSettings, projectErr := p.XcProj.TargetBuildSettings(targetName, conf, customOptions...)
+	if projectErr == nil {
+		settingsList = append(settingsList, buildSettings{settings: projectSettings, basePath: p.XcProj.Path})
+		return settingsList, nil
+	}
+
+	// err != nil
+	projectErr = fmt.Errorf("failed to fetch build settings for target `%s` (project `%s`): %w", targetName, p.XcProj.Name, projectErr)
+	if len(settingsList) != 0 {
+		p.Logger.Errorf("buildSettings: %s", projectErr)
+		return settingsList, nil // return workspace settings if available, supress error
+	}
+
+	return settingsList, projectErr
 }
 
 func (p *ProjectHelper) cachedBuildSettings(targetName, conf string, customOptions ...string) ([]buildSettings, error) {
@@ -291,11 +297,7 @@ func (p *ProjectHelper) cachedBuildSettings(targetName, conf string, customOptio
 func (p *ProjectHelper) targetBuildSettings(targetName, conf string) (serialized.Object, error) {
 	settingsList, err := p.cachedBuildSettings(targetName, conf)
 	if err != nil {
-		var basePath string
-		if len(settingsList) > 0 {
-			basePath = settingsList[0].basePath
-		}
-		return nil, fmt.Errorf("failed to fetch target (%s) build settings for project (%s): %s", targetName, basePath, err)
+		return nil, err
 	}
 
 	if len(settingsList) == 1 {
@@ -311,11 +313,7 @@ func (p *ProjectHelper) targetBuildSettings(targetName, conf string) (serialized
 func (p *ProjectHelper) buildSettingForKey(targetName, conf string, key string, customOptions ...string) (string, error) {
 	settingsList, err := p.cachedBuildSettings(targetName, conf, customOptions...)
 	if err != nil {
-		var basePath string
-		if len(settingsList) > 0 {
-			basePath = settingsList[0].basePath
-		}
-		return "", fmt.Errorf("failed to fetch target (%s) build settings for project (%s): %s", targetName, basePath, err)
+		return "", err
 	}
 
 	wsSettings := settingsList[0].settings
@@ -350,11 +348,7 @@ func (p *ProjectHelper) buildSettingForKey(targetName, conf string, key string, 
 func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key string, customOptions ...string) (string, error) {
 	settingsList, err := p.cachedBuildSettings(targetName, conf, customOptions...)
 	if err != nil {
-		var basePath string
-		if len(settingsList) > 0 {
-			basePath = settingsList[0].basePath
-		}
-		return "", fmt.Errorf("failed to fetch target (%s) build settings for project (%s): %s", targetName, basePath, err)
+		return "", err
 	}
 
 	wsSettings := settingsList[0]
