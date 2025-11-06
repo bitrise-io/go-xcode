@@ -114,7 +114,7 @@ func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
 	logger.EnableDebugLog(true)
 
 	helper := ProjectHelper{
-		Logger:     logger,
+		logger:     logger,
 		MainTarget: xcodeproj.Target{Name: "AppTarget"},
 		// bypass calling xcodebuild -showBuildSettings
 		buildSettingsCache: map[buildSettingsCacheKey][]buildSettings{{targetName: "AppTarget", configuration: "Debug"}: {}},
