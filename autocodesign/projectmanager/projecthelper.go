@@ -52,7 +52,7 @@ type ProjectHelper struct {
 	XcProj                      xcodeproj.XcodeProj
 	Configuration               string
 	additionalXcodebuildOptions []string
-	IsCompatMode                bool
+	isCompatMode                bool
 
 	// Buildsettings is an array as it can contain both workspace and project build settings in that order
 	buildSettingsCache map[buildSettingsCacheKey][]buildSettings
@@ -116,7 +116,7 @@ func NewProjectHelper(projOrWSPath string, logger log.Logger, schemeName string,
 		XcProj:                      xcproj,
 		Configuration:               conf,
 		additionalXcodebuildOptions: additionalXcodebuildOptions,
-		IsCompatMode:                isDebug,
+		isCompatMode:                isDebug,
 	}, nil
 }
 
@@ -252,7 +252,7 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]buildSett
 		}
 	}
 
-	if !p.IsCompatMode {
+	if !p.isCompatMode {
 		return settingsList, wsErr
 	}
 	// In debug mode, also fetch project build settings to compare values
