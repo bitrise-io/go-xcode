@@ -101,7 +101,7 @@ func Example() {
 		ProjectOrWorkspacePath: cfg.ProjectPath,
 		SchemeName:             cfg.Scheme,
 		ConfigurationName:      cfg.Configuration,
-		AdditionalOptions:      []string{},
+		AdditionalXcodebuildShowbuildsettingsOptions: []string{},
 	})
 	if err != nil {
 		panic(err)
