@@ -43,7 +43,9 @@ func Example() {
 	certsWithPrivateKey := []certdownloader.CertificateAndPassphrase{}
 
 	logger := log.NewLogger()
+	enRepo := env.NewRepository()
 	filemanager := fileutil.NewFileManager()
+	projectFactory := projectmanager.NewFactory(logger, enRepo, projectmanager.BuildActionArchive)
 
 	f := devportalclient.NewFactory(logger, filemanager)
 	connection, err := f.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken)
@@ -95,10 +97,11 @@ func Example() {
 	// Analyzing project
 	fmt.Println()
 	logger.Infof("Analyzing project")
-	project, err := projectmanager.NewProject(projectmanager.InitParams{
+	project, err := projectFactory.Create(projectmanager.InitParams{
 		ProjectOrWorkspacePath: cfg.ProjectPath,
 		SchemeName:             cfg.Scheme,
 		ConfigurationName:      cfg.Configuration,
+		AdditionalXcodebuildShowbuildsettingsOptions: []string{},
 	})
 	if err != nil {
 		panic(err)

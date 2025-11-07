@@ -95,7 +95,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projHelp, err := NewProjectHelper(tt.projOrWSPath, logger, tt.schemeName, BuildActionArchive, tt.configurationName, false)
+			projHelp, err := NewProjectHelper(tt.projOrWSPath, logger, tt.schemeName, BuildActionArchive, tt.configurationName, []string{}, false)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -114,7 +114,7 @@ func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
 	logger.EnableDebugLog(true)
 
 	helper := ProjectHelper{
-		Logger:     logger,
+		logger:     logger,
 		MainTarget: xcodeproj.Target{Name: "AppTarget"},
 		// bypass calling xcodebuild -showBuildSettings
 		buildSettingsCache: map[buildSettingsCacheKey][]buildSettings{{targetName: "AppTarget", configuration: "Debug"}: {}},
@@ -321,6 +321,7 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 			schemeCase,
 			BuildActionArchive,
 			configCases[i],
+			[]string{},
 			false,
 		)
 		if err != nil {
@@ -468,6 +469,7 @@ func initTestCases(t *testing.T, logger log.Logger) ([]string, []string, []Proje
 			schemeCase,
 			BuildActionArchive,
 			configCases[i],
+			[]string{},
 			false,
 		)
 		if err != nil {
