@@ -9,6 +9,7 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/stretchr/testify/require"
 )
@@ -117,7 +118,7 @@ func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
 		logger:     logger,
 		MainTarget: xcodeproj.Target{Name: "AppTarget"},
 		// bypass calling xcodebuild -showBuildSettings
-		buildSettingsCache: map[buildSettingsCacheKey][]buildSettings{{targetName: "AppTarget", configuration: "Debug"}: {}},
+		buildSettingsCache: map[buildSettingsCacheKey][]serialized.Object{{targetName: "AppTarget", configuration: "Debug"}: {}},
 		// project withouth TargetAttributes
 		XcProj: xcodeproj.XcodeProj{Proj: xcodeproj.Proj{Attributes: xcodeproj.ProjectAtributes{TargetAttributes: nil}}},
 	}
