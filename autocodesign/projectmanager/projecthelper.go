@@ -316,32 +316,32 @@ func (p *ProjectHelper) buildSettingForKey(targetName, conf string, key string) 
 	}
 
 	settings := settingsList[0] // workspace setting if available, project otherwise
-	wsValue, err := settings.String(key)
+	settingValue, err := settings.String(key)
 	if err != nil {
-		return wsValue, err
+		return settingValue, err
 	}
 
 	if len(settingsList) == 1 {
-		return wsValue, nil
+		return settingValue, nil
 	}
 
 	projectSettings := settingsList[1]
-	projectValue, err := projectSettings.String(key)
+	projectSettingValue, err := projectSettings.String(key)
 	if err != nil {
 		p.logger.Errorf("buildSettings: Failed to fetch project build setting for key (%s): %s", key, err)
-		p.logger.Printf("buildSettings: Returning workspace value for key (%s): %s", key, wsValue)
-		return wsValue, nil
+		p.logger.Printf("buildSettings: Returning workspace value for key (%s): %s", key, settingValue)
+		return settingValue, nil
 	}
 
-	if projectValue != wsValue {
-		p.logger.Errorf("buildSettings: Conflicting values for build setting %s: '%s' (workspace) vs '%s' (project)", key, wsValue, projectValue)
+	if projectSettingValue != settingValue {
+		p.logger.Errorf("buildSettings: Conflicting values for build setting %s: '%s' (workspace) vs '%s' (project)", key, settingValue, projectSettingValue)
 		// Return alternate value to be consistent with old project based target build setting fetch
-		p.logger.Printf("buildSettings: Returning project value for key (%s): %s", key, projectValue)
-		return projectValue, nil
+		p.logger.Printf("buildSettings: Returning project value for key (%s): %s", key, projectSettingValue)
+		return projectSettingValue, nil
 	}
-	p.logger.Debugf("buildSettings: Matching values for workspace and project build setting %s: '%s'", key, wsValue)
+	p.logger.Debugf("buildSettings: Matching values for workspace and project build setting %s: '%s'", key, settingValue)
 
-	return wsValue, err
+	return settingValue, err
 }
 
 func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key string) (string, error) {
@@ -351,38 +351,38 @@ func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key stri
 	}
 
 	settings := settingsList[0]
-	pathValue, err := settings.String(key)
+	settingValue, err := settings.String(key)
 	if err != nil {
-		return pathValue, err
+		return settingValue, err
 	}
 
 	projectBasePath := p.XcProj.Path
-	if pathutil.IsRelativePath(pathValue) {
-		pathValue = filepath.Join(filepath.Dir(projectBasePath), pathValue)
+	if pathutil.IsRelativePath(settingValue) {
+		settingValue = filepath.Join(filepath.Dir(projectBasePath), settingValue)
 	}
 
 	if len(settingsList) == 1 {
-		return pathValue, nil
+		return settingValue, nil
 	}
 
 	projectSettings := settingsList[1]
-	projectPathValue, err := projectSettings.String(key)
+	projectSettingValue, err := projectSettings.String(key)
 	if err != nil {
-		return projectPathValue, err
+		return projectSettingValue, err
 	}
 
-	if pathutil.IsRelativePath(projectPathValue) {
-		projectPathValue = filepath.Join(filepath.Dir(projectBasePath), projectPathValue)
+	if pathutil.IsRelativePath(projectSettingValue) {
+		projectSettingValue = filepath.Join(filepath.Dir(projectBasePath), projectSettingValue)
 	}
 
-	if projectPathValue != pathValue {
-		p.logger.Errorf("buildSettings: Conflicting paths for build setting %s: '%s' (workspace) vs '%s' (project)", key, pathValue, projectPathValue)
-		p.logger.Printf("buildSettings: Returning project path for key (%s): %s", key, projectPathValue)
-		return projectPathValue, nil
+	if projectSettingValue != settingValue {
+		p.logger.Errorf("buildSettings: Conflicting paths for build setting %s: '%s' (workspace) vs '%s' (project)", key, settingValue, projectSettingValue)
+		p.logger.Printf("buildSettings: Returning project path for key (%s): %s", key, projectSettingValue)
+		return projectSettingValue, nil
 	}
 
-	p.logger.Debugf("buildSettings: Matching paths for workspace and project build setting %s: '%s'", key, pathValue)
-	return pathValue, nil
+	p.logger.Debugf("buildSettings: Matching paths for workspace and project build setting %s: '%s'", key, settingValue)
+	return settingValue, nil
 }
 
 // TargetBundleID returns the target bundle ID
