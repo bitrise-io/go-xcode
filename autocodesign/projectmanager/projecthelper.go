@@ -247,7 +247,9 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]buildSett
 		var settings serialized.Object
 		settings, wsErr = p.XcWorkspace.SchemeBuildSettings(targetName, conf, p.additionalXcodebuildOptions...)
 		if wsErr == nil {
-			settingsList = append(settingsList, buildSettings{settings: settings, basePath: p.XcWorkspace.Path})
+			// Settings like INFOPLIST_FILE and CODE_SIGN_ENTITLEMENTS are project-relative
+			// https://developer.apple.com/documentation/xcode/build-settings-reference#Infoplist-File
+			settingsList = append(settingsList, buildSettings{settings: settings, basePath: p.XcProj.Path})
 			if !p.isCompatMode { // Fall back to project if workspace failed or compatibility mode is on
 				return settingsList, nil
 			}
