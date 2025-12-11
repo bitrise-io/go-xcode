@@ -68,11 +68,28 @@ type Client struct {
 
 	common       service // Reuse a single struct instead of allocating one for each service on the heap.
 	Provisioning *ProvisioningService
+
+	tracker Tracker
 }
 
 // NewRetryableHTTPClient create a new http client with retry settings.
-func NewRetryableHTTPClient() *http.Client {
+func NewRetryableHTTPClient(tracker Tracker) *http.Client {
 	client := retry.NewHTTPClient()
+
+	trackingTransport := newTrackingRoundTripper(client.HTTPClient.Transport, tracker)
+	client.HTTPClient.Transport = trackingTransport
+
+	// RequestLogHook is called before each retry (attemptNum > 0 for retries, 0 for initial request).
+	// We mark retry attempts in the request context so RoundTrip can track which attempts are retries.
+	// We use pointer dereference (*req = *...) to modify the request in-place because RequestLogHook
+	// doesn't return a value - it modifies the request through side effects. This updates the request's
+	// context field, which will be present when RoundTrip is called immediately after.
+	client.RequestLogHook = func(_ retryablehttp.Logger, req *http.Request, attemptNum int) {
+		if attemptNum > 0 {
+			*req = *trackingTransport.markAsRetry(req)
+		}
+	}
+
 	client.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 		if resp != nil && resp.StatusCode == http.StatusUnauthorized {
 			log.Debugf("Received HTTP 401 (Unauthorized), retrying request...")
@@ -113,11 +130,12 @@ func NewRetryableHTTPClient() *http.Client {
 
 		return shouldRetry, err
 	}
+
 	return client.StandardClient()
 }
 
 // NewClient creates a new client
-func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte, isEnterpise bool) *Client {
+func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte, isEnterpise bool, tracker Tracker) *Client {
 	targetURL := clientBaseURL
 	targetAudience := tokenAudience
 	if isEnterpise {
@@ -138,6 +156,7 @@ func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte,
 
 		client:  httpClient,
 		BaseURL: baseURL,
+		tracker: tracker,
 	}
 	c.common.client = c
 	c.Provisioning = (*ProvisioningService)(&c.common)
@@ -162,6 +181,7 @@ func (c *Client) ensureSignedToken() (string, error) {
 	c.token = createToken(c.keyID, c.issuerID, c.audience)
 	var err error
 	if c.signedToken, err = signToken(c.token, c.privateKeyContent); err != nil {
+		c.tracker.TrackAuthError(fmt.Sprintf("JWT signing: %s", err.Error()))
 		return "", err
 	}
 	return c.signedToken, nil
@@ -258,8 +278,10 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	}
 
 	if err != nil {
+		c.tracker.TrackAPIError(req.Method, req.URL.Host, req.URL.Path, 0, err.Error())
 		return nil, err
 	}
+
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
 			log.Warnf("Failed to close response body: %s", cerr)
@@ -267,6 +289,7 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	}()
 
 	if err := checkResponse(resp); err != nil {
+		c.tracker.TrackAPIError(req.Method, req.URL.Host, req.URL.Path, resp.StatusCode, err.Error())
 		return resp, err
 	}
 

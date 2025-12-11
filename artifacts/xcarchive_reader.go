@@ -1,7 +1,7 @@
 package artifacts
 
 import (
-	"github.com/bitrise-io/go-xcode/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
 // XCArchiveReader ...
