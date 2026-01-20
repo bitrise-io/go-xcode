@@ -24,9 +24,8 @@ type BundleIDPlatform string
 
 // BundleIDPlatforms ...
 const (
-	IOS       BundleIDPlatform = "IOS"
-	MacOS     BundleIDPlatform = "MAC_OS"
-	Universal BundleIDPlatform = "UNIVERSAL"
+	IOS   BundleIDPlatform = "IOS"
+	MacOS BundleIDPlatform = "MAC_OS"
 )
 
 // ProfileState ...
