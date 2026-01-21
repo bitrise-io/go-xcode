@@ -3,9 +3,9 @@ package exportoptionsgenerator
 import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-io/go-xcode/export"
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/export"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
