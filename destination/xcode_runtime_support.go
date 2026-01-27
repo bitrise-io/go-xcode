@@ -3,21 +3,21 @@ package destination
 import (
 	"fmt"
 
+	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 	"github.com/hashicorp/go-version"
 )
 
-func isRuntimeSupportedByXcode(runtimePlatform string, runtimeVersion *version.Version, xcodeVersion *version.Version) bool {
+func isRuntimeSupportedByXcode(runtimePlatform string, runtimeVersion *version.Version, xcodeVersion xcodeversion.Version) bool {
 	// Disregard runtime patch version (Xcode 26.1.1 should work with Simulator 26.1.2).
 	// Simulator runtime are usually only specified with major.minor (e.g., 18.2).
 	runtimeVersionWithMinor := version.Must(version.NewVersion(
 		fmt.Sprintf("%d.%d", runtimeVersion.Segments64()[0], runtimeVersion.Segments64()[1]),
 	))
-	xcodeMajor := xcodeVersion.Segments64()[0]
 	xcodeVersionWithMinor := version.Must(version.NewVersion(
-		fmt.Sprintf("%d.%d", xcodeMajor, xcodeVersion.Segments64()[1]),
+		fmt.Sprintf("%d.%d", xcodeVersion.Major, xcodeVersion.Minor),
 	))
 
-	if xcodeMajor >= 26 {
+	if xcodeVersion.Major >= 26 {
 		// Xcode 26 unified Simulator and Xcode versioning
 		return runtimeVersionWithMinor.LessThanOrEqual(xcodeVersionWithMinor)
 	}
@@ -47,12 +47,12 @@ func isRuntimeSupportedByXcode(runtimePlatform string, runtimeVersion *version.V
 		},
 	}
 
-	if len(runtimeVersion.Segments64()) == 0 || xcodeMajor == 0 {
+	if len(runtimeVersion.Segments64()) == 0 || xcodeVersion.Major == 0 {
 		return true
 	}
 	runtimeMajorVersion := runtimeVersion.Segments64()[0]
 
-	platformToLatestSupportedVersion, ok := xcodeVersionToSupportedSimulatorVersion[xcodeMajor]
+	platformToLatestSupportedVersion, ok := xcodeVersionToSupportedSimulatorVersion[xcodeVersion.Major]
 	if !ok {
 		return true
 	}

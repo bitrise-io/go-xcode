@@ -322,8 +322,7 @@ func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion st
 				return DeviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
 			}
 
-			xcodeVersion := version.Must(version.NewVersion(fmt.Sprintf("%d.%d", d.xcodeVersion.Major, d.xcodeVersion.Minor)))
-			if !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, xcodeVersion) {
+			if !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
 				continue
 			}
 
