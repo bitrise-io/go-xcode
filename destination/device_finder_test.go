@@ -309,7 +309,7 @@ func Test_deviceFinder_FindDevice_realXcrun_Integration(t *testing.T) {
 	got, err := d.FindDevice(Simulator{
 		Platform: "iOS Simulator",
 		OS:       "latest",
-		Name:     "iPhone 17",
+		Name:     "iPhone 16",
 	})
 
 	require.NoError(t, err)
