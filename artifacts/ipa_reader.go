@@ -3,8 +3,8 @@ package artifacts
 import (
 	"fmt"
 
-	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
 // IPAReader ...

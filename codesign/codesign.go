@@ -8,7 +8,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
-	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
@@ -17,6 +16,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/xcarchive"
 )
 
@@ -505,7 +505,7 @@ func (m *Manager) createCodeSignAssetMap(appLayout autocodesign.AppLayout, certi
 		bundleIDProfileInfoMap := signingAssets.BundleIDProfileMap()
 		bundleIDProfileMap := map[string]autocodesign.Profile{}
 		for bundleID, profileInfo := range bundleIDProfileInfoMap {
-			signingProfile, err := m.profileConverter.ProfileInfoToProfile(profileInfo)
+			signingProfile, err := m.profileConverter.ProfileInfoToProfile(profileutil.V2Profile(profileInfo))
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert profile info: %w", err)
 			}
@@ -539,7 +539,7 @@ func (m *Manager) createCodeSignAssetMap(appLayout autocodesign.AppLayout, certi
 		bundleIDProfileInfoMap := uiTestSigningAssets.BundleIDProfileMap()
 		bundleIDProfileMap := map[string]autocodesign.Profile{}
 		for bundleID, profileInfo := range bundleIDProfileInfoMap {
-			signingProfile, err := m.profileConverter.ProfileInfoToProfile(profileInfo)
+			signingProfile, err := m.profileConverter.ProfileInfoToProfile(profileutil.V2Profile(profileInfo))
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert profile info: %w", err)
 			}

@@ -12,12 +12,12 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
-	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset"
 	localcodesignassetMocks "github.com/bitrise-io/go-xcode/v2/autocodesign/localcodesignasset/mocks"
 	"github.com/bitrise-io/go-xcode/v2/codesign/mocks"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
