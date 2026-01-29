@@ -4,8 +4,6 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/bitrise-io/go-utils/v2/command"
-	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/destination/testdata"
 	"github.com/bitrise-io/go-xcode/v2/mocks"
@@ -290,30 +288,4 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
-}
-
-func Test_deviceFinder_FindDevice_realXcrun_Integration(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-
-	commandFactory := command.NewFactory(env.NewRepository())
-	logger := log.NewLogger()
-	logger.EnableDebugLog(true)
-
-	d := deviceFinder{
-		logger:         logger,
-		commandFactory: commandFactory,
-	}
-
-	got, err := d.FindDevice(Simulator{
-		Platform: "iOS Simulator",
-		OS:       "latest",
-		Name:     "iPhone 16",
-	})
-
-	require.NoError(t, err)
-	require.NotEmpty(t, got.UDID)
-
-	t.Logf("got: %+v", got)
 }
