@@ -292,7 +292,11 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 	}
 }
 
-func Test_deviceFinder_FindDevice_realXcrun(t *testing.T) {
+func Test_deviceFinder_FindDevice_realXcrun_Integration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
 	commandFactory := command.NewFactory(env.NewRepository())
 	logger := log.NewLogger()
 	logger.EnableDebugLog(true)
@@ -305,7 +309,7 @@ func Test_deviceFinder_FindDevice_realXcrun(t *testing.T) {
 	got, err := d.FindDevice(Simulator{
 		Platform: "iOS Simulator",
 		OS:       "latest",
-		Name:     "iPhone Xs",
+		Name:     "iPhone 17",
 	})
 
 	require.NoError(t, err)
