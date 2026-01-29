@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/bitrise-io/go-plist"
@@ -17,7 +18,6 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcworkspace"
-	"golang.org/x/exp/slices"
 )
 
 // BuildAction is the type of build action to be performed on the scheme.
