@@ -75,8 +75,7 @@ func (f Factory) Create(credentials devportalservice.Credentials, teamID string)
 	f.logger.Println()
 	f.logger.Infof("Initializing Developer Portal client")
 	var devportalClient autocodesign.DevPortalClient
-	envRepo := env.NewRepository()
-	tracker := appstoreconnect.NewDefaultTracker(analytics.NewDefaultTracker(f.logger, envRepo), env.NewRepository())
+	tracker := appstoreconnect.NewDefaultTracker(analytics.NewDefaultTracker(f.logger, env.NewRepository()), env.NewRepository())
 	if credentials.APIKey != nil {
 		httpClient := appstoreconnect.NewRetryableHTTPClient(tracker)
 		client := appstoreconnect.NewClient(
