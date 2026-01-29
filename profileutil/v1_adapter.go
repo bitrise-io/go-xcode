@@ -4,6 +4,7 @@ import (
 	profileutilv1 "github.com/bitrise-io/go-xcode/profileutil"
 )
 
+// V2Profile ...
 func V2Profile(model profileutilv1.ProvisioningProfileInfoModel) ProvisioningProfileInfoModel {
 	return ProvisioningProfileInfoModel{
 		UUID:                  model.UUID,
@@ -22,6 +23,7 @@ func V2Profile(model profileutilv1.ProvisioningProfileInfoModel) ProvisioningPro
 	}
 }
 
+// V1Profiles ...
 func V1Profiles(models []ProvisioningProfileInfoModel) []profileutilv1.ProvisioningProfileInfoModel {
 	profiles := make([]profileutilv1.ProvisioningProfileInfoModel, len(models))
 	for i, model := range models {
@@ -30,6 +32,7 @@ func V1Profiles(models []ProvisioningProfileInfoModel) []profileutilv1.Provision
 	return profiles
 }
 
+// V1Profile ...
 func V1Profile(model ProvisioningProfileInfoModel) profileutilv1.ProvisioningProfileInfoModel {
 	return profileutilv1.ProvisioningProfileInfoModel{
 		UUID:                  model.UUID,
