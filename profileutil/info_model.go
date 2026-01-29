@@ -33,21 +33,8 @@ type ProvisioningProfileInfoModel struct {
 	Type                  ProfileType
 }
 
-func collectCapabilitesPrintableInfo(entitlements plistutil.PlistData) map[string]interface{} {
-	capabilities := map[string]interface{}{}
-
-	for key, value := range entitlements {
-		if KnownProfileCapabilitiesMap[ProfileTypeIos][key] ||
-			KnownProfileCapabilitiesMap[ProfileTypeMacOs][key] {
-			capabilities[key] = value
-		}
-	}
-
-	return capabilities
-}
-
 // PrintableProvisioningProfileInfo ...
-func (info ProvisioningProfileInfoModel) String(installedCertificates ...certificateutil.CertificateInfoModel) string {
+func (info ProvisioningProfileInfoModel) String(currentTime func() time.Time, installedCertificates ...certificateutil.CertificateInfoModel) string {
 	printable := map[string]interface{}{}
 	printable["name"] = fmt.Sprintf("%s (%s)", info.Name, info.UUID)
 	printable["export_type"] = string(info.ExportType)
@@ -56,7 +43,7 @@ func (info ProvisioningProfileInfoModel) String(installedCertificates ...certifi
 	printable["expiry"] = info.ExpirationDate.String()
 	printable["is_xcode_managed"] = info.IsXcodeManaged()
 
-	printable["capabilities"] = collectCapabilitesPrintableInfo(info.Entitlements)
+	printable["capabilities"] = collectCapabilitiesPrintableInfo(info.Entitlements)
 
 	if info.ProvisionedDevices != nil {
 		printable["devices"] = info.ProvisionedDevices
@@ -77,7 +64,7 @@ func (info ProvisioningProfileInfoModel) String(installedCertificates ...certifi
 		errors = append(errors, "none of the profile's certificates are installed")
 	}
 
-	if err := info.CheckValidity(); err != nil {
+	if err := info.CheckValidity(currentTime); err != nil {
 		errors = append(errors, err.Error())
 	}
 	if len(errors) > 0 {
@@ -94,29 +81,13 @@ func (info ProvisioningProfileInfoModel) String(installedCertificates ...certifi
 }
 
 // IsXcodeManaged ...
-func IsXcodeManaged(profileName string) bool {
-	if strings.HasPrefix(profileName, "XC") {
-		return true
-	}
-	if strings.Contains(profileName, "Provisioning Profile") {
-		if strings.HasPrefix(profileName, "iOS Team") ||
-			strings.HasPrefix(profileName, "Mac Catalyst Team") ||
-			strings.HasPrefix(profileName, "tvOS Team") ||
-			strings.HasPrefix(profileName, "Mac Team") {
-			return true
-		}
-	}
-	return false
-}
-
-// IsXcodeManaged ...
 func (info ProvisioningProfileInfoModel) IsXcodeManaged() bool {
 	return IsXcodeManaged(info.Name)
 }
 
 // CheckValidity ...
-func (info ProvisioningProfileInfoModel) CheckValidity() error {
-	timeNow := time.Now()
+func (info ProvisioningProfileInfoModel) CheckValidity(currentTime func() time.Time) error {
+	timeNow := currentTime()
 	if !timeNow.Before(info.ExpirationDate) {
 		return fmt.Errorf("Provisioning Profile is not valid anymore - validity ended at: %s", info.ExpirationDate)
 	}
@@ -135,6 +106,22 @@ func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertif
 		}
 	}
 	return has
+}
+
+// IsXcodeManaged ...
+func IsXcodeManaged(profileName string) bool {
+	if strings.HasPrefix(profileName, "XC") {
+		return true
+	}
+	if strings.Contains(profileName, "Provisioning Profile") {
+		if strings.HasPrefix(profileName, "iOS Team") ||
+			strings.HasPrefix(profileName, "Mac Catalyst Team") ||
+			strings.HasPrefix(profileName, "tvOS Team") ||
+			strings.HasPrefix(profileName, "Mac Team") {
+			return true
+		}
+	}
+	return false
 }
 
 // NewProvisioningProfileInfo ...
@@ -236,19 +223,15 @@ func InstalledProvisioningProfileInfos(profileType ProfileType) ([]ProvisioningP
 	return infos, nil
 }
 
-// FindProvisioningProfileInfo ...
-func FindProvisioningProfileInfo(uuid string) (ProvisioningProfileInfoModel, string, error) {
-	profile, pth, err := FindProvisioningProfile(uuid)
-	if err != nil {
-		return ProvisioningProfileInfoModel{}, "", err
-	}
-	if pth == "" || profile == nil {
-		return ProvisioningProfileInfoModel{}, "", nil
+func collectCapabilitiesPrintableInfo(entitlements plistutil.PlistData) map[string]interface{} {
+	capabilities := map[string]interface{}{}
+
+	for key, value := range entitlements {
+		if KnownProfileCapabilitiesMap[ProfileTypeIos][key] ||
+			KnownProfileCapabilitiesMap[ProfileTypeMacOs][key] {
+			capabilities[key] = value
+		}
 	}
 
-	info, err := NewProvisioningProfileInfo(*profile)
-	if err != nil {
-		return ProvisioningProfileInfoModel{}, "", err
-	}
-	return info, pth, nil
+	return capabilities
 }
