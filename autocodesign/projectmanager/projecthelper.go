@@ -10,7 +10,6 @@ import (
 	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/xcodeproject/schemeint"
@@ -18,6 +17,7 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcworkspace"
+	"golang.org/x/exp/slices"
 )
 
 // BuildAction is the type of build action to be performed on the scheme.
@@ -552,7 +552,7 @@ func configuration(logger log.Logger, configurationName string, scheme xcscheme.
 			for _, conf := range target.BuildConfigurationList.BuildConfigurations {
 				configNames = append(configNames, conf.Name)
 			}
-			if !sliceutil.IsStringInSlice(configurationName, configNames) {
+			if !slices.Contains(configNames, configurationName) {
 				return "", fmt.Errorf("build configuration (%s) not defined for target: (%s)", configurationName, target.Name)
 			}
 		}

@@ -3,13 +3,13 @@ package exportoptionsgenerator
 import (
 	"fmt"
 
-	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/export"
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
+	"golang.org/x/exp/slices"
 )
 
 const (
@@ -188,7 +188,7 @@ func projectUsesCloudKit(bundleIDEntitlementsMap map[string]plistutil.PlistData)
 			continue
 		}
 
-		if sliceutil.IsStringInSlice("CloudKit", services) || sliceutil.IsStringInSlice("CloudDocuments", services) {
+		if slices.Contains(services, "CloudKit") || slices.Contains(services, "CloudDocuments") {
 			fmt.Printf("Project uses CloudKit")
 
 			return true
