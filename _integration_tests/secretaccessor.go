@@ -8,7 +8,7 @@ import (
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	secretmanagerpb "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-utils/v2/retry"
 	"google.golang.org/api/option"
 )
 

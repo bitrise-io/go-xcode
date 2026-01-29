@@ -6,12 +6,12 @@ import (
 	"net/http"
 
 	"github.com/bitrise-io/go-steputils/v2/ruby"
-	"github.com/bitrise-io/go-utils/retry"
 	"github.com/bitrise-io/go-utils/v2/analytics"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/retryhttp"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnectclient"
@@ -44,7 +44,7 @@ func NewFactory(logger log.Logger, filemanager fileutil.FileManager) Factory {
 func (f Factory) CreateBitriseConnection(buildURL, buildAPIToken string) (*devportalservice.AppleDeveloperConnection, error) {
 	f.logger.Println()
 	f.logger.Infof("Fetching Apple Service connection")
-	connectionProvider := devportalservice.NewBitriseClient(f.logger, f.filemanager, retry.NewHTTPClient().StandardClient(), buildURL, buildAPIToken)
+	connectionProvider := devportalservice.NewBitriseClient(f.logger, f.filemanager, retryhttp.NewClient(f.logger).StandardClient(), buildURL, buildAPIToken)
 	conn, err := connectionProvider.GetAppleDeveloperConnection()
 	if err != nil {
 		if networkErr, ok := err.(devportalservice.NetworkError); ok && networkErr.Status == http.StatusUnauthorized {

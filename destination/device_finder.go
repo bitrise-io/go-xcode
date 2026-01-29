@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/errorutil"
-	"github.com/bitrise-io/go-utils/retry"
-
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/retry"
 	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 )
 

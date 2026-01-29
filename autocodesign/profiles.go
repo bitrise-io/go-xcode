@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/retry"
+	"github.com/bitrise-io/go-utils/v2/retry"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
