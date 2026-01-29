@@ -1,11 +1,8 @@
 package export
 
 import (
-	"sort"
-
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
-	glob "github.com/ryanuber/go-glob"
 )
 
 // IosCodeSignGroup ...
@@ -37,6 +34,7 @@ func NewIOSGroup(certificate certificateutil.CertificateInfoModel, bundleIDProfi
 	}
 }
 
+/*
 func createSingleWildcardGroups(group SelectableCodeSignGroup, alreadyUsedProfileUUIDMap map[string]bool) []IosCodeSignGroup {
 	groups := []IosCodeSignGroup{}
 
@@ -288,34 +286,35 @@ func createRemainingGroups(group SelectableCodeSignGroup, alreadyUsedProfileUUID
 	return groups
 }
 
-// CreateIosCodeSignGroups ...
-func CreateIosCodeSignGroups(selectableGroups []SelectableCodeSignGroup) []IosCodeSignGroup {
-	alreadyUsedProfileUUIDMap := map[string]bool{}
+// // CreateIosCodeSignGroups ...
+// func CreateIosCodeSignGroups(selectableGroups []SelectableCodeSignGroup) []IosCodeSignGroup {
+// 	alreadyUsedProfileUUIDMap := map[string]bool{}
 
-	singleWildcardGroups := []IosCodeSignGroup{}
-	xcodeManagedGroups := []IosCodeSignGroup{}
-	notXcodeManagedGroups := []IosCodeSignGroup{}
-	remainingGroups := []IosCodeSignGroup{}
+// 	singleWildcardGroups := []IosCodeSignGroup{}
+// 	xcodeManagedGroups := []IosCodeSignGroup{}
+// 	notXcodeManagedGroups := []IosCodeSignGroup{}
+// 	remainingGroups := []IosCodeSignGroup{}
 
-	for _, selectableGroup := range selectableGroups {
-		// create groups with single wildcard profiles
-		singleWildcardGroups = append(singleWildcardGroups, createSingleWildcardGroups(selectableGroup, alreadyUsedProfileUUIDMap)...)
+// 	for _, selectableGroup := range selectableGroups {
+// 		// create groups with single wildcard profiles
+// 		singleWildcardGroups = append(singleWildcardGroups, createSingleWildcardGroups(selectableGroup, alreadyUsedProfileUUIDMap)...)
 
-		// create groups with xcode managed profiles
-		xcodeManagedGroups = append(xcodeManagedGroups, createXcodeManagedGroups(selectableGroup, alreadyUsedProfileUUIDMap)...)
+// 		// create groups with xcode managed profiles
+// 		xcodeManagedGroups = append(xcodeManagedGroups, createXcodeManagedGroups(selectableGroup, alreadyUsedProfileUUIDMap)...)
 
-		// create groups with NOT xcode managed profiles
-		notXcodeManagedGroups = append(notXcodeManagedGroups, createNotXcodeManagedGroups(selectableGroup, alreadyUsedProfileUUIDMap)...)
+// 		// create groups with NOT xcode managed profiles
+// 		notXcodeManagedGroups = append(notXcodeManagedGroups, createNotXcodeManagedGroups(selectableGroup, alreadyUsedProfileUUIDMap)...)
 
-		// if there are remaining profiles we create a not exact group by using the first matching profile for every bundle id
-		remainingGroups = append(remainingGroups, createRemainingGroups(selectableGroup, alreadyUsedProfileUUIDMap)...)
-	}
+// 		// if there are remaining profiles we create a not exact group by using the first matching profile for every bundle id
+// 		remainingGroups = append(remainingGroups, createRemainingGroups(selectableGroup, alreadyUsedProfileUUIDMap)...)
+// 	}
 
-	codeSignGroups := []IosCodeSignGroup{}
-	codeSignGroups = append(codeSignGroups, notXcodeManagedGroups...)
-	codeSignGroups = append(codeSignGroups, xcodeManagedGroups...)
-	codeSignGroups = append(codeSignGroups, singleWildcardGroups...)
-	codeSignGroups = append(codeSignGroups, remainingGroups...)
+// 	codeSignGroups := []IosCodeSignGroup{}
+// 	codeSignGroups = append(codeSignGroups, notXcodeManagedGroups...)
+// 	codeSignGroups = append(codeSignGroups, xcodeManagedGroups...)
+// 	codeSignGroups = append(codeSignGroups, singleWildcardGroups...)
+// 	codeSignGroups = append(codeSignGroups, remainingGroups...)
 
-	return codeSignGroups
-}
+// 	return codeSignGroups
+// }
+*/

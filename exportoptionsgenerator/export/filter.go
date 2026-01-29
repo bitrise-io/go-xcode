@@ -138,6 +138,7 @@ func CreateNotXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGrou
 	}
 }
 
+/*
 // CreateXcodeManagedSelectableCodeSignGroupFilter ...
 func CreateXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
@@ -169,6 +170,7 @@ func CreateXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFi
 		return false
 	}
 }
+*/
 
 // CreateExcludeProfileNameSelectableCodeSignGroupFilter ...
 func CreateExcludeProfileNameSelectableCodeSignGroupFilter(name string) SelectableCodeSignGroupFilter {

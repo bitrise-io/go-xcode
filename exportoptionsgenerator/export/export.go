@@ -42,7 +42,7 @@ func (group SelectableCodeSignGroup) String() string {
 	return string(data)
 }
 
-func isCertificateInstalled(installedCertificates []certificateutil.CertificateInfoModel, certificate certificateutil.CertificateInfoModel) bool {
+func containsCertificate(installedCertificates []certificateutil.CertificateInfoModel, certificate certificateutil.CertificateInfoModel) bool {
 	for _, cert := range installedCertificates {
 		if cert.Serial == certificate.Serial {
 			return true
@@ -52,31 +52,31 @@ func isCertificateInstalled(installedCertificates []certificateutil.CertificateI
 }
 
 // CreateSelectableCodeSignGroups ...
-func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
+func CreateSelectableCodeSignGroups(installedCertificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
 	groups := []SelectableCodeSignGroup{}
 
-	serialProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
-	serialCertificateMap := map[string]certificateutil.CertificateInfoModel{}
+	serialToProfiles := map[string][]profileutil.ProvisioningProfileInfoModel{}
+	serialToCertificate := map[string]certificateutil.CertificateInfoModel{}
 	for _, profile := range profiles {
 		for _, certificate := range profile.DeveloperCertificates {
-			if !isCertificateInstalled(certificates, certificate) {
+			if !containsCertificate(installedCertificates, certificate) {
 				continue
 			}
 
-			certificateProfiles, ok := serialProfilesMap[certificate.Serial]
+			certificateProfiles, ok := serialToProfiles[certificate.Serial]
 			if !ok {
 				certificateProfiles = []profileutil.ProvisioningProfileInfoModel{}
 			}
 			certificateProfiles = append(certificateProfiles, profile)
-			serialProfilesMap[certificate.Serial] = certificateProfiles
-			serialCertificateMap[certificate.Serial] = certificate
+			serialToProfiles[certificate.Serial] = certificateProfiles
+			serialToCertificate[certificate.Serial] = certificate
 		}
 	}
 
-	for serial, profiles := range serialProfilesMap {
-		certificate := serialCertificateMap[serial]
+	for serial, profiles := range serialToProfiles {
+		certificate := serialToCertificate[serial]
 
-		bundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
+		bundleIDToProfiles := map[string][]profileutil.ProvisioningProfileInfoModel{}
 		for _, bundleID := range bundleIDs {
 
 			matchingProfiles := []profileutil.ProvisioningProfileInfoModel{}
@@ -90,14 +90,14 @@ func CreateSelectableCodeSignGroups(certificates []certificateutil.CertificateIn
 
 			if len(matchingProfiles) > 0 {
 				sort.Sort(ByBundleIDLength(matchingProfiles))
-				bundleIDProfilesMap[bundleID] = matchingProfiles
+				bundleIDToProfiles[bundleID] = matchingProfiles
 			}
 		}
 
-		if len(bundleIDProfilesMap) == len(bundleIDs) {
+		if len(bundleIDToProfiles) == len(bundleIDs) {
 			group := SelectableCodeSignGroup{
 				Certificate:         certificate,
-				BundleIDProfilesMap: bundleIDProfilesMap,
+				BundleIDProfilesMap: bundleIDToProfiles,
 			}
 			groups = append(groups, group)
 		}
