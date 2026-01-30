@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/retry"
-	"github.com/bitrise-io/go-utils/sliceutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
@@ -449,7 +449,7 @@ func FindMissingContainers(projectEnts, profileEnts Entitlements) ([]string, err
 
 func checkProfileCertificates(profileCertificateIDs []string, certificateIDs []string) error {
 	for _, id := range certificateIDs {
-		if !sliceutil.IsStringInSlice(id, profileCertificateIDs) {
+		if !slices.Contains(profileCertificateIDs, id) {
 			return NonmatchingProfileError{
 				Reason: fmt.Sprintf("certificate with ID (%s) not included in the profile", id),
 			}
@@ -484,7 +484,7 @@ func checkProfileDevices(profileDeviceIDs DeviceUDIDs, deviceUDIDs DeviceUDIDs) 
 	}
 
 	for _, UDID := range deviceUDIDs {
-		if !sliceutil.IsStringInSlice(normalizeDeviceUDID(UDID), normalizedProfileDeviceIDs) {
+		if !slices.Contains(normalizedProfileDeviceIDs, normalizeDeviceUDID(UDID)) {
 			return NonmatchingProfileError{
 				Reason: fmt.Sprintf("device with UDID (%s) not included in the profile", UDID),
 			}
