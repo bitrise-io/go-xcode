@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/stretchr/testify/mock"
@@ -59,6 +60,7 @@ func Test_checkBundleIDEntitlements(t *testing.T) {
 
 func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 	// Arrange
+	logger := log.NewLogger(log.WithDebugLog(true))
 	mockClient := &MockClient{}
 
 	mockClient.
@@ -88,7 +90,7 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 		On("PostProfilesSuccess", mock.AnythingOfType("*http.Request")).
 		Return(newResponse(t, http.StatusOK, map[string]interface{}{}), nil)
 
-	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"), false, appstoreconnect.NoOpAnalyticsTracker{})
+	client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"), false, logger, appstoreconnect.NoOpAnalyticsTracker{})
 	profileClient := NewProfileClient(client)
 	bundleID := appstoreconnect.BundleID{
 		Attributes: appstoreconnect.BundleIDAttributes{Identifier: "io.bitrise.testapp"},

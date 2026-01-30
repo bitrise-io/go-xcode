@@ -5,7 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/retry"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
@@ -27,6 +28,24 @@ func newMockLocalCodeSignAssetManager(assets *AppCodesignAssets, missingAppLayou
 	mockLocalCodeSignAssetManager.On("FindCodesignAssets", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(assets, missingAppLayout, nil)
 
 	return mockLocalCodeSignAssetManager
+}
+
+func newMockSleeper(logger log.Logger) retry.Sleeper {
+	if logger == nil {
+		panic("logger must not be nil")
+	}
+	return &mockSleeper{
+		logger: logger,
+	}
+}
+
+type mockSleeper struct {
+	logger log.Logger
+	mock.Mock
+}
+
+func (_m *mockSleeper) Sleep(duration time.Duration) {
+	_m.logger.Printf("Fake sleep for %s", duration.String())
 }
 
 type profileArgs struct {
@@ -71,7 +90,7 @@ func newCertificate(t *testing.T, teamID, teamName, commonName string, expiry ti
 }
 
 func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
-	log.SetEnableDebugLog(true)
+	logger := log.NewLogger(log.WithDebugLog(true))
 
 	const teamID = "MYTEAMID"
 	const commonNameIOSDevelopment = "Apple Development: test"
@@ -270,6 +289,8 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 				devPortalClient:           tt.fields.devPortalClient,
 				assetWriter:               tt.fields.assetWriter,
 				localCodeSignAssetManager: tt.fields.localCodeSignAssetManager,
+				sleeper:                   newMockSleeper(logger),
+				logger:                    logger,
 			}
 
 			got, err := m.EnsureCodesignAssets(tt.appLayout, tt.opts)
@@ -286,6 +307,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 
 func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	// Given
+	logger := log.NewLogger(log.WithDebugLog(false))
 	const teamID = "MY_TEAM_ID"
 	expiry := time.Now().AddDate(1, 0, 0)
 	devCert := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test", expiry)
@@ -301,7 +323,7 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	}
 
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, &appLayout)
-	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager)
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper(logger))
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
@@ -319,6 +341,7 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 
 func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	// Given
+	logger := log.NewLogger(log.WithDebugLog(false))
 	const teamID = "MY_TEAM_ID"
 	const appClipBundleID = "io.bitrise.appclip"
 
@@ -339,7 +362,7 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 	}
 
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, &appLayout)
-	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager)
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper(logger))
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
@@ -357,6 +380,7 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 
 func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.T) {
 	// Given
+	logger := log.NewLogger(log.WithDebugLog(false))
 	const teamID = "MY_TEAM_ID"
 	expiry := time.Now().AddDate(1, 0, 0)
 	devCert := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test", expiry)
@@ -413,7 +437,7 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 	}
 
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, &appLayout)
-	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager)
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper(logger))
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
@@ -431,6 +455,7 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 
 func Test_GivenLocalProfile_WhenCertificateIsMissing_ThenInstalled(t *testing.T) {
 	// Given
+	logger := log.NewLogger(log.WithDebugLog(false))
 	const teamID = "MY_TEAM_ID"
 	expiry := time.Now().AddDate(1, 0, 0)
 	devCert1 := newCertificate(t, teamID, "MY_TEAM", "Apple Development: test 1", expiry)
@@ -485,7 +510,7 @@ func Test_GivenLocalProfile_WhenCertificateIsMissing_ThenInstalled(t *testing.T)
 		},
 		Certificate: devCert2,
 	}, nil)
-	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager)
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper(logger))
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
