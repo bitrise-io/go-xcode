@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/retry"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/codesignasset"
@@ -91,7 +92,7 @@ func Example() {
 	profileProvider := localcodesignasset.NewProvisioningProfileProvider()
 	profileConverter := localcodesignasset.NewProvisioningProfileConverter()
 	localCodesignAssetManager := localcodesignasset.NewManager(profileProvider, profileConverter)
-	manager := autocodesign.NewCodesignAssetManager(devPortalClient, codesignasset.NewWriter(*keychain), localCodesignAssetManager)
+	manager := autocodesign.NewCodesignAssetManager(devPortalClient, codesignasset.NewWriter(*keychain), localCodesignAssetManager, logger, retry.DefaultSleeper{})
 
 	// Analyzing project
 	fmt.Println()
