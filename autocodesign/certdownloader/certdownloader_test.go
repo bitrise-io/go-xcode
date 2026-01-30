@@ -1,12 +1,13 @@
 package certdownloader
 
 import (
-	"net/http"
-	"net/http/httptest"
-	"os"
+	"bytes"
+	"context"
+	"io"
 	"testing"
 	"time"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/stretchr/testify/assert"
 )
@@ -20,27 +21,13 @@ func Test_downloader_GetCertificates_Local(t *testing.T) {
 		t.Errorf("init: failed to encode certificate: %s", err)
 	}
 
-	p12File, err := os.CreateTemp("", "*.p12")
-	if err != nil {
-		t.Errorf("init: failed to create temp test file: %s", err)
-	}
-
-	if _, err = p12File.Write(certData); err != nil {
-		t.Errorf("init: failed to write test file: %s", err)
-	}
-
-	if err = p12File.Close(); err != nil {
-		t.Errorf("init: failed to close file: %s", err)
-	}
-
-	p12path := "file://" + p12File.Name()
-
 	d := downloader{
 		certs: []CertificateAndPassphrase{{
-			URL:        p12path,
+			URL:        "file:///fake/path/cert.p12",
 			Passphrase: passphrase,
 		}},
-		client: http.DefaultClient,
+		logger:       log.NewLogger(),
+		fileProvider: fakeFileProvider{content: certData},
 	}
 	got, err := d.GetCertificates()
 
@@ -61,25 +48,13 @@ func Test_downloader_GetCertificates_Remote(t *testing.T) {
 		t.Errorf("init: failed to encode certificate: %s", err)
 	}
 
-	storage := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write(certData)
-		if err != nil {
-			t.Errorf("failed to write response: %s", err)
-		}
-	}))
-
 	d := downloader{
 		certs: []CertificateAndPassphrase{{
-			URL:        storage.URL,
+			URL:        "https://example.com/cert.p12",
 			Passphrase: passphrase,
 		}},
-		client: http.DefaultClient,
+		logger:       log.NewLogger(),
+		fileProvider: fakeFileProvider{content: certData},
 	}
 	got, err := d.GetCertificates()
 
@@ -109,4 +84,16 @@ func createTestCert(t *testing.T) certificateutil.CertificateInfoModel {
 	t.Logf("Test certificate generated. Serial: %s Team ID: %s Common name: %s", certInfo.Serial, certInfo.TeamID, certInfo.CommonName)
 
 	return certInfo
+}
+
+type fakeFileProvider struct {
+	content []byte
+}
+
+func (f fakeFileProvider) Contents(_ context.Context, _ string) (io.ReadCloser, error) {
+	return io.NopCloser(bytes.NewReader(f.content)), nil
+}
+
+func (f fakeFileProvider) LocalPath(_ context.Context, _ string) (string, error) {
+	return "", nil
 }
