@@ -30,16 +30,22 @@ func newMockLocalCodeSignAssetManager(assets *AppCodesignAssets, missingAppLayou
 	return mockLocalCodeSignAssetManager
 }
 
-func newMockSleeper() retry.Sleeper {
-	return &mockSleeper{}
+func newMockSleeper(logger log.Logger) retry.Sleeper {
+	if logger == nil {
+		panic("logger must not be nil")
+	}
+	return &mockSleeper{
+		logger: logger,
+	}
 }
 
 type mockSleeper struct {
+	logger log.Logger
 	mock.Mock
 }
 
 func (_m *mockSleeper) Sleep(duration time.Duration) {
-	_m.Called(duration)
+	_m.logger.Printf("Fake sleep for %s", duration.String())
 }
 
 type profileArgs struct {
@@ -283,7 +289,7 @@ func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
 				devPortalClient:           tt.fields.devPortalClient,
 				assetWriter:               tt.fields.assetWriter,
 				localCodeSignAssetManager: tt.fields.localCodeSignAssetManager,
-				sleeper:                   newMockSleeper(),
+				sleeper:                   newMockSleeper(logger),
 				logger:                    logger,
 			}
 
@@ -317,7 +323,7 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	}
 
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, &appLayout)
-	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper())
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper(logger))
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
@@ -356,7 +362,7 @@ func Test_GivenAppIDWithoutAppleSignIn_WhenEnsureAppClipProfile_ThenItFails(t *t
 	}
 
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, &appLayout)
-	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper())
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper(logger))
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
@@ -431,7 +437,7 @@ func Test_GivenProfileExpired_WhenProfilesInconsistent_ThenItRetries(t *testing.
 	}
 
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, &appLayout)
-	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper())
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper(logger))
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
@@ -504,7 +510,7 @@ func Test_GivenLocalProfile_WhenCertificateIsMissing_ThenInstalled(t *testing.T)
 		},
 		Certificate: devCert2,
 	}, nil)
-	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper())
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger, newMockSleeper(logger))
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
