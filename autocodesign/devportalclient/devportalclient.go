@@ -75,7 +75,8 @@ func (f Factory) Create(credentials devportalservice.Credentials, teamID string)
 	f.logger.Println()
 	f.logger.Infof("Initializing Developer Portal client")
 	var devportalClient autocodesign.DevPortalClient
-	tracker := appstoreconnect.NewDefaultTracker(analytics.NewDefaultTracker(f.logger, env.NewRepository()), env.NewRepository())
+	envRepo := env.NewRepository()
+	tracker := appstoreconnect.NewDefaultTracker(analytics.NewDefaultTracker(f.logger, envRepo), envRepo)
 	if credentials.APIKey != nil {
 		httpClient := appstoreconnect.NewRetryableHTTPClient(tracker)
 		client := appstoreconnect.NewClient(
@@ -90,7 +91,7 @@ func (f Factory) Create(credentials devportalservice.Credentials, teamID string)
 		devportalClient = appstoreconnectclient.NewAPIDevPortalClient(client)
 		f.logger.Debugf("App Store Connect API client created with base URL: %s", client.BaseURL)
 	} else if credentials.AppleID != nil {
-		cmdFactory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), env.NewCommandLocator())
+		cmdFactory, err := ruby.NewCommandFactory(command.NewFactory(envRepo), env.NewCommandLocator())
 		if err != nil {
 			return nil, err
 		}
