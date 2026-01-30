@@ -39,9 +39,9 @@ type ProvisioningProfileInfoModel struct {
 }
 
 // NewProvisioningProfileInfo ...
-func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningProfileInfoModel, error) {
+func NewProvisioningProfileInfo(profilePKCS7 pkcs7.PKCS7) (ProvisioningProfileInfoModel, error) {
 	var data plistutil.PlistData
-	if _, err := plist.Unmarshal(provisioningProfile.Content, &data); err != nil {
+	if _, err := plist.Unmarshal(profilePKCS7.Content, &data); err != nil {
 		return ProvisioningProfileInfoModel{}, err
 	}
 	profile := PlistData(data)
@@ -68,6 +68,16 @@ func NewProvisioningProfileInfo(provisioningProfile pkcs7.PKCS7) (ProvisioningPr
 	}
 
 	return info, nil
+}
+
+// NewProvisioningProfileInfoFromPKCS7Content ...
+func NewProvisioningProfileInfoFromPKCS7Content(content []byte) (ProvisioningProfileInfoModel, error) {
+	profilePKCS7, err := pkcs7.Parse(content)
+	if err != nil {
+		return ProvisioningProfileInfoModel{}, err
+	}
+
+	return NewProvisioningProfileInfo(*profilePKCS7)
 }
 
 // IsXcodeManaged ...

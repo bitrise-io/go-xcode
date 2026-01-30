@@ -49,12 +49,7 @@ func (d downloader) GetProfiles() ([]autocodesign.LocalProfile, error) {
 			return nil, fmt.Errorf("profile (%s) is empty", url)
 		}
 
-		parsedProfile, err := profileutil.ProvisioningProfileFromContent(content)
-		if err != nil {
-			return nil, fmt.Errorf("invalid pkcs7 file format: %w", err)
-		}
-
-		profileInfo, err := profileutil.NewProvisioningProfileInfo(*parsedProfile)
+		profileInfo, err := profileutil.NewProvisioningProfileInfoFromPKCS7Content(content)
 		if err != nil {
 			return nil, fmt.Errorf("unknown provisioning profile format: %w", err)
 		}

@@ -24,12 +24,7 @@ func (reader IPAReader) ProvisioningProfileInfo() (*profileutil.ProvisioningProf
 		return nil, err
 	}
 
-	profilePKCS7, err := profileutil.ProvisioningProfileFromContent(b)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse embedded.mobilprovision: %w", err)
-	}
-
-	provisioningProfileInfo, err := profileutil.NewProvisioningProfileInfo(*profilePKCS7)
+	provisioningProfileInfo, err := profileutil.NewProvisioningProfileInfoFromPKCS7Content(b)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read profile info: %w", err)
 	}
