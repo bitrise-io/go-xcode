@@ -34,8 +34,39 @@ func NewProfileReader(logger log.Logger, fileManager fileutil.FileManager, pathM
 	}
 }
 
-// ProvisioningProfileFromFile ...
-func (reader ProfileReader) ProvisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {
+// ProvisioningProfileInfoFromFile ...
+func (reader ProfileReader) ProvisioningProfileInfoFromFile(pth string) (ProvisioningProfileInfoModel, error) {
+	provisioningProfile, err := reader.provisioningProfileFromFile(pth)
+	if err != nil {
+		return ProvisioningProfileInfoModel{}, err
+	}
+	if provisioningProfile != nil {
+		return NewProvisioningProfileInfo(*provisioningProfile)
+	}
+	return ProvisioningProfileInfoModel{}, errors.New("failed to parse provisioning profile infos")
+}
+
+// InstalledProvisioningProfileInfos ...
+func (reader ProfileReader) InstalledProvisioningProfileInfos(profileType ProfileType) ([]ProvisioningProfileInfoModel, error) {
+	provisioningProfiles, err := reader.installedProvisioningProfiles(profileType)
+	if err != nil {
+		return nil, err
+	}
+
+	var infos []ProvisioningProfileInfoModel
+	for _, provisioningProfile := range provisioningProfiles {
+		if provisioningProfile != nil {
+			info, err := NewProvisioningProfileInfo(*provisioningProfile)
+			if err != nil {
+				return nil, err
+			}
+			infos = append(infos, info)
+		}
+	}
+	return infos, nil
+}
+
+func (reader ProfileReader) provisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {
 	f, err := reader.fileManager.Open(pth)
 	if err != nil {
 		return nil, err
@@ -50,11 +81,10 @@ func (reader ProfileReader) ProvisioningProfileFromFile(pth string) (*pkcs7.PKCS
 	if err != nil {
 		return nil, err
 	}
-	return ProvisioningProfileFromContent(content)
+	return pkcs7.Parse(content)
 }
 
-// InstalledProvisioningProfiles ...
-func (reader ProfileReader) InstalledProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, error) {
+func (reader ProfileReader) installedProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, error) {
 	ext := ".mobileprovision"
 	if profileType == ProfileTypeMacOs {
 		ext = ".provisionprofile"
@@ -73,82 +103,11 @@ func (reader ProfileReader) InstalledProvisioningProfiles(profileType ProfileTyp
 
 	var profiles []*pkcs7.PKCS7
 	for _, pth := range pths {
-		profile, err := reader.ProvisioningProfileFromFile(pth)
+		profile, err := reader.provisioningProfileFromFile(pth)
 		if err != nil {
 			return nil, err
 		}
 		profiles = append(profiles, profile)
 	}
 	return profiles, nil
-}
-
-// FindProvisioningProfile ...
-func (reader ProfileReader) FindProvisioningProfile(uuid string) (*pkcs7.PKCS7, string, error) {
-	absProvProfileDirPath, err := reader.pathModifier.AbsPath(ProvProfileSystemDirPath)
-	if err != nil {
-		return nil, "", err
-	}
-
-	iosProvisioningProfileExt := ".mobileprovision"
-	pth := filepath.Join(absProvProfileDirPath, uuid+iosProvisioningProfileExt)
-	if exist, err := reader.pathChecker.IsPathExists(pth); err != nil {
-		return nil, "", err
-	} else if exist {
-		profile, err := reader.ProvisioningProfileFromFile(pth)
-		if err != nil {
-			return nil, "", err
-		}
-		return profile, pth, nil
-	}
-
-	macOsProvisioningProfileExt := ".provisionprofile"
-	pth = filepath.Join(absProvProfileDirPath, uuid+macOsProvisioningProfileExt)
-	if exist, err := reader.pathChecker.IsPathExists(pth); err != nil {
-		return nil, "", err
-	} else if exist {
-		profile, err := reader.ProvisioningProfileFromFile(pth)
-		if err != nil {
-			return nil, "", err
-		}
-		return profile, pth, nil
-	}
-
-	return nil, "", nil
-}
-
-// ProvisioningProfileInfoFromFile ...
-func (reader ProfileReader) ProvisioningProfileInfoFromFile(pth string) (ProvisioningProfileInfoModel, error) {
-	provisioningProfile, err := reader.ProvisioningProfileFromFile(pth)
-	if err != nil {
-		return ProvisioningProfileInfoModel{}, err
-	}
-	if provisioningProfile != nil {
-		return NewProvisioningProfileInfo(*provisioningProfile)
-	}
-	return ProvisioningProfileInfoModel{}, errors.New("failed to parse provisioning profile infos")
-}
-
-// InstalledProvisioningProfileInfos ...
-func (reader ProfileReader) InstalledProvisioningProfileInfos(profileType ProfileType) ([]ProvisioningProfileInfoModel, error) {
-	provisioningProfiles, err := reader.InstalledProvisioningProfiles(profileType)
-	if err != nil {
-		return nil, err
-	}
-
-	var infos []ProvisioningProfileInfoModel
-	for _, provisioningProfile := range provisioningProfiles {
-		if provisioningProfile != nil {
-			info, err := NewProvisioningProfileInfo(*provisioningProfile)
-			if err != nil {
-				return nil, err
-			}
-			infos = append(infos, info)
-		}
-	}
-	return infos, nil
-}
-
-// ProvisioningProfileFromContent ...
-func ProvisioningProfileFromContent(content []byte) (*pkcs7.PKCS7, error) {
-	return pkcs7.Parse(content)
 }
