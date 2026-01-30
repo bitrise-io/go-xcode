@@ -1,7 +1,7 @@
 package export
 
 import (
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
@@ -33,9 +33,9 @@ func FilterSelectableCodeSignGroups(groups []SelectableCodeSignGroup, filterFunc
 }
 
 // CreateEntitlementsSelectableCodeSignGroupFilter ...
-func CreateEntitlementsSelectableCodeSignGroupFilter(bundleIDEntitlementsMap map[string]plistutil.PlistData) SelectableCodeSignGroupFilter {
+func CreateEntitlementsSelectableCodeSignGroupFilter(logger log.Logger, bundleIDEntitlementsMap map[string]plistutil.PlistData) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Entitlements filter - removes profile if has missing capabilities")
+		logger.Debugf("Entitlements filter - removes profile if has missing capabilities")
 
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
@@ -66,9 +66,9 @@ func CreateEntitlementsSelectableCodeSignGroupFilter(bundleIDEntitlementsMap map
 }
 
 // CreateExportMethodSelectableCodeSignGroupFilter ...
-func CreateExportMethodSelectableCodeSignGroupFilter(exportMethod exportoptions.Method) SelectableCodeSignGroupFilter {
+func CreateExportMethodSelectableCodeSignGroupFilter(logger log.Logger, exportMethod exportoptions.Method) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Export method filter - removes profile if distribution type is not: %s", exportMethod)
+		logger.Debugf("Export method filter - removes profile if distribution type is not: %s", exportMethod)
 
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
@@ -98,18 +98,18 @@ func CreateExportMethodSelectableCodeSignGroupFilter(exportMethod exportoptions.
 }
 
 // CreateTeamSelectableCodeSignGroupFilter ...
-func CreateTeamSelectableCodeSignGroupFilter(teamID string) SelectableCodeSignGroupFilter {
+func CreateTeamSelectableCodeSignGroupFilter(logger log.Logger, teamID string) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Development Team filter - restrict group if team is not: %s", teamID)
+		logger.Debugf("Development Team filter - restrict group if team is not: %s", teamID)
 
 		return group.Certificate.TeamID == teamID
 	}
 }
 
 // CreateNotXcodeManagedSelectableCodeSignGroupFilter ...
-func CreateNotXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFilter {
+func CreateNotXcodeManagedSelectableCodeSignGroupFilter(logger log.Logger) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Xcode managed filter - removes profile if xcode managed")
+		logger.Debugf("Xcode managed filter - removes profile if xcode managed")
 
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
@@ -138,11 +138,10 @@ func CreateNotXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGrou
 	}
 }
 
-/*
 // CreateXcodeManagedSelectableCodeSignGroupFilter ...
-func CreateXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFilter {
+func CreateXcodeManagedSelectableCodeSignGroupFilter(logger log.Logger) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Xcode managed filter - removes profile if not xcode managed")
+		logger.Debugf("Xcode managed filter - removes profile if not xcode managed")
 
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
@@ -170,12 +169,11 @@ func CreateXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFi
 		return false
 	}
 }
-*/
 
 // CreateExcludeProfileNameSelectableCodeSignGroupFilter ...
-func CreateExcludeProfileNameSelectableCodeSignGroupFilter(name string) SelectableCodeSignGroupFilter {
+func CreateExcludeProfileNameSelectableCodeSignGroupFilter(logger log.Logger, name string) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
-		log.Debugf("Profile name filter - removes profile with name: %s", name)
+		logger.Debugf("Profile name filter - removes profile with name: %s", name)
 
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
