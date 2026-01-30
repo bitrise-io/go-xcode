@@ -13,12 +13,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewClient(t *testing.T) {
+	logger := log.NewLogger(log.WithDebugLog(true))
 	tracker := NoOpAnalyticsTracker{}
-	got := NewClient(NewRetryableHTTPClient(tracker), "keyID", "issuerID", []byte{}, false, tracker)
+	got := NewClient(NewRetryableHTTPClient(logger, tracker), "keyID", "issuerID", []byte{}, false, logger, tracker)
 
 	require.Equal(t, "appstoreconnect-v1", got.audience)
 
@@ -28,8 +30,9 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestNewEnterpriseClient(t *testing.T) {
+	logger := log.NewLogger(log.WithDebugLog(true))
 	tracker := NoOpAnalyticsTracker{}
-	got := NewClient(NewRetryableHTTPClient(tracker), "keyID", "issuerID", []byte{}, true, tracker)
+	got := NewClient(NewRetryableHTTPClient(logger, tracker), "keyID", "issuerID", []byte{}, true, logger, tracker)
 
 	require.Equal(t, "apple-developer-enterprise-v1", got.audience)
 

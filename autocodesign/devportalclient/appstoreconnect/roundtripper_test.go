@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/stretchr/testify/require"
 )
 
@@ -71,6 +72,7 @@ func TestTrackingRoundTripper(t *testing.T) {
 	})
 
 	t.Run("tracks multiple attempts for same request", func(t *testing.T) {
+		logger := log.NewLogger(log.WithDebugLog(true))
 		tracker := &attemptTracker{}
 		attemptCount := 0
 
@@ -84,7 +86,7 @@ func TestTrackingRoundTripper(t *testing.T) {
 		}))
 		defer server.Close()
 
-		retryableClient := NewRetryableHTTPClient(tracker)
+		retryableClient := NewRetryableHTTPClient(logger, tracker)
 
 		req, err := http.NewRequest("GET", server.URL+"/test", nil)
 		require.NoError(t, err)
