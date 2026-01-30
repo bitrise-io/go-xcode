@@ -1,110 +1,85 @@
 package profileutil
 
 import (
-	"path/filepath"
+	"strings"
 
-	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/fullsailor/pkcs7"
+	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
-// ProfileType ...
-type ProfileType string
-
-// ProfileTypeIos ...
-const ProfileTypeIos ProfileType = "ios"
-
-// ProfileTypeMacOs ...
-const ProfileTypeMacOs ProfileType = "osx"
-
-// ProfileTypeTvOs ...
-const ProfileTypeTvOs ProfileType = "tvos"
-
-// ProvProfileSystemDirPath ...
-const ProvProfileSystemDirPath = "~/Library/MobileDevice/Provisioning Profiles"
-
-// ProvisioningProfileFromContent ...
-func ProvisioningProfileFromContent(content []byte) (*pkcs7.PKCS7, error) {
-	return pkcs7.Parse(content)
+// IsXcodeManaged ...
+func IsXcodeManaged(profileName string) bool {
+	if strings.HasPrefix(profileName, "XC") {
+		return true
+	}
+	if strings.Contains(profileName, "Provisioning Profile") {
+		if strings.HasPrefix(profileName, "iOS Team") ||
+			strings.HasPrefix(profileName, "Mac Catalyst Team") ||
+			strings.HasPrefix(profileName, "tvOS Team") ||
+			strings.HasPrefix(profileName, "Mac Team") {
+			return true
+		}
+	}
+	return false
 }
 
-// ProvisioningProfileFromFile ...
-func ProvisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {
-	content, err := fileutil.ReadBytesFromFile(pth)
-	if err != nil {
-		return nil, err
+// MatchTargetAndProfileEntitlements ...
+func MatchTargetAndProfileEntitlements(targetEntitlements plistutil.PlistData, profileEntitlements plistutil.PlistData, profileType ProfileType) []string {
+	missingEntitlements := []string{}
+
+	for key := range targetEntitlements {
+		_, known := KnownProfileCapabilitiesMap[profileType][key]
+		if !known {
+			continue
+		}
+		_, found := profileEntitlements[key]
+		if !found {
+			missingEntitlements = append(missingEntitlements, key)
+		}
 	}
-	return ProvisioningProfileFromContent(content)
+
+	// TODO: migrate to logger
+	log.Debugf("Found %v entitlements from %v target", len(missingEntitlements), len(targetEntitlements))
+
+	return missingEntitlements
 }
 
-// InstalledProvisioningProfiles ...
-func InstalledProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, error) {
-	ext := ".mobileprovision"
-	if profileType == ProfileTypeMacOs {
-		ext = ".provisionprofile"
-	}
-
-	absProvProfileDirPath, err := pathutil.AbsPath(ProvProfileSystemDirPath)
-	if err != nil {
-		return nil, err
-	}
-
-	pattern := filepath.Join(pathutil.EscapeGlobPath(absProvProfileDirPath), "*"+ext)
-	pths, err := filepath.Glob(pattern)
-	if err != nil {
-		return nil, err
-	}
-
-	profiles := []*pkcs7.PKCS7{}
-	for _, pth := range pths {
-		profile, err := ProvisioningProfileFromFile(pth)
-		if err != nil {
-			return nil, err
-		}
-		profiles = append(profiles, profile)
-	}
-	return profiles, nil
-}
-
-// FindProvisioningProfile ...
-func FindProvisioningProfile(uuid string) (*pkcs7.PKCS7, string, error) {
-	{
-		iosProvisioningProfileExt := ".mobileprovision"
-		absProvProfileDirPath, err := pathutil.AbsPath(ProvProfileSystemDirPath)
-		if err != nil {
-			return nil, "", err
-		}
-
-		pth := filepath.Join(absProvProfileDirPath, uuid+iosProvisioningProfileExt)
-		if exist, err := pathutil.IsPathExists(pth); err != nil {
-			return nil, "", err
-		} else if exist {
-			profile, err := ProvisioningProfileFromFile(pth)
-			if err != nil {
-				return nil, "", err
-			}
-			return profile, pth, nil
-		}
-	}
-
-	{
-		macOsProvisioningProfileExt := ".provisionprofile"
-		absProvProfileDirPath, err := pathutil.AbsPath(ProvProfileSystemDirPath)
-		if err != nil {
-			return nil, "", err
-		}
-
-		pth := filepath.Join(absProvProfileDirPath, uuid+macOsProvisioningProfileExt)
-		if exist, err := pathutil.IsPathExists(pth); err != nil {
-			return nil, "", err
-		} else if exist {
-			profile, err := ProvisioningProfileFromFile(pth)
-			if err != nil {
-				return nil, "", err
-			}
-			return profile, pth, nil
-		}
-	}
-
-	return nil, "", nil
+// KnownProfileCapabilitiesMap ...
+var KnownProfileCapabilitiesMap = map[ProfileType]map[string]bool{
+	ProfileTypeMacOs: map[string]bool{
+		"com.apple.developer.networking.networkextension":                        true,
+		"com.apple.developer.icloud-container-environment":                       true,
+		"com.apple.developer.icloud-container-development-container-identifiers": true,
+		"com.apple.developer.aps-environment":                                    true,
+		"keychain-access-groups":                                                 true,
+		"com.apple.developer.icloud-services":                                    true,
+		"com.apple.developer.icloud-container-identifiers":                       true,
+		"com.apple.developer.networking.vpn.api":                                 true,
+		"com.apple.developer.ubiquity-kvstore-identifier":                        true,
+		"com.apple.developer.ubiquity-container-identifiers":                     true,
+		"com.apple.developer.game-center":                                        true,
+		"com.apple.application-identifier":                                       true,
+		"com.apple.developer.team-identifier":                                    true,
+		"com.apple.developer.maps":                                               true,
+	},
+	ProfileTypeIos: map[string]bool{
+		"com.apple.developer.in-app-payments":                 true,
+		"com.apple.security.application-groups":               true,
+		"com.apple.developer.default-data-protection":         true,
+		"com.apple.developer.healthkit":                       true,
+		"com.apple.developer.homekit":                         true,
+		"com.apple.developer.networking.HotspotConfiguration": true,
+		"inter-app-audio":                                     true,
+		"keychain-access-groups":                              true,
+		"com.apple.developer.networking.multipath":            true,
+		"com.apple.developer.nfc.readersession.formats":       true,
+		"com.apple.developer.networking.networkextension":     true,
+		"aps-environment":                                     true,
+		"com.apple.developer.associated-domains":              true,
+		"com.apple.developer.siri":                            true,
+		"com.apple.developer.networking.vpn.api":              true,
+		"com.apple.external-accessory.wireless-configuration": true,
+		"com.apple.developer.pass-type-identifiers":           true,
+		"com.apple.developer.icloud-container-identifiers":    true,
+	},
 }

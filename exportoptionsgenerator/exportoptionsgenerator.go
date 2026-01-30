@@ -42,7 +42,7 @@ func New(xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOption
 	return ExportOptionsGenerator{
 		xcodeVersionReader:    xcodeVersionReader,
 		certificateProvider:   LocalCodesignIdentityProvider{},
-		profileProvider:       LocalProvisioningProfileProvider{},
+		profileProvider:       LocalProvisioningProfileProvider{logger: logger},
 		codeSignGroupProvider: NewCodeSignGroupProvider(logger),
 		logger:                logger,
 	}

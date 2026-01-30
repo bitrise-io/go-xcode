@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
@@ -24,7 +25,9 @@ type LocalProvisioningProfileProvider struct {
 
 // ListProvisioningProfiles ...
 func (p LocalProvisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
-	return profileutil.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
+	// TODO: wire in as a dep on the struct
+	profileReader := profileutil.NewProfileReader(p.logger, fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider(), pathutil.NewPathChecker())
+	return profileReader.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
 }
 
 // GetDefaultProvisioningProfile ...
@@ -34,7 +37,7 @@ func (p LocalProvisioningProfileProvider) GetDefaultProvisioningProfile() (profi
 		return profileutil.ProvisioningProfileInfoModel{}, nil
 	}
 
-	tmpDir, err := pathutil.NormalizedOSTempDirPath("tmp_default_profile")
+	tmpDir, err := pathutil.NewPathProvider().CreateTempDir("tmp_default_profile")
 	if err != nil {
 		return profileutil.ProvisioningProfileInfoModel{}, err
 	}
@@ -64,7 +67,9 @@ func (p LocalProvisioningProfileProvider) GetDefaultProvisioningProfile() (profi
 		return profileutil.ProvisioningProfileInfoModel{}, err
 	}
 
-	defaultProfile, err := profileutil.NewProvisioningProfileInfoFromFile(tmpDst)
+	// TODO: wire in as a dep on the struct
+	profileReader := profileutil.NewProfileReader(p.logger, fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider(), pathutil.NewPathChecker())
+	defaultProfile, err := profileReader.ProvisioningProfileInfoFromFile(tmpDst)
 	if err != nil {
 		return profileutil.ProvisioningProfileInfoModel{}, err
 	}

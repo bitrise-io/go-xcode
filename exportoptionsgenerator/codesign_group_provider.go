@@ -1,8 +1,6 @@
 package exportoptionsgenerator
 
 import (
-	"time"
-
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/export"
@@ -51,7 +49,8 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 
 	g.logger.Debugf("Installed profiles:")
 	for _, profileInfo := range profiles {
-		g.logger.Debugf(profileInfo.String(time.Now, certificates...))
+		profileStr := profileutil.NewProfilePrinter(g.logger, profileutil.DefaultTimeProvider{}).PrintableProfile(profileInfo, certificates...)
+		g.logger.Debugf(profileStr)
 	}
 
 	g.logger.Printf("Resolving CodeSignGroups...")
