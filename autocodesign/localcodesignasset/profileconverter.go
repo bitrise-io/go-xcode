@@ -2,9 +2,11 @@ package localcodesignasset
 
 import (
 	"os"
+	"path/filepath"
 
-	"github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
 // ProvisioningProfileConverter ...
@@ -22,7 +24,7 @@ func NewProvisioningProfileConverter() ProvisioningProfileConverter {
 
 // ProfileInfoToProfile ...
 func (c provisioningProfileConverter) ProfileInfoToProfile(info profileutil.ProvisioningProfileInfoModel) (autocodesign.Profile, error) {
-	_, pth, err := profileutil.FindProvisioningProfile(info.UUID)
+	pth, err := findProvisioningProfile(info.UUID)
 	if err != nil {
 		return nil, err
 	}
@@ -32,4 +34,33 @@ func (c provisioningProfileConverter) ProfileInfoToProfile(info profileutil.Prov
 	}
 
 	return NewProfile(info, content), nil
+}
+
+func findProvisioningProfile(uuid string) (string, error) {
+	// TODO: wire in as a dep on the struct
+	pathModifier := pathutil.NewPathModifier()
+	pathChecker := pathutil.NewPathChecker()
+
+	absProvProfileDirPath, err := pathModifier.AbsPath(profileutil.ProvProfileSystemDirPath)
+	if err != nil {
+		return "", err
+	}
+
+	iosProvisioningProfileExt := ".mobileprovision"
+	pth := filepath.Join(absProvProfileDirPath, uuid+iosProvisioningProfileExt)
+	if exist, err := pathChecker.IsPathExists(pth); err != nil {
+		return "", err
+	} else if exist {
+		return pth, nil
+	}
+
+	macOsProvisioningProfileExt := ".provisionprofile"
+	pth = filepath.Join(absProvProfileDirPath, uuid+macOsProvisioningProfileExt)
+	if exist, err := pathChecker.IsPathExists(pth); err != nil {
+		return "", err
+	} else if exist {
+		return pth, nil
+	}
+
+	return "", nil
 }
