@@ -14,6 +14,7 @@ import (
 // ProvProfileSystemDirPath ...
 const ProvProfileSystemDirPath = "~/Library/MobileDevice/Provisioning Profiles"
 
+// ProfileReader ...
 type ProfileReader struct {
 	logger       log.Logger
 	fileManager  fileutil.FileManager
@@ -22,6 +23,7 @@ type ProfileReader struct {
 	pathChecker  pathutil.PathChecker
 }
 
+// NewProfileReader ...
 func NewProfileReader(logger log.Logger, fileManager fileutil.FileManager, pathModifier pathutil.PathModifier, pathProvider pathutil.PathProvider, pathChecker pathutil.PathChecker) ProfileReader {
 	return ProfileReader{
 		logger:       logger,
