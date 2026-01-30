@@ -211,8 +211,7 @@ func (m profileManager) ensureProfileWithRetry(profileType appstoreconnect.Profi
 	var profile *Profile
 	// Accessing the same Apple Developer Portal team can cause race conditions (parallel CI runs for example).
 	// Between the time of finding and downloading a profile, it could have been deleted for example.
-	retry := retry.NewWithSleeper(5, 10*time.Second, m.retrySleeper)
-	if err := retry.TryWithAbort(func(attempt uint) (error, bool) {
+	if err := retry.Times(5).Wait(10 * time.Second).WithSleeper(m.retrySleeper).TryWithAbort(func(attempt uint) (error, bool) {
 		if attempt > 0 {
 			m.logger.Println()
 			m.logger.Printf("  Retrying profile preparation (attempt %d)", attempt)

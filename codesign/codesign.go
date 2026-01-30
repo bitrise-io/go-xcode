@@ -100,7 +100,7 @@ func NewManagerWithArchive(
 		profileConverter:          profileConverter,
 		detailsProvider:           archive,
 		logger:                    logger,
-		sleeper:                   &retry.DefaultSleeper{},
+		sleeper:                   retry.DefaultSleeper{},
 	}
 }
 
@@ -131,6 +131,7 @@ func NewManagerWithProject(
 		detailsProvider:           project,
 		assetWriter:               project,
 		logger:                    logger,
+		sleeper:                   retry.DefaultSleeper{},
 	}
 }
 
