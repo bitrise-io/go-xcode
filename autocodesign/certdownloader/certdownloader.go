@@ -67,7 +67,11 @@ func (d downloader) downloadAndParsePKCS12(certificateURL, passphrase string) ([
 	if err != nil {
 		return nil, err
 	}
-	defer contentReader.Close()
+	defer func() {
+		if err := contentReader.Close(); err != nil {
+			d.logger.Warnf("Failed to close certificate reader: %s", err)
+		}
+	}()
 	contents, err := io.ReadAll(contentReader)
 	if err != nil {
 		return nil, err

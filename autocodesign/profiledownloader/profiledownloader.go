@@ -51,7 +51,11 @@ func (d downloader) GetProfiles() ([]autocodesign.LocalProfile, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer contentReader.Close()
+		defer func() {
+			if err := contentReader.Close(); err != nil {
+				d.logger.Warnf("Failed to close profile reader: %s", err)
+			}
+		}()
 
 		content, err := io.ReadAll(contentReader)
 		if err != nil {
