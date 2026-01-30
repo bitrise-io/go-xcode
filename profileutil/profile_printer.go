@@ -9,11 +9,13 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
+// ProfilePrinter ...
 type ProfilePrinter struct {
 	logger       log.Logger
 	timeProvider TimeProvider
 }
 
+// NewProfilePrinter ...
 func NewProfilePrinter(logger log.Logger, timeProvider TimeProvider) *ProfilePrinter {
 	return &ProfilePrinter{
 		logger:       logger,

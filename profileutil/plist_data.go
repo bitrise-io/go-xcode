@@ -13,6 +13,7 @@ import (
 // PlistData ...
 type PlistData plistutil.PlistData
 
+// GetProfileType ...
 func (profile PlistData) GetProfileType() (ProfileType, error) {
 	data := plistutil.PlistData(profile)
 	platforms, _ := data.GetStringArray("Platform")
