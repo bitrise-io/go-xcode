@@ -33,6 +33,32 @@ func (_m *PathProvider) CreateTempDir(prefix string) (string, error) {
 	return r0, r1
 }
 
+// Glob provides a mock function with given fields: pattern
+func (_m *PathProvider) Glob(pattern string) ([]string, error) {
+	ret := _m.Called(pattern)
+
+	var r0 []string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string) ([]string, error)); ok {
+		return rf(pattern)
+	}
+	if rf, ok := ret.Get(0).(func(string) []string); ok {
+		r0 = rf(pattern)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]string)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(pattern)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // NewPathProvider creates a new instance of PathProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewPathProvider(t interface {

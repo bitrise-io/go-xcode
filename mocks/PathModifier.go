@@ -33,6 +33,20 @@ func (_m *PathModifier) AbsPath(pth string) (string, error) {
 	return r0, r1
 }
 
+// EscapeGlobPath provides a mock function with given fields: path
+func (_m *PathModifier) EscapeGlobPath(path string) string {
+	ret := _m.Called(path)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(string) string); ok {
+		r0 = rf(path)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	return r0
+}
+
 // NewPathModifier creates a new instance of PathModifier. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewPathModifier(t interface {
