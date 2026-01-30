@@ -77,13 +77,14 @@ func (f Factory) Create(credentials devportalservice.Credentials, teamID string)
 	var devportalClient autocodesign.DevPortalClient
 	tracker := appstoreconnect.NewDefaultTracker(analytics.NewDefaultTracker(f.logger, env.NewRepository()), env.NewRepository())
 	if credentials.APIKey != nil {
-		httpClient := appstoreconnect.NewRetryableHTTPClient(tracker)
+		httpClient := appstoreconnect.NewRetryableHTTPClient(f.logger, tracker)
 		client := appstoreconnect.NewClient(
 			httpClient,
 			credentials.APIKey.KeyID,
 			credentials.APIKey.IssuerID,
 			[]byte(credentials.APIKey.PrivateKey),
 			credentials.APIKey.EnterpriseAccount,
+			f.logger,
 			tracker,
 		)
 		client.EnableDebugLogs = false // Turn off client debug logs including HTTP call debug logs

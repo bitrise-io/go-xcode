@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bitrise-io/go-utils/log"
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	devportaltime "github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/time"
@@ -71,7 +71,7 @@ func newCertificate(t *testing.T, teamID, teamName, commonName string, expiry ti
 }
 
 func Test_codesignAssetManager_EnsureCodesignAssets(t *testing.T) {
-	log.SetEnableDebugLog(true)
+	logger := log.NewLogger(log.WithDebugLog(true))
 
 	const teamID = "MYTEAMID"
 	const commonNameIOSDevelopment = "Apple Development: test"
@@ -301,7 +301,7 @@ func Test_GivenNoValidAppID_WhenEnsureAppClipProfile_ThenItFails(t *testing.T) {
 	}
 
 	localCodeSignAssetManager := newMockLocalCodeSignAssetManager(nil, &appLayout)
-	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager)
+	manager := NewCodesignAssetManager(client, assetWriter, localCodeSignAssetManager, logger)
 
 	opts := CodesignAssetsOpts{
 		DistributionType: Development,
