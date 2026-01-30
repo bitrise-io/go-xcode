@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 	"github.com/stretchr/testify/mock"
@@ -32,6 +33,7 @@ func (c *MockDeviceClient) RegisterDevice(req *http.Request) (*http.Response, er
 }
 
 func TestDeviceClient_RegisterDevice_WhenInvaludUUID(t *testing.T) {
+	logger := log.NewLogger(log.WithDebugLog(true))
 	mockClient := MockDeviceClient{}
 	mockClient.On("RegisterDevice", mock.Anything).Return(&http.Response{}, &appstoreconnect.ErrorResponse{
 		Response: &http.Response{
@@ -39,7 +41,7 @@ func TestDeviceClient_RegisterDevice_WhenInvaludUUID(t *testing.T) {
 		},
 	})
 
-	client := appstoreconnect.NewClient(&mockClient, "keyID", "issueID", []byte("privateKey"), false, appstoreconnect.NoOpAnalyticsTracker{})
+	client := appstoreconnect.NewClient(&mockClient, "keyID", "issueID", []byte("privateKey"), false, logger, appstoreconnect.NoOpAnalyticsTracker{})
 	deviceClient := NewDeviceClient(client)
 
 	got, err := deviceClient.RegisterDevice(devportalservice.TestDevice{
