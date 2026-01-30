@@ -9,7 +9,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/retry"
-	"github.com/bitrise-io/go-utils/v2/retryhttp"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/codesignasset"
@@ -79,7 +78,7 @@ func Example() {
 		panic(fmt.Sprintf("failed to initialize keychain: %s", err))
 	}
 
-	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, retryhttp.NewClient(logger).StandardClient())
+	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, logger)
 	certs, err := certDownloader.GetCertificates()
 	if err != nil {
 		panic(fmt.Errorf("failed to download certificates: %w", err))
