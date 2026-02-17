@@ -7,7 +7,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/profileutil"
-	codesigngroup "github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
+	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 )
