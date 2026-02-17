@@ -16,14 +16,14 @@ type CodeSignGroupProvider interface {
 
 type codeSignGroupProvider struct {
 	logger  log.Logger
-	printer *codesigngroup.CodeSignGroupPrinter
+	printer *codesigngroup.Printer
 }
 
 // NewCodeSignGroupProvider ...
 func NewCodeSignGroupProvider(logger log.Logger) CodeSignGroupProvider {
 	return &codeSignGroupProvider{
 		logger:  logger,
-		printer: codesigngroup.NewCodeSignGroupPrinter(logger),
+		printer: codesigngroup.NewPrinter(logger),
 	}
 }
 
@@ -42,9 +42,6 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 		g.logger.Printf("%s: %s", bundleID, entitlementKeys)
 	}
 
-	g.logger.Println()
-	g.logger.Printf("Resolving CodeSignGroups...")
-
 	g.logger.Debugf("Installed certificates:")
 	for _, certInfo := range certificates {
 		g.logger.Debugf(certInfo.String())
@@ -55,7 +52,8 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 		g.logger.Debugf(profileInfo.String(certificates...))
 	}
 
-	g.logger.Printf("Resolving CodeSignGroups...")
+	g.logger.Println()
+	g.logger.Printf("Resolving code signing groups...")
 	codeSignGroups := codesigngroup.BuildFilterableList(certificates, profiles, bundleIDs)
 	if len(codeSignGroups) == 0 {
 		g.logger.Errorf("Failed to find code signing groups for specified export method (%s)", exportMethod)
@@ -136,7 +134,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 	}
 
 	if len(iosCodeSignGroups) < 1 {
-		g.logger.Errorf("Failed to find Codesign Groups")
+		g.logger.Errorf("Failed to find code signing groups")
 		return nil, nil
 	}
 

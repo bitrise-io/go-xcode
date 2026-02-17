@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCodeSignGroupPrinter_ToDebugString(t *testing.T) {
+func TestPrinter_ToDebugString(t *testing.T) {
 	tests := []struct {
 		name  string
 		group codesigngroup.SelectableCodeSignGroup
@@ -59,7 +59,7 @@ func TestCodeSignGroupPrinter_ToDebugString(t *testing.T) {
 	logger := log.NewLogger()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			printer := codesigngroup.NewCodeSignGroupPrinter(logger)
+			printer := codesigngroup.NewPrinter(logger)
 			got := printer.ToDebugString(tt.group)
 			require.JSONEq(t, tt.want, got)
 		})

@@ -8,20 +8,20 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
-// CodeSignGroupPrinter ...
-type CodeSignGroupPrinter struct {
+// Printer ...
+type Printer struct {
 	logger log.Logger
 }
 
-// NewCodeSignGroupPrinter ...
-func NewCodeSignGroupPrinter(logger log.Logger) *CodeSignGroupPrinter {
-	return &CodeSignGroupPrinter{
+// NewPrinter ...
+func NewPrinter(logger log.Logger) *Printer {
+	return &Printer{
 		logger: logger,
 	}
 }
 
 // ListToDebugString ...
-func (printer *CodeSignGroupPrinter) ListToDebugString(groups []SelectableCodeSignGroup) string {
+func (printer *Printer) ListToDebugString(groups []SelectableCodeSignGroup) string {
 	var builder strings.Builder
 	for _, group := range groups {
 		builder.WriteString(printer.ToDebugString(group) + "\n")
@@ -31,7 +31,7 @@ func (printer *CodeSignGroupPrinter) ListToDebugString(groups []SelectableCodeSi
 }
 
 // ToDebugString ...
-func (printer *CodeSignGroupPrinter) ToDebugString(group SelectableCodeSignGroup) string {
+func (printer *Printer) ToDebugString(group SelectableCodeSignGroup) string {
 	printable := map[string]any{}
 	printable["team"] = fmt.Sprintf("%s (%s)", group.Certificate.TeamName, group.Certificate.TeamID)
 	printable["certificate"] = fmt.Sprintf("%s (%s)", group.Certificate.CommonName, group.Certificate.Serial)
