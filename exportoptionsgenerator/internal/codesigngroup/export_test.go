@@ -1,4 +1,4 @@
-package export_test
+package codesigngroup_test
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/profileutil"
-	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/export"
+	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
 	"github.com/stretchr/testify/require"
 )
 
@@ -29,22 +29,22 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 		certificates []certificateutil.CertificateInfoModel
 		profiles     []profileutil.ProvisioningProfileInfoModel
 		bundleIDs    []string
-		filter       export.SelectableCodeSignGroupFilter
-		want         []export.SelectableCodeSignGroup
+		filter       codesigngroup.SelectableCodeSignGroupFilter
+		want         []codesigngroup.SelectableCodeSignGroup
 	}{
 		{
 			name:         "empty inputs",
 			certificates: []certificateutil.CertificateInfoModel{},
 			profiles:     []profileutil.ProvisioningProfileInfoModel{},
 			bundleIDs:    []string{},
-			want:         []export.SelectableCodeSignGroup{},
+			want:         []codesigngroup.SelectableCodeSignGroup{},
 		},
 		{
 			name:         "single matching profile and certificate",
 			certificates: []certificateutil.CertificateInfoModel{certDev},
 			profiles:     []profileutil.ProvisioningProfileInfoModel{profileDev},
 			bundleIDs:    []string{"io.bitrise.testapp"},
-			want: []export.SelectableCodeSignGroup{
+			want: []codesigngroup.SelectableCodeSignGroup{
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
@@ -62,8 +62,8 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileDev,
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
-			filter:    export.CreateTeamSelectableCodeSignGroupFilter("WRONGID"),
-			want:      []export.SelectableCodeSignGroup{},
+			filter:    codesigngroup.CreateTeamSelectableCodeSignGroupFilter("WRONGID"),
+			want:      []codesigngroup.SelectableCodeSignGroup{},
 		},
 		{
 			name: "filter by team ID, match",
@@ -74,8 +74,8 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileDev,
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
-			filter:    export.CreateTeamSelectableCodeSignGroupFilter("ABCD1234"),
-			want: []export.SelectableCodeSignGroup{
+			filter:    codesigngroup.CreateTeamSelectableCodeSignGroupFilter("ABCD1234"),
+			want: []codesigngroup.SelectableCodeSignGroup{
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
@@ -93,14 +93,14 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileDev,
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
-			filter:    export.CreateExportMethodSelectableCodeSignGroupFilter(exportoptions.MethodAdHoc),
-			want:      []export.SelectableCodeSignGroup{},
+			filter:    codesigngroup.CreateExportMethodSelectableCodeSignGroupFilter(exportoptions.MethodAdHoc),
+			want:      []codesigngroup.SelectableCodeSignGroup{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := export.CreateSelectableCodeSignGroups(tt.certificates, tt.profiles, tt.bundleIDs)
-			got = export.FilterSelectableCodeSignGroups(got, tt.filter)
+			got := codesigngroup.BuildFilterableList(tt.certificates, tt.profiles, tt.bundleIDs)
+			got = codesigngroup.Filter(got, tt.filter)
 			require.Equal(t, tt.want, got)
 		})
 	}

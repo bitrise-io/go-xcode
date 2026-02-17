@@ -1,12 +1,14 @@
-package export
+package codesigngroup
 
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
+// CodeSignGroupPrinter ...
 type CodeSignGroupPrinter struct {
 	logger log.Logger
 }
@@ -18,8 +20,18 @@ func NewCodeSignGroupPrinter(logger log.Logger) *CodeSignGroupPrinter {
 	}
 }
 
+// ListToDebugString ...
+func (printer *CodeSignGroupPrinter) ListToDebugString(groups []SelectableCodeSignGroup) string {
+	var builder strings.Builder
+	for _, group := range groups {
+		builder.WriteString(printer.ToDebugString(group) + "\n")
+	}
+
+	return builder.String()
+}
+
 // ToDebugString ...
-func (printer CodeSignGroupPrinter) ToDebugString(group SelectableCodeSignGroup) string {
+func (printer *CodeSignGroupPrinter) ToDebugString(group SelectableCodeSignGroup) string {
 	printable := map[string]any{}
 	printable["team"] = fmt.Sprintf("%s (%s)", group.Certificate.TeamName, group.Certificate.TeamID)
 	printable["certificate"] = fmt.Sprintf("%s (%s)", group.Certificate.CommonName, group.Certificate.Serial)
@@ -36,7 +48,7 @@ func (printer CodeSignGroupPrinter) ToDebugString(group SelectableCodeSignGroup)
 
 	data, err := json.MarshalIndent(printable, "", "\t")
 	if err != nil {
-		printer.logger.Errorf("Failed to marshal: %v, error: %s", printable, err)
+		printer.logger.Errorf("Failed to marshal (%v): %s", printable, err)
 		return ""
 	}
 

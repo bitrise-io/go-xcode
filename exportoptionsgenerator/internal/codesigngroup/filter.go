@@ -1,4 +1,4 @@
-package export
+package codesigngroup
 
 import (
 	"github.com/bitrise-io/go-xcode/exportoptions"
@@ -9,8 +9,8 @@ import (
 // SelectableCodeSignGroupFilter ...
 type SelectableCodeSignGroupFilter func(group *SelectableCodeSignGroup) bool
 
-// FilterSelectableCodeSignGroups ...
-func FilterSelectableCodeSignGroups(groups []SelectableCodeSignGroup, filterFunc SelectableCodeSignGroupFilter) []SelectableCodeSignGroup {
+// Filter ...
+func Filter(groups []SelectableCodeSignGroup, filterFunc SelectableCodeSignGroupFilter) []SelectableCodeSignGroup {
 	if filterFunc == nil {
 		return groups
 	}

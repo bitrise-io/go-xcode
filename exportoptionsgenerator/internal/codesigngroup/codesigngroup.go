@@ -1,4 +1,4 @@
-package export
+package codesigngroup
 
 import (
 	"sort"
@@ -7,6 +7,13 @@ import (
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/ryanuber/go-glob"
 )
+
+// CodeSignGroup ...
+type CodeSignGroup interface {
+	Certificate() certificateutil.CertificateInfoModel
+	InstallerCertificate() *certificateutil.CertificateInfoModel
+	BundleIDProfileMap() map[string]profileutil.ProvisioningProfileInfoModel
+}
 
 // SelectableCodeSignGroup ...
 type SelectableCodeSignGroup struct {
@@ -23,8 +30,8 @@ func containsCertificate(installedCertificates []certificateutil.CertificateInfo
 	return false
 }
 
-// CreateSelectableCodeSignGroups ...
-func CreateSelectableCodeSignGroups(installedCertificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
+// BuildFilterableList ...
+func BuildFilterableList(installedCertificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
 	groups := []SelectableCodeSignGroup{}
 
 	serialToProfiles := map[string][]profileutil.ProvisioningProfileInfoModel{}

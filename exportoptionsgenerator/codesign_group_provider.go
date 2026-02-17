@@ -5,30 +5,30 @@ import (
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/profileutil"
-	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/export"
+	codesigngroup "github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
 // CodeSignGroupProvider ...
 type CodeSignGroupProvider interface {
-	DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*export.IosCodeSignGroup, error)
+	DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*codesigngroup.Ios, error)
 }
 
 type codeSignGroupProvider struct {
 	logger  log.Logger
-	printer *export.CodeSignGroupPrinter
+	printer *codesigngroup.CodeSignGroupPrinter
 }
 
 // NewCodeSignGroupProvider ...
 func NewCodeSignGroupProvider(logger log.Logger) CodeSignGroupProvider {
 	return &codeSignGroupProvider{
 		logger:  logger,
-		printer: export.NewCodeSignGroupPrinter(logger),
+		printer: codesigngroup.NewCodeSignGroupPrinter(logger),
 	}
 }
 
 // DetermineCodesignGroup ....
-func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*export.IosCodeSignGroup, error) {
+func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*codesigngroup.Ios, error) {
 	g.logger.Println()
 	g.logger.Printf("Target Bundle ID - Entitlements map")
 	var bundleIDs []string
@@ -56,45 +56,37 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 	}
 
 	g.logger.Printf("Resolving CodeSignGroups...")
-	codeSignGroups := export.CreateSelectableCodeSignGroups(certificates, profiles, bundleIDs)
+	codeSignGroups := codesigngroup.BuildFilterableList(certificates, profiles, bundleIDs)
 	if len(codeSignGroups) == 0 {
 		g.logger.Errorf("Failed to find code signing groups for specified export method (%s)", exportMethod)
 	}
 
 	g.logger.Debugf("\nGroups:")
-	for _, group := range codeSignGroups {
-		g.logger.Debugf("%s", g.printer.ToDebugString(group))
-	}
+	g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
 
 	if len(bundleIDEntitlementsMap) > 0 {
 		g.logger.Warnf("Filtering CodeSignInfo groups for target capabilities")
 
-		codeSignGroups = export.FilterSelectableCodeSignGroups(codeSignGroups, export.CreateEntitlementsSelectableCodeSignGroupFilter(convertToV1PlistData(bundleIDEntitlementsMap)))
+		codeSignGroups = codesigngroup.Filter(codeSignGroups, codesigngroup.CreateEntitlementsSelectableCodeSignGroupFilter(convertToV1PlistData(bundleIDEntitlementsMap)))
 
 		g.logger.Debugf("\nGroups after filtering for target capabilities:")
-		for _, group := range codeSignGroups {
-			g.logger.Debugf("%s", g.printer.ToDebugString(group))
-		}
+		g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
 	}
 
 	g.logger.Warnf("Filtering CodeSignInfo groups for export method")
 
-	codeSignGroups = export.FilterSelectableCodeSignGroups(codeSignGroups, export.CreateExportMethodSelectableCodeSignGroupFilter(exportMethod))
+	codeSignGroups = codesigngroup.Filter(codeSignGroups, codesigngroup.CreateExportMethodSelectableCodeSignGroupFilter(exportMethod))
 
 	g.logger.Debugf("\nGroups after filtering for export method:")
-	for _, group := range codeSignGroups {
-		g.logger.Debugf("%s", g.printer.ToDebugString(group))
-	}
+	g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
 
 	if teamID != "" {
 		g.logger.Warnf("ExportDevelopmentTeam specified: %s, filtering CodeSignInfo groups...", teamID)
 
-		codeSignGroups = export.FilterSelectableCodeSignGroups(codeSignGroups, export.CreateTeamSelectableCodeSignGroupFilter(teamID))
+		codeSignGroups = codesigngroup.Filter(codeSignGroups, codesigngroup.CreateTeamSelectableCodeSignGroupFilter(teamID))
 
 		g.logger.Debugf("\nGroups after filtering for team ID:")
-		for _, group := range codeSignGroups {
-			g.logger.Debugf("%s", g.printer.ToDebugString(group))
-		}
+		g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
 	}
 
 	if !xcodeManaged {
@@ -102,29 +94,25 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 			"only NOT Xcode managed profiles are allowed to sign when exporting the archive.\n" +
 			"Removing Xcode managed CodeSignInfo groups")
 
-		codeSignGroups = export.FilterSelectableCodeSignGroups(codeSignGroups, export.CreateNotXcodeManagedSelectableCodeSignGroupFilter())
+		codeSignGroups = codesigngroup.Filter(codeSignGroups, codesigngroup.CreateNotXcodeManagedSelectableCodeSignGroupFilter())
 
 		g.logger.Debugf("\nGroups after filtering for NOT Xcode managed profiles:")
-		for _, group := range codeSignGroups {
-			g.logger.Debugf("%s", g.printer.ToDebugString(group))
-		}
+		g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
 	}
 
 	if teamID == "" && defaultProfile != nil {
 		g.logger.Debugf("\ndefault profile: %v\n", defaultProfile)
-		filteredCodeSignGroups := export.FilterSelectableCodeSignGroups(codeSignGroups,
-			export.CreateExcludeProfileNameSelectableCodeSignGroupFilter(defaultProfile.Name))
+		filteredCodeSignGroups := codesigngroup.Filter(codeSignGroups,
+			codesigngroup.CreateExcludeProfileNameSelectableCodeSignGroupFilter(defaultProfile.Name))
 		if len(filteredCodeSignGroups) > 0 {
 			codeSignGroups = filteredCodeSignGroups
 
 			g.logger.Debugf("\nGroups after removing default profile:")
-			for _, group := range codeSignGroups {
-				g.logger.Debugf("%s", g.printer.ToDebugString(group))
-			}
+			g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
 		}
 	}
 
-	var iosCodeSignGroups []export.IosCodeSignGroup
+	var iosCodeSignGroups []codesigngroup.Ios
 
 	for _, selectable := range codeSignGroups {
 		bundleIDProfileMap := map[string]profileutil.ProvisioningProfileInfoModel{}
@@ -136,7 +124,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 			}
 		}
 
-		iosCodeSignGroups = append(iosCodeSignGroups, *export.NewIOSGroup(selectable.Certificate, bundleIDProfileMap))
+		iosCodeSignGroups = append(iosCodeSignGroups, *codesigngroup.NewIOSGroup(selectable.Certificate, bundleIDProfileMap))
 	}
 
 	g.logger.Debugf("\nFiltered groups:")

@@ -1,4 +1,4 @@
-package export_test
+package codesigngroup_test
 
 import (
 	"testing"
@@ -6,19 +6,19 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
-	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/export"
+	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCodeSignGroupPrinter_ToDebugString(t *testing.T) {
 	tests := []struct {
 		name  string
-		group export.SelectableCodeSignGroup
+		group codesigngroup.SelectableCodeSignGroup
 		want  string
 	}{
 		{
 			name: "empty group",
-			group: export.SelectableCodeSignGroup{
+			group: codesigngroup.SelectableCodeSignGroup{
 				Certificate: certificateutil.CertificateInfoModel{
 					CommonName: "CN",
 					Serial:     "SERIAL",
@@ -59,7 +59,7 @@ func TestCodeSignGroupPrinter_ToDebugString(t *testing.T) {
 	logger := log.NewLogger()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			printer := export.NewCodeSignGroupPrinter(logger)
+			printer := codesigngroup.NewCodeSignGroupPrinter(logger)
 			got := printer.ToDebugString(tt.group)
 			require.JSONEq(t, tt.want, got)
 		})
