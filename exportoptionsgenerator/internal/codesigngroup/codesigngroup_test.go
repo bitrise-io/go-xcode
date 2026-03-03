@@ -37,7 +37,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			certificates: []certificateutil.CertificateInfoModel{},
 			profiles:     []profileutil.ProvisioningProfileInfoModel{},
 			bundleIDs:    []string{},
-			want:         []codesigngroup.SelectableCodeSignGroup{},
+			want:         []codesigngroup.SelectableCodeSignGroup(nil),
 		},
 		{
 			name:         "single matching profile and certificate",
@@ -63,7 +63,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
 			filter:    codesigngroup.CreateTeamSelectableCodeSignGroupFilter("WRONGID"),
-			want:      []codesigngroup.SelectableCodeSignGroup{},
+			want:      []codesigngroup.SelectableCodeSignGroup(nil),
 		},
 		{
 			name: "filter by team ID, match",
@@ -94,7 +94,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
 			filter:    codesigngroup.CreateExportMethodSelectableCodeSignGroupFilter(exportoptions.MethodAdHoc),
-			want:      []codesigngroup.SelectableCodeSignGroup{},
+			want:      []codesigngroup.SelectableCodeSignGroup(nil),
 		},
 	}
 	for _, tt := range tests {

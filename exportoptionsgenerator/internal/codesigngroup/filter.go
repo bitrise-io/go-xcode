@@ -15,7 +15,7 @@ func Filter(groups []SelectableCodeSignGroup, filterFunc SelectableCodeSignGroup
 		return groups
 	}
 
-	filteredGroups := []SelectableCodeSignGroup{}
+	var filteredGroups []SelectableCodeSignGroup
 	for _, group := range groups {
 		if filterFunc(&group) {
 			filteredGroups = append(filteredGroups, group)
@@ -31,7 +31,7 @@ func CreateEntitlementsSelectableCodeSignGroupFilter(bundleIDEntitlementsMap map
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
-			filteredProfiles := []profileutil.ProvisioningProfileInfoModel{}
+			var filteredProfiles []profileutil.ProvisioningProfileInfoModel
 
 			for _, profile := range profiles {
 				missingEntitlements := profileutil.MatchTargetAndProfileEntitlements(bundleIDEntitlementsMap[bundleID], profile.Entitlements, profile.Type)
@@ -62,7 +62,7 @@ func CreateExportMethodSelectableCodeSignGroupFilter(exportMethod exportoptions.
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
-			filteredProfiles := []profileutil.ProvisioningProfileInfoModel{}
+			var filteredProfiles []profileutil.ProvisioningProfileInfoModel
 
 			for _, profile := range profiles {
 				if profile.ExportType == exportMethod {
@@ -99,7 +99,7 @@ func CreateNotXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGrou
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
-			filteredProfiles := []profileutil.ProvisioningProfileInfoModel{}
+			var filteredProfiles []profileutil.ProvisioningProfileInfoModel
 
 			for _, profile := range profiles {
 				if !profile.IsXcodeManaged() {
@@ -129,7 +129,7 @@ func CreateXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFi
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
-			filteredProfiles := []profileutil.ProvisioningProfileInfoModel{}
+			var filteredProfiles []profileutil.ProvisioningProfileInfoModel
 
 			for _, profile := range profiles {
 				if profile.IsXcodeManaged() {
@@ -159,7 +159,7 @@ func CreateExcludeProfileNameSelectableCodeSignGroupFilter(name string) Selectab
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
-			filteredProfiles := []profileutil.ProvisioningProfileInfoModel{}
+			var filteredProfiles []profileutil.ProvisioningProfileInfoModel
 
 			for _, profile := range profiles {
 				if profile.Name != name {

@@ -11,6 +11,14 @@ type Ios struct {
 	bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel
 }
 
+// NewIOSGroup ...
+func NewIOSGroup(certificate certificateutil.CertificateInfoModel, bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel) *Ios {
+	return &Ios{
+		certificate:        certificate,
+		bundleIDProfileMap: bundleIDProfileMap,
+	}
+}
+
 // Certificate ...
 func (signGroup *Ios) Certificate() certificateutil.CertificateInfoModel {
 	return signGroup.certificate
@@ -24,12 +32,4 @@ func (signGroup *Ios) InstallerCertificate() *certificateutil.CertificateInfoMod
 // BundleIDProfileMap ...
 func (signGroup *Ios) BundleIDProfileMap() map[string]profileutil.ProvisioningProfileInfoModel {
 	return signGroup.bundleIDProfileMap
-}
-
-// NewIOSGroup ...
-func NewIOSGroup(certificate certificateutil.CertificateInfoModel, bundleIDProfileMap map[string]profileutil.ProvisioningProfileInfoModel) *Ios {
-	return &Ios{
-		certificate:        certificate,
-		bundleIDProfileMap: bundleIDProfileMap,
-	}
 }
