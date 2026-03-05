@@ -13,12 +13,12 @@ import (
 func TestPrinter_ToDebugString(t *testing.T) {
 	tests := []struct {
 		name  string
-		group codesigngroup.SelectableCodeSignGroup
+		group codesigngroup.Selectable
 		want  string
 	}{
 		{
 			name: "empty group",
-			group: codesigngroup.SelectableCodeSignGroup{
+			group: codesigngroup.Selectable{
 				Certificate: certificateutil.CertificateInfoModel{
 					CommonName: "CN",
 					Serial:     "SERIAL",

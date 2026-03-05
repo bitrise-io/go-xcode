@@ -1,4 +1,4 @@
-package exportoptionsgenerator
+package codesigngroup
 
 import (
 	plistutilv1 "github.com/bitrise-io/go-xcode/plistutil"

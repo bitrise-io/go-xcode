@@ -21,17 +21,24 @@ func NewPrinter(logger log.Logger) *Printer {
 }
 
 // ListToDebugString ...
-func (printer *Printer) ListToDebugString(groups []SelectableCodeSignGroup) string {
+func (printer *Printer) ListToDebugString(groups []Selectable) string {
 	var builder strings.Builder
-	for _, group := range groups {
-		builder.WriteString(printer.ToDebugString(group) + "\n")
+	builder.WriteString("[")
+	for i, group := range groups {
+		builder.WriteString(printer.ToDebugString(group))
+		if i > 0 {
+			builder.WriteString(",")
+		}
+		builder.WriteString("\n")
 	}
+
+	builder.WriteString("]")
 
 	return builder.String()
 }
 
 // ToDebugString ...
-func (printer *Printer) ToDebugString(group SelectableCodeSignGroup) string {
+func (printer *Printer) ToDebugString(group Selectable) string {
 	printable := map[string]any{}
 	printable["team"] = fmt.Sprintf("%s (%s)", group.Certificate.TeamName, group.Certificate.TeamID)
 	printable["certificate"] = fmt.Sprintf("%s (%s)", group.Certificate.CommonName, group.Certificate.Serial)

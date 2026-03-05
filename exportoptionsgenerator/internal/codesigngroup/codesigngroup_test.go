@@ -3,52 +3,96 @@ package codesigngroup_test
 import (
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
+	v1plistutil "github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCreateSelectableCodeSignGroups(t *testing.T) {
+	printer := codesigngroup.NewPrinter(log.NewLogger())
 	certDev := certificateutil.CertificateInfoModel{
 		CommonName: "iPhone Distribution: Bitrise Test (ABCD1234)",
 		TeamID:     "ABCD1234",
 	}
-	profileDev := profileutil.ProvisioningProfileInfoModel{
+	profile := profileutil.ProvisioningProfileInfoModel{
 		Name:                  "Bitrise Test Profile",
+		Type:                  profileutil.ProfileTypeIos,
 		UUID:                  "PROFILE-UUID-1234",
 		TeamID:                "ABCD1234",
 		BundleID:              "io.bitrise.testapp",
 		ExportType:            exportoptions.MethodAppStore,
 		DeveloperCertificates: []certificateutil.CertificateInfoModel{certDev},
 	}
+	profileExt := profileutil.ProvisioningProfileInfoModel{
+		Name:                  "Bitrise Test Profile 2",
+		Type:                  profileutil.ProfileTypeIos,
+		UUID:                  "PROFILE-UUID-1235",
+		TeamID:                "ABCD1234",
+		BundleID:              "io.bitrise.testapp.appext",
+		ExportType:            exportoptions.MethodAppStore,
+		DeveloperCertificates: []certificateutil.CertificateInfoModel{certDev},
+	}
+	wildcarDev := profileutil.ProvisioningProfileInfoModel{
+		Name:                  "Bitrise Test Profile *",
+		Type:                  profileutil.ProfileTypeIos,
+		UUID:                  "PROFILE-UUID-1236",
+		TeamID:                "ABCD1234",
+		BundleID:              "io.bitrise.*",
+		ExportType:            exportoptions.MethodAppStore,
+		DeveloperCertificates: []certificateutil.CertificateInfoModel{certDev},
+	}
+	managedProflile := profileutil.ProvisioningProfileInfoModel{
+		Name:                  "iOS Team Provisioning Profile: io.bitrise.testapp", // managed by Xcode
+		Type:                  profileutil.ProfileTypeIos,
+		UUID:                  "PROFILE-UUID-1237",
+		TeamID:                "ABCD1234",
+		BundleID:              "io.bitrise.testapp",
+		ExportType:            exportoptions.MethodAppStore,
+		DeveloperCertificates: []certificateutil.CertificateInfoModel{certDev},
+	}
+	profileWithEntitlement := profileutil.ProvisioningProfileInfoModel{
+		Name:                  "Bitrise Test Profile",
+		Type:                  profileutil.ProfileTypeIos,
+		UUID:                  "PROFILE-UUID-1234",
+		TeamID:                "ABCD1234",
+		BundleID:              "io.bitrise.testapp",
+		ExportType:            exportoptions.MethodAppStore,
+		DeveloperCertificates: []certificateutil.CertificateInfoModel{certDev},
+		Entitlements:          v1plistutil.PlistData{"aps-environment": "value1"},
+	}
 
 	tests := []struct {
 		name         string
 		certificates []certificateutil.CertificateInfoModel
 		profiles     []profileutil.ProvisioningProfileInfoModel
-		bundleIDs    []string
-		filter       codesigngroup.SelectableCodeSignGroupFilter
-		want         []codesigngroup.SelectableCodeSignGroup
+		bundleIDs    map[string]plistutil.PlistData
+		filter       codesigngroup.GroupMapFunc
+		want         []codesigngroup.Selectable
 	}{
 		{
 			name:         "empty inputs",
 			certificates: []certificateutil.CertificateInfoModel{},
 			profiles:     []profileutil.ProvisioningProfileInfoModel{},
-			bundleIDs:    []string{},
-			want:         []codesigngroup.SelectableCodeSignGroup(nil),
+			bundleIDs:    map[string]plistutil.PlistData{},
+			want:         []codesigngroup.Selectable(nil),
 		},
 		{
 			name:         "single matching profile and certificate",
 			certificates: []certificateutil.CertificateInfoModel{certDev},
-			profiles:     []profileutil.ProvisioningProfileInfoModel{profileDev},
-			bundleIDs:    []string{"io.bitrise.testapp"},
-			want: []codesigngroup.SelectableCodeSignGroup{
+			profiles:     []profileutil.ProvisioningProfileInfoModel{profile},
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp": {},
+			},
+			want: []codesigngroup.Selectable{
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
-						"io.bitrise.testapp": {profileDev},
+						"io.bitrise.testapp": {profile},
 					},
 				},
 			},
@@ -59,49 +103,177 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				certDev,
 			},
 			profiles: []profileutil.ProvisioningProfileInfoModel{
-				profileDev,
+				profile,
 			},
-			bundleIDs: []string{"io.bitrise.testapp"},
-			filter:    codesigngroup.CreateTeamSelectableCodeSignGroupFilter("WRONGID"),
-			want:      []codesigngroup.SelectableCodeSignGroup(nil),
+			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
+			filter:    codesigngroup.CreateTeamIDFilter("WRONGID"),
+			want:      []codesigngroup.Selectable(nil),
 		},
 		{
-			name: "filter by team ID, match",
+			name: "filter by team ID, match. prefers longer bundle ID match",
 			certificates: []certificateutil.CertificateInfoModel{
 				certDev,
 			},
 			profiles: []profileutil.ProvisioningProfileInfoModel{
-				profileDev,
+				profile,
+				profileExt,
+				wildcarDev,
 			},
-			bundleIDs: []string{"io.bitrise.testapp"},
-			filter:    codesigngroup.CreateTeamSelectableCodeSignGroupFilter("ABCD1234"),
-			want: []codesigngroup.SelectableCodeSignGroup{
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {},
+				"io.bitrise.testapp.appext": {},
+			},
+			filter: codesigngroup.CreateTeamIDFilter("ABCD1234"),
+			want: []codesigngroup.Selectable{
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
-						"io.bitrise.testapp": {profileDev},
+						"io.bitrise.testapp":        {profile, wildcarDev},
+						"io.bitrise.testapp.appext": {profileExt, wildcarDev},
 					},
 				},
 			},
 		},
 		{
-			name: "filter out app store distribution",
+			name: "filter for ad-hoc dist, no match",
 			certificates: []certificateutil.CertificateInfoModel{
 				certDev,
 			},
 			profiles: []profileutil.ProvisioningProfileInfoModel{
-				profileDev,
+				profile,
 			},
-			bundleIDs: []string{"io.bitrise.testapp"},
-			filter:    codesigngroup.CreateExportMethodSelectableCodeSignGroupFilter(exportoptions.MethodAdHoc),
-			want:      []codesigngroup.SelectableCodeSignGroup(nil),
+			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
+			filter:    codesigngroup.CreateExportMethodFilter(exportoptions.MethodAdHoc),
+			want:      []codesigngroup.Selectable(nil),
+		},
+		{
+			name: "filter out non xcode managed profiles, no match",
+			certificates: []certificateutil.CertificateInfoModel{
+				certDev,
+			},
+			profiles: []profileutil.ProvisioningProfileInfoModel{
+				profile,
+				profileExt,
+				managedProflile,
+			},
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {},
+				"io.bitrise.testapp.appext": {}, // no managed profile provided
+			},
+			filter: codesigngroup.CreateXcodeManagedFilter(),
+			want:   []codesigngroup.Selectable(nil),
+		},
+		{
+			name: "filter out xcode managed profiles, match",
+			certificates: []certificateutil.CertificateInfoModel{
+				certDev,
+			},
+			profiles: []profileutil.ProvisioningProfileInfoModel{
+				profile,
+				managedProflile,
+			},
+			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
+			filter:    codesigngroup.CreateNonXcodeManagedFilter(),
+			want: []codesigngroup.Selectable{
+				{
+					Certificate: certDev,
+					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
+						"io.bitrise.testapp": {profile},
+					},
+				},
+			},
+		},
+		{
+			name: "filter out profile by name, match",
+			certificates: []certificateutil.CertificateInfoModel{
+				certDev,
+			},
+			profiles: []profileutil.ProvisioningProfileInfoModel{
+				profile,
+				profileExt,
+			},
+			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
+			filter:    codesigngroup.CreateExcludeProfileNameFilter("Nonmathcing Profile"),
+			want: []codesigngroup.Selectable{
+				{
+					Certificate: certDev,
+					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
+						"io.bitrise.testapp": {profile},
+					},
+				},
+			},
+		},
+		{
+			name: "filter out profile by name, no match",
+			certificates: []certificateutil.CertificateInfoModel{
+				certDev,
+			},
+			profiles: []profileutil.ProvisioningProfileInfoModel{
+				profile,
+				profileExt,
+			},
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {},
+				"io.bitrise.testapp.appext": {},
+			},
+			filter: codesigngroup.CreateExcludeProfileNameFilter("Bitrise Test Profile"),
+			want:   nil,
+		},
+		{
+			name: "enitlements filter - no match",
+			certificates: []certificateutil.CertificateInfoModel{
+				certDev,
+			},
+			profiles: []profileutil.ProvisioningProfileInfoModel{
+				profile,
+				profileExt,
+			},
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {"aps-environment": "value1"},
+				"io.bitrise.testapp.appext": {},
+			},
+			filter: codesigngroup.CreateEntitlementsFilter(map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {"aps-environment": "value1"},
+				"io.bitrise.testapp.appext": {},
+			}),
+			want: []codesigngroup.Selectable(nil),
+		},
+		{
+			name: "enitlements filter - match",
+			certificates: []certificateutil.CertificateInfoModel{
+				certDev,
+			},
+			profiles: []profileutil.ProvisioningProfileInfoModel{
+				profile,
+				profileWithEntitlement,
+				profileExt,
+			},
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {"aps-environment": "value1"},
+				"io.bitrise.testapp.appext": {},
+			},
+			filter: codesigngroup.CreateEntitlementsFilter(map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {"aps-environment": "value1"},
+				"io.bitrise.testapp.appext": {},
+			}),
+			want: []codesigngroup.Selectable{
+				{
+					Certificate: certDev,
+					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
+						"io.bitrise.testapp":        {profileWithEntitlement},
+						"io.bitrise.testapp.appext": {profileExt},
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := codesigngroup.BuildFilterableList(tt.certificates, tt.profiles, tt.bundleIDs)
-			got = codesigngroup.Filter(got, tt.filter)
-			require.Equal(t, tt.want, got)
+			t.Logf("groups: %s", printer.ListToDebugString(got))
+			got = codesigngroup.MapGroups(got, tt.filter)
+			t.Logf("filtered groups: %s", printer.ListToDebugString(got))
+			require.JSONEq(t, printer.ListToDebugString(tt.want), printer.ListToDebugString(got))
 		})
 	}
 }
