@@ -6,6 +6,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
+	v1plistutil "github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
@@ -18,8 +19,9 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 		CommonName: "iPhone Distribution: Bitrise Test (ABCD1234)",
 		TeamID:     "ABCD1234",
 	}
-	profileDev := profileutil.ProvisioningProfileInfoModel{
+	profile := profileutil.ProvisioningProfileInfoModel{
 		Name:                  "Bitrise Test Profile",
+		Type:                  profileutil.ProfileTypeIos,
 		UUID:                  "PROFILE-UUID-1234",
 		TeamID:                "ABCD1234",
 		BundleID:              "io.bitrise.testapp",
@@ -28,6 +30,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 	}
 	profileExt := profileutil.ProvisioningProfileInfoModel{
 		Name:                  "Bitrise Test Profile 2",
+		Type:                  profileutil.ProfileTypeIos,
 		UUID:                  "PROFILE-UUID-1235",
 		TeamID:                "ABCD1234",
 		BundleID:              "io.bitrise.testapp.appext",
@@ -36,6 +39,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 	}
 	wildcarDev := profileutil.ProvisioningProfileInfoModel{
 		Name:                  "Bitrise Test Profile *",
+		Type:                  profileutil.ProfileTypeIos,
 		UUID:                  "PROFILE-UUID-1236",
 		TeamID:                "ABCD1234",
 		BundleID:              "io.bitrise.*",
@@ -44,11 +48,22 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 	}
 	managedProflile := profileutil.ProvisioningProfileInfoModel{
 		Name:                  "iOS Team Provisioning Profile: io.bitrise.testapp", // managed by Xcode
+		Type:                  profileutil.ProfileTypeIos,
 		UUID:                  "PROFILE-UUID-1237",
 		TeamID:                "ABCD1234",
 		BundleID:              "io.bitrise.testapp",
 		ExportType:            exportoptions.MethodAppStore,
 		DeveloperCertificates: []certificateutil.CertificateInfoModel{certDev},
+	}
+	profileWithEntitlement := profileutil.ProvisioningProfileInfoModel{
+		Name:                  "Bitrise Test Profile",
+		Type:                  profileutil.ProfileTypeIos,
+		UUID:                  "PROFILE-UUID-1234",
+		TeamID:                "ABCD1234",
+		BundleID:              "io.bitrise.testapp",
+		ExportType:            exportoptions.MethodAppStore,
+		DeveloperCertificates: []certificateutil.CertificateInfoModel{certDev},
+		Entitlements:          v1plistutil.PlistData{"aps-environment": "value1"},
 	}
 
 	tests := []struct {
@@ -69,7 +84,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 		{
 			name:         "single matching profile and certificate",
 			certificates: []certificateutil.CertificateInfoModel{certDev},
-			profiles:     []profileutil.ProvisioningProfileInfoModel{profileDev},
+			profiles:     []profileutil.ProvisioningProfileInfoModel{profile},
 			bundleIDs: map[string]plistutil.PlistData{
 				"io.bitrise.testapp": {},
 			},
@@ -77,7 +92,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
-						"io.bitrise.testapp": {profileDev},
+						"io.bitrise.testapp": {profile},
 					},
 				},
 			},
@@ -88,7 +103,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				certDev,
 			},
 			profiles: []profileutil.ProvisioningProfileInfoModel{
-				profileDev,
+				profile,
 			},
 			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
 			filter:    codesigngroup.CreateTeamIDFilter("WRONGID"),
@@ -100,7 +115,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				certDev,
 			},
 			profiles: []profileutil.ProvisioningProfileInfoModel{
-				profileDev,
+				profile,
 				profileExt,
 				wildcarDev,
 			},
@@ -113,7 +128,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
-						"io.bitrise.testapp":        {profileDev, wildcarDev},
+						"io.bitrise.testapp":        {profile, wildcarDev},
 						"io.bitrise.testapp.appext": {profileExt, wildcarDev},
 					},
 				},
@@ -125,7 +140,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				certDev,
 			},
 			profiles: []profileutil.ProvisioningProfileInfoModel{
-				profileDev,
+				profile,
 			},
 			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
 			filter:    codesigngroup.CreateExportMethodFilter(exportoptions.MethodAdHoc),
@@ -137,7 +152,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				certDev,
 			},
 			profiles: []profileutil.ProvisioningProfileInfoModel{
-				profileDev,
+				profile,
 				profileExt,
 				managedProflile,
 			},
@@ -154,7 +169,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				certDev,
 			},
 			profiles: []profileutil.ProvisioningProfileInfoModel{
-				profileDev,
+				profile,
 				managedProflile,
 			},
 			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
@@ -163,7 +178,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
-						"io.bitrise.testapp": {profileDev},
+						"io.bitrise.testapp": {profile},
 					},
 				},
 			},
@@ -174,7 +189,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				certDev,
 			},
 			profiles: []profileutil.ProvisioningProfileInfoModel{
-				profileDev,
+				profile,
 				profileExt,
 			},
 			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
@@ -183,7 +198,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
-						"io.bitrise.testapp": {profileDev},
+						"io.bitrise.testapp": {profile},
 					},
 				},
 			},
@@ -194,7 +209,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				certDev,
 			},
 			profiles: []profileutil.ProvisioningProfileInfoModel{
-				profileDev,
+				profile,
 				profileExt,
 			},
 			bundleIDs: map[string]plistutil.PlistData{
@@ -203,6 +218,53 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			},
 			filter: codesigngroup.CreateExcludeProfileNameFilter("Bitrise Test Profile"),
 			want:   nil,
+		},
+		{
+			name: "enitlements filter - no match",
+			certificates: []certificateutil.CertificateInfoModel{
+				certDev,
+			},
+			profiles: []profileutil.ProvisioningProfileInfoModel{
+				profile,
+				profileExt,
+			},
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {"aps-environment": "value1"},
+				"io.bitrise.testapp.appext": {},
+			},
+			filter: codesigngroup.CreateEntitlementsFilter(map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {"aps-environment": "value1"},
+				"io.bitrise.testapp.appext": {},
+			}),
+			want: []codesigngroup.Selectable(nil),
+		},
+		{
+			name: "enitlements filter - match",
+			certificates: []certificateutil.CertificateInfoModel{
+				certDev,
+			},
+			profiles: []profileutil.ProvisioningProfileInfoModel{
+				profile,
+				profileWithEntitlement,
+				profileExt,
+			},
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {"aps-environment": "value1"},
+				"io.bitrise.testapp.appext": {},
+			},
+			filter: codesigngroup.CreateEntitlementsFilter(map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {"aps-environment": "value1"},
+				"io.bitrise.testapp.appext": {},
+			}),
+			want: []codesigngroup.Selectable{
+				{
+					Certificate: certDev,
+					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
+						"io.bitrise.testapp":        {profileWithEntitlement},
+						"io.bitrise.testapp.appext": {profileExt},
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {

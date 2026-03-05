@@ -2,8 +2,8 @@ package codesigngroup
 
 import (
 	"github.com/bitrise-io/go-xcode/exportoptions"
-	"github.com/bitrise-io/go-xcode/plistutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
 // GroupMapFunc ...
@@ -28,38 +28,18 @@ func MapGroups(groups []Selectable, mapFunc GroupMapFunc) []Selectable {
 // CreateEntitlementsFilter ...
 func CreateEntitlementsFilter(bundleIDEntitlementsMap map[string]plistutil.PlistData) GroupMapFunc {
 	return func(group Selectable) (Selectable, bool) {
-		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
-
-		for bundleID, profiles := range group.BundleIDProfilesMap {
-			var filteredProfiles []profileutil.ProvisioningProfileInfoModel
-
-			for _, profile := range profiles {
-				missingEntitlements := profileutil.MatchTargetAndProfileEntitlements(bundleIDEntitlementsMap[bundleID], profile.Entitlements, profile.Type)
-				if len(missingEntitlements) == 0 {
-					filteredProfiles = append(filteredProfiles, profile)
-				}
-			}
-
-			if len(filteredProfiles) == 0 {
-				break
-			}
-
-			filteredBundleIDProfilesMap[bundleID] = filteredProfiles
-		}
-
-		if len(filteredBundleIDProfilesMap) == len(group.BundleIDProfilesMap) {
-			group.BundleIDProfilesMap = filteredBundleIDProfilesMap
-			return group, true
-		}
-
-		return group, false
+		return filterGroupProfiles(group, func(bundleID string, profile profileutil.ProvisioningProfileInfoModel) bool {
+			v1BundleIDEntitlementsMap := convertToV1PlistData(bundleIDEntitlementsMap)
+			missingEntitlements := profileutil.MatchTargetAndProfileEntitlements(v1BundleIDEntitlementsMap[bundleID], profile.Entitlements, profile.Type)
+			return len(missingEntitlements) == 0
+		})
 	}
 }
 
 // CreateExportMethodFilter ...
 func CreateExportMethodFilter(exportMethod exportoptions.Method) GroupMapFunc {
 	return func(group Selectable) (Selectable, bool) {
-		return filterGroupProfiles(group, func(profile profileutil.ProvisioningProfileInfoModel) bool {
+		return filterGroupProfiles(group, func(bundleID string, profile profileutil.ProvisioningProfileInfoModel) bool {
 			return profile.ExportType == exportMethod
 		})
 	}
@@ -78,7 +58,7 @@ func CreateTeamIDFilter(teamID string) GroupMapFunc {
 // CreateNonXcodeManagedFilter ...
 func CreateNonXcodeManagedFilter() GroupMapFunc {
 	return func(group Selectable) (Selectable, bool) {
-		return filterGroupProfiles(group, func(profile profileutil.ProvisioningProfileInfoModel) bool {
+		return filterGroupProfiles(group, func(bundleID string, profile profileutil.ProvisioningProfileInfoModel) bool {
 			return !profile.IsXcodeManaged()
 		})
 	}
@@ -87,7 +67,7 @@ func CreateNonXcodeManagedFilter() GroupMapFunc {
 // CreateXcodeManagedFilter ...
 func CreateXcodeManagedFilter() GroupMapFunc {
 	return func(group Selectable) (Selectable, bool) {
-		return filterGroupProfiles(group, func(profile profileutil.ProvisioningProfileInfoModel) bool {
+		return filterGroupProfiles(group, func(bundleID string, profile profileutil.ProvisioningProfileInfoModel) bool {
 			return profile.IsXcodeManaged()
 		})
 	}
@@ -96,7 +76,7 @@ func CreateXcodeManagedFilter() GroupMapFunc {
 // CreateExcludeProfileNameFilter ...
 func CreateExcludeProfileNameFilter(name string) GroupMapFunc {
 	return func(group Selectable) (Selectable, bool) {
-		return filterGroupProfiles(group, func(profile profileutil.ProvisioningProfileInfoModel) bool {
+		return filterGroupProfiles(group, func(bundleID string, profile profileutil.ProvisioningProfileInfoModel) bool {
 			return profile.Name != name
 		})
 	}
@@ -118,10 +98,12 @@ func filter[T any](slice []T, filterFunc func(T) bool) []T {
 	return filtered
 }
 
-func filterGroupProfiles(group Selectable, filterFunc func(profile profileutil.ProvisioningProfileInfoModel) bool) (Selectable, bool) {
+func filterGroupProfiles(group Selectable, filterFunc func(bundleID string, profile profileutil.ProvisioningProfileInfoModel) bool) (Selectable, bool) {
 	filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 	for bundleID, profiles := range group.BundleIDProfilesMap {
-		filteredBundleIDProfilesMap[bundleID] = filter(profiles, filterFunc)
+		filteredBundleIDProfilesMap[bundleID] = filter(profiles, func(profile profileutil.ProvisioningProfileInfoModel) bool {
+			return filterFunc(bundleID, profile)
+		})
 		if len(filteredBundleIDProfilesMap[bundleID]) == 0 {
 			return group, false
 		}

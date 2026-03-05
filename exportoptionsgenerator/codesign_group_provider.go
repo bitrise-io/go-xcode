@@ -62,7 +62,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 	if len(bundleIDToEntitlements) > 0 {
 		g.logger.Printf("Filtering code signing groups for target capabilities")
 
-		codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateEntitlementsFilter(convertToV1PlistData(bundleIDToEntitlements)))
+		codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateEntitlementsFilter(bundleIDToEntitlements))
 
 		g.logger.Debugf("\nGroups after filtering for target capabilities:")
 		g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))

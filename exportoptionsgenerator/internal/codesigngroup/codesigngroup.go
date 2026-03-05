@@ -55,11 +55,10 @@ func BuildFilterableList(installedCertificates []certificateutil.CertificateInfo
 		}
 
 		if len(bundleIDToProfiles) == len(bundleIDToEntitlements) {
-			group := Selectable{
+			groups = append(groups, Selectable{
 				Certificate:         certificate,
 				BundleIDProfilesMap: bundleIDToProfiles,
-			}
-			groups = append(groups, group)
+			})
 		}
 	}
 
