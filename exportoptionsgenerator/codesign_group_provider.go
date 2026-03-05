@@ -28,13 +28,10 @@ func NewCodeSignGroupProvider(logger log.Logger) CodeSignGroupProvider {
 }
 
 // DetermineCodesignGroup ....
-func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*codesigngroup.Ios, error) {
+func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDToEntitlements map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*codesigngroup.Ios, error) {
 	g.logger.Println()
 	g.logger.Printf("Target Bundle ID - Entitlements map")
-	var bundleIDs []string
-	for bundleID, entitlements := range bundleIDEntitlementsMap {
-		bundleIDs = append(bundleIDs, bundleID)
-
+	for bundleID, entitlements := range bundleIDToEntitlements {
 		var entitlementKeys []string
 		for key := range entitlements {
 			entitlementKeys = append(entitlementKeys, key)
@@ -54,7 +51,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 
 	g.logger.Println()
 	g.logger.Printf("Resolving code signing groups...")
-	codeSignGroups := codesigngroup.BuildFilterableList(certificates, profiles, bundleIDs)
+	codeSignGroups := codesigngroup.BuildFilterableList(certificates, profiles, bundleIDToEntitlements)
 	if len(codeSignGroups) == 0 {
 		g.logger.Errorf("Failed to find code signing groups for specified export method (%s)", exportMethod)
 	}
@@ -62,10 +59,10 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 	g.logger.Debugf("\nGroups:")
 	g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
 
-	if len(bundleIDEntitlementsMap) > 0 {
+	if len(bundleIDToEntitlements) > 0 {
 		g.logger.Printf("Filtering code signing groups for target capabilities")
 
-		codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateEntitlementsFilter(convertToV1PlistData(bundleIDEntitlementsMap)))
+		codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateEntitlementsFilter(convertToV1PlistData(bundleIDToEntitlements)))
 
 		g.logger.Debugf("\nGroups after filtering for target capabilities:")
 		g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))

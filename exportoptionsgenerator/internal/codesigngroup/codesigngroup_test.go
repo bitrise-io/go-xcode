@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-io/go-xcode/exportoptions"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -54,7 +55,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 		name         string
 		certificates []certificateutil.CertificateInfoModel
 		profiles     []profileutil.ProvisioningProfileInfoModel
-		bundleIDs    []string
+		bundleIDs    map[string]plistutil.PlistData
 		filter       codesigngroup.GroupMapFunc
 		want         []codesigngroup.Selectable
 	}{
@@ -62,14 +63,16 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			name:         "empty inputs",
 			certificates: []certificateutil.CertificateInfoModel{},
 			profiles:     []profileutil.ProvisioningProfileInfoModel{},
-			bundleIDs:    []string{},
+			bundleIDs:    map[string]plistutil.PlistData{},
 			want:         []codesigngroup.Selectable(nil),
 		},
 		{
 			name:         "single matching profile and certificate",
 			certificates: []certificateutil.CertificateInfoModel{certDev},
 			profiles:     []profileutil.ProvisioningProfileInfoModel{profileDev},
-			bundleIDs:    []string{"io.bitrise.testapp"},
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp": {},
+			},
 			want: []codesigngroup.Selectable{
 				{
 					Certificate: certDev,
@@ -87,7 +90,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			profiles: []profileutil.ProvisioningProfileInfoModel{
 				profileDev,
 			},
-			bundleIDs: []string{"io.bitrise.testapp"},
+			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
 			filter:    codesigngroup.CreateTeamIDFilter("WRONGID"),
 			want:      []codesigngroup.Selectable(nil),
 		},
@@ -101,8 +104,11 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileExt,
 				wildcarDev,
 			},
-			bundleIDs: []string{"io.bitrise.testapp", "io.bitrise.testapp.appext"},
-			filter:    codesigngroup.CreateTeamIDFilter("ABCD1234"),
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {},
+				"io.bitrise.testapp.appext": {},
+			},
+			filter: codesigngroup.CreateTeamIDFilter("ABCD1234"),
 			want: []codesigngroup.Selectable{
 				{
 					Certificate: certDev,
@@ -121,7 +127,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			profiles: []profileutil.ProvisioningProfileInfoModel{
 				profileDev,
 			},
-			bundleIDs: []string{"io.bitrise.testapp"},
+			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
 			filter:    codesigngroup.CreateExportMethodFilter(exportoptions.MethodAdHoc),
 			want:      []codesigngroup.Selectable(nil),
 		},
@@ -135,9 +141,9 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileExt,
 				managedProflile,
 			},
-			bundleIDs: []string{
-				"io.bitrise.testapp",
-				"io.bitrise.testapp.appext", // no managed profile provided
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {},
+				"io.bitrise.testapp.appext": {}, // no managed profile provided
 			},
 			filter: codesigngroup.CreateXcodeManagedFilter(),
 			want:   []codesigngroup.Selectable(nil),
@@ -151,7 +157,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileDev,
 				managedProflile,
 			},
-			bundleIDs: []string{"io.bitrise.testapp"},
+			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
 			filter:    codesigngroup.CreateNonXcodeManagedFilter(),
 			want: []codesigngroup.Selectable{
 				{
@@ -171,7 +177,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileDev,
 				profileExt,
 			},
-			bundleIDs: []string{"io.bitrise.testapp"},
+			bundleIDs: map[string]plistutil.PlistData{"io.bitrise.testapp": {}},
 			filter:    codesigngroup.CreateExcludeProfileNameFilter("Nonmathcing Profile"),
 			want: []codesigngroup.Selectable{
 				{
@@ -191,9 +197,12 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileDev,
 				profileExt,
 			},
-			bundleIDs: []string{"io.bitrise.testapp", "io.bitrise.testapp.appext"},
-			filter:    codesigngroup.CreateExcludeProfileNameFilter("Bitrise Test Profile"),
-			want:      nil,
+			bundleIDs: map[string]plistutil.PlistData{
+				"io.bitrise.testapp":        {},
+				"io.bitrise.testapp.appext": {},
+			},
+			filter: codesigngroup.CreateExcludeProfileNameFilter("Bitrise Test Profile"),
+			want:   nil,
 		},
 	}
 	for _, tt := range tests {

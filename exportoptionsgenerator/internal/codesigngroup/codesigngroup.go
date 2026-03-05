@@ -5,6 +5,7 @@ import (
 
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/ryanuber/go-glob"
 )
 
@@ -15,7 +16,7 @@ type Selectable struct {
 }
 
 // BuildFilterableList ...
-func BuildFilterableList(installedCertificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []Selectable {
+func BuildFilterableList(installedCertificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDToEntitlements map[string]plistutil.PlistData) []Selectable {
 	var groups []Selectable
 
 	serialToProfiles := map[string][]profileutil.ProvisioningProfileInfoModel{}
@@ -35,7 +36,7 @@ func BuildFilterableList(installedCertificates []certificateutil.CertificateInfo
 		certificate := serialToCertificate[serial]
 
 		bundleIDToProfiles := map[string][]profileutil.ProvisioningProfileInfoModel{}
-		for _, bundleID := range bundleIDs {
+		for bundleID := range bundleIDToEntitlements {
 			var matchingProfiles []profileutil.ProvisioningProfileInfoModel
 			for _, profile := range profiles {
 				if !glob.Glob(profile.BundleID, bundleID) {
@@ -53,7 +54,7 @@ func BuildFilterableList(installedCertificates []certificateutil.CertificateInfo
 			}
 		}
 
-		if len(bundleIDToProfiles) == len(bundleIDs) {
+		if len(bundleIDToProfiles) == len(bundleIDToEntitlements) {
 			group := Selectable{
 				Certificate:         certificate,
 				BundleIDProfilesMap: bundleIDToProfiles,
