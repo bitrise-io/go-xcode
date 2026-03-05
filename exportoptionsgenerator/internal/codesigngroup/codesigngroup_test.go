@@ -56,21 +56,21 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 		profiles     []profileutil.ProvisioningProfileInfoModel
 		bundleIDs    []string
 		filter       codesigngroup.GroupMapFunc
-		want         []codesigngroup.SelectableCodeSignGroup
+		want         []codesigngroup.Selectable
 	}{
 		{
 			name:         "empty inputs",
 			certificates: []certificateutil.CertificateInfoModel{},
 			profiles:     []profileutil.ProvisioningProfileInfoModel{},
 			bundleIDs:    []string{},
-			want:         []codesigngroup.SelectableCodeSignGroup(nil),
+			want:         []codesigngroup.Selectable(nil),
 		},
 		{
 			name:         "single matching profile and certificate",
 			certificates: []certificateutil.CertificateInfoModel{certDev},
 			profiles:     []profileutil.ProvisioningProfileInfoModel{profileDev},
 			bundleIDs:    []string{"io.bitrise.testapp"},
-			want: []codesigngroup.SelectableCodeSignGroup{
+			want: []codesigngroup.Selectable{
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
@@ -89,7 +89,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
 			filter:    codesigngroup.CreateTeamIDFilter("WRONGID"),
-			want:      []codesigngroup.SelectableCodeSignGroup(nil),
+			want:      []codesigngroup.Selectable(nil),
 		},
 		{
 			name: "filter by team ID, match. prefers longer bundle ID match",
@@ -103,7 +103,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			},
 			bundleIDs: []string{"io.bitrise.testapp", "io.bitrise.testapp.appext"},
 			filter:    codesigngroup.CreateTeamIDFilter("ABCD1234"),
-			want: []codesigngroup.SelectableCodeSignGroup{
+			want: []codesigngroup.Selectable{
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
@@ -123,7 +123,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
 			filter:    codesigngroup.CreateExportMethodFilter(exportoptions.MethodAdHoc),
-			want:      []codesigngroup.SelectableCodeSignGroup(nil),
+			want:      []codesigngroup.Selectable(nil),
 		},
 		{
 			name: "filter out non xcode managed profiles, no match",
@@ -140,7 +140,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				"io.bitrise.testapp.appext", // no managed profile provided
 			},
 			filter: codesigngroup.CreateXcodeManagedFilter(),
-			want:   []codesigngroup.SelectableCodeSignGroup(nil),
+			want:   []codesigngroup.Selectable(nil),
 		},
 		{
 			name: "filter out xcode managed profiles, match",
@@ -153,7 +153,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
 			filter:    codesigngroup.CreateNonXcodeManagedFilter(),
-			want: []codesigngroup.SelectableCodeSignGroup{
+			want: []codesigngroup.Selectable{
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{
@@ -173,7 +173,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
 			filter:    codesigngroup.CreateExcludeProfileNameFilter("Nonmathcing Profile"),
-			want: []codesigngroup.SelectableCodeSignGroup{
+			want: []codesigngroup.Selectable{
 				{
 					Certificate: certDev,
 					BundleIDProfilesMap: map[string][]profileutil.ProvisioningProfileInfoModel{

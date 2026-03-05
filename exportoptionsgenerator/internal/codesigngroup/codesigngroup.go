@@ -8,15 +8,15 @@ import (
 	"github.com/ryanuber/go-glob"
 )
 
-// SelectableCodeSignGroup ...
-type SelectableCodeSignGroup struct {
+// Selectable ...
+type Selectable struct {
 	Certificate         certificateutil.CertificateInfoModel
 	BundleIDProfilesMap map[string][]profileutil.ProvisioningProfileInfoModel
 }
 
 // BuildFilterableList ...
-func BuildFilterableList(installedCertificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
-	var groups []SelectableCodeSignGroup
+func BuildFilterableList(installedCertificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []Selectable {
+	var groups []Selectable
 
 	serialToProfiles := map[string][]profileutil.ProvisioningProfileInfoModel{}
 	serialToCertificate := map[string]certificateutil.CertificateInfoModel{}
@@ -54,7 +54,7 @@ func BuildFilterableList(installedCertificates []certificateutil.CertificateInfo
 		}
 
 		if len(bundleIDToProfiles) == len(bundleIDs) {
-			group := SelectableCodeSignGroup{
+			group := Selectable{
 				Certificate:         certificate,
 				BundleIDProfilesMap: bundleIDToProfiles,
 			}

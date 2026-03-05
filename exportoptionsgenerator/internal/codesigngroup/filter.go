@@ -7,14 +7,14 @@ import (
 )
 
 // GroupMapFunc ...
-type GroupMapFunc func(group SelectableCodeSignGroup) (SelectableCodeSignGroup, bool)
+type GroupMapFunc func(group Selectable) (Selectable, bool)
 
-func MapGroups(groups []SelectableCodeSignGroup, mapFunc GroupMapFunc) []SelectableCodeSignGroup {
+func MapGroups(groups []Selectable, mapFunc GroupMapFunc) []Selectable {
 	if mapFunc == nil {
 		return groups
 	}
 
-	var mappedGroups []SelectableCodeSignGroup
+	var mappedGroups []Selectable
 	for _, group := range groups {
 		groupWithFilteredProfiles, ok := mapFunc(group)
 		if ok {
@@ -27,7 +27,7 @@ func MapGroups(groups []SelectableCodeSignGroup, mapFunc GroupMapFunc) []Selecta
 
 // CreateEntitlementsFilter ...
 func CreateEntitlementsFilter(bundleIDEntitlementsMap map[string]plistutil.PlistData) GroupMapFunc {
-	return func(group SelectableCodeSignGroup) (SelectableCodeSignGroup, bool) {
+	return func(group Selectable) (Selectable, bool) {
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 
 		for bundleID, profiles := range group.BundleIDProfilesMap {
@@ -58,7 +58,7 @@ func CreateEntitlementsFilter(bundleIDEntitlementsMap map[string]plistutil.Plist
 
 // CreateExportMethodFilter ...
 func CreateExportMethodFilter(exportMethod exportoptions.Method) GroupMapFunc {
-	return func(group SelectableCodeSignGroup) (SelectableCodeSignGroup, bool) {
+	return func(group Selectable) (Selectable, bool) {
 		return filterGroupProfiles(group, func(profile profileutil.ProvisioningProfileInfoModel) bool {
 			return profile.ExportType == exportMethod
 		})
@@ -67,7 +67,7 @@ func CreateExportMethodFilter(exportMethod exportoptions.Method) GroupMapFunc {
 
 // CreateTeamIDFilter ...
 func CreateTeamIDFilter(teamID string) GroupMapFunc {
-	return func(group SelectableCodeSignGroup) (SelectableCodeSignGroup, bool) {
+	return func(group Selectable) (Selectable, bool) {
 		if group.Certificate.TeamID == teamID {
 			return group, true
 		}
@@ -77,7 +77,7 @@ func CreateTeamIDFilter(teamID string) GroupMapFunc {
 
 // CreateNonXcodeManagedFilter ...
 func CreateNonXcodeManagedFilter() GroupMapFunc {
-	return func(group SelectableCodeSignGroup) (SelectableCodeSignGroup, bool) {
+	return func(group Selectable) (Selectable, bool) {
 		return filterGroupProfiles(group, func(profile profileutil.ProvisioningProfileInfoModel) bool {
 			return !profile.IsXcodeManaged()
 		})
@@ -86,7 +86,7 @@ func CreateNonXcodeManagedFilter() GroupMapFunc {
 
 // CreateXcodeManagedFilter ...
 func CreateXcodeManagedFilter() GroupMapFunc {
-	return func(group SelectableCodeSignGroup) (SelectableCodeSignGroup, bool) {
+	return func(group Selectable) (Selectable, bool) {
 		return filterGroupProfiles(group, func(profile profileutil.ProvisioningProfileInfoModel) bool {
 			return profile.IsXcodeManaged()
 		})
@@ -95,7 +95,7 @@ func CreateXcodeManagedFilter() GroupMapFunc {
 
 // CreateExcludeProfileNameFilter ...
 func CreateExcludeProfileNameFilter(name string) GroupMapFunc {
-	return func(group SelectableCodeSignGroup) (SelectableCodeSignGroup, bool) {
+	return func(group Selectable) (Selectable, bool) {
 		return filterGroupProfiles(group, func(profile profileutil.ProvisioningProfileInfoModel) bool {
 			return profile.Name != name
 		})
@@ -118,7 +118,7 @@ func filter[T any](slice []T, filterFunc func(T) bool) []T {
 	return filtered
 }
 
-func filterGroupProfiles(group SelectableCodeSignGroup, filterFunc func(profile profileutil.ProvisioningProfileInfoModel) bool) (SelectableCodeSignGroup, bool) {
+func filterGroupProfiles(group Selectable, filterFunc func(profile profileutil.ProvisioningProfileInfoModel) bool) (Selectable, bool) {
 	filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
 	for bundleID, profiles := range group.BundleIDProfilesMap {
 		filteredBundleIDProfilesMap[bundleID] = filter(profiles, filterFunc)
