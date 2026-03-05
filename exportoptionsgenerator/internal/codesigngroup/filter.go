@@ -9,6 +9,7 @@ import (
 // GroupMapFunc ...
 type GroupMapFunc func(group Selectable) (Selectable, bool)
 
+// MapGroups returns a slice containing the results of applying the given mapFunc to each element of the input slice, filtering out any elements for which mapFunc returns false.
 func MapGroups(groups []Selectable, mapFunc GroupMapFunc) []Selectable {
 	if mapFunc == nil {
 		return groups
