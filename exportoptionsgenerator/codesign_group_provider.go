@@ -65,7 +65,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 	if len(bundleIDEntitlementsMap) > 0 {
 		g.logger.Printf("Filtering code signing groups for target capabilities")
 
-		codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateEntitlementsSelectableCodeSignGroupFilter(convertToV1PlistData(bundleIDEntitlementsMap)))
+		codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateEntitlementsFilter(convertToV1PlistData(bundleIDEntitlementsMap)))
 
 		g.logger.Debugf("\nGroups after filtering for target capabilities:")
 		g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
@@ -73,7 +73,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 
 	g.logger.Printf("Filtering code signing groups for export method %s", exportMethod)
 
-	codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateExportMethodSelectableCodeSignGroupFilter(exportMethod))
+	codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateExportMethodFilter(exportMethod))
 
 	g.logger.Debugf("\nGroups after filtering for export method:")
 	g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
@@ -81,7 +81,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 	if teamID != "" {
 		g.logger.Printf("Development team specified: %s, filtering groups...", teamID)
 
-		codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateTeamSelectableCodeSignGroupFilter(teamID))
+		codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateTeamIDFilter(teamID))
 
 		g.logger.Debugf("\nGroups after filtering for team ID:")
 		g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
@@ -92,7 +92,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 			"only NON Xcode managed profiles are allowed to sign when exporting the archive.\n" +
 			"Removing Xcode managed code signing groups")
 
-		codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateNotXcodeManagedSelectableCodeSignGroupFilter())
+		codeSignGroups = codesigngroup.MapGroups(codeSignGroups, codesigngroup.CreateNonXcodeManagedFilter())
 
 		g.logger.Debugf("\nGroups after filtering for NON Xcode managed profiles:")
 		g.logger.Debugf("%s", g.printer.ListToDebugString(codeSignGroups))
@@ -101,7 +101,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 	if teamID == "" && defaultProfile != nil {
 		g.logger.Debugf("\ndefault profile: %v\n", defaultProfile)
 		filteredCodeSignGroups := codesigngroup.MapGroups(codeSignGroups,
-			codesigngroup.CreateExcludeProfileNameSelectableCodeSignGroupFilter(defaultProfile.Name))
+			codesigngroup.CreateExcludeProfileNameFilter(defaultProfile.Name))
 		if len(filteredCodeSignGroups) > 0 {
 			codeSignGroups = filteredCodeSignGroups
 			g.logger.Printf("Removed default profile '%s' from code signing groups", defaultProfile.Name)

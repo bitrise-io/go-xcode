@@ -55,7 +55,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 		certificates []certificateutil.CertificateInfoModel
 		profiles     []profileutil.ProvisioningProfileInfoModel
 		bundleIDs    []string
-		filter       codesigngroup.SelectableCodeSignGroupFilter
+		filter       codesigngroup.GroupMapFunc
 		want         []codesigngroup.SelectableCodeSignGroup
 	}{
 		{
@@ -88,7 +88,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileDev,
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
-			filter:    codesigngroup.CreateTeamSelectableCodeSignGroupFilter("WRONGID"),
+			filter:    codesigngroup.CreateTeamIDFilter("WRONGID"),
 			want:      []codesigngroup.SelectableCodeSignGroup(nil),
 		},
 		{
@@ -102,7 +102,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				wildcarDev,
 			},
 			bundleIDs: []string{"io.bitrise.testapp", "io.bitrise.testapp.appext"},
-			filter:    codesigngroup.CreateTeamSelectableCodeSignGroupFilter("ABCD1234"),
+			filter:    codesigngroup.CreateTeamIDFilter("ABCD1234"),
 			want: []codesigngroup.SelectableCodeSignGroup{
 				{
 					Certificate: certDev,
@@ -122,7 +122,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileDev,
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
-			filter:    codesigngroup.CreateExportMethodSelectableCodeSignGroupFilter(exportoptions.MethodAdHoc),
+			filter:    codesigngroup.CreateExportMethodFilter(exportoptions.MethodAdHoc),
 			want:      []codesigngroup.SelectableCodeSignGroup(nil),
 		},
 		{
@@ -139,7 +139,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				"io.bitrise.testapp",
 				"io.bitrise.testapp.appext", // no managed profile provided
 			},
-			filter: codesigngroup.CreateXcodeManagedSelectableCodeSignGroupFilter(),
+			filter: codesigngroup.CreateXcodeManagedFilter(),
 			want:   []codesigngroup.SelectableCodeSignGroup(nil),
 		},
 		{
@@ -152,7 +152,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				managedProflile,
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
-			filter:    codesigngroup.CreateNotXcodeManagedSelectableCodeSignGroupFilter(),
+			filter:    codesigngroup.CreateNonXcodeManagedFilter(),
 			want: []codesigngroup.SelectableCodeSignGroup{
 				{
 					Certificate: certDev,
@@ -172,7 +172,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileExt,
 			},
 			bundleIDs: []string{"io.bitrise.testapp"},
-			filter:    codesigngroup.CreateExcludeProfileNameSelectableCodeSignGroupFilter("Nonmathcing Profile"),
+			filter:    codesigngroup.CreateExcludeProfileNameFilter("Nonmathcing Profile"),
 			want: []codesigngroup.SelectableCodeSignGroup{
 				{
 					Certificate: certDev,
@@ -192,7 +192,7 @@ func TestCreateSelectableCodeSignGroups(t *testing.T) {
 				profileExt,
 			},
 			bundleIDs: []string{"io.bitrise.testapp", "io.bitrise.testapp.appext"},
-			filter:    codesigngroup.CreateExcludeProfileNameSelectableCodeSignGroupFilter("Bitrise Test Profile"),
+			filter:    codesigngroup.CreateExcludeProfileNameFilter("Bitrise Test Profile"),
 			want:      nil,
 		},
 	}
