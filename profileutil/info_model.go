@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/bitrise-io/go-plist"
-	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/fullsailor/pkcs7"
 )
