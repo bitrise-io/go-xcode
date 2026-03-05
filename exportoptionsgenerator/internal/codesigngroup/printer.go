@@ -23,9 +23,16 @@ func NewPrinter(logger log.Logger) *Printer {
 // ListToDebugString ...
 func (printer *Printer) ListToDebugString(groups []SelectableCodeSignGroup) string {
 	var builder strings.Builder
-	for _, group := range groups {
-		builder.WriteString(printer.ToDebugString(group) + "\n")
+	builder.WriteString("[")
+	for i, group := range groups {
+		builder.WriteString(printer.ToDebugString(group))
+		if i > 0 {
+			builder.WriteString(",")
+		}
+		builder.WriteString("\n")
 	}
+
+	builder.WriteString("]")
 
 	return builder.String()
 }
