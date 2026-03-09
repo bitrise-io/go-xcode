@@ -7,17 +7,20 @@ toolchain go1.23.2
 require (
 	cloud.google.com/go/secretmanager v1.14.3
 	cloud.google.com/go/storage v1.50.0
+	github.com/bitrise-io/go-pkcs12 v0.0.0-20230815095624-feb898696e02
 	github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
 	github.com/bitrise-io/go-steputils v1.0.5
 	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.43
 	github.com/bitrise-io/go-utils v1.0.13
 	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.31
 	github.com/bitrise-io/go-xcode v1.3.1
+	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
 	github.com/globocom/go-buffer/v2 v2.0.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-querystring v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/go-version v1.6.0
+	github.com/pkg/errors v0.9.1
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/oauth2 v0.24.0
@@ -36,14 +39,12 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.25.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
-	github.com/bitrise-io/go-pkcs12 v0.0.0-20230815095624-feb898696e02 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.3 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
-	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gofrs/uuid/v5 v5.2.0 // indirect
@@ -54,7 +55,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.14.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect

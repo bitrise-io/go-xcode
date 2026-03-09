@@ -1,7 +1,9 @@
 package profileutil
 
 import (
+	certificateutilv1 "github.com/bitrise-io/go-xcode/certificateutil"
 	profileutilv1 "github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 )
 
 // V2Profile ...
@@ -14,7 +16,7 @@ func V2Profile(model profileutilv1.ProvisioningProfileInfoModel) ProvisioningPro
 		BundleID:              model.BundleID,
 		ExportType:            model.ExportType,
 		ProvisionedDevices:    copySlice(model.ProvisionedDevices),
-		DeveloperCertificates: copySlice(model.DeveloperCertificates),
+		DeveloperCertificates: copyV1Certs(model.DeveloperCertificates),
 		CreationDate:          model.CreationDate,
 		ExpirationDate:        model.ExpirationDate,
 		Entitlements:          copyMap(model.Entitlements),
@@ -42,7 +44,7 @@ func V1Profile(model ProvisioningProfileInfoModel) profileutilv1.ProvisioningPro
 		BundleID:              model.BundleID,
 		ExportType:            model.ExportType,
 		ProvisionedDevices:    copySlice(model.ProvisionedDevices),
-		DeveloperCertificates: copySlice(model.DeveloperCertificates),
+		DeveloperCertificates: copyV2Certs(model.DeveloperCertificates),
 		CreationDate:          model.CreationDate,
 		ExpirationDate:        model.ExpirationDate,
 		Entitlements:          copyMap(model.Entitlements),
@@ -67,6 +69,28 @@ func copyMap[K comparable, V any](src map[K]V) map[K]V {
 	dst := make(map[K]V, len(src))
 	for k, v := range src {
 		dst[k] = v
+	}
+	return dst
+}
+
+func copyV1Certs(src []certificateutilv1.CertificateInfoModel) []certificateutil.CertificateInfoModel {
+	if src == nil {
+		return nil
+	}
+	dst := make([]certificateutil.CertificateInfoModel, len(src))
+	for i, cert := range src {
+		dst[i] = certificateutil.CertificateInfoModel(cert)
+	}
+	return dst
+}
+
+func copyV2Certs(src []certificateutil.CertificateInfoModel) []certificateutilv1.CertificateInfoModel {
+	if src == nil {
+		return nil
+	}
+	dst := make([]certificateutilv1.CertificateInfoModel, len(src))
+	for i, cert := range src {
+		dst[i] = certificateutilv1.CertificateInfoModel(cert)
 	}
 	return dst
 }

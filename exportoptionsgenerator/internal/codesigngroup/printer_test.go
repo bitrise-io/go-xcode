@@ -4,9 +4,9 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/certificateutil"
-	"github.com/bitrise-io/go-xcode/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/stretchr/testify/require"
 )
 
