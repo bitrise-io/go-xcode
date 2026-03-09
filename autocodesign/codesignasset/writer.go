@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
-	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/pathutil"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
@@ -23,13 +25,21 @@ const (
 
 // Writer ...
 type Writer struct {
-	keychain keychain.Keychain
+	logger            log.Logger
+	keychain          keychain.Keychain
+	pathChecker       pathutil.PathChecker
+	fileManager       fileutil.FileManager
+	xcodeMajorVersion int64
 }
 
 // NewWriter ...
-func NewWriter(keychain keychain.Keychain) Writer {
+func NewWriter(logger log.Logger, keychain keychain.Keychain, pathChecker pathutil.PathChecker, fileManager fileutil.FileManager, xcodeMajorVersion int64) Writer {
 	return Writer{
-		keychain: keychain,
+		logger:            logger,
+		keychain:          keychain,
+		pathChecker:       pathChecker,
+		fileManager:       fileManager,
+		xcodeMajorVersion: xcodeMajorVersion,
 	}
 }
 
@@ -37,15 +47,15 @@ func NewWriter(keychain keychain.Keychain) Writer {
 func (w Writer) Write(codesignAssetsByDistributionType map[autocodesign.DistributionType]autocodesign.AppCodesignAssets) error {
 	i := 0
 	for _, codesignAssets := range codesignAssetsByDistributionType {
-		log.Printf("certificate: %s", codesignAssets.Certificate.CommonName)
+		w.logger.Printf("certificate: %s", codesignAssets.Certificate.CommonName)
 
 		if err := w.keychain.InstallCertificate(codesignAssets.Certificate, ""); err != nil {
 			return fmt.Errorf("failed to install certificate: %s", err)
 		}
 
-		log.Printf("profiles:")
+		w.logger.Printf("profiles:")
 		for _, profile := range codesignAssets.ArchivableTargetProfilesByBundleID {
-			log.Printf("- %s", profile.Attributes().Name)
+			w.logger.Printf("- %s", profile.Attributes().Name)
 
 			if err := w.InstallProfile(profile); err != nil {
 				return fmt.Errorf("failed to write profile to file: %s", err)
@@ -53,7 +63,7 @@ func (w Writer) Write(codesignAssetsByDistributionType map[autocodesign.Distribu
 		}
 
 		for _, profile := range codesignAssets.UITestTargetProfilesByBundleID {
-			log.Printf("- %s", profile.Attributes().Name)
+			w.logger.Printf("- %s", profile.Attributes().Name)
 
 			if err := w.InstallProfile(profile); err != nil {
 				return fmt.Errorf("failed to write profile to file: %s", err)
@@ -79,13 +89,16 @@ func (w Writer) InstallCertificate(certificate certificateutil.CertificateInfoMo
 // Xcode uses profiles located in that directory.
 // The file extension depends on the profile's platform `IOS` => `.mobileprovision`, `MAC_OS` => `.provisionprofile`
 func (w Writer) InstallProfile(profile autocodesign.Profile) error {
-	homeDir := os.Getenv("HOME")
-	profilesDir := path.Join(homeDir, "Library/MobileDevice/Provisioning Profiles")
-	if exists, err := pathutil.IsDirExists(profilesDir); err != nil {
-		return fmt.Errorf("failed to check directory (%s) for provisioning profiles: %s", profilesDir, err)
+	profilesDir, err := ProvisioningProfilesDirPath(w.xcodeMajorVersion)
+	if err != nil {
+		return fmt.Errorf("failed to get provisioning profile directory path: %w", err)
+	}
+
+	if exists, err := w.pathChecker.IsDirExists(profilesDir); err != nil {
+		return fmt.Errorf("failed to check directory (%s) for provisioning profiles: %w", profilesDir, err)
 	} else if !exists {
 		if err := os.MkdirAll(profilesDir, 0600); err != nil {
-			return fmt.Errorf("failed to generate directory (%s) for provisioning profiles: %s", profilesDir, err)
+			return fmt.Errorf("failed to generate directory (%s) for provisioning profiles: %w", profilesDir, err)
 		}
 	}
 
@@ -100,9 +113,26 @@ func (w Writer) InstallProfile(profile autocodesign.Profile) error {
 	}
 
 	name := path.Join(profilesDir, profile.Attributes().UUID+ext)
-	if err := os.WriteFile(name, profile.Attributes().ProfileContent, 0600); err != nil {
+	if err := w.fileManager.Write(name, string(profile.Attributes().ProfileContent), 0600); err != nil {
 		return fmt.Errorf("failed to write profile to file: %s", err)
 	}
 
 	return nil
+}
+
+func ProvisioningProfilesDirPath(xcodeMajorVersion int64) (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	// return the modern path used by Xcode 16 and later
+	if xcodeMajorVersion >= 16 || xcodeMajorVersion == 0 {
+		provProfileModernPath := filepath.Join(homeDir, "Library", "Developer", "Xcode", "UserData", "Provisioning Profiles")
+		return provProfileModernPath, nil
+	}
+
+	// return the legacy path used by Xcode 15 and earlier
+	provProfileLegacyPath := filepath.Join(homeDir, "Library", "MobileDevice", "Provisioning Profiles")
+	return provProfileLegacyPath, nil
 }
