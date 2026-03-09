@@ -58,12 +58,12 @@ func listProfiles(profileType ProfileType) ([]string, error) {
 		return nil, err
 	}
 
-	absProvProfileXcode16DirPath, err := pathutil.AbsPath(ProvProfileModernPath)
+	absProvProfileModernDirPath, err := pathutil.AbsPath(ProvProfileModernPath)
 	if err != nil {
 		return nil, err
 	}
 
-	pattern = filepath.Join(pathutil.EscapeGlobPath(absProvProfileXcode16DirPath), "*"+ext)
+	pattern = filepath.Join(pathutil.EscapeGlobPath(absProvProfileModernDirPath), "*"+ext)
 	newPaths, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, err
