@@ -11,14 +11,21 @@ import (
 // ProfileType ...
 type ProfileType string
 
-// ProfileTypeIos ...
-const ProfileTypeIos ProfileType = "ios"
+const (
+	// ProfileTypeIos ...
+	ProfileTypeIos ProfileType = "ios"
+	// ProfileTypeMacOs ...
+	ProfileTypeMacOs ProfileType = "osx"
+	// ProfileTypeTvOs ...
+	ProfileTypeTvOs ProfileType = "tvos"
+)
 
-// ProfileTypeMacOs ...
-const ProfileTypeMacOs ProfileType = "osx"
-
-// ProfileTypeTvOs ...
-const ProfileTypeTvOs ProfileType = "tvos"
+const (
+	// IOSExtension is the iOS provisioning profile extension
+	IOSExtension = ".mobileprovision"
+	// MacExtension is the macOS provisioning profile extension
+	MacExtension = ".provisionprofile"
+)
 
 const (
 	// ProvProfileSystemDirPath ...
@@ -67,7 +74,7 @@ func FindProvisioningProfile(uuid string) (*pkcs7.PKCS7, string, error) {
 			return nil, "", err
 		}
 
-		profileName := uuid + ".mobileprovision"
+		profileName := uuid + IOSExtension
 		for _, pth := range pths {
 			if filepath.Base(pth) == profileName {
 				profile, err := ProvisioningProfileFromFile(pth)
@@ -85,7 +92,7 @@ func FindProvisioningProfile(uuid string) (*pkcs7.PKCS7, string, error) {
 			return nil, "", err
 		}
 
-		profileName := uuid + ".provisionprofile"
+		profileName := uuid + MacExtension
 		for _, pth := range pths {
 			if filepath.Base(pth) == profileName {
 				profile, err := ProvisioningProfileFromFile(pth)
@@ -101,9 +108,9 @@ func FindProvisioningProfile(uuid string) (*pkcs7.PKCS7, string, error) {
 }
 
 func listProfiles(profileType ProfileType) ([]string, error) {
-	ext := ".mobileprovision"
+	ext := IOSExtension
 	if profileType == ProfileTypeMacOs {
-		ext = ".provisionprofile"
+		ext = MacExtension
 	}
 
 	absProvProfileDirPath, err := pathutil.AbsPath(ProvProfileSystemDirPath)
