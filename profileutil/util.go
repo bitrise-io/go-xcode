@@ -41,38 +41,6 @@ func ProvisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {
 	return ProvisioningProfileFromContent(content)
 }
 
-func listProfiles(profileType ProfileType) ([]string, error) {
-	ext := ".mobileprovision"
-	if profileType == ProfileTypeMacOs {
-		ext = ".provisionprofile"
-	}
-
-	absProvProfileDirPath, err := pathutil.AbsPath(ProvProfileSystemDirPath)
-	if err != nil {
-		return nil, err
-	}
-
-	pattern := filepath.Join(pathutil.EscapeGlobPath(absProvProfileDirPath), "*"+ext)
-	pths, err := filepath.Glob(pattern)
-	if err != nil {
-		return nil, err
-	}
-
-	absProvProfileModernDirPath, err := pathutil.AbsPath(ProvProfileModernPath)
-	if err != nil {
-		return nil, err
-	}
-
-	pattern = filepath.Join(pathutil.EscapeGlobPath(absProvProfileModernDirPath), "*"+ext)
-	newPaths, err := filepath.Glob(pattern)
-	if err != nil {
-		return nil, err
-	}
-
-	pths = append(pths, newPaths...)
-	return pths, nil
-}
-
 // InstalledProvisioningProfiles ...
 func InstalledProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, error) {
 	pths, err := listProfiles(profileType)
@@ -130,4 +98,36 @@ func FindProvisioningProfile(uuid string) (*pkcs7.PKCS7, string, error) {
 	}
 
 	return nil, "", nil
+}
+
+func listProfiles(profileType ProfileType) ([]string, error) {
+	ext := ".mobileprovision"
+	if profileType == ProfileTypeMacOs {
+		ext = ".provisionprofile"
+	}
+
+	absProvProfileDirPath, err := pathutil.AbsPath(ProvProfileSystemDirPath)
+	if err != nil {
+		return nil, err
+	}
+
+	pattern := filepath.Join(pathutil.EscapeGlobPath(absProvProfileDirPath), "*"+ext)
+	pths, err := filepath.Glob(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	absProvProfileModernDirPath, err := pathutil.AbsPath(ProvProfileModernPath)
+	if err != nil {
+		return nil, err
+	}
+
+	pattern = filepath.Join(pathutil.EscapeGlobPath(absProvProfileModernDirPath), "*"+ext)
+	newPaths, err := filepath.Glob(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	pths = append(pths, newPaths...)
+	return pths, nil
 }
