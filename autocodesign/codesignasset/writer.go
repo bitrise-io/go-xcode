@@ -91,7 +91,7 @@ func (w Writer) InstallCertificate(certificate certificateutil.CertificateInfoMo
 func (w Writer) InstallProfile(profile autocodesign.Profile) error {
 	profilesDir, err := ProvisioningProfilesDirPath(w.xcodeMajorVersion)
 	if err != nil {
-		return fmt.Errorf("failed to get provisioning profile directory path: %w", err)
+		return fmt.Errorf("failed to get provisioning profiles directory path: %w", err)
 	}
 
 	if exists, err := w.pathChecker.IsDirExists(profilesDir); err != nil {
@@ -120,6 +120,7 @@ func (w Writer) InstallProfile(profile autocodesign.Profile) error {
 	return nil
 }
 
+// ProvisioningProfilesDirPath returns the provisioning profile directory path based on the Xcode major version.
 func ProvisioningProfilesDirPath(xcodeMajorVersion int64) (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
