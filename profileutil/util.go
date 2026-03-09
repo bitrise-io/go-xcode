@@ -1,6 +1,8 @@
 package profileutil
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/bitrise-io/go-utils/fileutil"
@@ -27,12 +29,34 @@ const (
 	MacExtension = ".provisionprofile"
 )
 
-const (
-	// ProvProfileSystemDirPath ...
-	ProvProfileSystemDirPath = "~/Library/MobileDevice/Provisioning Profiles"
-	// ProvProfileModernPath is used by Xcode 16 and later, but the old path is still supported.
-	ProvProfileModernPath = "~/Library/Developer/Xcode/UserData/Provisioning Profiles"
-)
+// ProvisioningProfilesDirPath returns the provisioning profile directory path based on the Xcode major version.
+func ProvisioningProfilesDirPath(xcodeMajorVersion int64) (string, error) {
+	if xcodeMajorVersion >= 16 || xcodeMajorVersion == 0 { // return the modern path used by Xcode 16 and later
+		return ProvisioningProfilesDirModernPath()
+	}
+
+	return ProvisioningProfilesDirLegacyPath() // return the legacy path used by Xcode 15 and earlier
+}
+
+// ProvisioningProfilesDirModernPath is the absolute path used to store and look up provisioning profiles (used Xcode 16 and later)
+func ProvisioningProfilesDirModernPath() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	return filepath.Join(homeDir, "Library", "Developer", "Xcode", "UserData", "Provisioning Profiles"), nil
+}
+
+// ProvisioningProfilesDirLegacyPath is the absolute path used to store and look up provisioning profiles (used Xcode 15 and earlier)
+func ProvisioningProfilesDirLegacyPath() (string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	return filepath.Join(homeDir, "Library", "MobileDevice", "Provisioning Profiles"), nil
+}
 
 // ProvisioningProfileFromContent ...
 func ProvisioningProfileFromContent(content []byte) (*pkcs7.PKCS7, error) {
@@ -50,7 +74,7 @@ func ProvisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {
 
 // InstalledProvisioningProfiles ...
 func InstalledProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, error) {
-	pths, err := listProfiles(profileType)
+	pths, err := listAllProfiles(profileType)
 	if err != nil {
 		return nil, err
 	}
@@ -68,73 +92,57 @@ func InstalledProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, err
 
 // FindProvisioningProfile ...
 func FindProvisioningProfile(uuid string) (*pkcs7.PKCS7, string, error) {
-	{
-		pths, err := listProfiles(ProfileTypeIos)
-		if err != nil {
-			return nil, "", err
-		}
-
-		profileName := uuid + IOSExtension
-		for _, pth := range pths {
-			if filepath.Base(pth) == profileName {
-				profile, err := ProvisioningProfileFromFile(pth)
-				if err != nil {
-					return nil, "", err
-				}
-				return profile, pth, nil
-			}
-		}
+	paths, err := listProfiles(ProfileTypeIos, uuid)
+	if err != nil {
+		return nil, "", err
+	}
+	macOSPaths, err := listProfiles(ProfileTypeMacOs, uuid)
+	if err != nil {
+		return nil, "", err
 	}
 
-	{
-		pths, err := listProfiles(ProfileTypeMacOs)
-		if err != nil {
-			return nil, "", err
-		}
-
-		profileName := uuid + MacExtension
-		for _, pth := range pths {
-			if filepath.Base(pth) == profileName {
-				profile, err := ProvisioningProfileFromFile(pth)
-				if err != nil {
-					return nil, "", err
-				}
-				return profile, pth, nil
-			}
-		}
+	paths = append(paths, macOSPaths...)
+	if len(paths) == 0 {
+		// ToDo return error of not found, keeping the nil return values for backward compatibility for now
+		return nil, "", nil
 	}
 
-	return nil, "", nil
+	profile, err := ProvisioningProfileFromFile(paths[0])
+	if err != nil {
+		return nil, "", err
+	}
+	return profile, paths[0], nil
 }
 
-func listProfiles(profileType ProfileType) ([]string, error) {
+func listAllProfiles(profileType ProfileType) ([]string, error) {
+	return listProfiles(profileType, "*")
+}
+
+func listProfiles(profileType ProfileType, uuid string) ([]string, error) {
 	ext := IOSExtension
 	if profileType == ProfileTypeMacOs {
 		ext = MacExtension
 	}
 
-	absProvProfileDirPath, err := pathutil.AbsPath(ProvProfileSystemDirPath)
+	modernDirPath, err := ProvisioningProfilesDirModernPath()
+	if err != nil {
+		return nil, err
+	}
+	legacyDirPath, err := ProvisioningProfilesDirLegacyPath()
 	if err != nil {
 		return nil, err
 	}
 
-	pattern := filepath.Join(pathutil.EscapeGlobPath(absProvProfileDirPath), "*"+ext)
-	pths, err := filepath.Glob(pattern)
-	if err != nil {
-		return nil, err
+	var allProfilePaths []string
+	for _, dirPath := range []string{modernDirPath, legacyDirPath} {
+		pattern := filepath.Join(pathutil.EscapeGlobPath(dirPath), uuid+ext)
+		profilePaths, err := filepath.Glob(pattern)
+		if err != nil {
+			return nil, err
+		}
+
+		allProfilePaths = append(allProfilePaths, profilePaths...)
 	}
 
-	absProvProfileModernDirPath, err := pathutil.AbsPath(ProvProfileModernPath)
-	if err != nil {
-		return nil, err
-	}
-
-	pattern = filepath.Join(pathutil.EscapeGlobPath(absProvProfileModernDirPath), "*"+ext)
-	newPaths, err := filepath.Glob(pattern)
-	if err != nil {
-		return nil, err
-	}
-
-	pths = append(pths, newPaths...)
-	return pths, nil
+	return allProfilePaths, nil
 }
