@@ -21,6 +21,7 @@ func Parse(pth string, useLegacyFlag bool) (*ActionsInvocationRecord, []ActionTe
 	return &r, summaries, nil
 }
 
+// ParseTestResults parses the test results from the given xcresult file.
 func ParseTestResults(pth string) (*model3.TestData, error) {
 	var data model3.TestData
 	if err := xcresulttoolGet(pth, "", false, &data); err != nil {

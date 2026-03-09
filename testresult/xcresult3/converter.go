@@ -58,6 +58,7 @@ func documentMajorVersion(pth string) (int, error) {
 	return majorVersion(info)
 }
 
+// Setup configures the converter with the given extraction method preference.
 func (c *Converter) Setup(useOldXCResultExtractionMethod bool) {
 	c.useLegacyExtractionMethod = useOldXCResultExtractionMethod
 }
@@ -100,7 +101,7 @@ func (c *Converter) Detect(files []string) bool {
 	return false
 }
 
-// XML ...
+// Convert returns the test report parsed from the xcresult file.
 func (c *Converter) Convert() (testreport.TestReport, error) {
 	supportsNewMethod, err := supportsNewExtractionMethods()
 	if err != nil {

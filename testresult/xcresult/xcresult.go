@@ -18,6 +18,7 @@ type Converter struct {
 	testSummariesPlistPath string
 }
 
+// Setup configures the converter.
 func (c *Converter) Setup(_ bool) {}
 
 // Detect ...
@@ -64,7 +65,7 @@ func filterIllegalChars(data []byte) (filtered []byte) {
 	return
 }
 
-// XML ...
+// Convert returns the test report parsed from the xcresult file.
 func (c *Converter) Convert() (testreport.TestReport, error) {
 	data, err := fileutil.ReadBytesFromFile(c.testSummariesPlistPath)
 	if err != nil {

@@ -1,5 +1,6 @@
 package model3
 
+// TestNodeType identifies the kind of a node in the xcresulttool test tree.
 type TestNodeType string
 
 // These are all the types the xcresulttool (version 23500, format version 3.53) supports.
@@ -21,8 +22,10 @@ const (
 	TestNodeTypeTestValue      TestNodeType = "Test Value"
 )
 
+// TestResult represents the outcome of a test case.
 type TestResult string
 
+// TestResult values reported by xcresulttool.
 const (
 	TestResultPassed          TestResult = "Passed"
 	TestResultFailed          TestResult = "Failed"
@@ -31,12 +34,14 @@ const (
 	TestResultUnknown         TestResult = "unknown"
 )
 
+// TestData is the top-level structure returned by xcresulttool for a test run.
 type TestData struct {
 	Devices                []Devices       `json:"devices"`
 	TestNodes              []TestNode      `json:"testNodes"`
 	TestPlanConfigurations []Configuration `json:"testPlanConfigurations"`
 }
 
+// Devices describes a device that participated in the test run.
 type Devices struct {
 	Identifier   string `json:"deviceId"`
 	Name         string `json:"deviceName"`
@@ -46,6 +51,7 @@ type Devices struct {
 	OS           string `json:"osVersion"`
 }
 
+// TestNode is a node in the xcresulttool test tree (plan, bundle, suite, case, etc.).
 type TestNode struct {
 	Identifier string       `json:"nodeIdentifier"`
 	Type       TestNodeType `json:"nodeType"`
@@ -57,6 +63,7 @@ type TestNode struct {
 	Children   []TestNode   `json:"children"`
 }
 
+// Configuration describes a test plan configuration used during the test run.
 type Configuration struct {
 	Identifier string `json:"configurationId"`
 	Name       string `json:"configurationName"`

@@ -5,13 +5,16 @@ import (
 	"time"
 )
 
+// TestAttachmentDetails contains the test identifier and its list of attachments.
 type TestAttachmentDetails struct {
 	TestIdentifier string       `json:"testIdentifier"`
 	Attachments    []Attachment `json:"attachments"`
 }
 
+// Timestamp is a time.Time that unmarshals from a Unix epoch float.
 type Timestamp time.Time
 
+// Attachment describes a single exported test attachment file.
 type Attachment struct {
 	ExportedFileName           string    `json:"exportedFileName"`
 	SuggestedHumanReadableName string    `json:"suggestedHumanReadableName"`
@@ -23,6 +26,7 @@ type Attachment struct {
 	RepetitionNumber           int       `json:"repetitionNumber"`
 }
 
+// UnmarshalJSON decodes a Unix epoch float into a Timestamp.
 func (t *Timestamp) UnmarshalJSON(b []byte) error {
 	var timestamp float64
 	if err := json.Unmarshal(b, &timestamp); err != nil {
