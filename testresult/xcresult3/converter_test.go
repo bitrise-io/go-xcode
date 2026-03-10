@@ -7,41 +7,60 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-steputils/v2/testreport"
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/stretchr/testify/require"
-
-	"github.com/bitrise-io/go-utils/command"
-	"github.com/bitrise-io/go-utils/pathutil"
 )
 
-// copyTestdataToDir ...
-// To populate the _tmp dir with sample data
-// run `bitrise run download_sample_artifacts` before running tests here,
-// which will download https://github.com/bitrise-io/sample-artifacts
-// into the _tmp dir.
-func copyTestdataToDir(pathInTestdataDir, dirPathToCopyInto string) (string, error) {
-	err := command.CopyDir(
-		filepath.Join("../../_tmp/", pathInTestdataDir),
-		dirPathToCopyInto,
-		true,
-	)
-	return dirPathToCopyInto, err
+const sampleArtifactsGitURI = "https://github.com/bitrise-io/sample-artifacts.git"
+
+var sampleArtifactsDir string
+
+func TestMain(m *testing.M) {
+	os.Exit(runTests(m))
+}
+
+func runTests(m *testing.M) int {
+	dir, err := os.MkdirTemp("", "sample-artifacts-*")
+	if err != nil {
+		fmt.Printf("failed to create temp dir: %s\n", err)
+		return 1
+	}
+	defer os.RemoveAll(dir)
+
+	cmdFactory := command.NewFactory(env.NewRepository())
+	cmd := cmdFactory.Create("git", []string{"clone", "--depth=1", sampleArtifactsGitURI, dir}, nil)
+	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
+		fmt.Printf("git clone failed: %s\n%s\n", err, out)
+		return 1
+	}
+
+	sampleArtifactsDir = dir
+	return m.Run()
+}
+
+// setupTestData copies an xcresult bundle from the cloned sample-artifacts repo
+// into a per-test temp directory and returns the path to the copied bundle.
+func setupTestData(t testing.TB, fileName string) string {
+	t.Helper()
+
+	srcPath := filepath.Join(sampleArtifactsDir, "xcresults", fileName)
+	dstPath := filepath.Join(t.TempDir(), fileName)
+
+	cmdFactory := command.NewFactory(env.NewRepository())
+	cmd := cmdFactory.Create("cp", []string{"-r", srcPath, dstPath}, nil)
+	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	require.NoError(t, err, "failed to copy test data: %s", out)
+
+	return dstPath
 }
 
 func TestConverter_XML(t *testing.T) {
 	t.Run("xcresult3-flaky-with-rerun.xcresult", func(t *testing.T) {
-		fileName := "xcresult3-flaky-with-rerun.xcresult"
-		rootDir, xcresultPath, err := setupTestData(fileName)
-		require.NoError(t, err)
+		xcresultPath := setupTestData(t, "xcresult3-flaky-with-rerun.xcresult")
+		t.Log("xcresultPath: ", xcresultPath)
 
-		defer func() {
-			require.NoError(t, os.RemoveAll(rootDir))
-		}()
-
-		t.Log("tempTestdataDir: ", rootDir)
-
-		c := Converter{
-			xcresultPth: xcresultPath,
-		}
+		c := Converter{xcresultPth: xcresultPath}
 		junitXML, err := c.Convert()
 		require.NoError(t, err)
 		require.Equal(t, []testreport.TestSuite{
@@ -142,19 +161,10 @@ func TestConverter_XML(t *testing.T) {
 	})
 
 	t.Run("xcresults3 success-failed-skipped-tests.xcresult", func(t *testing.T) {
-		fileName := "xcresult3-success-failed-skipped-tests.xcresult"
-		rootDir, xcresultPath, err := setupTestData(fileName)
-		require.NoError(t, err)
+		xcresultPath := setupTestData(t, "xcresult3-success-failed-skipped-tests.xcresult")
+		t.Log("xcresultPath: ", xcresultPath)
 
-		defer func() {
-			require.NoError(t, os.RemoveAll(rootDir))
-		}()
-
-		t.Log("tempTestdataDir: ", rootDir)
-
-		c := Converter{
-			xcresultPth: xcresultPath,
-		}
+		c := Converter{xcresultPth: xcresultPath}
 		junitXML, err := c.Convert()
 		require.NoError(t, err)
 		require.Equal(t, []testreport.TestSuite{
@@ -206,13 +216,8 @@ func TestConverter_XML(t *testing.T) {
 	})
 
 	t.Run("xcresult3-multiple-test-plan-configurations.xcresult", func(t *testing.T) {
-		fileName := "xcresult3-multiple-test-plan-configurations.xcresult"
-		rootDir, xcresultPath, err := setupTestData(fileName)
-		require.NoError(t, err)
-		require.NotEmpty(t, rootDir)
-		require.NotEmpty(t, xcresultPath)
-
-		t.Log("tempTestdataDir: ", rootDir)
+		xcresultPath := setupTestData(t, "xcresult3-multiple-test-plan-configurations.xcresult")
+		t.Log("xcresultPath: ", xcresultPath)
 
 		c := Converter{xcresultPth: xcresultPath}
 		junitXML, err := c.Convert()
@@ -226,38 +231,14 @@ func TestConverter_XML(t *testing.T) {
 German: swift_testingTests.swift:20: Expectation failed: true == false - // This test is intended to fail to demonstrate test failure reporting.
 `,
 		)
-
 	})
 }
 
 func BenchmarkConverter_XML(b *testing.B) {
-	fileName := "xcresult3-flaky-with-rerun.xcresult"
-	rootDir, xcresultPath, err := setupTestData(fileName)
+	xcresultPath := setupTestData(b, "xcresult3-flaky-with-rerun.xcresult")
+	b.Log("xcresultPath: ", xcresultPath)
+
+	c := Converter{xcresultPth: xcresultPath}
+	_, err := c.Convert()
 	require.NoError(b, err)
-
-	defer func() {
-		require.NoError(b, os.RemoveAll(rootDir))
-	}()
-
-	b.Log("tempTestdataDir: ", rootDir)
-
-	c := Converter{
-		xcresultPth: xcresultPath,
-	}
-	_, err = c.Convert()
-	require.NoError(b, err)
-}
-
-func setupTestData(fileName string) (string, string, error) {
-	tempTestdataDir, err := pathutil.NormalizedOSTempDirPath("test")
-	if err != nil {
-		return "", "", fmt.Errorf("failed to create temp dir: %w", err)
-	}
-
-	tempXCResultPath, err := copyTestdataToDir(fmt.Sprintf("./xcresults/%s", fileName), filepath.Join(tempTestdataDir, fileName))
-	if err != nil {
-		return "", "", err
-	}
-
-	return tempTestdataDir, tempXCResultPath, nil
 }
