@@ -46,7 +46,6 @@ func Example() {
 
 	logger := log.NewLogger()
 	enRepo := env.NewRepository()
-	pathChecker := pathutil.NewPathChecker()
 	fileManager := fileutil.NewFileManager()
 	commandFactory := command.NewFactory(enRepo)
 	projectFactory := projectmanager.NewFactory(logger, enRepo, projectmanager.BuildActionArchive)
@@ -76,7 +75,7 @@ func Example() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Xcode version: %s", err))
 	}
-	assetWriter := codesignasset.NewWriter(logger, *keychain, pathChecker, fileManager, xcodeVersion.Major)
+	assetWriter := codesignasset.NewWriter(logger, *keychain, fileManager, xcodeVersion.Major)
 	profileProvider := localcodesignasset.NewProvisioningProfileProvider()
 	profileConverter := localcodesignasset.NewProvisioningProfileConverter()
 	localCodesignAssetManager := localcodesignasset.NewManager(profileProvider, profileConverter)
