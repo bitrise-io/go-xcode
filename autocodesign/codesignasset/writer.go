@@ -43,7 +43,7 @@ func (w Writer) Write(codesignAssetsByDistributionType map[autocodesign.Distribu
 		w.logger.Printf("certificate: %s", codesignAssets.Certificate.CommonName)
 
 		if err := w.keychain.InstallCertificate(codesignAssets.Certificate, ""); err != nil {
-			return fmt.Errorf("failed to install certificate: %s", err)
+			return fmt.Errorf("failed to install certificate: %w", err)
 		}
 
 		w.logger.Printf("profiles:")
@@ -51,7 +51,7 @@ func (w Writer) Write(codesignAssetsByDistributionType map[autocodesign.Distribu
 			w.logger.Printf("- %s", profile.Attributes().Name)
 
 			if err := w.InstallProfile(profile); err != nil {
-				return fmt.Errorf("failed to write profile to file: %s", err)
+				return fmt.Errorf("failed to write profile to file: %w", err)
 			}
 		}
 
@@ -59,7 +59,7 @@ func (w Writer) Write(codesignAssetsByDistributionType map[autocodesign.Distribu
 			w.logger.Printf("- %s", profile.Attributes().Name)
 
 			if err := w.InstallProfile(profile); err != nil {
-				return fmt.Errorf("failed to write profile to file: %s", err)
+				return fmt.Errorf("failed to write profile to file: %w", err)
 			}
 		}
 
@@ -107,7 +107,7 @@ func (w Writer) InstallProfile(profile autocodesign.Profile) error {
 
 	name := path.Join(profilesDir, profile.Attributes().UUID+ext)
 	if err := w.fileManager.Write(name, string(profile.Attributes().ProfileContent), 0600); err != nil {
-		return fmt.Errorf("failed to write profile to file: %s", err)
+		return fmt.Errorf("failed to write profile to file: %w", err)
 	}
 
 	return nil
