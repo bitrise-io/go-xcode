@@ -55,14 +55,11 @@ func TestWriter_InstallProfile(t *testing.T) {
 				}
 			})
 
-			pathChecker := mocks.NewPathChecker(t)
-			pathChecker.On("IsDirExists", tt.wantProfileDir).Return(true, nil).Once()
-
 			fileManager := mocks.NewFileManager(t)
 			expectedProfilePath := filepath.Join(tt.wantProfileDir, fmt.Sprintf("%s.mobileprovision", tt.profileUUID))
 			fileManager.On("Write", expectedProfilePath, "test-content", os.FileMode(0600)).Return(nil).Once()
 
-			w := codesignasset.NewWriter(logger, keychain, pathChecker, fileManager, tt.xcodeMajorVersion)
+			w := codesignasset.NewWriter(logger, keychain, fileManager, tt.xcodeMajorVersion)
 			gotErr := w.InstallProfile(profile)
 			if gotErr != nil {
 				if !tt.wantErr {

@@ -3,7 +3,6 @@ package codesignasset
 
 import (
 	"fmt"
-	"os"
 	"path"
 
 	"github.com/bitrise-io/go-utils/v2/fileutil"
@@ -26,11 +25,10 @@ type Writer struct {
 }
 
 // NewWriter ...
-func NewWriter(logger log.Logger, keychain keychain.Keychain, pathChecker pathutil.PathChecker, fileManager fileutil.FileManager, xcodeMajorVersion int64) Writer {
+func NewWriter(logger log.Logger, keychain keychain.Keychain, fileManager fileutil.FileManager, xcodeMajorVersion int64) Writer {
 	return Writer{
 		logger:            logger,
 		keychain:          keychain,
-		pathChecker:       pathChecker,
 		fileManager:       fileManager,
 		xcodeMajorVersion: xcodeMajorVersion,
 	}
@@ -82,19 +80,6 @@ func (w Writer) InstallCertificate(certificate certificateutil.CertificateInfoMo
 // Xcode uses profiles located in that directory.
 // The file extension depends on the profile's platform `IOS` => `.mobileprovision`, `MAC_OS` => `.provisionprofile`
 func (w Writer) InstallProfile(profile autocodesign.Profile) error {
-	profilesDir, err := profileutil.ProvisioningProfilesDirPath(w.xcodeMajorVersion)
-	if err != nil {
-		return fmt.Errorf("failed to get provisioning profiles directory path: %w", err)
-	}
-
-	if exists, err := w.pathChecker.IsDirExists(profilesDir); err != nil {
-		return fmt.Errorf("failed to check directory (%s) for provisioning profiles: %w", profilesDir, err)
-	} else if !exists {
-		if err := os.MkdirAll(profilesDir, 0600); err != nil {
-			return fmt.Errorf("failed to generate directory (%s) for provisioning profiles: %w", profilesDir, err)
-		}
-	}
-
 	var ext string
 	switch profile.Attributes().Platform {
 	case appstoreconnect.IOS:
@@ -105,7 +90,13 @@ func (w Writer) InstallProfile(profile autocodesign.Profile) error {
 		return fmt.Errorf("failed to write profile to file, unsupported platform: (%s). Supported platforms: %s, %s", profile.Attributes().Platform, appstoreconnect.IOS, appstoreconnect.MacOS)
 	}
 
+	profilesDir, err := profileutil.ProvisioningProfilesDirPath(w.xcodeMajorVersion)
+	if err != nil {
+		return fmt.Errorf("failed to get provisioning profiles directory path: %w", err)
+	}
+
 	name := path.Join(profilesDir, profile.Attributes().UUID+ext)
+	// Write will create directory if does not exist
 	if err := w.fileManager.Write(name, string(profile.Attributes().ProfileContent), 0600); err != nil {
 		return fmt.Errorf("failed to write profile to file: %w", err)
 	}
