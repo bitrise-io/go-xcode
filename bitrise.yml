@@ -1,9 +1,14 @@
 format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
+app:
+  envs:
+  - SAMPLE_ARTIFACTS_GIT_CLONE_URL: https://github.com/bitrise-io/sample-artifacts.git
+
 workflows:
   check:
     before_run:
+    - _download_sample_artifacts
     - test
     - integration_test
 
@@ -29,3 +34,18 @@ workflows:
     - change-workdir:
         inputs:
         - path: ..
+
+  _download_sample_artifacts:
+    steps:
+    - script:
+        inputs:
+        - content: |-
+            #!/bin/bash
+            set -ex
+            rm -rf ./_tmp
+    - script:
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+            git clone --depth 1 $SAMPLE_ARTIFACTS_GIT_CLONE_URL ./_tmp

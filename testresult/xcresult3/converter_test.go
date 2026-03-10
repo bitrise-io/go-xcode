@@ -20,7 +20,7 @@ import (
 // into the _tmp dir.
 func copyTestdataToDir(pathInTestdataDir, dirPathToCopyInto string) (string, error) {
 	err := command.CopyDir(
-		filepath.Join("../../../_tmp/", pathInTestdataDir),
+		filepath.Join("../../_tmp/", pathInTestdataDir),
 		dirPathToCopyInto,
 		true,
 	)
