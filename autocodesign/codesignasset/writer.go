@@ -7,7 +7,6 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
@@ -19,7 +18,6 @@ import (
 type Writer struct {
 	logger            log.Logger
 	keychain          keychain.Keychain
-	pathChecker       pathutil.PathChecker
 	fileManager       fileutil.FileManager
 	xcodeMajorVersion int64
 }
