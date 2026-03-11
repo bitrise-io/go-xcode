@@ -2,17 +2,17 @@ package xcresult3
 
 import "github.com/bitrise-io/go-xcode/v2/testresult/xcresult3/model3"
 
-// Parse parses the given xcresult file's ActionsInvocationRecord and the list of ActionTestPlanRunSummaries.
-func Parse(pth string, useLegacyFlag bool) (*ActionsInvocationRecord, []ActionTestPlanRunSummaries, error) {
-	var r ActionsInvocationRecord
+// loadXCResultData loads the actions invocation record and test plan run summaries from an xcresult file.
+func loadXCResultData(pth string, useLegacyFlag bool) (*actionsInvocationRecord, []actionTestPlanRunSummaries, error) {
+	var r actionsInvocationRecord
 	if err := xcresulttoolGet(pth, "", useLegacyFlag, &r); err != nil {
 		return nil, nil, err
 	}
 
-	var summaries []ActionTestPlanRunSummaries
+	var summaries []actionTestPlanRunSummaries
 	for _, action := range r.Actions.Values {
 		refID := action.ActionResult.TestsRef.ID.Value
-		var s ActionTestPlanRunSummaries
+		var s actionTestPlanRunSummaries
 		if err := xcresulttoolGet(pth, refID, useLegacyFlag, &s); err != nil {
 			return nil, nil, err
 		}

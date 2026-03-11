@@ -2,71 +2,64 @@ package xcresult3
 
 import "strconv"
 
-// ActionTestPlanRunSummaries ...
-type ActionTestPlanRunSummaries struct {
-	Summaries Summaries `json:"summaries"`
+type actionTestPlanRunSummaries struct {
+	Summaries summaries `json:"summaries"`
 }
 
-// Summaries ...
-type Summaries struct {
-	Values []Summary `json:"_values"`
+type summaries struct {
+	Values []summary `json:"_values"`
 }
 
-// Summary ...
-type Summary struct {
-	TestableSummaries TestableSummaries `json:"testableSummaries"`
+type summary struct {
+	TestableSummaries testableSummaries `json:"testableSummaries"`
 }
 
-// TestableSummaries ...
-type TestableSummaries struct {
-	Values []ActionTestableSummary `json:"_values"`
+type testableSummaries struct {
+	Values []actionTestableSummary `json:"_values"`
 }
 
-// ActionTestableSummary ...
-type ActionTestableSummary struct {
-	Name  Name  `json:"name"`
-	Tests Tests `json:"tests"`
+type actionTestableSummary struct {
+	Name  name  `json:"name"`
+	Tests tests `json:"tests"`
 }
 
-// Tests ...
-type Tests struct {
-	Values []ActionTestSummaryGroup `json:"_values"`
+type tests struct {
+	Values []actionTestSummaryGroup `json:"_values"`
 }
 
-// Name ...
-type Name struct {
+type name struct {
 	Value string `json:"_value"`
 }
 
-// tests returns ActionTestSummaryGroup mapped by the container TestableSummary name.
-func (s ActionTestPlanRunSummaries) tests() ([]string, map[string][]ActionTestSummaryGroup) {
-	summaryGroupsByName := map[string][]ActionTestSummaryGroup{}
+// tests returns actionTestSummaryGroup mapped by the container testableSummary name.
+func (s actionTestPlanRunSummaries) tests() ([]string, map[string][]actionTestSummaryGroup) {
+	summaryGroupsByName := map[string][]actionTestSummaryGroup{}
 
 	var testSuiteOrder []string
-	for _, summary := range s.Summaries.Values {
-		for _, testableSummary := range summary.TestableSummaries.Values {
+	for _, smry := range s.Summaries.Values {
+		for _, testableSummary := range smry.TestableSummaries.Values {
 			// test suite
-			name := testableSummary.Name.Value
-			if _, found := summaryGroupsByName[name]; !found {
-				testSuiteOrder = append(testSuiteOrder, name)
+			n := testableSummary.Name.Value
+			if _, found := summaryGroupsByName[n]; !found {
+				testSuiteOrder = append(testSuiteOrder, n)
 			}
 
-			var tests []ActionTestSummaryGroup
+			var ts []actionTestSummaryGroup
 			for _, test := range testableSummary.Tests.Values {
-				tests = append(tests, test.testsWithStatus()...)
+				ts = append(ts, test.testsWithStatus()...)
 			}
 
-			summaryGroupsByName[name] = tests
+			summaryGroupsByName[n] = ts
 		}
 	}
 
 	return testSuiteOrder, summaryGroupsByName
 }
 
-func (s ActionTestPlanRunSummaries) failuresCount(testableSummaryName string) (failure int) {
+func (s actionTestPlanRunSummaries) failuresCount(testableSummaryName string) (failure int) {
 	_, testsByCase := s.tests()
-	tests := testsByCase[testableSummaryName]
-	for _, test := range tests {
+	ts := testsByCase[testableSummaryName]
+	for _, test := range ts {
 		if test.TestStatus.Value == "Failure" {
 			failure++
 		}
@@ -74,10 +67,10 @@ func (s ActionTestPlanRunSummaries) failuresCount(testableSummaryName string) (f
 	return
 }
 
-func (s ActionTestPlanRunSummaries) skippedCount(testableSummaryName string) (skipped int) {
+func (s actionTestPlanRunSummaries) skippedCount(testableSummaryName string) (skipped int) {
 	_, testsByCase := s.tests()
-	tests := testsByCase[testableSummaryName]
-	for _, test := range tests {
+	ts := testsByCase[testableSummaryName]
+	for _, test := range ts {
 		if test.TestStatus.Value == "Skipped" {
 			skipped++
 		}
@@ -85,10 +78,10 @@ func (s ActionTestPlanRunSummaries) skippedCount(testableSummaryName string) (sk
 	return
 }
 
-func (s ActionTestPlanRunSummaries) totalTime(testableSummaryName string) (time float64) {
+func (s actionTestPlanRunSummaries) totalTime(testableSummaryName string) (time float64) {
 	_, testsByCase := s.tests()
-	tests := testsByCase[testableSummaryName]
-	for _, test := range tests {
+	ts := testsByCase[testableSummaryName]
+	for _, test := range ts {
 		if test.Duration.Value != "" {
 			d, err := strconv.ParseFloat(test.Duration.Value, 64)
 			if err == nil {

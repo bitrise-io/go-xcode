@@ -5,8 +5,7 @@ import (
 	"encoding/hex"
 )
 
-// Attachment ...
-type Attachment struct {
+type attachment struct {
 	Filename struct {
 		Value string `json:"_value"`
 	} `json:"filename"`
@@ -18,23 +17,19 @@ type Attachment struct {
 	} `json:"payloadRef"`
 }
 
-// Attachments ...
-type Attachments struct {
-	Values []Attachment `json:"_values"`
+type attachments struct {
+	Values []attachment `json:"_values"`
 }
 
-// ActionTestActivitySummary ...
-type ActionTestActivitySummary struct {
-	Attachments Attachments `json:"attachments"`
+type actionTestActivitySummary struct {
+	Attachments attachments `json:"attachments"`
 }
 
-// ActivitySummaries ...
-type ActivitySummaries struct {
-	Values []ActionTestActivitySummary `json:"_values"`
+type activitySummaries struct {
+	Values []actionTestActivitySummary `json:"_values"`
 }
 
-// ActionTestFailureSummary ...
-type ActionTestFailureSummary struct {
+type actionTestFailureSummary struct {
 	Message struct {
 		Value string `json:"_value"`
 	} `json:"message"`
@@ -48,18 +43,15 @@ type ActionTestFailureSummary struct {
 	} `json:"lineNumber"`
 }
 
-// FailureSummaries ...
-type FailureSummaries struct {
-	Values []ActionTestFailureSummary `json:"_values"`
+type failureSummaries struct {
+	Values []actionTestFailureSummary `json:"_values"`
 }
 
-// Configuration ...
-type Configuration struct {
+type configuration struct {
 	Hash string
 }
 
-// UnmarshalJSON ...
-func (c *Configuration) UnmarshalJSON(data []byte) error {
+func (c *configuration) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" || string(data) == `""` {
 		return nil
 	}
@@ -70,9 +62,8 @@ func (c *Configuration) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// ActionTestSummary ...
-type ActionTestSummary struct {
-	ActivitySummaries ActivitySummaries `json:"activitySummaries"`
-	FailureSummaries  FailureSummaries  `json:"failureSummaries"`
-	Configuration     Configuration     `json:"configuration"`
+type actionTestSummary struct {
+	ActivitySummaries activitySummaries `json:"activitySummaries"`
+	FailureSummaries  failureSummaries  `json:"failureSummaries"`
+	Configuration     configuration     `json:"configuration"`
 }

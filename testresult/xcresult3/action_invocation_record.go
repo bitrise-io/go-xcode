@@ -7,8 +7,7 @@ import (
 	"github.com/bitrise-io/go-steputils/v2/testreport"
 )
 
-// ActionsInvocationRecord ...
-type ActionsInvocationRecord struct {
+type actionsInvocationRecord struct {
 	Actions struct {
 		Values []struct {
 			ActionResult struct {
@@ -21,61 +20,53 @@ type ActionsInvocationRecord struct {
 		} `json:"_values"`
 	} `json:"actions"`
 
-	Issues Issues `json:"issues"`
+	Issues issues `json:"issues"`
 }
 
-// Issues ...
-type Issues struct {
-	TestFailureSummaries TestFailureSummaries `json:"testFailureSummaries"`
+type issues struct {
+	TestFailureSummaries testFailureSummaries `json:"testFailureSummaries"`
 }
 
-// TestFailureSummaries ...
-type TestFailureSummaries struct {
-	Values []TestFailureSummary `json:"_values"`
+type testFailureSummaries struct {
+	Values []testFailureSummary `json:"_values"`
 }
 
-// TestFailureSummary ...
-type TestFailureSummary struct {
-	DocumentLocationInCreatingWorkspace DocumentLocationInCreatingWorkspace `json:"documentLocationInCreatingWorkspace"`
-	Message                             Message                             `json:"message"`
-	ProducingTarget                     ProducingTarget                     `json:"producingTarget"`
-	TestCaseName                        TestCaseName                        `json:"testCaseName"`
+type testFailureSummary struct {
+	DocumentLocationInCreatingWorkspace documentLocationInCreatingWorkspace `json:"documentLocationInCreatingWorkspace"`
+	Message                             message                             `json:"message"`
+	ProducingTarget                     producingTarget                     `json:"producingTarget"`
+	TestCaseName                        testCaseName                        `json:"testCaseName"`
 }
 
-// URL ...
-type URL struct {
+type url struct {
 	Value string `json:"_value"`
 }
 
-// DocumentLocationInCreatingWorkspace ...
-type DocumentLocationInCreatingWorkspace struct {
-	URL URL `json:"url"`
+type documentLocationInCreatingWorkspace struct {
+	URL url `json:"url"`
 }
 
-// ProducingTarget ...
-type ProducingTarget struct {
+type producingTarget struct {
 	Value string `json:"_value"`
 }
 
-// TestCaseName ...
-type TestCaseName struct {
+type testCaseName struct {
 	Value string `json:"_value"`
 }
 
-// Message ...
-type Message struct {
+type message struct {
 	Value string `json:"_value"`
 }
 
-func testCaseMatching(test ActionTestSummaryGroup, testCaseName string) bool {
+func testCaseMatching(test actionTestSummaryGroup, tcName string) bool {
 	class, method := test.references()
 
-	return testCaseName == class+"."+method ||
-		testCaseName == fmt.Sprintf("-[%s %s]", class, method)
+	return tcName == class+"."+method ||
+		tcName == fmt.Sprintf("-[%s %s]", class, method)
 }
 
-// failure returns the ActionTestSummaryGroup's failure reason from the ActionsInvocationRecord.
-func (r ActionsInvocationRecord) failure(test ActionTestSummaryGroup, testSuite testreport.TestSuite) string {
+// failure returns the failure reason for the given test from the invocation record.
+func (r actionsInvocationRecord) failure(test actionTestSummaryGroup, testSuite testreport.TestSuite) string {
 	for _, failureSummary := range r.Issues.TestFailureSummaries.Values {
 		if failureSummary.ProducingTarget.Value == testSuite.Name && testCaseMatching(test, failureSummary.TestCaseName.Value) {
 			file, line := failureSummary.fileAndLineNumber()
@@ -85,8 +76,8 @@ func (r ActionsInvocationRecord) failure(test ActionTestSummaryGroup, testSuite 
 	return ""
 }
 
-// fileAndLineNumber unwraps the file path and line number descriptor from a given ActionTestSummaryGroup's.
-func (s TestFailureSummary) fileAndLineNumber() (file string, line string) {
+// fileAndLineNumber unwraps the file path and line number from the document location URL.
+func (s testFailureSummary) fileAndLineNumber() (file string, line string) {
 	// file:\/\/\/Users\/bitrisedeveloper\/Develop\/ios\/Xcode11Test\/Xcode11TestUITests\/Xcode11TestUITests.swift#CharacterRangeLen=0&EndingLineNumber=42&StartingLineNumber=42
 	if s.DocumentLocationInCreatingWorkspace.URL.Value != "" {
 		i := strings.LastIndex(s.DocumentLocationInCreatingWorkspace.URL.Value, "#")

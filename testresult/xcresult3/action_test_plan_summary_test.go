@@ -9,24 +9,24 @@ import (
 )
 
 func TestActionTestPlanRunSummaries_tests(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		name      string
-		summaries ActionTestPlanRunSummaries
-		want      map[string][]ActionTestSummaryGroup
+		summaries actionTestPlanRunSummaries
+		want      map[string][]actionTestSummaryGroup
 	}{
 		{
 			name: "single test with status",
-			summaries: ActionTestPlanRunSummaries{
-				Summaries: Summaries{
-					Values: []Summary{
-						Summary{
-							TestableSummaries: TestableSummaries{
-								Values: []ActionTestableSummary{
-									ActionTestableSummary{
-										Name: Name{Value: "test case 1"},
-										Tests: Tests{
-											Values: []ActionTestSummaryGroup{
-												ActionTestSummaryGroup{TestStatus: TestStatus{Value: "success"}},
+			summaries: actionTestPlanRunSummaries{
+				Summaries: summaries{
+					Values: []summary{
+						{
+							TestableSummaries: testableSummaries{
+								Values: []actionTestableSummary{
+									{
+										Name: name{Value: "test case 1"},
+										Tests: tests{
+											Values: []actionTestSummaryGroup{
+												{TestStatus: testStatus{Value: "success"}},
 											},
 										},
 									},
@@ -36,41 +36,37 @@ func TestActionTestPlanRunSummaries_tests(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]ActionTestSummaryGroup{
-				"test case 1": []ActionTestSummaryGroup{
-					ActionTestSummaryGroup{TestStatus: TestStatus{Value: "success"}},
+			want: map[string][]actionTestSummaryGroup{
+				"test case 1": {
+					{TestStatus: testStatus{Value: "success"}},
 				},
 			},
 		},
 		{
 			name: "single test with status + subtests with status",
-			summaries: ActionTestPlanRunSummaries{
-				Summaries: Summaries{
-					Values: []Summary{
-						Summary{
-							TestableSummaries: TestableSummaries{
-								Values: []ActionTestableSummary{
-									ActionTestableSummary{
-										Name: Name{Value: "test case 1"},
-										Tests: Tests{
-											Values: []ActionTestSummaryGroup{
-												ActionTestSummaryGroup{TestStatus: TestStatus{Value: "success"}},
+			summaries: actionTestPlanRunSummaries{
+				Summaries: summaries{
+					Values: []summary{
+						{
+							TestableSummaries: testableSummaries{
+								Values: []actionTestableSummary{
+									{
+										Name: name{Value: "test case 1"},
+										Tests: tests{
+											Values: []actionTestSummaryGroup{
+												{TestStatus: testStatus{Value: "success"}},
 											},
 										},
 									},
-									ActionTestableSummary{
-										Name: Name{Value: "test case 2"},
-										Tests: Tests{
-											Values: []ActionTestSummaryGroup{
-												ActionTestSummaryGroup{
-													Subtests: Subtests{
-														Values: []ActionTestSummaryGroup{
-															ActionTestSummaryGroup{
-																TestStatus: TestStatus{Value: "success"},
-															},
-															ActionTestSummaryGroup{
-																TestStatus: TestStatus{Value: "success"},
-															},
+									{
+										Name: name{Value: "test case 2"},
+										Tests: tests{
+											Values: []actionTestSummaryGroup{
+												{
+													Subtests: subtests{
+														Values: []actionTestSummaryGroup{
+															{TestStatus: testStatus{Value: "success"}},
+															{TestStatus: testStatus{Value: "success"}},
 														},
 													},
 												},
@@ -83,53 +79,53 @@ func TestActionTestPlanRunSummaries_tests(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]ActionTestSummaryGroup{
-				"test case 1": []ActionTestSummaryGroup{
-					ActionTestSummaryGroup{TestStatus: TestStatus{Value: "success"}},
+			want: map[string][]actionTestSummaryGroup{
+				"test case 1": {
+					{TestStatus: testStatus{Value: "success"}},
 				},
-				"test case 2": []ActionTestSummaryGroup{
-					ActionTestSummaryGroup{TestStatus: TestStatus{Value: "success"}},
-					ActionTestSummaryGroup{TestStatus: TestStatus{Value: "success"}},
+				"test case 2": {
+					{TestStatus: testStatus{Value: "success"}},
+					{TestStatus: testStatus{Value: "success"}},
 				},
 			},
 		},
 		{
 			name:      "no test with status",
-			summaries: ActionTestPlanRunSummaries{},
-			want:      map[string][]ActionTestSummaryGroup{},
+			summaries: actionTestPlanRunSummaries{},
+			want:      map[string][]actionTestSummaryGroup{},
 		},
 	}
-	for _, tt := range tests {
+	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			if _, got := tt.summaries.tests(); !reflect.DeepEqual(got, tt.want) {
 				fmt.Println("want: ", pretty.Object(tt.want))
 				fmt.Println("got: ", pretty.Object(got))
-				t.Errorf("ActionTestPlanRunSummaries.tests() = %v, want %v", got, tt.want)
+				t.Errorf("actionTestPlanRunSummaries.tests() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
 func TestActionTestPlanRunSummaries_failuresCount(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		name                string
-		summaries           ActionTestPlanRunSummaries
+		summaries           actionTestPlanRunSummaries
 		testableSummaryName string
 		wantFailure         int
 	}{
 		{
 			name: "single failure",
-			summaries: ActionTestPlanRunSummaries{
-				Summaries: Summaries{
-					Values: []Summary{
-						Summary{
-							TestableSummaries: TestableSummaries{
-								Values: []ActionTestableSummary{
-									ActionTestableSummary{
-										Name: Name{Value: "test case"},
-										Tests: Tests{
-											Values: []ActionTestSummaryGroup{
-												ActionTestSummaryGroup{TestStatus: TestStatus{Value: "Failure"}},
+			summaries: actionTestPlanRunSummaries{
+				Summaries: summaries{
+					Values: []summary{
+						{
+							TestableSummaries: testableSummaries{
+								Values: []actionTestableSummary{
+									{
+										Name: name{Value: "test case"},
+										Tests: tests{
+											Values: []actionTestSummaryGroup{
+												{TestStatus: testStatus{Value: "Failure"}},
 											},
 										},
 									},
@@ -143,37 +139,37 @@ func TestActionTestPlanRunSummaries_failuresCount(t *testing.T) {
 			wantFailure:         1,
 		},
 	}
-	for _, tt := range tests {
+	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			if gotFailure := tt.summaries.failuresCount(tt.testableSummaryName); gotFailure != tt.wantFailure {
-				t.Errorf("ActionTestPlanRunSummaries.failuresCount() = %v, want %v", gotFailure, tt.wantFailure)
+				t.Errorf("actionTestPlanRunSummaries.failuresCount() = %v, want %v", gotFailure, tt.wantFailure)
 			}
 		})
 	}
 }
 
 func TestActionTestPlanRunSummaries_totalTime(t *testing.T) {
-	tests := []struct {
+	testCases := []struct {
 		name                string
-		summaries           ActionTestPlanRunSummaries
+		summaries           actionTestPlanRunSummaries
 		testableSummaryName string
 		wantTime            float64
 	}{
 		{
 			name: "single test",
-			summaries: ActionTestPlanRunSummaries{
-				Summaries: Summaries{
-					Values: []Summary{
-						Summary{
-							TestableSummaries: TestableSummaries{
-								Values: []ActionTestableSummary{
-									ActionTestableSummary{
-										Name: Name{Value: "test case"},
-										Tests: Tests{
-											Values: []ActionTestSummaryGroup{
-												ActionTestSummaryGroup{
-													Duration:   Duration{Value: "10"},
-													TestStatus: TestStatus{Value: "Failure"},
+			summaries: actionTestPlanRunSummaries{
+				Summaries: summaries{
+					Values: []summary{
+						{
+							TestableSummaries: testableSummaries{
+								Values: []actionTestableSummary{
+									{
+										Name: name{Value: "test case"},
+										Tests: tests{
+											Values: []actionTestSummaryGroup{
+												{
+													Duration:   duration{Value: "10"},
+													TestStatus: testStatus{Value: "Failure"},
 												},
 											},
 										},
@@ -188,10 +184,10 @@ func TestActionTestPlanRunSummaries_totalTime(t *testing.T) {
 			wantTime:            10,
 		},
 	}
-	for _, tt := range tests {
+	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			if gotTime := tt.summaries.totalTime(tt.testableSummaryName); gotTime != tt.wantTime {
-				t.Errorf("ActionTestPlanRunSummaries.totalTime() = %v, want %v", gotTime, tt.wantTime)
+				t.Errorf("actionTestPlanRunSummaries.totalTime() = %v, want %v", gotTime, tt.wantTime)
 			}
 		})
 	}
