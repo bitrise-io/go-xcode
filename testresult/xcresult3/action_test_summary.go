@@ -51,6 +51,7 @@ type configuration struct {
 	Hash string
 }
 
+// UnmarshalJSON implements json.Unmarshaler by hashing the raw JSON bytes into an MD5 fingerprint.
 func (c *configuration) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" || string(data) == `""` {
 		return nil
