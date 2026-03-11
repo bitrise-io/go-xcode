@@ -5,16 +5,15 @@ import (
 	"strings"
 )
 
-// TestSummaryPlist ...
-type TestSummaryPlist struct {
+type testSummaryPlist struct {
 	FormatVersion     string
-	TestableSummaries []TestableSummary
+	TestableSummaries []testableSummary
 }
 
-func collapseSubtestTree(data Subtests) (tests Subtests) {
+func collapsesubtestTree(data subtests) (tests subtests) {
 	for _, test := range data {
 		if len(test.Subtests) > 0 {
-			tests = append(tests, collapseSubtestTree(test.Subtests)...)
+			tests = append(tests, collapsesubtestTree(test.Subtests)...)
 		}
 		if test.TestStatus != "" {
 			tests = append(tests, test)
@@ -23,14 +22,13 @@ func collapseSubtestTree(data Subtests) (tests Subtests) {
 	return
 }
 
-// Tests returns the collapsed tree of tests
-func (summaryPlist TestSummaryPlist) Tests() ([]string, map[string]Subtests) {
+func (summaryPlist testSummaryPlist) tests() ([]string, map[string]subtests) {
 	var keyOrder []string
-	tests := map[string]Subtests{}
-	var subTests Subtests
+	tests := map[string]subtests{}
+	var subTests subtests
 	for _, testableSummary := range summaryPlist.TestableSummaries {
 		for _, test := range testableSummary.Tests {
-			subTests = append(subTests, collapseSubtestTree(test.Subtests)...)
+			subTests = append(subTests, collapsesubtestTree(test.subtests)...)
 		}
 	}
 	for _, test := range subTests {
@@ -44,41 +42,36 @@ func (summaryPlist TestSummaryPlist) Tests() ([]string, map[string]Subtests) {
 	return keyOrder, tests
 }
 
-// Test ...
-type Test struct {
-	Subtests Subtests
+type test struct {
+	subtests subtests
 }
 
-// TestableSummary ...
-type TestableSummary struct {
+type testableSummary struct {
 	TargetName      string
 	TestKind        string
 	TestName        string
 	TestObjectClass string
-	Tests           []Test
+	Tests           []test
 }
 
-// FailureSummary ...
-type FailureSummary struct {
+type failureSummary struct {
 	FileName           string
 	LineNumber         int
 	Message            string
 	PerformanceFailure bool
 }
 
-// Subtest ...
-type Subtest struct {
+type subtest struct {
 	Duration         float64
 	TestStatus       string
 	TestIdentifier   string
 	TestName         string
 	TestObjectClass  string
-	Subtests         Subtests
-	FailureSummaries []FailureSummary
+	Subtests         subtests
+	FailureSummaries []failureSummary
 }
 
-// Failure ...
-func (st Subtest) Failure() (message string) {
+func (st subtest) failure() (message string) {
 	prefix := ""
 	for _, failure := range st.FailureSummaries {
 		message += fmt.Sprintf("%s%s:%d - %s", prefix, failure.FileName, failure.LineNumber, failure.Message)
@@ -87,16 +80,13 @@ func (st Subtest) Failure() (message string) {
 	return
 }
 
-// Skipped ...
-func (st Subtest) Skipped() bool {
+func (st subtest) skipped() bool {
 	return st.TestStatus == "Skipped"
 }
 
-// Subtests ...
-type Subtests []Subtest
+type subtests []subtest
 
-// FailuresCount ...
-func (sts Subtests) FailuresCount() (count int) {
+func (sts subtests) failuresCount() (count int) {
 	for _, test := range sts {
 		if len(test.FailureSummaries) > 0 {
 			count++
@@ -105,18 +95,16 @@ func (sts Subtests) FailuresCount() (count int) {
 	return count
 }
 
-// SkippedCount ...
-func (sts Subtests) SkippedCount() (count int) {
+func (sts subtests) skippedCount() (count int) {
 	for _, test := range sts {
-		if test.Skipped() {
+		if test.skipped() {
 			count++
 		}
 	}
 	return count
 }
 
-// TotalTime ...
-func (sts Subtests) TotalTime() (time float64) {
+func (sts subtests) totalTime() (time float64) {
 	for _, test := range sts {
 		time += test.Duration
 	}

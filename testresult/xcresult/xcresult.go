@@ -74,25 +74,25 @@ func (c *Converter) Convert() (testreport.TestReport, error) {
 
 	data = filterIllegalChars(data)
 
-	var plistData TestSummaryPlist
+	var plistData testSummaryPlist
 	if _, err := plist.Unmarshal(data, &plistData); err != nil {
 		return testreport.TestReport{}, err
 	}
 
 	var xmlData testreport.TestReport
-	keyOrder, tests := plistData.Tests()
+	keyOrder, tests := plistData.tests()
 	for _, testID := range keyOrder {
 		tests := tests[testID]
 		testSuite := testreport.TestSuite{
 			Name:     testID,
 			Tests:    len(tests),
-			Failures: tests.FailuresCount(),
-			Skipped:  tests.SkippedCount(),
-			Time:     tests.TotalTime(),
+			Failures: tests.failuresCount(),
+			Skipped:  tests.skippedCount(),
+			Time:     tests.totalTime(),
 		}
 
 		for _, test := range tests {
-			failureMessage := test.Failure()
+			failureMessage := test.failure()
 
 			var failure *testreport.Failure
 			if len(failureMessage) > 0 {
@@ -102,7 +102,7 @@ func (c *Converter) Convert() (testreport.TestReport, error) {
 			}
 
 			var skipped *testreport.Skipped
-			if test.Skipped() {
+			if test.skipped() {
 				skipped = &testreport.Skipped{}
 			}
 
