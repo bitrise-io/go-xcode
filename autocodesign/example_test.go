@@ -18,6 +18,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/v2/codesign"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
+	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 )
 
 type config struct {
@@ -44,10 +45,11 @@ func Example() {
 
 	logger := log.NewLogger()
 	enRepo := env.NewRepository()
-	filemanager := fileutil.NewFileManager()
+	fileManager := fileutil.NewFileManager()
+	commandFactory := command.NewFactory(enRepo)
 	projectFactory := projectmanager.NewFactory(logger, enRepo, projectmanager.BuildActionArchive)
 
-	f := devportalclient.NewFactory(logger, filemanager)
+	f := devportalclient.NewFactory(logger, fileManager)
 	connection, err := f.CreateBitriseConnection(cfg.BuildURL, cfg.BuildAPIToken)
 	if err != nil {
 		panic(err)
@@ -63,20 +65,29 @@ func Example() {
 		panic("missing implementation")
 	}
 
-	authConfig, err := codesign.SelectConnectionCredentials(authType, connection, codesign.ConnectionOverrideInputs{}, logger)
-	if err != nil {
-		panic(fmt.Sprintf("could not select Apple authentication credentials: %s", err))
-	}
-
-	devPortalClient, err := f.Create(authConfig, cfg.TeamID)
-	if err != nil {
-		panic(err)
-	}
-
 	keychain, err := keychain.New(cfg.KeychainPath, cfg.KeychainPassword, command.NewFactory(env.NewRepository()))
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize keychain: %s", err))
 	}
+	xcodeVersionReader := xcodeversion.NewXcodeVersionProvider(commandFactory)
+	xcodeVersion, err := xcodeVersionReader.GetVersion()
+	if err != nil {
+		panic(fmt.Sprintf("failed to get Xcode version: %s", err))
+	}
+	assetWriter := codesignasset.NewWriter(logger, *keychain, fileManager, xcodeVersion.Major)
+	profileProvider := localcodesignasset.NewProvisioningProfileProvider()
+	profileConverter := localcodesignasset.NewProvisioningProfileConverter()
+	localCodesignAssetManager := localcodesignasset.NewManager(profileProvider, profileConverter)
+
+	authConfig, err := codesign.SelectConnectionCredentials(authType, connection, codesign.ConnectionOverrideInputs{}, logger)
+	if err != nil {
+		panic(fmt.Sprintf("could not select Apple authentication credentials: %s", err))
+	}
+	devPortalClient, err := f.Create(authConfig, cfg.TeamID)
+	if err != nil {
+		panic(err)
+	}
+	manager := autocodesign.NewCodesignAssetManager(devPortalClient, assetWriter, localCodesignAssetManager, logger, retry.DefaultSleeper{})
 
 	certDownloader := certdownloader.NewDownloader(certsWithPrivateKey, logger)
 	certs, err := certDownloader.GetCertificates()
@@ -88,11 +99,6 @@ func Example() {
 	if err != nil {
 		panic(err)
 	}
-
-	profileProvider := localcodesignasset.NewProvisioningProfileProvider()
-	profileConverter := localcodesignasset.NewProvisioningProfileConverter()
-	localCodesignAssetManager := localcodesignasset.NewManager(profileProvider, profileConverter)
-	manager := autocodesign.NewCodesignAssetManager(devPortalClient, codesignasset.NewWriter(*keychain), localCodesignAssetManager, logger, retry.DefaultSleeper{})
 
 	// Analyzing project
 	fmt.Println()
