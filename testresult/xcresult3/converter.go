@@ -58,9 +58,9 @@ func documentMajorVersion(pth string) (int, error) {
 	return majorVersion(info)
 }
 
-// Setup configures the converter with the given extraction method preference.
-func (c *Converter) Setup(useOldXCResultExtractionMethod bool) {
-	c.useLegacyExtractionMethod = useOldXCResultExtractionMethod
+// NewConverter creates a Converter with the given extraction method preference.
+func NewConverter(useLegacy bool) *Converter {
+	return &Converter{useLegacyExtractionMethod: useLegacy}
 }
 
 // Detect ...
