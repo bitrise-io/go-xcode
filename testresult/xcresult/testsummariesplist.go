@@ -28,7 +28,7 @@ func (summaryPlist testSummaryPlist) tests() ([]string, map[string]subtests) {
 	var subTests subtests
 	for _, testableSummary := range summaryPlist.TestableSummaries {
 		for _, test := range testableSummary.Tests {
-			subTests = append(subTests, collapsesubtestTree(test.subtests)...)
+			subTests = append(subTests, collapsesubtestTree(test.Subtests)...)
 		}
 	}
 	for _, test := range subTests {
@@ -43,7 +43,7 @@ func (summaryPlist testSummaryPlist) tests() ([]string, map[string]subtests) {
 }
 
 type test struct {
-	subtests subtests
+	Subtests subtests
 }
 
 type testableSummary struct {
