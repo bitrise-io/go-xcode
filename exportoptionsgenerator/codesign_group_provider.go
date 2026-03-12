@@ -4,9 +4,10 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
-	"github.com/bitrise-io/go-xcode/profileutil"
+	profileutilv1 "github.com/bitrise-io/go-xcode/profileutil"
 	codesigngroup "github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
 // CodeSignGroupProvider ...
@@ -49,12 +50,13 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 
 	g.logger.Debugf("Installed profiles:")
 	for _, profileInfo := range profiles {
-		g.logger.Debugf(profileInfo.String(certificates...))
+		profileStr := profileutil.NewProfilePrinter(g.logger, profileutil.DefaultTimeProvider{}).PrintableProfile(profileInfo, certificates...)
+		g.logger.Debugf(profileStr)
 	}
 
 	g.logger.Println()
 	g.logger.Printf("Resolving code signing groups...")
-	codeSignGroups := codesigngroup.BuildFilterableList(certificates, profiles, bundleIDs)
+	codeSignGroups := codesigngroup.BuildFilterableList(certificates, profileutil.V1Profiles(profiles), bundleIDs)
 	if len(codeSignGroups) == 0 {
 		g.logger.Errorf("Failed to find code signing groups for specified export method (%s)", exportMethod)
 	}
@@ -113,7 +115,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 	var iosCodeSignGroups []codesigngroup.Ios
 
 	for _, selectable := range codeSignGroups {
-		bundleIDProfileMap := map[string]profileutil.ProvisioningProfileInfoModel{}
+		bundleIDProfileMap := map[string]profileutilv1.ProvisioningProfileInfoModel{}
 		for bundleID, profiles := range selectable.BundleIDProfilesMap {
 			if len(profiles) > 0 {
 				bundleIDProfileMap[bundleID] = profiles[0]
