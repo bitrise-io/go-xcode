@@ -118,7 +118,7 @@ func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
 		logger:     logger,
 		MainTarget: xcodeproj.Target{Name: "AppTarget"},
 		// bypass calling xcodebuild -showBuildSettings
-		buildSettingsCache: map[buildSettingsCacheKey][]serialized.Object{{targetName: "AppTarget", configuration: "Debug"}: {}},
+		buildSettingsWorkspaceCache: map[buildSettingsCacheKey][]serialized.Object{{targetName: "AppTarget", configuration: "Debug"}: {}},
 		// project withouth TargetAttributes
 		XcProj: xcodeproj.XcodeProj{Proj: xcodeproj.Proj{Attributes: xcodeproj.ProjectAtributes{TargetAttributes: nil}}},
 	}
