@@ -7,11 +7,13 @@ import (
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/codesignasset"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/keychain"
 	"github.com/bitrise-io/go-xcode/v2/mocks"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
 func TestWriter_InstallProfile(t *testing.T) {
@@ -58,8 +60,9 @@ func TestWriter_InstallProfile(t *testing.T) {
 			fileManager := mocks.NewFileManager(t)
 			expectedProfilePath := filepath.Join(tt.wantProfileDir, fmt.Sprintf("%s.mobileprovision", tt.profileUUID))
 			fileManager.On("Write", expectedProfilePath, "test-content", os.FileMode(0600)).Return(nil).Once()
+			profileReader := profileutil.NewProfileReader(logger, fileManager, pathutil.NewPathModifier(), pathutil.NewPathProvider(), pathutil.NewPathChecker())
 
-			w := codesignasset.NewWriter(logger, keychain, fileManager, tt.xcodeMajorVersion)
+			w := codesignasset.NewWriter(logger, keychain, fileManager, profileReader, tt.xcodeMajorVersion)
 			gotErr := w.InstallProfile(profile)
 			if gotErr != nil {
 				if !tt.wantErr {

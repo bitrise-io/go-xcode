@@ -7,7 +7,6 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
@@ -20,15 +19,17 @@ type Writer struct {
 	logger            log.Logger
 	keychain          keychain.Keychain
 	fileManager       fileutil.FileManager
+	profileReader     profileutil.ProfileReader
 	xcodeMajorVersion int64
 }
 
 // NewWriter ...
-func NewWriter(logger log.Logger, keychain keychain.Keychain, fileManager fileutil.FileManager, xcodeMajorVersion int64) Writer {
+func NewWriter(logger log.Logger, keychain keychain.Keychain, fileManager fileutil.FileManager, profileReader profileutil.ProfileReader, xcodeMajorVersion int64) Writer {
 	return Writer{
 		logger:            logger,
 		keychain:          keychain,
 		fileManager:       fileManager,
+		profileReader:     profileReader,
 		xcodeMajorVersion: xcodeMajorVersion,
 	}
 }
@@ -89,9 +90,7 @@ func (w Writer) InstallProfile(profile autocodesign.Profile) error {
 		return fmt.Errorf("failed to write profile to file, unsupported platform: (%s). Supported platforms: %s, %s", profile.Attributes().Platform, appstoreconnect.IOS, appstoreconnect.MacOS)
 	}
 
-	// TODO: wire
-	profileReader := profileutil.NewProfileReader(log.NewLogger(), w.fileManager, pathutil.NewPathModifier(), pathutil.NewPathProvider(), pathutil.NewPathChecker())
-	profilesDir, err := profileReader.ProvisioningProfilesDirPath(w.xcodeMajorVersion)
+	profilesDir, err := w.profileReader.ProvisioningProfilesDirPath(w.xcodeMajorVersion)
 	if err != nil {
 		return fmt.Errorf("failed to get provisioning profiles directory path: %w", err)
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-utils/v2/retry"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/certdownloader"
@@ -18,6 +19,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/projectmanager"
 	"github.com/bitrise-io/go-xcode/v2/codesign"
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 )
 
@@ -74,7 +76,8 @@ func Example() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Xcode version: %s", err))
 	}
-	assetWriter := codesignasset.NewWriter(logger, *keychain, fileManager, xcodeVersion.Major)
+	profileReader := profileutil.NewProfileReader(logger, fileManager, pathutil.NewPathModifier(), pathutil.NewPathProvider(), pathutil.NewPathChecker())
+	assetWriter := codesignasset.NewWriter(logger, *keychain, fileManager, profileReader, xcodeVersion.Major)
 	profileProvider := localcodesignasset.NewProvisioningProfileProvider()
 	profileConverter := localcodesignasset.NewProvisioningProfileConverter()
 	localCodesignAssetManager := localcodesignasset.NewManager(profileProvider, profileConverter)
