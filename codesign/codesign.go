@@ -509,7 +509,7 @@ func (m *Manager) createCodeSignAssetMap(appLayout autocodesign.AppLayout, certi
 		bundleIDProfileInfoMap := signingAssets.BundleIDProfileMap()
 		bundleIDProfileMap := map[string]autocodesign.Profile{}
 		for bundleID, profileInfo := range bundleIDProfileInfoMap {
-			signingProfile, err := m.profileConverter.ProfileInfoToProfile(profileutil.V2Profile(profileInfo))
+			signingProfile, err := m.profileConverter.ProfileInfoToProfile(profileInfo)
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert profile info: %w", err)
 			}
@@ -543,7 +543,7 @@ func (m *Manager) createCodeSignAssetMap(appLayout autocodesign.AppLayout, certi
 		bundleIDProfileInfoMap := uiTestSigningAssets.BundleIDProfileMap()
 		bundleIDProfileMap := map[string]autocodesign.Profile{}
 		for bundleID, profileInfo := range bundleIDProfileInfoMap {
-			signingProfile, err := m.profileConverter.ProfileInfoToProfile(profileutil.V2Profile(profileInfo))
+			signingProfile, err := m.profileConverter.ProfileInfoToProfile(profileInfo)
 			if err != nil {
 				return nil, fmt.Errorf("failed to convert profile info: %w", err)
 			}
