@@ -122,7 +122,7 @@ func (reader ProfileReader) ListProfiles(profileType ProfileType, uuid string) (
 	var allProfilePaths []string
 	for _, dirPath := range []string{modernDirPath, legacyDirPath} {
 		pattern := filepath.Join(reader.pathModifier.EscapeGlobPath(dirPath), uuid+ext)
-		profilePaths, err := filepath.Glob(pattern)
+		profilePaths, err := reader.pathProvider.Glob(pattern)
 		if err != nil {
 			return nil, err
 		}
