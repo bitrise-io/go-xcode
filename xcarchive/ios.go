@@ -39,7 +39,7 @@ func NewIosBaseApplication(path string) (IosBaseApplication, error) {
 	pathChecker := pathutil.NewPathChecker()
 	envRepo := env.NewRepository()
 	cmdFactory := command.NewFactory(envRepo)
-	profileReader := profileutil.NewProfileReader(logger, fileManager, pathModifier, pathProvider, pathChecker)
+	profileReader := profileutil.NewProfileReader(logger, fileManager, pathModifier, pathProvider)
 
 	var infoPlist plistutil.PlistData
 	{

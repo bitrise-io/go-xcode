@@ -38,7 +38,8 @@ func (c provisioningProfileConverter) ProfileInfoToProfile(info profileutil.Prov
 }
 
 func findProvisioningProfile(uuid string) (string, error) {
-	profileReader := profileutil.NewProfileReader(log.NewLogger(), fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider(), pathutil.NewPathChecker())
+	// TODO: wire deps on ProvisioningProfileConverter
+	profileReader := profileutil.NewProfileReader(log.NewLogger(), fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
 	paths, err := profileReader.ListProfiles(profileutil.ProfileTypeIos, uuid)
 	if err != nil {
 		return "", err

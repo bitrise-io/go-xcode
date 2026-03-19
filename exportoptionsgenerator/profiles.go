@@ -26,7 +26,7 @@ type LocalProvisioningProfileProvider struct {
 // ListProvisioningProfiles ...
 func (p LocalProvisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
 	// TODO: wire in as a dep on the struct
-	profileReader := profileutil.NewProfileReader(p.logger, fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider(), pathutil.NewPathChecker())
+	profileReader := profileutil.NewProfileReader(p.logger, fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
 	return profileReader.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
 }
 
@@ -68,7 +68,7 @@ func (p LocalProvisioningProfileProvider) GetDefaultProvisioningProfile() (profi
 	}
 
 	// TODO: wire in as a dep on the struct
-	profileReader := profileutil.NewProfileReader(p.logger, fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider(), pathutil.NewPathChecker())
+	profileReader := profileutil.NewProfileReader(p.logger, fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
 	defaultProfile, err := profileReader.ProvisioningProfileInfoFromFile(tmpDst)
 	if err != nil {
 		return profileutil.ProvisioningProfileInfoModel{}, err

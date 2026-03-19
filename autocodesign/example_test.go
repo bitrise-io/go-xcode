@@ -76,7 +76,7 @@ func Example() {
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Xcode version: %s", err))
 	}
-	profileReader := profileutil.NewProfileReader(logger, fileManager, pathutil.NewPathModifier(), pathutil.NewPathProvider(), pathutil.NewPathChecker())
+	profileReader := profileutil.NewProfileReader(logger, fileManager, pathutil.NewPathModifier(), pathutil.NewPathProvider())
 	assetWriter := codesignasset.NewWriter(logger, *keychain, fileManager, profileReader, xcodeVersion.Major)
 	profileProvider := localcodesignasset.NewProvisioningProfileProvider()
 	profileConverter := localcodesignasset.NewProvisioningProfileConverter()

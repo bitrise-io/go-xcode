@@ -24,17 +24,15 @@ type ProfileReader struct {
 	fileManager  fileutil.FileManager
 	pathModifier pathutil.PathModifier
 	pathProvider pathutil.PathProvider
-	pathChecker  pathutil.PathChecker
 }
 
 // NewProfileReader ...
-func NewProfileReader(logger log.Logger, fileManager fileutil.FileManager, pathModifier pathutil.PathModifier, pathProvider pathutil.PathProvider, pathChecker pathutil.PathChecker) ProfileReader {
+func NewProfileReader(logger log.Logger, fileManager fileutil.FileManager, pathModifier pathutil.PathModifier, pathProvider pathutil.PathProvider) ProfileReader {
 	return ProfileReader{
 		logger:       logger,
 		fileManager:  fileManager,
 		pathModifier: pathModifier,
 		pathProvider: pathProvider,
-		pathChecker:  pathChecker,
 	}
 }
 

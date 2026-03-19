@@ -21,7 +21,7 @@ func NewProvisioningProfileProvider() ProvisioningProfileProvider {
 
 // ListProvisioningProfiles ...
 func (p provisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
-	// TODO: wire in as a dep on the struct
-	profileReader := profileutil.NewProfileReader(log.NewLogger(), fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider(), pathutil.NewPathChecker())
+	// TODO: wire deps on provisioningProfileProvider
+	profileReader := profileutil.NewProfileReader(log.NewLogger(), fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
 	return profileReader.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
 }
