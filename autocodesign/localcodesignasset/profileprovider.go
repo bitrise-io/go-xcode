@@ -1,6 +1,11 @@
 package localcodesignasset
 
-import "github.com/bitrise-io/go-xcode/profileutil"
+import (
+	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-xcode/v2/profileutil"
+)
 
 // ProvisioningProfileProvider can list profile infos.
 type ProvisioningProfileProvider interface {
@@ -16,5 +21,7 @@ func NewProvisioningProfileProvider() ProvisioningProfileProvider {
 
 // ListProvisioningProfiles ...
 func (p provisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
-	return profileutil.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
+	// TODO: wire deps on provisioningProfileProvider
+	profileReader := profileutil.NewProfileReader(log.NewLogger(), fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
+	return profileReader.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
 }
