@@ -68,41 +68,7 @@ func (reader ProfileReader) InstalledProvisioningProfileInfos(profileType Profil
 	return infos, nil
 }
 
-func (reader ProfileReader) provisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {
-	f, err := reader.fileManager.Open(pth)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			reader.logger.Warnf("Failed to close file %s, error: %s", pth, err)
-		}
-	}()
-
-	content, err := io.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-	return pkcs7.Parse(content)
-}
-
-func (reader ProfileReader) installedProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, error) {
-	pths, err := reader.ListProfiles(profileType, "*")
-	if err != nil {
-		return nil, err
-	}
-
-	var profiles []*pkcs7.PKCS7
-	for _, pth := range pths {
-		profile, err := reader.provisioningProfileFromFile(pth)
-		if err != nil {
-			return nil, err
-		}
-		profiles = append(profiles, profile)
-	}
-	return profiles, nil
-}
-
+// ListProfiles ...
 func (reader ProfileReader) ListProfiles(profileType ProfileType, uuid string) ([]string, error) {
 	ext := IOSExtension
 	if profileType == ProfileTypeMacOs {
@@ -140,6 +106,41 @@ func (reader ProfileReader) ProvisioningProfilesDirPath(xcodeMajorVersion int64)
 	}
 
 	return reader.provisioningProfilesDirLegacyPath() // return the legacy path used by Xcode 15 and earlier
+}
+
+func (reader ProfileReader) provisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {
+	f, err := reader.fileManager.Open(pth)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			reader.logger.Warnf("Failed to close file %s, error: %s", pth, err)
+		}
+	}()
+
+	content, err := io.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	return pkcs7.Parse(content)
+}
+
+func (reader ProfileReader) installedProvisioningProfiles(profileType ProfileType) ([]*pkcs7.PKCS7, error) {
+	pths, err := reader.ListProfiles(profileType, "*")
+	if err != nil {
+		return nil, err
+	}
+
+	var profiles []*pkcs7.PKCS7
+	for _, pth := range pths {
+		profile, err := reader.provisioningProfileFromFile(pth)
+		if err != nil {
+			return nil, err
+		}
+		profiles = append(profiles, profile)
+	}
+	return profiles, nil
 }
 
 // ProvisioningProfilesDirModernPath is the absolute path used to store and look up provisioning profiles (used Xcode 16 and later)
