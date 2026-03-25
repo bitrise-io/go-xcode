@@ -9,9 +9,9 @@ require (
 	cloud.google.com/go/storage v1.50.0
 	github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
 	github.com/bitrise-io/go-steputils v1.0.5
-	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.48.0.20260312091018-7447bc60506b
+	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.49
 	github.com/bitrise-io/go-utils v1.0.13
-	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.33
+	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.34
 	github.com/bitrise-io/go-xcode v1.3.3
 	github.com/globocom/go-buffer/v2 v2.0.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
