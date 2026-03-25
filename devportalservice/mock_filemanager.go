@@ -69,6 +69,7 @@ func (r *mockFileReader) CopyDir(src, dst string, opts *fileutil.CopyOptions) er
 	panic("implement me")
 }
 
+// Lstat stub...
 func (r *mockFileReader) Lstat(path string) (os.FileInfo, error) {
 	panic("implement me")
 }
