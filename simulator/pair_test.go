@@ -52,7 +52,7 @@ func Test_GivenPairManager_WhenListPairsWithInactivePair_ThenIsActiveReturnsFals
 			"PAIR-UUID-1": {
 				"watch": {"name": "Apple Watch", "udid": "W1", "state": "Shutdown"},
 				"phone": {"name": "iPhone", "udid": "P1", "state": "Shutdown"},
-				"state": "(unavailable)"
+				"state": "(inactive, disconnected)"
 			}
 		}
 	}`
@@ -67,6 +67,33 @@ func Test_GivenPairManager_WhenListPairsWithInactivePair_ThenIsActiveReturnsFals
 	require.NoError(t, err)
 	pair := pairList.Pairs["PAIR-UUID-1"]
 	assert.True(t, pair.IsInactive())
+}
+
+func Test_GivenPairManager_WhenListPairsWithUnavailablePair_ThenIsUnavailableReturnsTrue(t *testing.T) {
+	// Given
+	commandFactory := new(mockcommand.CommandFactory)
+	manager := NewPairManager(commandFactory)
+
+	pairsJSON := `{
+		"pairs": {
+			"PAIR-UUID-1": {
+				"watch": {"name": "Apple Watch", "udid": "W1", "state": "Shutdown"},
+				"phone": {"name": "iPhone", "udid": "P1", "state": "Shutdown"},
+				"state": "(unavailable)"
+			}
+		}
+	}`
+
+	parameters := []string{"simctl", "list", "pairs", "-j"}
+	commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(pairsJSON))
+
+	// When
+	pairList, err := manager.ListPairs()
+
+	// Then
+	require.NoError(t, err)
+	pair := pairList.Pairs["PAIR-UUID-1"]
+	assert.True(t, pair.IsUnavailable())
 }
 
 func Test_GivenPairManager_WhenCreatePair_ThenCallsSimctlPair(t *testing.T) {

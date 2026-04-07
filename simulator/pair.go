@@ -32,21 +32,15 @@ func (p Pair) IsUnavailable() bool {
 	return strings.Contains(p.State, "(unavailable)")
 }
 
-type PairManager interface {
-	ListPairs() (PairList, error)
-	CreatePair(watchUDID, phoneUDID string) (string, error)
-	ActivatePair(pairUDID string) error
-}
-
-type pairManager struct {
+type PairManager struct {
 	commandFactory command.Factory
 }
 
 func NewPairManager(commandFactory command.Factory) PairManager {
-	return pairManager{commandFactory: commandFactory}
+	return PairManager{commandFactory: commandFactory}
 }
 
-func (m pairManager) ListPairs() (PairList, error) {
+func (m PairManager) ListPairs() (PairList, error) {
 	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "list", "pairs", "-j"}, nil)
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -61,7 +55,7 @@ func (m pairManager) ListPairs() (PairList, error) {
 	return list, nil
 }
 
-func (m pairManager) CreatePair(watchUDID, phoneUDID string) (string, error) {
+func (m PairManager) CreatePair(watchUDID, phoneUDID string) (string, error) {
 	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "pair", watchUDID, phoneUDID}, nil)
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -71,7 +65,7 @@ func (m pairManager) CreatePair(watchUDID, phoneUDID string) (string, error) {
 	return strings.TrimSpace(out), nil
 }
 
-func (m pairManager) ActivatePair(pairUDID string) error {
+func (m PairManager) ActivatePair(pairUDID string) error {
 	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "pair_activate", pairUDID}, nil)
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
