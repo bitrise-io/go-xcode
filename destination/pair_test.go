@@ -9,6 +9,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func createCommand(output string) *mockcommand.Command {
+	command := new(mockcommand.Command)
+	command.On("PrintableCommandArgs").Return("")
+	command.On("Run").Return(nil)
+	command.On("RunAndReturnExitCode").Return(0, nil)
+	command.On("RunAndReturnTrimmedCombinedOutput").Return(output, nil)
+
+	return command
+}
+
 func Test_GivenPairManager_WhenListPairs_ThenParsesOutput(t *testing.T) {
 	// Given
 	commandFactory := new(mockcommand.CommandFactory)
