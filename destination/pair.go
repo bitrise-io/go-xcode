@@ -84,3 +84,14 @@ func (m PairManager) ActivatePair(pairUDID string) error {
 
 	return nil
 }
+
+// Unpair removes an existing simulator pair.
+func (m PairManager) Unpair(pairUDID string) error {
+	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "unpair", pairUDID}, nil)
+	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return fmt.Errorf("delete pair: %w\n%s", err, out)
+	}
+
+	return nil
+}
