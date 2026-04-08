@@ -1,4 +1,4 @@
-package simulator
+package destination
 
 import (
 	"testing"
