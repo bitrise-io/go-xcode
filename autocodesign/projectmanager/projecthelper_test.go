@@ -38,6 +38,14 @@ func TestNew(t *testing.T) {
 		wantErr           bool
 	}{
 		{
+			name:              "Bad Scheme name",
+			projOrWSPath:      projectCases[0],
+			schemeName:        "BadName",
+			configurationName: "",
+			wantConfiguration: "",
+			wantErr:           true,
+		},
+		{
 			name:              "Xcode 10 workspace - iOS",
 			projOrWSPath:      projectCases[0],
 			schemeName:        "Xcode-10_default",
@@ -97,15 +105,13 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			projHelp, err := NewProjectHelper(tt.projOrWSPath, logger, tt.schemeName, BuildActionArchive, tt.configurationName, []string{}, false)
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
 			}
-			if projHelp == nil {
-				t.Fatalf("New() error = No projectHelper was generated")
-			}
-			if projHelp.Configuration != tt.wantConfiguration {
-				t.Errorf("New() got1 = %v, want %v", projHelp.Configuration, tt.wantConfiguration)
-			}
+			require.NoError(t, err)
+			require.NotNil(t, projHelp, "No projectHelper was generated")
+			require.Equal(t, tt.wantConfiguration, projHelp.Configuration)
 		})
 	}
 }
