@@ -140,3 +140,20 @@ func Test_GivenPairManager_WhenActivatePair_ThenCallsSimctlPairActivate(t *testi
 
 	commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
 }
+
+func Test_GivenPairManager_WhenUnpair_ThenCallsSimctlUnpair(t *testing.T) {
+	// Given
+	commandFactory := new(mockcommand.CommandFactory)
+	manager := NewPairManager(commandFactory)
+
+	parameters := []string{"simctl", "unpair", "PAIR-UUID"}
+	commandFactory.On("Create", "xcrun", parameters, mock.Anything).Return(createCommand(""))
+
+	// When
+	err := manager.Unpair("PAIR-UUID")
+
+	// Then
+	require.NoError(t, err)
+
+	commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
+}
