@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitrise-io/go-utils/httputil"
+	"github.com/bitrise-io/go-utils/v2/httputil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/retryhttp"
 	"github.com/golang-jwt/jwt/v4"
@@ -268,7 +268,7 @@ func (c *Client) Debugf(format string, v ...interface{}) {
 func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	c.Debugf("Request:")
 	if c.EnableDebugLogs {
-		if err := httputil.PrintRequest(req); err != nil {
+		if err := httputil.PrintRequest(c.logger, req); err != nil {
 			c.Debugf("Failed to print request: %s", err)
 		}
 	}
@@ -277,7 +277,7 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 
 	c.Debugf("Response:")
 	if c.EnableDebugLogs {
-		if err := httputil.PrintResponse(resp); err != nil {
+		if err := httputil.PrintResponse(c.logger, resp); err != nil {
 			c.Debugf("Failed to print response: %s", err)
 		}
 	}
