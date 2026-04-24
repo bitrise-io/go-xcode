@@ -108,3 +108,20 @@ func TestCapability_HealthKitAccessIgnored(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, cap)
 }
+
+func TestCapability_IgnoredKeys(t *testing.T) {
+	keys := []string{
+		"com.apple.developer.kernel.extended-virtual-addressing",
+		"com.apple.developer.kernel.increased-memory-limit",
+		"com.apple.developer.authentication-services.credential-provider-ui",
+	}
+	for _, key := range keys {
+		t.Run(key, func(t *testing.T) {
+			ent := Entitlement(map[string]interface{}{key: true})
+			cap, err := ent.Capability()
+			require.NoError(t, err)
+			require.Nil(t, cap)
+			require.False(t, ent.AppearsOnDeveloperPortal())
+		})
+	}
+}
