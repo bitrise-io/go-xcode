@@ -12,16 +12,19 @@ type ProvisioningProfileProvider interface {
 	ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error)
 }
 
-type provisioningProfileProvider struct{}
+type provisioningProfileProvider struct {
+	profileReader profileutil.ProfileReader
+}
 
 // NewProvisioningProfileProvider ...
 func NewProvisioningProfileProvider() ProvisioningProfileProvider {
-	return provisioningProfileProvider{}
+	profileReader := profileutil.NewProfileReader(log.NewLogger(), fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
+	return provisioningProfileProvider{
+		profileReader: profileReader,
+	}
 }
 
 // ListProvisioningProfiles ...
 func (p provisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
-	// TODO: wire deps on provisioningProfileProvider
-	profileReader := profileutil.NewProfileReader(log.NewLogger(), fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
-	return profileReader.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
+	return p.profileReader.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
 }

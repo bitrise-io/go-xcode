@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
@@ -20,14 +19,20 @@ type ProvisioningProfileProvider interface {
 
 // LocalProvisioningProfileProvider ...
 type LocalProvisioningProfileProvider struct {
-	logger log.Logger
+	logger        log.Logger
+	profileReader profileutil.ProfileReader
+}
+
+func NewLocalProvisioningProfileProvider(profileReader profileutil.ProfileReader, logger log.Logger) LocalProvisioningProfileProvider {
+	return LocalProvisioningProfileProvider{
+		logger:        logger,
+		profileReader: profileReader,
+	}
 }
 
 // ListProvisioningProfiles ...
 func (p LocalProvisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
-	// TODO: wire in as a dep on the struct
-	profileReader := profileutil.NewProfileReader(p.logger, fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
-	return profileReader.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
+	return p.profileReader.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
 }
 
 // GetDefaultProvisioningProfile ...
@@ -67,9 +72,7 @@ func (p LocalProvisioningProfileProvider) GetDefaultProvisioningProfile() (profi
 		return profileutil.ProvisioningProfileInfoModel{}, err
 	}
 
-	// TODO: wire in as a dep on the struct
-	profileReader := profileutil.NewProfileReader(p.logger, fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
-	defaultProfile, err := profileReader.ProvisioningProfileInfoFromFile(tmpDst)
+	defaultProfile, err := p.profileReader.ProvisioningProfileInfoFromFile(tmpDst)
 	if err != nil {
 		return profileutil.ProvisioningProfileInfoModel{}, err
 	}

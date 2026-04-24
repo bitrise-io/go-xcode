@@ -1,7 +1,7 @@
 package localcodesignasset
 
 import (
-	"os"
+	"io"
 
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
@@ -16,20 +16,35 @@ type ProvisioningProfileConverter interface {
 }
 
 type provisioningProfileConverter struct {
+	fileManager   fileutil.FileManager
+	profileReader profileutil.ProfileReader
 }
 
 // NewProvisioningProfileConverter ...
 func NewProvisioningProfileConverter() ProvisioningProfileConverter {
-	return provisioningProfileConverter{}
+	logger := log.NewLogger()
+	fileManager := fileutil.NewFileManager()
+	pathModifier := pathutil.NewPathModifier()
+	pathProvider := pathutil.NewPathProvider()
+	profileReader := profileutil.NewProfileReader(logger, fileManager, pathModifier, pathProvider)
+
+	return provisioningProfileConverter{
+		fileManager:   fileManager,
+		profileReader: profileReader,
+	}
 }
 
 // ProfileInfoToProfile ...
 func (c provisioningProfileConverter) ProfileInfoToProfile(info profileutil.ProvisioningProfileInfoModel) (autocodesign.Profile, error) {
-	pth, err := findProvisioningProfile(info.UUID)
+	pth, err := c.findProvisioningProfile(info.UUID)
 	if err != nil {
 		return nil, err
 	}
-	content, err := os.ReadFile(pth)
+	profile, err := c.fileManager.Open(pth)
+	if err != nil {
+		return nil, err
+	}
+	content, err := io.ReadAll(profile)
 	if err != nil {
 		return nil, err
 	}
@@ -37,14 +52,12 @@ func (c provisioningProfileConverter) ProfileInfoToProfile(info profileutil.Prov
 	return NewProfile(info, content), nil
 }
 
-func findProvisioningProfile(uuid string) (string, error) {
-	// TODO: wire deps on ProvisioningProfileConverter
-	profileReader := profileutil.NewProfileReader(log.NewLogger(), fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
-	paths, err := profileReader.ListProfiles(profileutil.ProfileTypeIos, uuid)
+func (c provisioningProfileConverter) findProvisioningProfile(uuid string) (string, error) {
+	paths, err := c.profileReader.ListProfiles(profileutil.ProfileTypeIos, uuid)
 	if err != nil {
 		return "", err
 	}
-	macOSPaths, err := profileReader.ListProfiles(profileutil.ProfileTypeMacOs, uuid)
+	macOSPaths, err := c.profileReader.ListProfiles(profileutil.ProfileTypeMacOs, uuid)
 	if err != nil {
 		return "", err
 	}
@@ -55,7 +68,7 @@ func findProvisioningProfile(uuid string) (string, error) {
 		return "", nil
 	}
 
-	_, err = profileReader.ProvisioningProfileInfoFromFile(paths[0])
+	_, err = c.profileReader.ProvisioningProfileInfoFromFile(paths[0])
 	if err != nil {
 		return "", err
 	}

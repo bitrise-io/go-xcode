@@ -78,7 +78,7 @@ func Example() {
 	}
 	profileReader := profileutil.NewProfileReader(logger, fileManager, pathutil.NewPathModifier(), pathutil.NewPathProvider())
 	assetWriter := codesignasset.NewWriter(logger, *keychain, fileManager, profileReader, xcodeVersion.Major)
-	profileProvider := localcodesignasset.NewProvisioningProfileProvider()
+	profileProvider := localcodesignasset.NewProvisioningProfileProvider(profileReader)
 	profileConverter := localcodesignasset.NewProvisioningProfileConverter()
 	localCodesignAssetManager := localcodesignasset.NewManager(profileProvider, profileConverter)
 
