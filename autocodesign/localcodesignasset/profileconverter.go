@@ -17,6 +17,7 @@ type ProvisioningProfileConverter interface {
 }
 
 type provisioningProfileConverter struct {
+	logger        log.Logger
 	fileManager   fileutil.FileManager
 	profileReader profileutil.ProfileReader
 }
@@ -30,6 +31,7 @@ func NewProvisioningProfileConverter() ProvisioningProfileConverter {
 	profileReader := profileutil.NewProfileReader(logger, fileManager, pathModifier, pathProvider)
 
 	return provisioningProfileConverter{
+		logger:        logger,
 		fileManager:   fileManager,
 		profileReader: profileReader,
 	}
@@ -45,6 +47,11 @@ func (c provisioningProfileConverter) ProfileInfoToProfile(info profileutil.Prov
 	if err != nil {
 		return nil, err
 	}
+	defer func() {
+		if err = profile.Close(); err != nil {
+			c.logger.Warnf("Failed to close profile: %s", err)
+		}
+	}()
 	content, err := io.ReadAll(profile)
 	if err != nil {
 		return nil, err
