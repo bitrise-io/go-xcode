@@ -13,6 +13,14 @@ import (
 // ICloudIdentifiersEntitlementKey ...
 const ICloudIdentifiersEntitlementKey = "com.apple.developer.icloud-container-identifiers"
 
+// ErrUnknownEntitlementKey is returned by Entitlement.Capability and
+// Entitlement.Equal when an entitlement key is not present in
+// appstoreconnect.ServiceTypeByKey. Callers that iterate over a project's
+// full entitlement set (e.g. SyncBundleID) may wrap this with errors.Is to
+// skip unknown keys with a warning instead of aborting, so a single new
+// Apple-introduced key does not break the entire code signing flow.
+var ErrUnknownEntitlementKey = errors.New("unknown entitlement key")
+
 // DataProtections ...
 var DataProtections = map[string]appstoreconnect.CapabilityOptionKey{
 	"NSFileProtectionComplete":                             appstoreconnect.CompleteProtection,
@@ -44,7 +52,7 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 
 	capType, ok := appstoreconnect.ServiceTypeByKey[entKey]
 	if !ok {
-		return nil, errors.New("unknown entitlement key: " + entKey)
+		return nil, fmt.Errorf("%w: %s", ErrUnknownEntitlementKey, entKey)
 	}
 
 	if capType == appstoreconnect.Ignored {
@@ -144,7 +152,7 @@ func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability, allEntitlemen
 
 	capType, ok := appstoreconnect.ServiceTypeByKey[entKey]
 	if !ok {
-		return false, errors.New("unknown entitlement key: " + entKey)
+		return false, fmt.Errorf("%w: %s", ErrUnknownEntitlementKey, entKey)
 	}
 
 	if cap.Attributes.CapabilityType != capType {
