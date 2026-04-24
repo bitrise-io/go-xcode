@@ -41,12 +41,13 @@ type ExportOptionsGenerator struct {
 
 // New constructs a new ExportOptionsGenerator.
 func New(xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOptionsGenerator {
+	pathProvider := pathutil.NewPathProvider()
 	profileReader := profileutil.NewProfileReader(logger, fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
 
 	return ExportOptionsGenerator{
 		xcodeVersionReader:    xcodeVersionReader,
 		certificateProvider:   NewLocalCodesignIdentityProvider(),
-		profileProvider:       NewLocalProvisioningProfileProvider(profileReader, logger),
+		profileProvider:       NewLocalProvisioningProfileProvider(profileReader, pathProvider, logger),
 		codeSignGroupProvider: NewCodeSignGroupProvider(logger),
 		logger:                logger,
 	}

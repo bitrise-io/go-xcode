@@ -20,12 +20,14 @@ type ProvisioningProfileProvider interface {
 // LocalProvisioningProfileProvider ...
 type LocalProvisioningProfileProvider struct {
 	logger        log.Logger
+	pathProvider  pathutil.PathProvider
 	profileReader profileutil.ProfileReader
 }
 
-func NewLocalProvisioningProfileProvider(profileReader profileutil.ProfileReader, logger log.Logger) LocalProvisioningProfileProvider {
+func NewLocalProvisioningProfileProvider(profileReader profileutil.ProfileReader, pathProvider pathutil.PathProvider, logger log.Logger) LocalProvisioningProfileProvider {
 	return LocalProvisioningProfileProvider{
 		logger:        logger,
+		pathProvider:  pathProvider,
 		profileReader: profileReader,
 	}
 }
@@ -42,7 +44,7 @@ func (p LocalProvisioningProfileProvider) GetDefaultProvisioningProfile() (profi
 		return profileutil.ProvisioningProfileInfoModel{}, nil
 	}
 
-	tmpDir, err := pathutil.NewPathProvider().CreateTempDir("tmp_default_profile")
+	tmpDir, err := p.pathProvider.CreateTempDir("tmp_default_profile")
 	if err != nil {
 		return profileutil.ProvisioningProfileInfoModel{}, err
 	}

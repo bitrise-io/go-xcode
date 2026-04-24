@@ -1,6 +1,7 @@
 package localcodesignasset
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/bitrise-io/go-utils/v2/fileutil"
@@ -64,8 +65,7 @@ func (c provisioningProfileConverter) findProvisioningProfile(uuid string) (stri
 
 	paths = append(paths, macOSPaths...)
 	if len(paths) == 0 {
-		// ToDo return error of not found, keeping the nil return values for backward compatibility for now
-		return "", nil
+		return "", fmt.Errorf("no provisioning profile found for %s", uuid)
 	}
 
 	_, err = c.profileReader.ProvisioningProfileInfoFromFile(paths[0])
