@@ -8,7 +8,7 @@ import (
 
 // KnownProfileCapabilitiesMap ...
 var KnownProfileCapabilitiesMap = map[ProfileType]map[string]bool{
-	ProfileTypeMacOs: map[string]bool{
+	ProfileTypeMacOs: {
 		"com.apple.developer.networking.networkextension":                        true,
 		"com.apple.developer.icloud-container-environment":                       true,
 		"com.apple.developer.icloud-container-development-container-identifiers": true,
@@ -24,7 +24,7 @@ var KnownProfileCapabilitiesMap = map[ProfileType]map[string]bool{
 		"com.apple.developer.team-identifier":                                    true,
 		"com.apple.developer.maps":                                               true,
 	},
-	ProfileTypeIos: map[string]bool{
+	ProfileTypeIos: {
 		"com.apple.developer.in-app-payments":                 true,
 		"com.apple.security.application-groups":               true,
 		"com.apple.developer.default-data-protection":         true,
@@ -64,10 +64,14 @@ func IsXcodeManaged(profileName string) bool {
 
 // MatchTargetAndProfileEntitlements ...
 func MatchTargetAndProfileEntitlements(targetEntitlements plistutil.PlistData, profileEntitlements plistutil.PlistData, profileType ProfileType) []string {
-	missingEntitlements := []string{}
+	var missingEntitlements []string
 
 	for key := range targetEntitlements {
-		_, known := KnownProfileCapabilitiesMap[profileType][key]
+		knownCapabilities, ok := KnownProfileCapabilitiesMap[profileType]
+		if !ok {
+			continue
+		}
+		_, known := knownCapabilities[key]
 		if !known {
 			continue
 		}
