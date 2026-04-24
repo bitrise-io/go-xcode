@@ -10,6 +10,7 @@ type CodesignIdentityProvider interface {
 // LocalCodesignIdentityProvider ...
 type LocalCodesignIdentityProvider struct{}
 
+// NewLocalCodesignIdentityProvider ...
 func NewLocalCodesignIdentityProvider() LocalCodesignIdentityProvider {
 	return LocalCodesignIdentityProvider{}
 }
