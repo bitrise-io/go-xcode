@@ -48,8 +48,8 @@ func (profile PlistData) GetUUID() string {
 // GetName ...
 func (profile PlistData) GetName() string {
 	data := plistutil.PlistData(profile)
-	uuid, _ := data.GetString("Name")
-	return uuid
+	name, _ := data.GetString("Name")
+	return name
 }
 
 // GetApplicationIdentifier ...

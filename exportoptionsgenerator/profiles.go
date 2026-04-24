@@ -24,6 +24,7 @@ type LocalProvisioningProfileProvider struct {
 	profileReader profileutil.ProfileReader
 }
 
+// NewLocalProvisioningProfileProvider ...
 func NewLocalProvisioningProfileProvider(profileReader profileutil.ProfileReader, pathProvider pathutil.PathProvider, logger log.Logger) LocalProvisioningProfileProvider {
 	return LocalProvisioningProfileProvider{
 		logger:        logger,
