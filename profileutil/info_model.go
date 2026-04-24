@@ -104,6 +104,9 @@ func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertif
 				break
 			}
 		}
+		if has {
+			break
+		}
 	}
 	return has
 }
