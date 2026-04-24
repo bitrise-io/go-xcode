@@ -1,6 +1,7 @@
 package autocodesign
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -106,6 +107,18 @@ func TestCapability_HealthKitAccessIgnored(t *testing.T) {
 	})
 	cap, err := ent.Capability()
 	require.NoError(t, err)
+	require.Nil(t, cap)
+}
+
+func TestCapability_UnknownKeyReturnsSentinel(t *testing.T) {
+	ent := Entitlement(map[string]interface{}{
+		"com.apple.developer.totally-made-up-entitlement": true,
+	})
+
+	cap, err := ent.Capability()
+	require.Error(t, err)
+	require.True(t, errors.Is(err, ErrUnknownEntitlementKey))
+	require.Contains(t, err.Error(), "com.apple.developer.totally-made-up-entitlement")
 	require.Nil(t, cap)
 }
 
