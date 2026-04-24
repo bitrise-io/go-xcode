@@ -25,7 +25,7 @@ func NewProfilePrinter(logger log.Logger, timeProvider TimeProvider) *ProfilePri
 
 // PrintableProfile ...
 func (printer ProfilePrinter) PrintableProfile(profile ProvisioningProfileInfoModel, installedCertificates ...certificateutil.CertificateInfoModel) string {
-	printable := map[string]interface{}{}
+	printable := map[string]any{}
 	printable["name"] = fmt.Sprintf("%s (%s)", profile.Name, profile.UUID)
 	printable["export_type"] = string(profile.ExportType)
 	printable["team"] = fmt.Sprintf("%s (%s)", profile.TeamName, profile.TeamID)
@@ -39,9 +39,9 @@ func (printer ProfilePrinter) PrintableProfile(profile ProvisioningProfileInfoMo
 		printable["devices"] = profile.ProvisionedDevices
 	}
 
-	var certificates []map[string]interface{}
+	var certificates []map[string]any
 	for _, certificateInfo := range profile.DeveloperCertificates {
-		certificate := map[string]interface{}{}
+		certificate := map[string]any{}
 		certificate["name"] = certificateInfo.CommonName
 		certificate["serial"] = certificateInfo.Serial
 		certificate["team_id"] = certificateInfo.TeamID
@@ -70,8 +70,8 @@ func (printer ProfilePrinter) PrintableProfile(profile ProvisioningProfileInfoMo
 	return string(data)
 }
 
-func collectCapabilitiesPrintableInfo(entitlements plistutil.PlistData) map[string]interface{} {
-	capabilities := map[string]interface{}{}
+func collectCapabilitiesPrintableInfo(entitlements plistutil.PlistData) map[string]any {
+	capabilities := map[string]any{}
 
 	for key, value := range entitlements {
 		if KnownProfileCapabilitiesMap[ProfileTypeIos][key] ||

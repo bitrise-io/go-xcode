@@ -30,7 +30,7 @@ func TestProfilePrinter_PrintableProfile(t *testing.T) {
 
 	t.Run("valid profile contains expected keys", func(t *testing.T) {
 		output := printer.PrintableProfile(baseProfile)
-		var result map[string]interface{}
+		var result map[string]any
 		require.NoError(t, json.Unmarshal([]byte(output), &result))
 		require.Contains(t, result, "name")
 		require.Contains(t, result, "export_type")
@@ -47,9 +47,9 @@ func TestProfilePrinter_PrintableProfile(t *testing.T) {
 		profile := baseProfile
 		profile.Entitlements = plistutil.PlistData{"aps-environment": "production"}
 		output := printer.PrintableProfile(profile)
-		var result map[string]interface{}
+		var result map[string]any
 		require.NoError(t, json.Unmarshal([]byte(output), &result))
-		capabilities, ok := result["capabilities"].(map[string]interface{})
+		capabilities, ok := result["capabilities"].(map[string]any)
 		require.True(t, ok)
 		require.Contains(t, capabilities, "aps-environment")
 	})
@@ -58,9 +58,9 @@ func TestProfilePrinter_PrintableProfile(t *testing.T) {
 		profile := baseProfile
 		profile.Entitlements = plistutil.PlistData{"com.custom.entitlement": true}
 		output := printer.PrintableProfile(profile)
-		var result map[string]interface{}
+		var result map[string]any
 		require.NoError(t, json.Unmarshal([]byte(output), &result))
-		capabilities, ok := result["capabilities"].(map[string]interface{})
+		capabilities, ok := result["capabilities"].(map[string]any)
 		require.True(t, ok)
 		require.NotContains(t, capabilities, "com.custom.entitlement")
 	})
@@ -69,14 +69,14 @@ func TestProfilePrinter_PrintableProfile(t *testing.T) {
 		profile := baseProfile
 		profile.ProvisionedDevices = []string{"device-udid-1"}
 		output := printer.PrintableProfile(profile)
-		var result map[string]interface{}
+		var result map[string]any
 		require.NoError(t, json.Unmarshal([]byte(output), &result))
 		require.Contains(t, result, "devices")
 	})
 
 	t.Run("nil provisioned devices absent from output", func(t *testing.T) {
 		output := printer.PrintableProfile(baseProfile)
-		var result map[string]interface{}
+		var result map[string]any
 		require.NoError(t, json.Unmarshal([]byte(output), &result))
 		require.NotContains(t, result, "devices")
 	})
@@ -87,12 +87,12 @@ func TestProfilePrinter_PrintableProfile(t *testing.T) {
 			{CommonName: "Apple Development: Test User", Serial: "abc123", TeamID: "TEAM123"},
 		}
 		output := printer.PrintableProfile(profile)
-		var result map[string]interface{}
+		var result map[string]any
 		require.NoError(t, json.Unmarshal([]byte(output), &result))
-		certs, ok := result["certificates"].([]interface{})
+		certs, ok := result["certificates"].([]any)
 		require.True(t, ok)
 		require.Len(t, certs, 1)
-		cert, ok := certs[0].(map[string]interface{})
+		cert, ok := certs[0].(map[string]any)
 		require.True(t, ok)
 		require.Equal(t, "Apple Development: Test User", cert["name"])
 		require.Equal(t, "abc123", cert["serial"])
@@ -103,7 +103,7 @@ func TestProfilePrinter_PrintableProfile(t *testing.T) {
 		expired := baseProfile
 		expired.ExpirationDate = fixedTime.Add(-time.Second)
 		output := printer.PrintableProfile(expired)
-		var result map[string]interface{}
+		var result map[string]any
 		require.NoError(t, json.Unmarshal([]byte(output), &result))
 		require.Contains(t, result, "errors")
 	})
@@ -112,7 +112,7 @@ func TestProfilePrinter_PrintableProfile(t *testing.T) {
 		profile := baseProfile
 		profile.DeveloperCertificates = []certificateutil.CertificateInfoModel{{Serial: "abc"}}
 		output := printer.PrintableProfile(profile, certificateutil.CertificateInfoModel{Serial: "abc"})
-		var result map[string]interface{}
+		var result map[string]any
 		require.NoError(t, json.Unmarshal([]byte(output), &result))
 		require.NotContains(t, result, "errors")
 	})
@@ -121,7 +121,7 @@ func TestProfilePrinter_PrintableProfile(t *testing.T) {
 		profile := baseProfile
 		profile.DeveloperCertificates = []certificateutil.CertificateInfoModel{{Serial: "abc"}}
 		output := printer.PrintableProfile(profile, certificateutil.CertificateInfoModel{Serial: "xyz"})
-		var result map[string]interface{}
+		var result map[string]any
 		require.NoError(t, json.Unmarshal([]byte(output), &result))
 		require.Contains(t, result, "errors")
 	})
