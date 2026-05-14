@@ -99,3 +99,12 @@ func TestICloudContainers(t *testing.T) {
 		})
 	}
 }
+
+func TestCapability_HealthKitAccessIgnored(t *testing.T) {
+	ent := Entitlement(map[string]interface{}{
+		"com.apple.developer.healthkit.access": []interface{}{"health-records"},
+	})
+	cap, err := ent.Capability()
+	require.NoError(t, err)
+	require.Nil(t, cap)
+}
