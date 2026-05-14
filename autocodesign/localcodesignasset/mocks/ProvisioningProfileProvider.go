@@ -3,7 +3,7 @@
 package mocks
 
 import (
-	profileutil "github.com/bitrise-io/go-xcode/profileutil"
+	profileutil "github.com/bitrise-io/go-xcode/v2/profileutil"
 	mock "github.com/stretchr/testify/mock"
 )
 
