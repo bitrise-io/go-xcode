@@ -93,8 +93,7 @@ func (p Project) MainTargetBundleID() (string, error) {
 
 // ReadSchemeBuildSettingString reads a build setting (for example SDKROOT) from the workspace (if available) or project.
 func (p Project) ReadSchemeBuildSettingString(key string) (string, error) {
-	target := p.projHelper.MainTarget.Name
-	value, err := p.projHelper.buildSettingForKey(target, p.projHelper.Configuration, key)
+	value, err := p.projHelper.buildSettingForKey(p.projHelper.schemeName, p.projHelper.MainTarget.Name, p.projHelper.Configuration, key)
 	if err != nil {
 		return "", fmt.Errorf("failed to read build setting `%s`: %w", key, err)
 	}
