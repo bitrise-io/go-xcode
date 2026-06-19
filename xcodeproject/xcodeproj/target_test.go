@@ -82,6 +82,22 @@ func TestParseTarget(t *testing.T) {
 		require.Error(t, err)
 		require.Equal(t, Target{}, target)
 	}
+
+	// Xcode 16.2+ omits the "dependencies" key entirely from project.pbxproj
+	// when a target has no dependencies, instead of writing "dependencies = ();".
+	// "buildPhases" may follow the same pattern as a forward-compat measure.
+	// parseTarget must treat both keys as optional.
+	t.Log("Xcode 16.2+ — omitted dependencies and buildPhases keys")
+	{
+		var raw serialized.Object
+		_, err := plist.Unmarshal([]byte(rawNativeTargetOmittedKeys), &raw)
+		require.NoError(t, err)
+
+		target, err := parseTarget("13E76E0D1F4AC90A0028096E", raw)
+		require.NoError(t, err)
+		require.Empty(t, target.Dependencies)
+		require.Empty(t, target.buildPhaseIDs)
+	}
 }
 
 const rawLegacyTarget = `{
@@ -200,6 +216,40 @@ const expectedAggregateTarget = `{
 		"Path": ""
 	},
 	"ProductType": ""
+}`
+
+// rawNativeTargetOmittedKeys models the Xcode 16.2+ output where both
+// "dependencies" and "buildPhases" are omitted entirely when empty (instead
+// of "dependencies = ();" / "buildPhases = ();"). Everything else mirrors the
+// minimal fields parseTarget requires.
+const rawNativeTargetOmittedKeys = `{
+	13E76E0D1F4AC90A0028096E /* code-sign-test */ = {
+		isa = PBXNativeTarget;
+		buildConfigurationList = 13E76E3A1F4AC90A0028096E /* Build configuration list for PBXNativeTarget "code-sign-test" */;
+		name = "code-sign-test";
+		productName = "code-sign-test";
+		productReference = 13E76E0E1F4AC90A0028096E /* code-sign-test.app */;
+		productType = "com.apple.product-type.application";
+	};
+
+	13E76E3A1F4AC90A0028096E /* Build configuration list for PBXNativeTarget "code-sign-test" */ = {
+		isa = XCConfigurationList;
+		buildConfigurations = (
+			13E76E3B1F4AC90A0028096E /* Release */,
+		);
+		defaultConfigurationIsVisible = 0;
+		defaultConfigurationName = Release;
+	};
+
+	13E76E3B1F4AC90A0028096E /* Release */ = {
+		isa = XCBuildConfiguration;
+		buildSettings = {
+			PRODUCT_NAME = "$(TARGET_NAME)";
+		};
+		name = Release;
+	};
+
+	13E76E0E1F4AC90A0028096E /* code-sign-test.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "code-sign-test.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 }`
 
 const rawNativeTarget = `{

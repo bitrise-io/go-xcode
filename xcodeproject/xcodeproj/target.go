@@ -129,7 +129,11 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 
 	dependencyIDs, err := rawTarget.StringSlice("dependencies")
 	if err != nil {
-		return Target{}, err
+		if !serialized.IsKeyNotFoundError(err) {
+			return Target{}, err
+		}
+		// Xcode 16.2+ omits the key entirely when a target has no dependencies.
+		dependencyIDs = []string{}
 	}
 
 	var dependencies []TargetDependency
@@ -168,7 +172,11 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 
 	buildPhaseIDs, err := rawTarget.StringSlice("buildPhases")
 	if err != nil {
-		return Target{}, err
+		if !serialized.IsKeyNotFoundError(err) {
+			return Target{}, err
+		}
+		// Forward-compat: Xcode may similarly omit empty buildPhases arrays.
+		buildPhaseIDs = []string{}
 	}
 
 	return Target{
