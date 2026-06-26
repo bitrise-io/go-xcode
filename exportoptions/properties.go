@@ -105,18 +105,22 @@ const (
 	MethodDefault Method = MethodDevelopment
 )
 
+// IsAppStore ...
 func (m Method) IsAppStore() bool {
 	return m == MethodAppStore || m == MethodAppStoreConnect
 }
 
+// IsAdHoc ...
 func (m Method) IsAdHoc() bool {
 	return m == MethodAdHoc || m == MethodReleaseTesting
 }
 
+// IsDevelopment ...
 func (m Method) IsDevelopment() bool {
 	return m == MethodDevelopment || m == MethodDebugging
 }
 
+// IsEnterprise ...
 func (m Method) IsEnterprise() bool {
 	return m == MethodEnterprise
 }
@@ -211,11 +215,16 @@ const (
 	SigningStyleAutomatic SigningStyle = "automatic"
 )
 
+// DestinationKey ...
 const DestinationKey = "destination"
 
+// TestFlightInternalTestingOnlyDefault ...
 const TestFlightInternalTestingOnlyDefault = false
+
+// TestFlightInternalTestingOnlyKey ...
 const TestFlightInternalTestingOnlyKey = "testFlightInternalTestingOnly"
 
+// Destination ...
 type Destination string
 
 // Destination ...
