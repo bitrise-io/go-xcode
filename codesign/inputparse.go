@@ -109,14 +109,20 @@ func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 	} else {
 		trimmedPath := string(keyPathOrURL)
 		if strings.HasPrefix(string(keyPathOrURL), "file://") {
-			trimmedPath = strings.TrimPrefix(string(keyPathOrURL), "file://")
+			// Parse as a URL so that a percent-encoded path (e.g. spaces as %20) is decoded and any
+			// host component (file://localhost/path) is dropped, leaving the bare filesystem path.
+			u, err := url.Parse(string(keyPathOrURL))
+			if err != nil {
+				return nil, fmt.Errorf("invalid file:// URL for App Store Connect API key: %w", err)
+			}
+			trimmedPath = u.Path
 		}
 		var err error
 		key, err = os.ReadFile(trimmedPath)
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, fmt.Errorf("App Store Connect API does not exist at %s", trimmedPath)
+			return nil, fmt.Errorf("App Store Connect API key does not exist at %s", trimmedPath)
 		} else if err != nil {
-			return nil, fmt.Errorf("failed to read App Store Connect API at %s: %w", trimmedPath, err)
+			return nil, fmt.Errorf("failed to read App Store Connect API key at %s: %w", trimmedPath, err)
 		}
 	}
 

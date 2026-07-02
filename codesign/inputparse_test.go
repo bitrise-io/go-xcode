@@ -2,6 +2,7 @@ package codesign
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -223,4 +224,23 @@ func Test_ParseConnectionOverrideConfig(t *testing.T) {
 		EnterpriseAccount: true,
 	}
 	require.Equal(t, expected, *connection)
+}
+
+func Test_ParseConnectionOverrideConfig_fileURLWithEncodedPath(t *testing.T) {
+	// Given: a key file whose path contains a space, referenced via a file:// URL.
+	// url.URL.String() percent-encodes the space (e.g. .../private%20key.p8).
+	path := filepath.Join(t.TempDir(), "private key.p8")
+	fileContent := "this is a private key"
+	require.NoError(t, os.WriteFile(path, []byte(fileContent), 0666))
+
+	fileURL := (&url.URL{Scheme: "file", Path: path}).String()
+
+	// When
+	connection, err := parseConnectionOverrideConfig(stepconf.Secret(fileURL), "ABC123", "ABC456", false, log.NewLogger())
+
+	// Then: the encoded path is decoded back to the real path and the file is read.
+	// (The previous strings.TrimPrefix implementation left "%20" in the path and failed to open it.)
+	require.NoError(t, err)
+	require.NotNil(t, connection)
+	require.Equal(t, fileContent, connection.PrivateKey)
 }
