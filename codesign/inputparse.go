@@ -99,7 +99,8 @@ func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 			}
 		}(resp.Body)
 		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("downloading App Store Connect API key failed with exit status %d: %s", resp.StatusCode, resp.Body)
+			body, _ := io.ReadAll(resp.Body)
+			return nil, fmt.Errorf("downloading App Store Connect API key from the provided URL failed with HTTP status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 		}
 
 		key, err = io.ReadAll(resp.Body)
