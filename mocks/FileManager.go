@@ -55,6 +55,24 @@ func (_m *FileManager) CopyFile(src string, dst string, opts *fileutil.CopyOptio
 	return r0
 }
 
+// CopyFileFS provides a mock function with given fields: fsys, src, dst, opts
+func (_m *FileManager) CopyFileFS(fsys fs.FS, src string, dst string, opts *fileutil.CopyOptions) error {
+	ret := _m.Called(fsys, src, dst, opts)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CopyFileFS")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(fs.FS, string, string, *fileutil.CopyOptions) error); ok {
+		r0 = rf(fsys, src, dst, opts)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // FileSizeInBytes provides a mock function with given fields: pth
 func (_m *FileManager) FileSizeInBytes(pth string) (int64, error) {
 	ret := _m.Called(pth)
