@@ -224,7 +224,7 @@ func parse(reader io.Reader) (scheme Scheme, err error) {
 type XMLToken int
 
 const (
-	invalid XMLToken = iota
+	_ XMLToken = iota // reserve 0 so exported tokens start at 1
 	// XMLStart ...
 	XMLStart
 	// XMLEnd ...
