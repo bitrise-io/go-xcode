@@ -44,6 +44,9 @@ func (a *attemptTracker) TrackAPIError(method, host, endpoint string, statusCode
 func (a *attemptTracker) TrackAuthError(errorMessage string) {
 }
 
+func (a *attemptTracker) TrackUnknownEntitlement(key string) {
+}
+
 func TestTrackingRoundTripper(t *testing.T) {
 	t.Run("tracks single successful request", func(t *testing.T) {
 		tracker := &attemptTracker{}

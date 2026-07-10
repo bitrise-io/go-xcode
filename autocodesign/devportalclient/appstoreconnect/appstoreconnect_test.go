@@ -42,9 +42,10 @@ func TestNewEnterpriseClient(t *testing.T) {
 }
 
 type mockAnalyticsTracker struct {
-	apiRequests []apiRequestRecord
-	apiErrors   []apiErrorRecord
-	authErrors  []string
+	apiRequests        []apiRequestRecord
+	apiErrors          []apiErrorRecord
+	authErrors         []string
+	unknownEntitlements []string
 }
 
 type apiRequestRecord struct {
@@ -87,6 +88,10 @@ func (m *mockAnalyticsTracker) TrackAPIError(method, host, endpoint string, stat
 
 func (m *mockAnalyticsTracker) TrackAuthError(errorMessage string) {
 	m.authErrors = append(m.authErrors, errorMessage)
+}
+
+func (m *mockAnalyticsTracker) TrackUnknownEntitlement(key string) {
+	m.unknownEntitlements = append(m.unknownEntitlements, key)
 }
 
 type mockHTTPClient struct {
