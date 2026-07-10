@@ -49,4 +49,5 @@ func Example() {
 		}
 		projects = append(projects, project)
 	}
+	_ = projects
 }

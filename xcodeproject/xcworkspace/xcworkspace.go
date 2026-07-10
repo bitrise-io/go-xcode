@@ -30,7 +30,7 @@ type Workspace struct {
 	xcodebuildFactory xcodebuild.Factory
 }
 
-// Open ...
+// NewFromFile opens the .xcworkspace at pth and returns a parsed Workspace.
 func NewFromFile(pth string, xcodebuildFactory xcodebuild.Factory) (Workspace, error) {
 	contentsPth := filepath.Join(pth, "contents.xcworkspacedata")
 	b, err := fileutil.ReadBytesFromFile(contentsPth)

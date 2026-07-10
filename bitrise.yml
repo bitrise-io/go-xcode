@@ -2,7 +2,7 @@ format_version: "11"
 default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
 
 workflows:
-  ci:
+  check:
     before_run:
     - test
     - integration_test
@@ -26,3 +26,6 @@ workflows:
         - path: ./_integration_tests
     - go-list: { }
     - go-test: { }
+    - change-workdir:
+        inputs:
+        - path: ..

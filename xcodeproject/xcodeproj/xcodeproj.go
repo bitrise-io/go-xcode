@@ -3,7 +3,7 @@ package xcodeproj
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -37,6 +37,7 @@ type change struct {
 	rawObject  []byte
 }
 
+// XcodeProj represents a parsed Xcode project (.xcodeproj) on disk.
 type XcodeProj struct {
 	Name    string
 	Path    string
@@ -52,10 +53,12 @@ type XcodeProj struct {
 	xcodebuildFactory xcodebuild.Factory
 }
 
+// IsXcodeProj reports whether pth points at an .xcodeproj bundle by extension.
 func IsXcodeProj(pth string) bool {
 	return filepath.Ext(pth) == XcodeProjExtension
 }
 
+// NewFromFile opens the .xcodeproj at pth and returns a parsed XcodeProj.
 func NewFromFile(pth string, xcodebuildFactory xcodebuild.Factory) (XcodeProj, error) {
 	absPth, err := pathutil.AbsPath(pth)
 	if err != nil {
@@ -108,6 +111,7 @@ func (p *XcodeProj) DependentTargetsOfTarget(target Target) []Target {
 	return deduplicateTargetList(dependentTargets)
 }
 
+// TargetCodeSignEntitlements returns the parsed entitlements plist for the given target + configuration.
 func (p *XcodeProj) TargetCodeSignEntitlements(target, configuration string) (serialized.Object, error) {
 	codeSignEntitlementsPth, err := p.TargetCodeSignEntitlementsPath(target, configuration)
 	if err != nil {
@@ -122,10 +126,12 @@ func (p *XcodeProj) TargetCodeSignEntitlements(target, configuration string) (se
 	return codeSignEntitlements, nil
 }
 
+// TargetCodeSignEntitlementsPath returns the absolute path to the entitlements file resolved from CODE_SIGN_ENTITLEMENTS.
 func (p *XcodeProj) TargetCodeSignEntitlementsPath(target, configuration string) (string, error) {
 	return p.buildSettingsFilePath(target, configuration, "CODE_SIGN_ENTITLEMENTS")
 }
 
+// ReadTargetInfoplist reads the Info.plist for the given target + configuration and returns the parsed object plus its plist format identifier.
 func (p *XcodeProj) ReadTargetInfoplist(target, configuration string) (serialized.Object, int, error) {
 	informationPropertyListPth, err := p.TargetInfoplistPath(target, configuration)
 	if err != nil {
@@ -146,10 +152,12 @@ func (p *XcodeProj) ReadTargetInfoplist(target, configuration string) (serialize
 	return informationPropertyList, format, nil
 }
 
+// TargetInfoplistPath returns the absolute path to the Info.plist resolved from INFOPLIST_FILE.
 func (p *XcodeProj) TargetInfoplistPath(target, configuration string) (string, error) {
 	return p.buildSettingsFilePath(target, configuration, "INFOPLIST_FILE")
 }
 
+// TargetBundleID resolves the effective bundle ID for a target + configuration, preferring PRODUCT_BUNDLE_IDENTIFIER build setting over CFBundleIdentifier from Info.plist.
 func (p *XcodeProj) TargetBundleID(target, configuration string) (string, error) {
 	buildSettings, err := p.TargetBuildSettings(target, configuration)
 	if err != nil {
@@ -182,6 +190,7 @@ func (p *XcodeProj) TargetBundleID(target, configuration string) (string, error)
 	return resolve(bundleID, buildSettings)
 }
 
+// TargetBuildSettings runs `xcodebuild -showBuildSettings` for the target + configuration and returns the parsed key/value settings.
 func (p *XcodeProj) TargetBuildSettings(target, configuration string, additionalArgs ...string) (serialized.Object, error) {
 	cmd := p.xcodebuildFactory.Create(&xcodebuild.CommandOptions{
 		Project:           p.Path,
@@ -301,6 +310,7 @@ func (p *XcodeProj) ForceCodeSign(configuration, targetName, developmentTeam, co
 	return nil
 }
 
+// WriteTargetInfoplist marshals infoplist in the given plist format and writes it to the target + configuration's Info.plist path.
 func (p *XcodeProj) WriteTargetInfoplist(infoplist serialized.Object, format int, target, configuration string) error {
 	b, err := plist.MarshalIndent(infoplist, format, "\t")
 	if err != nil {
@@ -333,7 +343,7 @@ func (p *XcodeProj) savePBXProj() error {
 	pth := path.Join(p.Path, "project.pbxproj")
 	newContent, merr := p.perObjectModify()
 	if merr == nil {
-		return ioutil.WriteFile(pth, newContent, 0644)
+		return os.WriteFile(pth, newContent, 0644)
 	}
 	// merr != nil
 	log.Warnf("failed to modify project in-place: %v", merr)
@@ -343,7 +353,7 @@ func (p *XcodeProj) savePBXProj() error {
 		return fmt.Errorf("failed to marshal .pbxproj: %v", err)
 	}
 
-	return ioutil.WriteFile(pth, newContent, 0644)
+	return os.WriteFile(pth, newContent, 0644)
 }
 
 func (p *XcodeProj) perObjectModify() ([]byte, error) {
@@ -656,7 +666,7 @@ func deduplicateTargetList(targets []Target) []Target {
 func resolve(bundleID string, buildSettings serialized.Object) (string, error) {
 	resolvedBundleIDs := map[string]bool{}
 	resolved := bundleID
-	for true {
+	for {
 		if !strings.Contains(resolved, "$") {
 			return resolved, nil
 		}
@@ -673,7 +683,6 @@ func resolve(bundleID string, buildSettings serialized.Object) (string, error) {
 		}
 		resolvedBundleIDs[resolved] = true
 	}
-	return "", fmt.Errorf("failed to resolve bundle id: %s", bundleID)
 }
 
 func expand(bundleID string, buildSettings serialized.Object) (string, error) {
