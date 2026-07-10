@@ -221,3 +221,30 @@ func Test_wrapInProfileError(t *testing.T) {
 		})
 	}
 }
+
+type recordingTracker struct {
+	appstoreconnect.NoOpAnalyticsTracker
+	unknownEntitlements []string
+}
+
+func (r *recordingTracker) TrackUnknownEntitlement(key string) {
+	r.unknownEntitlements = append(r.unknownEntitlements, key)
+}
+
+func TestSyncBundleID_UnknownEntitlement_TracksAndSkips(t *testing.T) {
+	logger := log.NewLogger(log.WithDebugLog(true))
+	tracker := &recordingTracker{}
+
+	client := appstoreconnect.NewClient(&MockClient{}, "keyID", "issueID", []byte("privateKey"), false, logger, tracker)
+	profileClient := NewProfileClient(client)
+
+	err := profileClient.SyncBundleID(
+		appstoreconnect.BundleID{Attributes: appstoreconnect.BundleIDAttributes{Identifier: "io.bitrise.testapp"}},
+		autocodesign.Entitlements(map[string]interface{}{
+			"com.apple.developer.made-up-entitlement": "",
+		}),
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, []string{"com.apple.developer.made-up-entitlement"}, tracker.unknownEntitlements)
+}
