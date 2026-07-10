@@ -13,12 +13,10 @@ import (
 // ICloudIdentifiersEntitlementKey ...
 const ICloudIdentifiersEntitlementKey = "com.apple.developer.icloud-container-identifiers"
 
-// ErrUnknownEntitlementKey is returned by Entitlement.Capability and
-// Entitlement.Equal when an entitlement key is not present in
-// appstoreconnect.ServiceTypeByKey. Callers that iterate over a project's
-// full entitlement set (e.g. SyncBundleID) may wrap this with errors.Is to
-// skip unknown keys with a warning instead of aborting, so a single new
-// Apple-introduced key does not break the entire code signing flow.
+// ErrUnknownEntitlementKey signals that an entitlement key is not present in
+// appstoreconnect.ServiceTypeByKey. Callers iterating over a project's full
+// entitlement set (e.g. SyncBundleID) can use errors.Is to skip unknown keys
+// with a warning instead of aborting the code signing flow.
 var ErrUnknownEntitlementKey = errors.New("unknown entitlement key")
 
 // DataProtections ...
