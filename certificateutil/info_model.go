@@ -23,7 +23,7 @@ type CertificateInfoModel struct {
 	SHA1Fingerprint string
 
 	Certificate x509.Certificate
-	PrivateKey  interface{}
+	PrivateKey  any
 }
 
 // String ...
@@ -39,14 +39,19 @@ func (info CertificateInfoModel) String() string {
 	return certInfo
 }
 
-// CheckValidity ...
+// CheckValidity checks whether the certificate is valid at the current time.
 func CheckValidity(certificate x509.Certificate) error {
-	timeNow := time.Now()
-	if !timeNow.After(certificate.NotBefore) {
-		return fmt.Errorf("Certificate is not yet valid - validity starts at: %s", certificate.NotBefore)
+	return checkValidityAt(time.Now(), certificate)
+}
+
+// checkValidityAt checks the certificate's validity against a fixed point in time.
+// Separated out so the validity logic can be unit-tested without depending on the wall clock.
+func checkValidityAt(now time.Time, certificate x509.Certificate) error {
+	if !now.After(certificate.NotBefore) {
+		return fmt.Errorf("certificate is not yet valid - validity starts at: %s", certificate.NotBefore)
 	}
-	if !timeNow.Before(certificate.NotAfter) {
-		return fmt.Errorf("Certificate is not valid anymore - validity ended at: %s", certificate.NotAfter)
+	if !now.Before(certificate.NotAfter) {
+		return fmt.Errorf("certificate is not valid anymore - validity ended at: %s", certificate.NotAfter)
 	}
 	return nil
 }
