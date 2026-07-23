@@ -3,15 +3,13 @@ package certificateutil
 import (
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"fmt"
 
 	"github.com/bitrise-io/go-pkcs12"
-	"github.com/bitrise-io/go-utils/fileutil"
 )
 
-// CertificatesFromPKCS12Content returns an array of CertificateInfoModel
-// Used to parse p12 file containing multiple codesign identities (exported from macOS Keychain)
+// CertificatesFromPKCS12Content returns an array of CertificateInfoModel.
+// Used to parse a p12 file containing multiple codesign identities (exported from macOS Keychain).
 func CertificatesFromPKCS12Content(content []byte, password string) ([]CertificateInfoModel, error) {
 	privateKeys, certificates, err := pkcs12.DecodeAll(content, password)
 	if err != nil {
@@ -19,11 +17,11 @@ func CertificatesFromPKCS12Content(content []byte, password string) ([]Certifica
 	}
 
 	if len(certificates) != len(privateKeys) {
-		return nil, errors.New("pkcs12: different number of certificates and private keys found")
+		return nil, fmt.Errorf("pkcs12: found %d certificates but %d private keys", len(certificates), len(privateKeys))
 	}
 
 	if len(certificates) == 0 {
-		return nil, errors.New("pkcs12: no certificate and private key pair found")
+		return nil, fmt.Errorf("pkcs12: no certificate and private key pair found")
 	}
 
 	infos := []CertificateInfoModel{}
@@ -36,26 +34,16 @@ func CertificatesFromPKCS12Content(content []byte, password string) ([]Certifica
 	return infos, nil
 }
 
-// CertificatesFromPKCS12File ...
-func CertificatesFromPKCS12File(pkcs12Pth, password string) ([]CertificateInfoModel, error) {
-	content, err := fileutil.ReadBytesFromFile(pkcs12Pth)
-	if err != nil {
-		return nil, err
-	}
-
-	return CertificatesFromPKCS12Content(content, password)
-}
-
-// CertificateFromDERContent ...
-func CertificateFromDERContent(content []byte) (*x509.Certificate, error) {
+// NewCertificateFromDERContent parses a certificate from DER-encoded content.
+func NewCertificateFromDERContent(content []byte) (*x509.Certificate, error) {
 	return x509.ParseCertificate(content)
 }
 
-// CeritifcateFromPemContent ...
-func CeritifcateFromPemContent(content []byte) (*x509.Certificate, error) {
+// NewCertificateFromPemContent parses a certificate from PEM-encoded content.
+func NewCertificateFromPemContent(content []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(content)
-	if block == nil || block.Bytes == nil || len(block.Bytes) == 0 {
-		return nil, fmt.Errorf("failed to parse profile from: %s", string(content))
+	if block == nil || len(block.Bytes) == 0 {
+		return nil, fmt.Errorf("failed to parse certificate from: %s", string(content))
 	}
-	return CertificateFromDERContent(block.Bytes)
+	return NewCertificateFromDERContent(block.Bytes)
 }

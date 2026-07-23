@@ -112,7 +112,7 @@ func getInstalledCertificatesByNameSlice(certificateNames []string) ([]*x509.Cer
 		}
 
 		for _, normalizedOut := range normalizedOuts {
-			certificate, err := CeritifcateFromPemContent([]byte(normalizedOut))
+			certificate, err := NewCertificateFromPemContent([]byte(normalizedOut))
 			if err != nil {
 				return nil, err
 			}
