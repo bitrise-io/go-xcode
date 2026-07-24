@@ -114,3 +114,41 @@ func getInstalledCertificatesByNameSlice(certificateNames []string) ([]*x509.Cer
 
 	return certificates, nil
 }
+
+// InstalledCodesigningCertificateInfos ...
+func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
+	certificates, err := InstalledCertificates(CodesigningPolicy)
+	if err != nil {
+		return nil, err
+	}
+
+	infos := []CertificateInfoModel{}
+	for _, certificate := range certificates {
+		if certificate != nil {
+			infos = append(infos, NewCertificateInfo(*certificate, nil))
+		}
+	}
+
+	return infos, nil
+}
+
+// InstalledInstallerCertificateInfos ...
+func InstalledInstallerCertificateInfos() ([]CertificateInfoModel, error) {
+	certificates, err := InstalledCertificates(MacappstorePolicy)
+	if err != nil {
+		return nil, err
+	}
+
+	infos := []CertificateInfoModel{}
+	for _, certificate := range certificates {
+		if certificate != nil {
+			infos = append(infos, NewCertificateInfo(*certificate, nil))
+		}
+	}
+
+	installerCertificates := FilterCertificateInfoModelsByFilterFunc(infos, func(cert CertificateInfoModel) bool {
+		return strings.Contains(cert.CommonName, "Installer")
+	})
+
+	return installerCertificates, nil
+}
