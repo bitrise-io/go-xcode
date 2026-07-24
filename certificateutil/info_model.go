@@ -67,7 +67,7 @@ func (info CertificateInfoModel) EncodeToP12(passphrase string) ([]byte, error) 
 }
 
 // NewCertificateInfo ...
-func NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) CertificateInfoModel {
+func NewCertificateInfo(certificate x509.Certificate, privateKey any) CertificateInfoModel {
 	fingerprint := sha1.Sum(certificate.Raw)
 	fingerprintStr := fmt.Sprintf("%x", fingerprint)
 
