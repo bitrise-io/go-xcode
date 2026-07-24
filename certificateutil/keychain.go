@@ -10,13 +10,23 @@ import (
 	"github.com/bitrise-io/go-utils/command"
 )
 
+// FindIdentityPolicy is the value passed to `security find-identity -p`.
+type FindIdentityPolicy string
+
+const (
+	// CodesigningPolicy lists code signing identities.
+	CodesigningPolicy FindIdentityPolicy = "codesigning"
+	// MacappstorePolicy lists Mac App Store installer identities.
+	MacappstorePolicy FindIdentityPolicy = "macappstore"
+)
+
 func commandError(printableCmd string, cmdOut string, cmdErr error) error {
 	return fmt.Errorf("%s failed, out: %s: %w", printableCmd, cmdOut, cmdErr)
 }
 
-func installedCodesigningCertificateNamesFromOutput(out string) ([]string, error) {
-	pettern := `^[0-9]+\) (?P<hash>.*) "(?P<name>.*)"`
-	re := regexp.MustCompile(pettern)
+func installedCertificateNamesFromOutput(out string) ([]string, error) {
+	pattern := `^[0-9]+\) (?P<hash>.*) "(?P<name>.*)"`
+	re := regexp.MustCompile(pattern)
 
 	certificateNameMap := map[string]bool{}
 	scanner := bufio.NewScanner(strings.NewReader(out))
@@ -38,24 +48,14 @@ func installedCodesigningCertificateNamesFromOutput(out string) ([]string, error
 	return names, nil
 }
 
-// InstalledCodesigningCertificateNames ...
-func InstalledCodesigningCertificateNames() ([]string, error) {
-	cmd := command.New("security", "find-identity", "-v", "-p", "codesigning")
+// InstalledCertificateNames returns the common names of the installed certificates for the given policy.
+func InstalledCertificateNames(policy FindIdentityPolicy) ([]string, error) {
+	cmd := command.New("security", "find-identity", "-v", "-p", string(policy))
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		return nil, commandError(cmd.PrintableCommandArgs(), out, err)
 	}
-	return installedCodesigningCertificateNamesFromOutput(out)
-}
-
-// InstalledMacAppStoreCertificateNames ...
-func InstalledMacAppStoreCertificateNames() ([]string, error) {
-	cmd := command.New("security", "find-identity", "-v", "-p", "macappstore")
-	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
-	if err != nil {
-		return nil, commandError(cmd.PrintableCommandArgs(), out, err)
-	}
-	return installedCodesigningCertificateNamesFromOutput(out)
+	return installedCertificateNamesFromOutput(out)
 }
 
 func normalizeFindCertificateOut(out string) ([]string, error) {
@@ -79,18 +79,9 @@ func normalizeFindCertificateOut(out string) ([]string, error) {
 	return certificateContents, nil
 }
 
-// InstalledCodesigningCertificates ...
-func InstalledCodesigningCertificates() ([]*x509.Certificate, error) {
-	certificateNames, err := InstalledCodesigningCertificateNames()
-	if err != nil {
-		return nil, err
-	}
-	return getInstalledCertificatesByNameSlice(certificateNames)
-}
-
-// InstalledMacAppStoreCertificates ...
-func InstalledMacAppStoreCertificates() ([]*x509.Certificate, error) {
-	certificateNames, err := InstalledMacAppStoreCertificateNames()
+// InstalledCertificates returns the installed certificates for the given policy.
+func InstalledCertificates(policy FindIdentityPolicy) ([]*x509.Certificate, error) {
+	certificateNames, err := InstalledCertificateNames(policy)
 	if err != nil {
 		return nil, err
 	}

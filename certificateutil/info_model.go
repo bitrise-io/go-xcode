@@ -87,7 +87,7 @@ func NewCertificateInfo(certificate x509.Certificate, privateKey interface{}) Ce
 
 // InstalledCodesigningCertificateInfos ...
 func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
-	certificates, err := InstalledCodesigningCertificates()
+	certificates, err := InstalledCertificates(CodesigningPolicy)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
 
 // InstalledInstallerCertificateInfos ...
 func InstalledInstallerCertificateInfos() ([]CertificateInfoModel, error) {
-	certificates, err := InstalledMacAppStoreCertificates()
+	certificates, err := InstalledCertificates(MacappstorePolicy)
 	if err != nil {
 		return nil, err
 	}
