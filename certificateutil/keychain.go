@@ -22,8 +22,6 @@ const (
 
 // CertificateLister lists code signing certificates installed in the macOS Keychain.
 type CertificateLister interface {
-	ListCertificateNames(policy FindIdentityPolicy) ([]string, error)
-	ListCertificates(policy FindIdentityPolicy) ([]*x509.Certificate, error)
 	ListCertificateInfos(policy FindIdentityPolicy) ([]CertificateInfoModel, error)
 }
 
@@ -60,8 +58,7 @@ func installedCertificateNamesFromOutput(out string) ([]string, error) {
 	return names, nil
 }
 
-// ListCertificateNames returns the common names of the installed certificates for the given policy.
-func (l keyChainCertificateLister) ListCertificateNames(policy FindIdentityPolicy) ([]string, error) {
+func (l keyChainCertificateLister) listCertificateNames(policy FindIdentityPolicy) ([]string, error) {
 	cmd := l.cmdFactory.Create("security", []string{"find-identity", "-v", "-p", string(policy)}, &command.Opts{})
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
@@ -91,9 +88,8 @@ func normalizeFindCertificateOut(out string) ([]string, error) {
 	return certificateContents, nil
 }
 
-// ListCertificates returns the installed certificates for the given policy.
-func (l keyChainCertificateLister) ListCertificates(policy FindIdentityPolicy) ([]*x509.Certificate, error) {
-	certificateNames, err := l.ListCertificateNames(policy)
+func (l keyChainCertificateLister) listCertificates(policy FindIdentityPolicy) ([]*x509.Certificate, error) {
+	certificateNames, err := l.listCertificateNames(policy)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +130,7 @@ func (l keyChainCertificateLister) getInstalledCertificates(name string) ([]*x50
 
 // ListCertificateInfos returns the installed certificate infos for the given policy.
 func (l keyChainCertificateLister) ListCertificateInfos(policy FindIdentityPolicy) ([]CertificateInfoModel, error) {
-	certificates, err := l.ListCertificates(policy)
+	certificates, err := l.listCertificates(policy)
 	if err != nil {
 		return nil, err
 	}
