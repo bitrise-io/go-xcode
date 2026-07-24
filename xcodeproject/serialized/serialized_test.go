@@ -186,3 +186,30 @@ func TestGet(t *testing.T) {
 		require.Equal(t, "", v)
 	}
 }
+
+// Get asserts, it does not convert: it only succeeds for the exact concrete
+// type the decoder produced (scalars). Composite values need the dedicated
+// accessors, which is what these cases guard against a naive "just use Get"
+// refactor of Object/StringSlice.
+func TestGet_compositesRequireDedicatedAccessors(t *testing.T) {
+	o := Object{
+		"dict":  map[string]any{"k": "v"}, // decoded nested dictionary
+		"array": []any{"a", "b"},          // decoded array
+	}
+
+	// Nested dicts are map[string]any, not the named Object type.
+	_, ok := Get[Object](o, "dict")
+	require.False(t, ok, "Get[Object] must not match a stored map[string]any")
+
+	obj, ok := o.Object("dict") // Object() converts
+	require.True(t, ok)
+	require.Equal(t, Object{"k": "v"}, obj)
+
+	// Arrays are []any, not []string.
+	_, ok = Get[[]string](o, "array")
+	require.False(t, ok, "Get[[]string] must not match a stored []any")
+
+	slice, ok := o.StringSlice("array") // StringSlice() casts element-wise
+	require.True(t, ok)
+	require.Equal(t, []string{"a", "b"}, slice)
+}

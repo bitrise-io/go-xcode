@@ -13,9 +13,16 @@ package serialized
 // arbitrary values.
 type Object map[string]any
 
-// Get returns the value stored at key in o as type T. ok is false if key is
-// absent or the stored value is not a T, in which case the zero value of T is
-// returned.
+// Get returns the value stored at key in o as type T via a direct type
+// assertion. ok is false — and value is the zero value of T — if key is absent
+// or the stored value's concrete type is not exactly T.
+//
+// Because it asserts rather than converts, T must match the concrete type the
+// decoder produced. For plist/JSON input that is a scalar: string, bool, int64
+// or float64. Get does NOT handle the two composite cases that require
+// conversion, so use the dedicated accessors for those:
+//   - nested dictionaries decode as map[string]any, not Object — use Object.
+//   - arrays decode as []any, not []string — use StringSlice.
 func Get[T any](o Object, key string) (value T, ok bool) {
 	raw, exists := o[key]
 	if !exists {
