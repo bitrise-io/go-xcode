@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/command"
+	"github.com/bitrise-io/go-utils/v2/command"
 )
 
 // FindIdentityPolicy is the value passed to `security find-identity -p`.
@@ -20,8 +20,20 @@ const (
 	MacappstorePolicy FindIdentityPolicy = "macappstore"
 )
 
-func commandError(printableCmd string, cmdOut string, cmdErr error) error {
-	return fmt.Errorf("%s failed, out: %s: %w", printableCmd, cmdOut, cmdErr)
+// CertificateLister lists code signing certificates installed in the macOS Keychain.
+type CertificateLister interface {
+	ListCertificateNames(policy FindIdentityPolicy) ([]string, error)
+	ListCertificates(policy FindIdentityPolicy) ([]*x509.Certificate, error)
+	ListCertificateInfos(policy FindIdentityPolicy) ([]CertificateInfoModel, error)
+}
+
+type keyChainCertificateLister struct {
+	cmdFactory command.Factory
+}
+
+// NewKeyChainCertificateLister returns a CertificateLister backed by the macOS `security` tool.
+func NewKeyChainCertificateLister(cmdFactory command.Factory) CertificateLister {
+	return keyChainCertificateLister{cmdFactory: cmdFactory}
 }
 
 func installedCertificateNamesFromOutput(out string) ([]string, error) {
@@ -48,12 +60,12 @@ func installedCertificateNamesFromOutput(out string) ([]string, error) {
 	return names, nil
 }
 
-// InstalledCertificateNames returns the common names of the installed certificates for the given policy.
-func InstalledCertificateNames(policy FindIdentityPolicy) ([]string, error) {
-	cmd := command.New("security", "find-identity", "-v", "-p", string(policy))
+// ListCertificateNames returns the common names of the installed certificates for the given policy.
+func (l keyChainCertificateLister) ListCertificateNames(policy FindIdentityPolicy) ([]string, error) {
+	cmd := l.cmdFactory.Create("security", []string{"find-identity", "-v", "-p", string(policy)}, &command.Opts{})
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		return nil, commandError(cmd.PrintableCommandArgs(), out, err)
+		return nil, fmt.Errorf("%s failed: %w (output: %s)", cmd.PrintableCommandArgs(), err, out)
 	}
 	return installedCertificateNamesFromOutput(out)
 }
@@ -79,45 +91,50 @@ func normalizeFindCertificateOut(out string) ([]string, error) {
 	return certificateContents, nil
 }
 
-// InstalledCertificates returns the installed certificates for the given policy.
-func InstalledCertificates(policy FindIdentityPolicy) ([]*x509.Certificate, error) {
-	certificateNames, err := InstalledCertificateNames(policy)
+// ListCertificates returns the installed certificates for the given policy.
+func (l keyChainCertificateLister) ListCertificates(policy FindIdentityPolicy) ([]*x509.Certificate, error) {
+	certificateNames, err := l.ListCertificateNames(policy)
 	if err != nil {
 		return nil, err
 	}
-	return getInstalledCertificatesByNameSlice(certificateNames)
-}
 
-func getInstalledCertificatesByNameSlice(certificateNames []string) ([]*x509.Certificate, error) {
-	certificates := []*x509.Certificate{}
-	for _, name := range certificateNames {
-		cmd := command.New("security", "find-certificate", "-c", name, "-p", "-a")
-		out, err := cmd.RunAndReturnTrimmedCombinedOutput()
-		if err != nil {
-			return nil, commandError(cmd.PrintableCommandArgs(), out, err)
-		}
-
-		normalizedOuts, err := normalizeFindCertificateOut(out)
+	var certificates []*x509.Certificate
+	for _, certificateName := range certificateNames {
+		certs, err := l.getInstalledCertificates(certificateName)
 		if err != nil {
 			return nil, err
 		}
-
-		for _, normalizedOut := range normalizedOuts {
-			certificate, err := NewCertificateFromPemContent([]byte(normalizedOut))
-			if err != nil {
-				return nil, err
-			}
-
-			certificates = append(certificates, certificate)
-		}
+		certificates = append(certificates, certs...)
 	}
-
 	return certificates, nil
 }
 
-// InstalledCodesigningCertificateInfos ...
-func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
-	certificates, err := InstalledCertificates(CodesigningPolicy)
+func (l keyChainCertificateLister) getInstalledCertificates(name string) ([]*x509.Certificate, error) {
+	cmd := l.cmdFactory.Create("security", []string{"find-certificate", "-c", name, "-p", "-a"}, &command.Opts{})
+	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("%s failed: %w (output: %s)", cmd.PrintableCommandArgs(), err, out)
+	}
+
+	normalizedOuts, err := normalizeFindCertificateOut(out)
+	if err != nil {
+		return nil, err
+	}
+
+	var certificates []*x509.Certificate
+	for _, normalizedOut := range normalizedOuts {
+		certificate, err := NewCertificateFromPemContent([]byte(normalizedOut))
+		if err != nil {
+			return nil, err
+		}
+		certificates = append(certificates, certificate)
+	}
+	return certificates, nil
+}
+
+// ListCertificateInfos returns the installed certificate infos for the given policy.
+func (l keyChainCertificateLister) ListCertificateInfos(policy FindIdentityPolicy) ([]CertificateInfoModel, error) {
+	certificates, err := l.ListCertificates(policy)
 	if err != nil {
 		return nil, err
 	}
@@ -128,6 +145,5 @@ func InstalledCodesigningCertificateInfos() ([]CertificateInfoModel, error) {
 			infos = append(infos, NewCertificateInfo(*certificate, nil))
 		}
 	}
-
 	return infos, nil
 }
