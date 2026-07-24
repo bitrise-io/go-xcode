@@ -2,45 +2,11 @@ package certificateutil
 
 import (
 	"reflect"
-	"strings"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/require"
 )
 
-func TestFilterCertificateInfoModelsByFilterFunc(t *testing.T) {
-	filterableCerts := []CertificateInfoModel{
-		CertificateInfoModel{TeamID: "my-team-id"},
-		CertificateInfoModel{TeamID: "find-this-team-id"},
-		CertificateInfoModel{TeamID: "my--another-team-id"},
-		CertificateInfoModel{TeamID: "test-team-id", CommonName: "test common name"},
-		CertificateInfoModel{TeamID: "test-team-id2", CommonName: "find this common name"},
-	}
-	expectedCertsByTeamID := []CertificateInfoModel{
-		CertificateInfoModel{TeamID: "find-this-team-id"},
-	}
-
-	foundCerts := FilterCertificateInfoModelsByFilterFunc(filterableCerts, func(cert CertificateInfoModel) bool { return cert.TeamID == "find-this-team-id" })
-	require.Equal(t, expectedCertsByTeamID, foundCerts)
-
-	expectedCertsByCommonNameExact := []CertificateInfoModel{
-		CertificateInfoModel{TeamID: "test-team-id2", CommonName: "find this common name"},
-	}
-
-	foundCerts = FilterCertificateInfoModelsByFilterFunc(filterableCerts, func(cert CertificateInfoModel) bool { return cert.CommonName == "find this common name" })
-	require.Equal(t, expectedCertsByCommonNameExact, foundCerts)
-
-	expectedCertsByCommonNameMatch := []CertificateInfoModel{
-		CertificateInfoModel{TeamID: "test-team-id", CommonName: "test common name"},
-		CertificateInfoModel{TeamID: "test-team-id2", CommonName: "find this common name"},
-	}
-
-	foundCerts = FilterCertificateInfoModelsByFilterFunc(filterableCerts, func(cert CertificateInfoModel) bool { return strings.Contains(cert.CommonName, "common name") })
-	require.Equal(t, expectedCertsByCommonNameMatch, foundCerts)
-}
-
-func TestFilterValidCertificateInfos(t *testing.T) {
+func TestGroupCertificatesByValidity(t *testing.T) {
 	const serial = int64(1234)
 	const teamID = "MYTEAMID"
 	const teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"
@@ -73,12 +39,12 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 	tests := []struct {
 		name             string
 		certificateInfos []CertificateInfoModel
-		want             ValidCertificateInfo
+		want             CertificateValidityGroups
 	}{
 		{
 			name:             "one valid cert",
 			certificateInfos: []CertificateInfoModel{latestValidCertInfo},
-			want: ValidCertificateInfo{
+			want: CertificateValidityGroups{
 				ValidCertificates:      []CertificateInfoModel{latestValidCertInfo},
 				InvalidCertificates:    nil,
 				DuplicatedCertificates: nil,
@@ -87,7 +53,7 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 		{
 			name:             "one valid, one invalid cert with same name",
 			certificateInfos: []CertificateInfoModel{latestValidCertInfo, invalidCertInfo},
-			want: ValidCertificateInfo{
+			want: CertificateValidityGroups{
 				ValidCertificates:      []CertificateInfoModel{latestValidCertInfo},
 				InvalidCertificates:    []CertificateInfoModel{invalidCertInfo},
 				DuplicatedCertificates: nil,
@@ -96,7 +62,7 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 		{
 			name:             "2 valid, duplicated certs",
 			certificateInfos: []CertificateInfoModel{latestValidCertInfo, earlierValidCertInfo, invalidCertInfo},
-			want: ValidCertificateInfo{
+			want: CertificateValidityGroups{
 				ValidCertificates:      []CertificateInfoModel{latestValidCertInfo},
 				InvalidCertificates:    []CertificateInfoModel{invalidCertInfo},
 				DuplicatedCertificates: []CertificateInfoModel{earlierValidCertInfo},
@@ -105,8 +71,8 @@ func TestFilterValidCertificateInfos(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := FilterValidCertificateInfos(tt.certificateInfos); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FilterValidCertificateInfos() = %v, want %v", got, tt.want)
+			if got := GroupCertificatesByValidity(tt.certificateInfos); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("GroupCertificatesByValidity() = %v, want %v", got, tt.want)
 			}
 		})
 	}

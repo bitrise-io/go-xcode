@@ -2,28 +2,17 @@ package certificateutil
 
 import "sort"
 
-// FilterCertificateInfoModelsByFilterFunc ...
-func FilterCertificateInfoModelsByFilterFunc(certificates []CertificateInfoModel, filterFunc func(certificate CertificateInfoModel) bool) []CertificateInfoModel {
-	filteredCertificates := []CertificateInfoModel{}
-
-	for _, certificate := range certificates {
-		if filterFunc(certificate) {
-			filteredCertificates = append(filteredCertificates, certificate)
-		}
-	}
-
-	return filteredCertificates
-}
-
-// ValidCertificateInfo contains the certificate infos filtered as valid, invalid and duplicated common name certificates
-type ValidCertificateInfo struct {
+// CertificateValidityGroups partitions certificate infos into valid, invalid and
+// duplicated (same common name) groups.
+type CertificateValidityGroups struct {
 	ValidCertificates,
 	InvalidCertificates,
 	DuplicatedCertificates []CertificateInfoModel
 }
 
-// FilterValidCertificateInfos filters out invalid and duplicated common name certificaates
-func FilterValidCertificateInfos(certificateInfos []CertificateInfoModel) ValidCertificateInfo {
+// GroupCertificatesByValidity partitions the certificate infos into valid, invalid
+// and duplicated common name groups.
+func GroupCertificatesByValidity(certificateInfos []CertificateInfoModel) CertificateValidityGroups {
 	var invalidCertificates []CertificateInfoModel
 	nameToCerts := map[string][]CertificateInfoModel{}
 	for _, certificateInfo := range certificateInfos {
@@ -50,7 +39,7 @@ func FilterValidCertificateInfos(certificateInfos []CertificateInfoModel) ValidC
 		}
 	}
 
-	return ValidCertificateInfo{
+	return CertificateValidityGroups{
 		ValidCertificates:      validCertificates,
 		InvalidCertificates:    invalidCertificates,
 		DuplicatedCertificates: duplicatedCertificates,
