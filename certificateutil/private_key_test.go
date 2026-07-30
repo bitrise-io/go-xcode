@@ -57,7 +57,10 @@ func TestCertificateInfoModel_neverRendersPrivateKey(t *testing.T) {
 
 	for _, verb := range []string{"%v", "%+v", "%s"} {
 		t.Run("formatted with "+verb, func(t *testing.T) {
-			require.NotContains(t, fmt.Sprintf(verb, info), secret)
+			rendered := fmt.Sprintf(verb, info)
+
+			require.Contains(t, rendered, "[REDACTED]")
+			require.NotContains(t, rendered, secret)
 		})
 	}
 

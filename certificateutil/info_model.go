@@ -26,19 +26,6 @@ type CertificateInfoModel struct {
 	PrivateKey  PrivateKey
 }
 
-// String ...
-func (info CertificateInfoModel) String() string {
-	team := fmt.Sprintf("%s (%s)", info.TeamName, info.TeamID)
-	certInfo := fmt.Sprintf("Serial: %s, Name: %s, Team: %s, Expiry: %s", info.Serial, info.CommonName, team, info.EndDate)
-
-	err := info.CheckValidity()
-	if err != nil {
-		certInfo = certInfo + fmt.Sprintf(", error: %s", err)
-	}
-
-	return certInfo
-}
-
 // CheckValidity checks whether the certificate is valid at the current time.
 func CheckValidity(certificate x509.Certificate) error {
 	return checkValidityAt(time.Now(), certificate)
