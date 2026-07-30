@@ -24,7 +24,7 @@ func TestNewCertificateInfo_mapsFields(t *testing.T) {
 	require.Equal(t, teamName, info.TeamName)
 	require.Equal(t, "42", info.Serial)
 	require.NotEmpty(t, info.SHA1Fingerprint)
-	require.Equal(t, privateKey, info.PrivateKey)
+	require.Equal(t, privateKey, info.PrivateKey.Key())
 	require.WithinDuration(t, expiry, info.EndDate, time.Second)
 }
 

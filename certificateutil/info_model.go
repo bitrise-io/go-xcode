@@ -23,7 +23,7 @@ type CertificateInfoModel struct {
 	SHA1Fingerprint string
 
 	Certificate x509.Certificate
-	PrivateKey  any
+	PrivateKey  PrivateKey
 }
 
 // String ...
@@ -63,7 +63,7 @@ func (info CertificateInfoModel) CheckValidity() error {
 
 // EncodeToP12 encodes a CertificateInfoModel in pkcs12 (.p12) format.
 func (info CertificateInfoModel) EncodeToP12(passphrase string) ([]byte, error) {
-	return pkcs12.Encode(rand.Reader, info.PrivateKey, &info.Certificate, nil, passphrase)
+	return pkcs12.Encode(rand.Reader, info.PrivateKey.Key(), &info.Certificate, nil, passphrase)
 }
 
 // NewCertificateInfo ...
@@ -81,6 +81,6 @@ func NewCertificateInfo(certificate x509.Certificate, privateKey any) Certificat
 		SHA1Fingerprint: fingerprintStr,
 
 		Certificate: certificate,
-		PrivateKey:  privateKey,
+		PrivateKey:  NewPrivateKey(privateKey),
 	}
 }
