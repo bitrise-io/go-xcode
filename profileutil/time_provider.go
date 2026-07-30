@@ -1,16 +1,11 @@
 package profileutil
 
-import "time"
+import "github.com/bitrise-io/go-xcode/v2/timeutil"
 
-// TimeProvider ...
-type TimeProvider interface {
-	Now() time.Time
-}
+// TimeProvider is an alias kept for backwards compatibility; the canonical declaration moved to
+// timeutil so certificateutil can share it.
+type TimeProvider = timeutil.TimeProvider
 
-// DefaultTimeProvider ...
-type DefaultTimeProvider struct{}
-
-// Now ...
-func (DefaultTimeProvider) Now() time.Time {
-	return time.Now()
-}
+// DefaultTimeProvider is an alias kept for backwards compatibility; the canonical declaration moved
+// to timeutil so certificateutil can share it.
+type DefaultTimeProvider = timeutil.DefaultTimeProvider
