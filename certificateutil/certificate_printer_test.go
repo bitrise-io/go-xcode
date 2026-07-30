@@ -22,6 +22,25 @@ func printerAt(now time.Time) *CertificatePrinter {
 	return NewCertificatePrinter(log.NewLogger(), fakeTimeProvider{now: now})
 }
 
+func TestCertificatePrinter_CertificateLabel(t *testing.T) {
+	cert, _, err := GenerateTestCertificate(1234, "TEAMID", "Acme Inc", "Apple Development: Jane Doe", time.Now().AddDate(1, 0, 0))
+	require.NoError(t, err)
+	info := NewCertificateInfo(*cert, nil)
+
+	t.Run("renders the common name and serial", func(t *testing.T) {
+		got := printerAt(cert.NotBefore.Add(time.Hour)).CertificateLabel(info)
+
+		require.Equal(t, "Apple Development: Jane Doe (1234)", got)
+	})
+
+	t.Run("does not report validity, so it is unaffected by the clock", func(t *testing.T) {
+		expired := printerAt(cert.NotAfter.Add(time.Hour)).CertificateLabel(info)
+
+		require.Equal(t, "Apple Development: Jane Doe (1234)", expired)
+		require.NotContains(t, expired, "error")
+	})
+}
+
 func TestCertificatePrinter_CertificateSummary(t *testing.T) {
 	cert, _, err := GenerateTestCertificate(1234, "TEAMID", "Acme Inc", "Apple Development: Jane Doe", time.Now().AddDate(1, 0, 0))
 	require.NoError(t, err)

@@ -21,6 +21,11 @@ func NewCertificatePrinter(logger log.Logger, timeProvider timeutil.TimeProvider
 	}
 }
 
+// CertificateLabel returns the shortest identifying form of the certificate
+func (printer *CertificatePrinter) CertificateLabel(info CertificateInfoModel) string {
+	return fmt.Sprintf("%s (%s)", info.CommonName, info.Serial)
+}
+
 // CertificateSummary returns a single-line description of the certificate, including error string
 // if the cert is not valid
 func (printer *CertificatePrinter) CertificateSummary(info CertificateInfoModel) string {
