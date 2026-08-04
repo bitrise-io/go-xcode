@@ -14,27 +14,28 @@ func TestGroupCertificatesByValidity(t *testing.T) {
 	validExpiry := time.Now().AddDate(1, 0, 0)
 	earlierValidExpiry := time.Now().AddDate(0, 1, 0)
 	invalidExpiry := time.Now().AddDate(-1, 0, 0)
+	printer := printerAt(time.Now())
 
 	latestValidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, validExpiry)
 	if err != nil {
 		t.Errorf("init: failed to generate certificate, error: %s", err)
 	}
 	latestValidCertInfo := NewCertificateInfo(*latestValidCert, privateKey)
-	t.Logf("Test certificate generated: %s", latestValidCertInfo)
+	t.Logf("Test certificate generated: %s", printer.CertificateSummary(latestValidCertInfo))
 
 	earlierValidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, earlierValidExpiry)
 	if err != nil {
 		t.Errorf("init: failed to generate certificate, error: %s", err)
 	}
 	earlierValidCertInfo := NewCertificateInfo(*earlierValidCert, privateKey)
-	t.Logf("Test certificate generated: %s", earlierValidCertInfo)
+	t.Logf("Test certificate generated: %s", printer.CertificateSummary(earlierValidCertInfo))
 
 	invalidCert, privateKey, err := GenerateTestCertificate(serial, teamID, teamName, commonName, invalidExpiry)
 	if err != nil {
 		t.Errorf("init: failed to generate certificate, error: %s", err)
 	}
 	invalidCertInfo := NewCertificateInfo(*invalidCert, privateKey)
-	t.Logf("Test certificate generated: %s", invalidCertInfo)
+	t.Logf("Test certificate generated: %s", printer.CertificateSummary(invalidCertInfo))
 
 	tests := []struct {
 		name             string

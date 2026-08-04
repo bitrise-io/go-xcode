@@ -24,7 +24,7 @@ func TestNewCertificateInfo_mapsFields(t *testing.T) {
 	require.Equal(t, teamName, info.TeamName)
 	require.Equal(t, "42", info.Serial)
 	require.NotEmpty(t, info.SHA1Fingerprint)
-	require.Equal(t, privateKey, info.PrivateKey)
+	require.Equal(t, privateKey, info.PrivateKey.Key())
 	require.WithinDuration(t, expiry, info.EndDate, time.Second)
 }
 
@@ -51,30 +51,4 @@ func TestCheckValidityAt(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestCertificateInfoModel_String(t *testing.T) {
-	t.Run("valid certificate renders its human-readable fields without an error", func(t *testing.T) {
-		cert, _, err := GenerateTestCertificate(1234, "TEAMID", "Acme Inc", "Apple Development: Jane Doe", time.Now().AddDate(1, 0, 0))
-		require.NoError(t, err)
-
-		got := NewCertificateInfo(*cert, nil).String()
-
-		require.Contains(t, got, "Serial: 1234")
-		require.Contains(t, got, "Name: Apple Development: Jane Doe")
-		require.Contains(t, got, "Team: Acme Inc (TEAMID)")
-		require.Contains(t, got, "Expiry: ")
-		require.NotContains(t, got, "error:")
-	})
-
-	t.Run("expired certificate appends the validity error", func(t *testing.T) {
-		cert, _, err := GenerateTestCertificate(2, "TEAMID", "Acme Inc", "Apple Development: Jane Doe", time.Now().AddDate(-1, 0, 0))
-		require.NoError(t, err)
-
-		got := NewCertificateInfo(*cert, nil).String()
-
-		require.Contains(t, got, "Serial: 2")
-		require.Contains(t, got, "Name: Apple Development: Jane Doe")
-		require.Contains(t, got, "error:")
-	})
 }

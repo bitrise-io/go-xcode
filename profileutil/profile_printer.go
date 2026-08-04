@@ -7,16 +7,17 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 )
 
 // ProfilePrinter ...
 type ProfilePrinter struct {
 	logger       log.Logger
-	timeProvider TimeProvider
+	timeProvider timeutil.TimeProvider
 }
 
 // NewProfilePrinter ...
-func NewProfilePrinter(logger log.Logger, timeProvider TimeProvider) *ProfilePrinter {
+func NewProfilePrinter(logger log.Logger, timeProvider timeutil.TimeProvider) *ProfilePrinter {
 	return &ProfilePrinter{
 		logger:       logger,
 		timeProvider: timeProvider,

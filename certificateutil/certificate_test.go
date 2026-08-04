@@ -50,6 +50,16 @@ func TestNewCertificateFromPemContent(t *testing.T) {
 
 	_, err = NewCertificateFromPemContent([]byte("not a pem"))
 	require.Error(t, err)
+
+	// A caller can pass anything to this exported function. A malformed private key reaches the
+	// same branch, so the error must describe the content rather than quote it.
+	malformedKey := []byte("-----BEGIN PRIVATE KEY-----\nMIIsecretkeymaterial\n-----")
+	_, err = NewCertificateFromPemContent(malformedKey)
+	require.Error(t, err)
+	// Pins the branch: without this, NotContains would also pass if pem.Decode had succeeded and
+	// x509.ParseCertificate produced the error instead.
+	require.Contains(t, err.Error(), "no PEM block found")
+	require.NotContains(t, err.Error(), "secretkeymaterial")
 }
 
 func TestNewCertificateFromDERContent(t *testing.T) {

@@ -43,7 +43,10 @@ func NewCertificateFromDERContent(content []byte) (*x509.Certificate, error) {
 func NewCertificateFromPemContent(content []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(content)
 	if block == nil || len(block.Bytes) == 0 {
-		return nil, fmt.Errorf("failed to parse certificate from: %s", string(content))
+		// The content is deliberately not echoed. Reaching here means no PEM block was found, so
+		// the content is not a certificate — it is whatever the caller passed, which may be key
+		// material — and an error string is a path into a build log.
+		return nil, fmt.Errorf("no PEM block found in content (%d bytes)", len(content))
 	}
 	return NewCertificateFromDERContent(block.Bytes)
 }

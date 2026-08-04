@@ -7,6 +7,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/exportoptionsgenerator/internal/codesigngroup"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
+	"github.com/bitrise-io/go-xcode/v2/timeutil"
 )
 
 // CodeSignGroupProvider ...
@@ -49,7 +50,7 @@ func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificate
 
 	g.logger.Debugf("Installed profiles:")
 	for _, profileInfo := range profiles {
-		profileStr := profileutil.NewProfilePrinter(g.logger, profileutil.DefaultTimeProvider{}).PrintableProfile(profileInfo, certificates...)
+		profileStr := profileutil.NewProfilePrinter(g.logger, timeutil.DefaultTimeProvider{}).PrintableProfile(profileInfo, certificates...)
 		g.logger.Debugf(profileStr)
 	}
 
