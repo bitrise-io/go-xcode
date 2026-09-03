@@ -1,11 +1,14 @@
 package devportalservice
 
 import (
+	"errors"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/stretchr/testify/require"
 )
@@ -74,6 +77,33 @@ func TestGetAppleDeveloperConnection(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestGetAppleDeveloperConnection_unauthorized(t *testing.T) {
+	response := &http.Response{
+		StatusCode: http.StatusUnauthorized,
+		Body:       io.NopCloser(strings.NewReader("")),
+	}
+
+	c := NewBitriseClient(log.NewLogger(), nil, newMockHTTPClient(response, nil), "dummy url", "dummy token")
+	_, err := c.GetAppleDeveloperConnection()
+
+	require.Error(t, err)
+
+	// The status has to stay available to callers: an unauthorized response is expected by design
+	// with a public app's PR build, and is handled instead of failing the build.
+	var networkErr NetworkError
+	require.True(t, errors.As(err, &networkErr), "NetworkError is not in the error chain of: %s", err)
+	require.Equal(t, http.StatusUnauthorized, networkErr.Status)
+}
+
+func TestGetAppleDeveloperConnection_missingFile(t *testing.T) {
+	missingPath := filepath.Join(t.TempDir(), "apple_developer_portal_data.json")
+
+	c := NewBitriseClient(log.NewLogger(), fileutil.NewFileManager(), nil, "file://"+missingPath, "dummy token")
+	_, err := c.GetAppleDeveloperConnection()
+
+	require.ErrorContains(t, err, "file does not exist at "+missingPath)
 }
 
 func TestFastlaneLoginSession(t *testing.T) {
