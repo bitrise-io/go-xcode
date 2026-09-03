@@ -1,0 +1,10 @@
+template: testify
+dir: mocks
+pkgname: mocks
+filename: "{{.InterfaceName}}.go"
+structname: "{{.InterfaceName}}"
+force-file-write: true
+packages:
+  github.com/bitrise-io/go-utils/v2/command:
+    interfaces:
+      Command:

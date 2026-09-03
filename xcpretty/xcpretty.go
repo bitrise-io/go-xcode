@@ -126,7 +126,7 @@ func NewXcpretty(logger log.Logger) Xcpretty {
 // IsInstalled ...
 func (x xcpretty) IsInstalled() (bool, error) {
 	locator := env.NewCommandLocator()
-	factory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), locator)
+	factory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), locator, x.logger)
 	if err != nil {
 		return false, err
 	}
@@ -137,7 +137,7 @@ func (x xcpretty) IsInstalled() (bool, error) {
 // Install ...
 func (x xcpretty) Install() ([]command.Command, error) {
 	locator := env.NewCommandLocator()
-	factory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), locator)
+	factory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), locator, x.logger)
 	if err != nil {
 		return nil, err
 	}
