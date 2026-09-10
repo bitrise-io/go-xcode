@@ -2,11 +2,13 @@ package xcodecommand
 
 import (
 	"bytes"
+	"io"
 	"time"
 
 	"github.com/bitrise-io/go-utils/progress"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/errorfinder"
 	version "github.com/hashicorp/go-version"
 )
 
@@ -34,11 +36,14 @@ func (c *RawXcodeCommandRunner) Run(workDir string, args []string, _ []string) (
 		exitCode  int
 	)
 
-	// Stdout and Stderr share one buffer on purpose: os/exec then uses a single pipe and copy goroutine, so the
-	// (not goroutine-safe) bytes.Buffer has one writer. No ErrorFinder for the same reason, see attachXcodebuildErrors.
+	// Stdout and Stderr share one writer on purpose: os/exec then uses a single pipe and copy goroutine, so the
+	// (not goroutine-safe) buffer and finder have one writer. No ErrorFinder for the same reason, see
+	// attachXcodebuildErrors.
+	errFinder := errorfinder.NewFinder()
+	out := io.MultiWriter(&outBuffer, errFinder)
 	command := c.commandFactory.Create("xcodebuild", args, &command.Opts{
-		Stdout: &outBuffer,
-		Stderr: &outBuffer,
+		Stdout: out,
+		Stderr: out,
 		Env:    unbufferedIOEnv,
 		Dir:    workDir,
 	})
@@ -50,7 +55,7 @@ func (c *RawXcodeCommandRunner) Run(workDir string, args []string, _ []string) (
 	})
 
 	if err != nil {
-		err = attachXcodebuildErrors(err, command.PrintableCommandArgs(), outBuffer.Bytes())
+		err = attachXcodebuildErrors(err, command.PrintableCommandArgs(), errFinder.Errors())
 	}
 
 	return Output{
