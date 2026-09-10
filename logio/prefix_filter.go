@@ -37,7 +37,8 @@ func (p *PrefixFilter) Done() <-chan struct{} { return p.done }
 
 // MessageLost returns a channel on which the user can observe if there were
 // messages lost. The channel has a buffer of one to prevent early unreceived
-// messages or late subscriptions to the channel.
+// messages or late subscriptions to the channel. Only the first lost message
+// is reported, later ones are dropped rather than blocking the filter.
 func (p *PrefixFilter) MessageLost() <-chan error { return p.messageLost }
 
 // ScannerError returns a channel on which the user can observe if there were
@@ -122,17 +123,29 @@ func (p *PrefixFilter) run() {
 
 		if p.prefixRegexp.MatchString(line) {
 			if _, err := p.Matching.Write([]byte(logLine)); err != nil {
-				p.messageLost <- fmt.Errorf("intercepting message: %w", err)
+				p.reportMessageLost(err)
 			}
 		} else {
 			if _, err := p.Filtered.Write([]byte(logLine)); err != nil {
-				p.messageLost <- fmt.Errorf("intercepting message: %w", err)
+				p.reportMessageLost(err)
 			}
 		}
 	}
 
 	// handle any scanner error
 	if err := scanner.Err(); err != nil {
-		p.scannerError <- err
+		select {
+		case p.scannerError <- err:
+		default:
+		}
+	}
+}
+
+// reportMessageLost reports err on the MessageLost channel without blocking. Nothing is required to drain
+// the channel, and a blocking send here would stop the scanner, block every Write and hang the command.
+func (p *PrefixFilter) reportMessageLost(err error) {
+	select {
+	case p.messageLost <- fmt.Errorf("intercepting message: %w", err):
+	default:
 	}
 }

@@ -10,7 +10,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
-	"github.com/bitrise-io/go-xcode/v2/errorfinder"
 	"github.com/bitrise-io/go-xcode/v2/logio"
 )
 
@@ -44,12 +43,12 @@ func (c *XcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcp
 
 	c.cleanOutputFile(xcprettyArgs)
 
+	// No ErrorFinder: it would give Stdout and Stderr separate wrappers and the filter two writers, see attachXcodebuildErrors.
 	buildCmd := c.commandFactory.Create("xcodebuild", xcodebuildArgs, &command.Opts{
-		Stdout:      loggingIO.XcbuildStdout,
-		Stderr:      loggingIO.XcbuildStderr,
-		Env:         unbufferedIOEnv,
-		Dir:         workDir,
-		ErrorFinder: errorfinder.FindXcodebuildErrors,
+		Stdout: loggingIO.XcbuildStdout,
+		Stderr: loggingIO.XcbuildStderr,
+		Env:    unbufferedIOEnv,
+		Dir:    workDir,
 	})
 
 	prettyCmd := c.commandFactory.Create("xcpretty", xcprettyArgs, &command.Opts{
@@ -91,6 +90,10 @@ func (c *XcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcp
 	// Closing the filter to ensure all output is flushed and processed
 	if err := loggingIO.CloseFilter(); err != nil {
 		c.logger.Warnf("logging IO failure, error: %s", err)
+	}
+
+	if err != nil {
+		err = attachXcodebuildErrors(err, buildCmd.PrintableCommandArgs(), loggingIO.XcbuildRawout.Bytes())
 	}
 
 	return Output{
