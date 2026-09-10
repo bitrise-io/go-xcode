@@ -37,8 +37,9 @@ func (p *PrefixFilter) Done() <-chan struct{} { return p.done }
 
 // MessageLost returns a channel on which the user can observe if there were
 // messages lost. The channel has a buffer of one to prevent early unreceived
-// messages or late subscriptions to the channel. Only the first lost message
-// is reported, later ones are dropped rather than blocking the filter.
+// messages or late subscriptions to the channel. Reports never block: a lost
+// message is reported if the previous report has been received already, and
+// dropped otherwise.
 func (p *PrefixFilter) MessageLost() <-chan error { return p.messageLost }
 
 // ScannerError returns a channel on which the user can observe if there were
