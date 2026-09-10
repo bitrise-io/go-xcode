@@ -41,7 +41,7 @@ func TestSetupPipeWiring_XcbuildStreamsShareOneWriter(t *testing.T) {
 	}
 }
 
-func TestSetupPipeWiring_TeesReceiveTheFilteredOutput(t *testing.T) {
+func TestSetupPipeWiring_TeesReceiveTheCompleteOutput(t *testing.T) {
 	tee := &safeBuffer{}
 	sut := logio.SetupPipeWiring(regexp.MustCompile(`^\[Bitrise.*\].*`), tee)
 	go func() { _, _ = io.Copy(io.Discard, sut.ToolStdin) }()
@@ -53,6 +53,9 @@ func TestSetupPipeWiring_TeesReceiveTheFilteredOutput(t *testing.T) {
 
 	_ = sut.Close()
 
-	assert.Equal(t, msg1+msg4, tee.String(), "the tee gets xcodebuild's own lines, not the Bitrise ones")
+	assert.Equal(t, msg1+msg2+msg3+msg4, tee.String(), "the tee gets everything xcodebuild wrote, on either stream, before filtering")
 	assert.Equal(t, msg1+msg4, sut.XcbuildRawout.String())
+	if sut.XcbuildStdout != sut.XcbuildStderr {
+		t.Fatal("with a tee the two streams must still be the same writer")
+	}
 }

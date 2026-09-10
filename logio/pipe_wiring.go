@@ -54,11 +54,10 @@ func (p *PipeWiring) Close() error {
 // input/outputs that an xcodebuild command and a logging tool needs when we are also
 // using a logging filter.
 //
-// filteredTees also receive the filtered (non-matching) output, that is xcodebuild's own
-// lines without the ones matching filter. They are written from a single goroutine, in
-// line fragments: a line longer than the filter's read buffer arrives in several writes,
-// the last of which ends with the newline.
-func SetupPipeWiring(filter *regexp.Regexp, filteredTees ...io.Writer) *PipeWiring {
+// tees also receive xcodebuild's complete output, both streams, as it arrives: in the
+// chunks os/exec copies, before the filter, from a single goroutine. A tee that needs
+// lines has to assemble them itself.
+func SetupPipeWiring(filter *regexp.Regexp, tees ...io.Writer) *PipeWiring {
 	// Create a buffer to store raw xcbuild output
 	rawXcbuild := bytes.NewBuffer(nil)
 	// Pipe filtered logs to tool
@@ -68,7 +67,7 @@ func SetupPipeWiring(filter *regexp.Regexp, filteredTees ...io.Writer) *PipeWiri
 	bufferedStdout := NewSink(os.Stdout)
 	// Add a buffer before tool input
 	toolInSink := NewSink(toolPipeW)
-	xcbuildLogs := io.MultiWriter(append([]io.Writer{rawXcbuild, toolInSink}, filteredTees...)...)
+	xcbuildLogs := io.MultiWriter(rawXcbuild, toolInSink)
 	// Create a filter for [Bitrise ...] prefixes
 	bitrisePrefixFilter := NewPrefixFilter(
 		filter,
@@ -76,14 +75,19 @@ func SetupPipeWiring(filter *regexp.Regexp, filteredTees ...io.Writer) *PipeWiri
 		xcbuildLogs,
 	)
 
+	// One value for both of xcodebuild's streams (the `2>&1` of the shell pipeline). os/exec
+	// merges the two streams onto one pipe, copied by one goroutine, only while cmd.Stdout and
+	// cmd.Stderr are the same value; that is what keeps the single-writer filter safe. Do not
+	// wrap the two fields separately, and do not split them into two filters.
+	xcbuildOut := io.Writer(bitrisePrefixFilter)
+	if len(tees) > 0 {
+		xcbuildOut = io.MultiWriter(append([]io.Writer{bitrisePrefixFilter}, tees...)...)
+	}
+
 	return &PipeWiring{
 		XcbuildRawout: rawXcbuild,
-		// Deliberately the same writer for both streams (the `2>&1` of the shell pipeline). os/exec
-		// merges the two streams onto one pipe, copied by one goroutine, only while cmd.Stdout and
-		// cmd.Stderr are the same value; that is what keeps the single-writer filter safe. Do not
-		// wrap them separately, and do not split them into two filters.
-		XcbuildStdout: bitrisePrefixFilter,
-		XcbuildStderr: bitrisePrefixFilter,
+		XcbuildStdout: xcbuildOut,
+		XcbuildStderr: xcbuildOut,
 		ToolStdin:     toolPipeR,
 		ToolStdout:    os.Stdout,
 		ToolStderr:    os.Stderr,

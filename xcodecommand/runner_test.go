@@ -16,7 +16,7 @@ import (
 )
 
 const xcodebuildFixture = `Build settings from command line:
-[Bitrise Analytics] a Bitrise line that happens to contain error: nope
+[Bitrise Build Cache] error: failed to download cache archive: connection reset
 CompileSwift normal arm64 /path/to/File.swift
 error: exportArchive: "code-sign-test.app" requires a provisioning profile.
 xcodebuild: error: Failed to build project code-sign-test with scheme code-sign-test.
@@ -65,7 +65,8 @@ func TestXcbeautifyRunner_Run(t *testing.T) {
 	assert.Contains(t, string(out.RawOut), "CompileSwift")
 	assert.NotContains(t, string(out.RawOut), "[Bitrise Analytics]", "Bitrise's own lines go to the console, not the raw output")
 	assertReportsErrors(t, err, wantErrorLines)
-	assert.NotContains(t, err.Error(), "nope", "only xcodebuild's own output is scanned for errors")
+	assert.Contains(t, err.Error(), "[Bitrise Build Cache] error: failed to download cache archive",
+		"Bitrise's own lines are scanned as well, as the go-utils collector did")
 }
 
 func TestRawXcodeCommandRunner_Run(t *testing.T) {
