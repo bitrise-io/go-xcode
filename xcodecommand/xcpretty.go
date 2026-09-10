@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-xcode/v2/errorfinder"
 	"github.com/bitrise-io/go-xcode/v2/logio"
 )
 
@@ -39,7 +40,8 @@ func NewXcprettyCommandRunner(logger log.Logger, commandFactory command.Factory,
 
 // Run runs xcodebuild using xcpretty as a log formatter
 func (c *XcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcprettyArgs []string) (Output, error) {
-	loggingIO := logio.SetupPipeWiring(regexp.MustCompile(`^\[Bitrise.*\].*`))
+	errFinder := errorfinder.NewFinder()
+	loggingIO := logio.SetupPipeWiring(regexp.MustCompile(`^\[Bitrise.*\].*`), errFinder)
 
 	c.cleanOutputFile(xcprettyArgs)
 
@@ -93,7 +95,7 @@ func (c *XcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcp
 	}
 
 	if err != nil {
-		err = attachXcodebuildErrors(err, buildCmd.PrintableCommandArgs(), loggingIO.XcbuildRawout.Bytes())
+		err = attachXcodebuildErrors(err, buildCmd.PrintableCommandArgs(), errFinder.Errors())
 	}
 
 	return Output{

@@ -2,22 +2,31 @@ package logio
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"regexp"
 	"sync"
 )
 
+// readBufferSize is the size of the line fragments a longer line is forwarded in.
+const readBufferSize = 64 * 1024
+
 // PrefixFilter intercept writes: when the message has a prefix that matches a
 // regexp it writes into the `Matching` sink, otherwise to the `Filtered` sink.
+//
+// PrefixFilter is not safe for concurrent use: Write buffers into a bufio.Writer, and
+// it expects a single writer. Handing the same PrefixFilter to both exec.Cmd.Stdout and
+// exec.Cmd.Stderr satisfies that, os/exec copies both streams with one goroutine then.
 //
 // Note: Callers are responsible for closing `Matching` and `Filtered` Sinks
 type PrefixFilter struct {
 	prefixRegexp *regexp.Regexp
 
 	// internal buffered middleman between xcbuild and scan
-	filterInput bufio.ReadWriter
+	filterInput *bufio.Writer
 	pipeW       *io.PipeWriter
+	pipeR       *io.PipeReader
 
 	Matching *Sink
 	Filtered io.Writer
@@ -51,7 +60,6 @@ func (p *PrefixFilter) ScannerError() <-chan error { return p.scannerError }
 //
 // Note: Callers are responsible for closing intercepted and target writers that implement io.Closer
 func NewPrefixFilter(prefixRegexp *regexp.Regexp, matching *Sink, filtered io.Writer) *PrefixFilter {
-	// This is the backing field of the bufio.ReadWriter
 	pipeR, pipeW := io.Pipe()
 	messageLost := make(chan error, 1)
 	done := make(chan struct{}, 1)
@@ -59,8 +67,9 @@ func NewPrefixFilter(prefixRegexp *regexp.Regexp, matching *Sink, filtered io.Wr
 
 	filter := &PrefixFilter{
 		prefixRegexp: prefixRegexp,
-		filterInput:  *bufio.NewReadWriter(bufio.NewReader(pipeR), bufio.NewWriter(pipeW)),
+		filterInput:  bufio.NewWriter(pipeW),
 		pipeW:        pipeW,
+		pipeR:        pipeR,
 		closeOnce:    sync.Once{},
 		messageLost:  messageLost,
 		done:         done,
@@ -74,6 +83,7 @@ func NewPrefixFilter(prefixRegexp *regexp.Regexp, matching *Sink, filtered io.Wr
 }
 
 // Write implements io.Writer. It writes into an internal pipe which the interceptor goroutine consumes.
+// It must not be called concurrently, see PrefixFilter.
 func (p *PrefixFilter) Write(data []byte) (int, error) {
 	return p.filterInput.Write(data)
 }
@@ -104,6 +114,9 @@ func (p *PrefixFilter) Close() error {
 // run reads lines (and partial final chunk) and writes them.
 func (p *PrefixFilter) run() {
 	defer func() {
+		// With the reader gone a writer parked in Write would block forever, so unblock it.
+		_ = p.pipeR.Close()
+
 		// Signal done and close signaling channels
 		p.done <- struct{}{}
 		close(p.done)
@@ -111,33 +124,45 @@ func (p *PrefixFilter) run() {
 		close(p.scannerError)
 	}()
 
-	// Use a scanner but with a large buffer to handle long lines.
-	scanner := bufio.NewScanner(p.filterInput)
-	const maxTokenSize = 10 * 1024 * 1024
-	buf := make([]byte, 0, 64*1024)
-	scanner.Buffer(buf, maxTokenSize)
-
-	for scanner.Scan() {
-		line := scanner.Text() // note: newline removed
-		// re-append newline to preserve same output format
-		logLine := line + "\n"
-
-		if p.prefixRegexp.MatchString(line) {
-			if _, err := p.Matching.Write([]byte(logLine)); err != nil {
-				p.reportMessageLost(err)
+	// A line longer than the buffer is forwarded in fragments rather than buffered whole (a
+	// Scanner would give up on it and stop). The destination is picked on the first fragment,
+	// the prefix regexp is anchored so that is enough, and kept until the newline.
+	reader := bufio.NewReaderSize(p.pipeR, readBufferSize)
+	var dst io.Writer
+	for {
+		fragment, err := reader.ReadSlice('\n')
+		if len(fragment) > 0 {
+			if dst == nil {
+				dst = p.Filtered
+				if p.prefixRegexp.Match(bytes.TrimSuffix(fragment, []byte{'\n'})) {
+					dst = p.Matching
+				}
 			}
-		} else {
-			if _, err := p.Filtered.Write([]byte(logLine)); err != nil {
-				p.reportMessageLost(err)
+			// Copy: fragment is a view into the reader's buffer, and Sink keeps what it is given.
+			logLine := bytes.Clone(fragment)
+			if err == io.EOF {
+				// re-append newline to the partial final chunk to preserve same output format
+				logLine = append(logLine, '\n')
+			}
+			if _, werr := dst.Write(logLine); werr != nil {
+				p.reportMessageLost(werr)
+			}
+			if logLine[len(logLine)-1] == '\n' {
+				dst = nil
 			}
 		}
-	}
 
-	// handle any scanner error
-	if err := scanner.Err(); err != nil {
-		select {
-		case p.scannerError <- err:
+		switch err {
+		case nil, bufio.ErrBufferFull:
+			continue
+		case io.EOF:
+			return
 		default:
+			select {
+			case p.scannerError <- err:
+			default:
+			}
+			return
 		}
 	}
 }
