@@ -161,6 +161,88 @@ func TestConversion(t *testing.T) {
 			},
 		},
 		{
+			name: "Test cases with node identifiers, one of them in a nested suite",
+			data: &TestData{
+				TestNodes: []TestNode{
+					{
+						Type: TestNodeTypeTestPlan,
+						Name: "TP1",
+						Children: []TestNode{
+							{
+								Type: TestNodeTypeUnitTestBundle,
+								Name: "BullsEyeTests",
+								Children: []TestNode{
+									{
+										Type: TestNodeTypeTestSuite,
+										Name: "BullsEyeSwiftTestingTests",
+										Children: []TestNode{
+											{
+												Type:       TestNodeTypeTestCase,
+												Name:       "Score is computed when the guess matches the target",
+												Identifier: "BullsEyeSwiftTestingTests/scoreIsComputedWhenGuessMatchesTarget()",
+												Result:     TestResultPassed,
+												Duration:   "0.1s",
+											},
+											{
+												Type: TestNodeTypeTestSuite,
+												Name: "TotalScore",
+												Children: []TestNode{
+													{
+														Type:       TestNodeTypeTestCase,
+														Name:       "totalAddsUpTheRoundScores()",
+														Identifier: "BullsEyeSwiftTestingTests/TotalScore/totalAddsUpTheRoundScores()",
+														Result:     TestResultPassed,
+														Duration:   "0.2s",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &TestSummary{
+				TestPlans: []TestPlan{
+					{
+						Name: "TP1",
+						TestBundles: []TestBundle{
+							{
+								Name: "BullsEyeTests",
+								TestSuites: []TestSuite{
+									{
+										Name: "BullsEyeSwiftTestingTests",
+										TestCases: []TestCaseWithRetries{
+											{
+												TestCase: TestCase{
+													Name:       "Score is computed when the guess matches the target",
+													ClassName:  "BullsEyeSwiftTestingTests",
+													Identifier: "BullsEyeSwiftTestingTests/scoreIsComputedWhenGuessMatchesTarget()",
+													Time:       100 * time.Millisecond,
+													Result:     "Passed",
+												},
+											},
+											{
+												TestCase: TestCase{
+													Name:       "totalAddsUpTheRoundScores()",
+													ClassName:  "BullsEyeSwiftTestingTests",
+													Identifier: "BullsEyeSwiftTestingTests/TotalScore/totalAddsUpTheRoundScores()",
+													Time:       200 * time.Millisecond,
+													Result:     "Passed",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "Test bundle without test suites",
 			data: &TestData{
 				TestNodes: []TestNode{

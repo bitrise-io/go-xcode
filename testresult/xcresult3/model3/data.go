@@ -35,7 +35,10 @@ type TestCaseWithRetries struct {
 type TestCase struct {
 	Name      string
 	ClassName string
-	Time      time.Duration
-	Result    TestResult
-	Message   string
+	// Identifier is the test framework's own identifier of the test case. Name can be a display
+	// name instead, and ClassName holds only the first element of the suite path.
+	Identifier string
+	Time       time.Duration
+	Result     TestResult
+	Message    string
 }
