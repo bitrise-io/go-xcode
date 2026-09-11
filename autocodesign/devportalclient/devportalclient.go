@@ -92,7 +92,7 @@ func (f Factory) Create(credentials devportalservice.Credentials, teamID string)
 		devportalClient = appstoreconnectclient.NewAPIDevPortalClient(client)
 		f.logger.Debugf("App Store Connect API client created with base URL: %s", client.BaseURL)
 	} else if credentials.AppleID != nil {
-		cmdFactory, err := ruby.NewCommandFactory(command.NewFactory(envRepo), env.NewCommandLocator())
+		cmdFactory, err := ruby.NewCommandFactory(command.NewFactory(envRepo), env.NewCommandLocator(), f.logger)
 		if err != nil {
 			return nil, err
 		}
