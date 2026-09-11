@@ -16,13 +16,13 @@ import (
 
 	"howett.net/plist"
 
+	"github.com/bitrise-io/go-steputils/v2/testasset"
+	"github.com/bitrise-io/go-steputils/v2/testreport"
 	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-io/go-steputils/v2/testasset"
-	"github.com/bitrise-io/go-steputils/v2/testreport"
 	"github.com/bitrise-io/go-xcode/v2/testresult/xcresult3/model3"
+	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
 // Converter ...
@@ -251,9 +251,10 @@ func parseTestBundle(testBundle model3.TestBundle) testreport.TestSuite {
 
 func parseTestCase(testCase model3.TestCase) testreport.TestCase {
 	test := testreport.TestCase{
-		Name:      testCase.Name,
-		ClassName: testCase.ClassName,
-		Time:      testCase.Time.Seconds(),
+		Name:       testCase.Name,
+		ClassName:  testCase.ClassName,
+		Time:       testCase.Time.Seconds(),
+		Properties: testCaseIdentifierProperties(testCase.Identifier),
 	}
 
 	if testCase.Result == model3.TestResultFailed {
@@ -497,8 +498,21 @@ func genTestCase(test actionTestSummaryGroup, xcresultPath, testResultDir string
 		Name:              test.Name.Value,
 		ConfigurationHash: testSummary.Configuration.Hash,
 		ClassName:         strings.Split(test.Identifier.Value, "/")[0],
+		Properties:        testCaseIdentifierProperties(test.Identifier.Value),
 		Failure:           failure,
 		Skipped:           skipped,
 		Time:              duartion,
 	}, nil
+}
+
+func testCaseIdentifierProperties(identifier string) *testreport.Properties {
+	if identifier == "" {
+		return nil
+	}
+
+	return &testreport.Properties{
+		Property: []testreport.Property{
+			{Name: testreport.TestCaseIdentifierPropertyName, Value: identifier},
+		},
+	}
 }
