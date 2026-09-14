@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"testing"
 
 	"github.com/bitrise-io/go-steputils/v2/testreport"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-xcode/v2/testresult/xcresult3/model3"
 	"github.com/stretchr/testify/require"
 )
 
@@ -86,26 +86,6 @@ func testCaseIdentifiers(report testreport.TestReport) []string {
 	return identifiers
 }
 
-// removeTestCaseIdentifierProperties keeps the structural assertions focused on the report shape,
-// and the attachment assertions on the attachments.
-func removeTestCaseIdentifierProperties(report *testreport.TestReport) {
-	for i := range report.TestSuites {
-		for j := range report.TestSuites[i].TestCases {
-			testCase := &report.TestSuites[i].TestCases[j]
-			if testCase.Properties == nil {
-				continue
-			}
-
-			testCase.Properties.Property = slices.DeleteFunc(testCase.Properties.Property, func(property testreport.Property) bool {
-				return property.Name == testreport.TestCaseIdentifierPropertyName
-			})
-			if len(testCase.Properties.Property) == 0 {
-				testCase.Properties = nil
-			}
-		}
-	}
-}
-
 func assertAttachmentProperties(t *testing.T, props *testreport.Properties, expectedCount int) {
 	t.Helper()
 	require.NotNil(t, props)
@@ -125,20 +105,9 @@ func TestConverter_XML(t *testing.T) {
 		junitXML, err := c.Convert()
 		require.NoError(t, err)
 
-		require.Equal(t, []string{
-			"BullsEyeFakeTests/testStartNewRoundUsesRandomValueFromApiRequest()",
-			"BullsEyeMockTests/testGameStyleCanBeChanged()",
-			"BullsEyeTests/testScoreIsComputedPerformance()",
-			"BullsEyeTests/testScoreIsComputedWhenGuessIsHigherThanTarget()",
-			"BullsEyeTests/testScoreIsComputedWhenGuessIsLowerThanTarget()",
-			"BullsEyeSlowTests/testApiCallCompletes()",
-			"BullsEyeSlowTests/testValidApiCallGetsHTTPStatusCode200()",
-			"BullsEyeUITests/testGameStyleSwitch()",
-			"BullsEyeFlakyTests/testFlakyFeature()",
-			"BullsEyeFlakyTests/testFlakyFeature()",
-			"BullsEyeSkippedTests/testFlakySkip()",
-		}, testCaseIdentifiers(junitXML))
-		removeTestCaseIdentifierProperties(&junitXML)
+		// Every test case here reports its function name, which the class name completes into the
+		// identifier, so none of them needs the identifier property.
+		require.Empty(t, testCaseIdentifiers(junitXML))
 
 		// Save and nil out the timezone-dependent attachment properties before the
 		// structural comparison; they are verified separately with assertAttachmentProperties.
@@ -221,12 +190,7 @@ func TestConverter_XML(t *testing.T) {
 		junitXML, err := c.Convert()
 		require.NoError(t, err)
 
-		require.Equal(t, []string{
-			"testProjectUITests/testFailure()",
-			"testProjectUITests/testSkip()",
-			"testProjectUITests/testSuccess()",
-		}, testCaseIdentifiers(junitXML))
-		removeTestCaseIdentifierProperties(&junitXML)
+		require.Empty(t, testCaseIdentifiers(junitXML))
 
 		// Save and nil out the timezone-dependent attachment properties before the
 		// structural comparison; they are verified separately with assertAttachmentProperties.
@@ -293,4 +257,43 @@ func BenchmarkConverter_XML(b *testing.B) {
 	c := Converter{xcresultPth: xcresultPath}
 	_, err := c.Convert()
 	require.NoError(b, err)
+}
+
+func TestParseTestCase_identifierProperty(t *testing.T) {
+	tests := []struct {
+		name           string
+		testCase       model3.TestCase
+		wantIdentifier string
+	}{
+		{
+			name:     "the class name and the test case name compose the identifier",
+			testCase: model3.TestCase{Name: "testScoreIsComputed()", ClassName: "BullsEyeTests", Identifier: "BullsEyeTests/testScoreIsComputed()"},
+		},
+		{
+			name:           "a display name is reported instead of the function name",
+			testCase:       model3.TestCase{Name: "Score is computed", ClassName: "BullsEyeSwiftTestingTests", Identifier: "BullsEyeSwiftTestingTests/scoreIsComputed()"},
+			wantIdentifier: "BullsEyeSwiftTestingTests/scoreIsComputed()",
+		},
+		{
+			name:     "no identifier is reported",
+			testCase: model3.TestCase{Name: "testScoreIsComputed()", ClassName: "BullsEyeTests"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			properties := parseTestCase(test.testCase).Properties
+
+			if test.wantIdentifier == "" {
+				require.Nil(t, properties)
+				return
+			}
+
+			require.Equal(t, &testreport.Properties{
+				Property: []testreport.Property{
+					{Name: testreport.TestCaseIdentifierPropertyName, Value: test.wantIdentifier},
+				},
+			}, properties)
+		})
+	}
 }

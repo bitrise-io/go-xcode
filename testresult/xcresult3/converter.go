@@ -254,7 +254,7 @@ func parseTestCase(testCase model3.TestCase) testreport.TestCase {
 		Name:       testCase.Name,
 		ClassName:  testCase.ClassName,
 		Time:       testCase.Time.Seconds(),
-		Properties: testCaseIdentifierProperties(testCase.Identifier),
+		Properties: testCaseIdentifierProperties(testCase.Identifier, testCase.ClassName, testCase.Name),
 	}
 
 	if testCase.Result == model3.TestResultFailed {
@@ -494,19 +494,23 @@ func genTestCase(test actionTestSummaryGroup, xcresultPath, testResultDir string
 		return testreport.TestCase{}, err
 	}
 
+	className := strings.Split(test.Identifier.Value, "/")[0]
+
 	return testreport.TestCase{
 		Name:              test.Name.Value,
 		ConfigurationHash: testSummary.Configuration.Hash,
-		ClassName:         strings.Split(test.Identifier.Value, "/")[0],
-		Properties:        testCaseIdentifierProperties(test.Identifier.Value),
+		ClassName:         className,
+		Properties:        testCaseIdentifierProperties(test.Identifier.Value, className, test.Name.Value),
 		Failure:           failure,
 		Skipped:           skipped,
 		Time:              duartion,
 	}, nil
 }
 
-func testCaseIdentifierProperties(identifier string) *testreport.Properties {
-	if identifier == "" {
+// A consumer that needs the identifier composes it from the class name and the test case name, so
+// it is only worth reporting when the identifier differs from that composition.
+func testCaseIdentifierProperties(identifier, className, name string) *testreport.Properties {
+	if identifier == "" || identifier == className+"/"+name {
 		return nil
 	}
 
