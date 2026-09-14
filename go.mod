@@ -10,7 +10,7 @@ require (
 	github.com/bitrise-io/go-pkcs12 v0.0.0-20230815095624-feb898696e02
 	github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
 	github.com/bitrise-io/go-steputils v1.0.5
-	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.53.0.20260903144231-5524d905ae5a
+	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.54.0.20260911071058-d5ce17f0b98b
 	github.com/bitrise-io/go-utils v1.0.13
 	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.39
 	github.com/bitrise-io/go-xcode v1.3.3
