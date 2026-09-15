@@ -8,7 +8,6 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/v2/errorfinder"
 	"github.com/bitrise-io/go-xcode/v2/logio"
 	version "github.com/hashicorp/go-version"
 )
@@ -37,12 +36,12 @@ func (c *XcbeautifyRunner) Run(workDir string, xcodebuildArgs []string, xcbeauti
 
 	// For parallel and concurrent destination testing, it helps to use unbuffered I/O for stdout and to redirect stderr to stdout.
 	// NSUnbufferedIO=YES xcodebuild [args] 2>&1 | xcbeautify
+	// No ErrorFinder: it would give Stdout and Stderr separate wrappers and the filter two writers, see attachXcodebuildErrors.
 	buildCmd := c.commandFactory.Create("xcodebuild", xcodebuildArgs, &command.Opts{
-		Stdout:      loggingIO.XcbuildStdout,
-		Stderr:      loggingIO.XcbuildStderr,
-		Env:         unbufferedIOEnv,
-		Dir:         workDir,
-		ErrorFinder: errorfinder.FindXcodebuildErrors,
+		Stdout: loggingIO.XcbuildStdout,
+		Stderr: loggingIO.XcbuildStderr,
+		Env:    unbufferedIOEnv,
+		Dir:    workDir,
 	})
 
 	beautifyCmd := c.commandFactory.Create(xcbeautify, xcbeautifyArgs, &command.Opts{
@@ -85,6 +84,10 @@ func (c *XcbeautifyRunner) Run(workDir string, xcodebuildArgs []string, xcbeauti
 	// Closing the filter to ensure all output is flushed and processed
 	if err := loggingIO.CloseFilter(); err != nil {
 		c.logger.Warnf("logging IO failure, error: %s", err)
+	}
+
+	if err != nil {
+		err = attachXcodebuildErrors(err, buildCmd.PrintableCommandArgs(), loggingIO.XcbuildRawout.Bytes())
 	}
 
 	return Output{
