@@ -161,6 +161,82 @@ func TestConversion(t *testing.T) {
 			},
 		},
 		{
+			name: "Test cases with node identifiers, one of them reported with a display name",
+			data: &TestData{
+				TestNodes: []TestNode{
+					{
+						Type: TestNodeTypeTestPlan,
+						Name: "TP1",
+						Children: []TestNode{
+							{
+								Type: TestNodeTypeUnitTestBundle,
+								Name: "BullsEyeTests",
+								Children: []TestNode{
+									{
+										Type: TestNodeTypeTestSuite,
+										Name: "BullsEyeSwiftTestingTests",
+										Children: []TestNode{
+											{
+												Type:       TestNodeTypeTestCase,
+												Name:       "Score is computed when the guess matches the target",
+												Identifier: "BullsEyeSwiftTestingTests/scoreIsComputedWhenGuessMatchesTarget()",
+												Result:     TestResultPassed,
+												Duration:   "0.1s",
+											},
+											{
+												Type:       TestNodeTypeTestCase,
+												Name:       "scoreIsComputedWhenGuessIsHigherThanTarget()",
+												Identifier: "BullsEyeSwiftTestingTests/scoreIsComputedWhenGuessIsHigherThanTarget()",
+												Result:     TestResultPassed,
+												Duration:   "0.2s",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &TestSummary{
+				TestPlans: []TestPlan{
+					{
+						Name: "TP1",
+						TestBundles: []TestBundle{
+							{
+								Name: "BullsEyeTests",
+								TestSuites: []TestSuite{
+									{
+										Name: "BullsEyeSwiftTestingTests",
+										TestCases: []TestCaseWithRetries{
+											{
+												TestCase: TestCase{
+													Name:       "Score is computed when the guess matches the target",
+													ClassName:  "BullsEyeSwiftTestingTests",
+													Identifier: "BullsEyeSwiftTestingTests/scoreIsComputedWhenGuessMatchesTarget()",
+													Time:       100 * time.Millisecond,
+													Result:     "Passed",
+												},
+											},
+											{
+												TestCase: TestCase{
+													Name:       "scoreIsComputedWhenGuessIsHigherThanTarget()",
+													ClassName:  "BullsEyeSwiftTestingTests",
+													Identifier: "BullsEyeSwiftTestingTests/scoreIsComputedWhenGuessIsHigherThanTarget()",
+													Time:       200 * time.Millisecond,
+													Result:     "Passed",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "Test bundle without test suites",
 			data: &TestData{
 				TestNodes: []TestNode{

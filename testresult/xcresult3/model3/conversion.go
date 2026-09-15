@@ -209,10 +209,11 @@ func extractTestCase(testNode TestNode, customNodeIdentifier, customName, fallba
 	}
 
 	return TestCase{
-		Name:      name,
-		ClassName: className,
-		Time:      extractDuration(testNode.Duration),
-		Result:    testNode.Result,
-		Message:   message,
+		Name:       name,
+		ClassName:  className,
+		Identifier: nodeIdentifier,
+		Time:       extractDuration(testNode.Duration),
+		Result:     testNode.Result,
+		Message:    message,
 	}, warnings
 }
