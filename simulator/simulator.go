@@ -43,6 +43,14 @@ func NewManager(logger log.Logger, commandFactory command.Factory) Manager {
 	}
 }
 
+// guiApp describes the GUI application that hosts the Simulator window.
+type guiApp struct {
+	path string
+	// isDeviceHub is true for Xcode 27+, where DeviceHub.app replaced Simulator.app.
+	// DeviceHub ignores the -CurrentDeviceUDID argument, so the device has to be booted separately.
+	isDeviceHub bool
+}
+
 func (m manager) getSimulatorAppAbsolutePath() (string, error) {
 	cmd := m.commandFactory.Create("xcode-select", []string{"--print-path"}, nil)
 
@@ -54,14 +62,48 @@ func (m manager) getSimulatorAppAbsolutePath() (string, error) {
 	return filepath.Join(xcodeDevDirPath, "Applications", "Simulator.app"), nil
 }
 
+// findSimulatorGUIApp locates the GUI application that displays Simulators.
+//
+// Up to and including Xcode 26 this is Simulator.app inside the Xcode Developer Directory.
+// Xcode 27 removed Simulator.app entirely and replaced it with DeviceHub.app, which lives next
+// to the Developer Directory in Xcode.app/Contents/Applications.
+func (m manager) findSimulatorGUIApp() (guiApp, error) {
+	simulatorAppPath, err := m.getSimulatorAppAbsolutePath()
+	if err != nil {
+		return guiApp{}, err
+	}
+
+	if _, err := os.Stat(simulatorAppPath); err == nil {
+		return guiApp{path: simulatorAppPath}, nil
+	}
+
+	// simulatorAppPath is <developer dir>/Applications/Simulator.app, so the Xcode.app/Contents
+	// directory that holds DeviceHub.app is two levels up from the developer directory.
+	deviceHubAppPath := filepath.Clean(filepath.Join(simulatorAppPath, "..", "..", "..", "Applications", "DeviceHub.app"))
+	if _, err := os.Stat(deviceHubAppPath); err == nil {
+		return guiApp{path: deviceHubAppPath, isDeviceHub: true}, nil
+	}
+
+	return guiApp{}, fmt.Errorf("no Simulator GUI application found (looked for %s and %s)", simulatorAppPath, deviceHubAppPath)
+}
+
 // LaunchWithGUI can be used to run in non-headless mode (with the Simulator visible).
 func (m manager) LaunchWithGUI(simulatorID string) error {
-	simulatorAppFullPath, err := m.getSimulatorAppAbsolutePath()
+	app, err := m.findSimulatorGUIApp()
 	if err != nil {
 		return err
 	}
 
-	openCmd := m.commandFactory.Create("open", []string{simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
+	// Simulator.app boots the device named by -CurrentDeviceUDID itself. DeviceHub.app does not
+	// accept that argument, so boot the device up front and let DeviceHub pick it up - it tracks
+	// CoreSimulator state live, so the order of the two operations does not matter.
+	if app.isDeviceHub {
+		if err := m.Boot(destination.Device{UDID: simulatorID}); err != nil {
+			return fmt.Errorf("failed to boot simulator (%s): %w", simulatorID, err)
+		}
+	}
+
+	openCmd := m.commandFactory.Create("open", []string{app.path, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
 	m.logger.TPrintf("$ %s", openCmd.PrintableCommandArgs())
 
 	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
