@@ -2,6 +2,7 @@ package simulator
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -11,6 +12,7 @@ import (
 	mockcommand "github.com/bitrise-io/go-xcode/v2/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 type testingMocks struct {
@@ -34,6 +36,52 @@ func Test_GivenSimulator_WhenResetLaunchServices_ThenPerformsAction(t *testing.T
 
 	// Then
 	assert.NoError(t, err)
+}
+
+func Test_GivenXcode_WhenLaunchWithGUI_ThenOpensTheAvailableGUIApp(t *testing.T) {
+	const udid = "test-udid"
+
+	tests := []struct {
+		name    string
+		guiApp  string // relative to Xcode.app/Contents, empty if none is installed
+		wantErr bool
+	}{
+		{name: "Xcode 26: Simulator.app", guiApp: "Developer/Applications/Simulator.app"},
+		{name: "Xcode 27: DeviceHub.app", guiApp: "Applications/DeviceHub.app"},
+		{name: "no GUI app", wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			contents := filepath.Join(t.TempDir(), "Xcode.app", "Contents")
+			devDir := filepath.Join(contents, "Developer")
+			require.NoError(t, os.MkdirAll(devDir, 0700))
+
+			appPath := ""
+			if tt.guiApp != "" {
+				appPath = filepath.Join(contents, tt.guiApp)
+				require.NoError(t, os.MkdirAll(appPath, 0700))
+			}
+			openArgs := []string{appPath, "--args", "-CurrentDeviceUDID", udid}
+
+			manager, mocks := createSimulatorAndMocks()
+			mocks.commandFactory.On("Create", "xcode-select", []string{"--print-path"}, mock.Anything).Return(createCommand(devDir))
+			mocks.commandFactory.On("Create", "open", openArgs, mock.Anything).Return(createCommand(""))
+
+			err := manager.LaunchWithGUI(udid)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "Simulator.app")
+				assert.Contains(t, err.Error(), "DeviceHub.app")
+				mocks.commandFactory.AssertNotCalled(t, "Create", "open", mock.Anything, mock.Anything)
+				return
+			}
+
+			require.NoError(t, err)
+			mocks.commandFactory.AssertCalled(t, "Create", "open", openArgs, mock.Anything)
+		})
+	}
 }
 
 func Test_GivenSimulator_WhenBoot_ThenBootsTheRequestedSimulator(t *testing.T) {

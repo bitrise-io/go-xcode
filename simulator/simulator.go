@@ -43,7 +43,7 @@ func NewManager(logger log.Logger, commandFactory command.Factory) Manager {
 	}
 }
 
-func (m manager) getSimulatorAppAbsolutePath() (string, error) {
+func (m manager) getXcodeDeveloperDirPath() (string, error) {
 	cmd := m.commandFactory.Create("xcode-select", []string{"--print-path"}, nil)
 
 	xcodeDevDirPath, err := cmd.RunAndReturnTrimmedCombinedOutput()
@@ -51,17 +51,51 @@ func (m manager) getSimulatorAppAbsolutePath() (string, error) {
 		return "", fmt.Errorf("failed to get Xcode Developer Directory - most likely Xcode.app is not installed: %w", err)
 	}
 
+	return xcodeDevDirPath, nil
+}
+
+func (m manager) getSimulatorAppAbsolutePath() (string, error) {
+	xcodeDevDirPath, err := m.getXcodeDeveloperDirPath()
+	if err != nil {
+		return "", err
+	}
+
 	return filepath.Join(xcodeDevDirPath, "Applications", "Simulator.app"), nil
+}
+
+func (m manager) findSimulatorGUIApp() (string, error) {
+	xcodeDevDirPath, err := m.getXcodeDeveloperDirPath()
+	if err != nil {
+		return "", err
+	}
+
+	// Xcode.app/Contents/
+	// ├── Applications/            <- Instruments, FileMerge, ... and on Xcode 27: DeviceHub.app
+	// │   └── DeviceHub.app
+	// └── Developer/               <- what `xcode-select -p` returns
+	//     └── Applications/
+	//         └── Simulator.app    <- Xcode 26 and earlier only
+	simulatorApp := filepath.Join(xcodeDevDirPath, "Applications", "Simulator.app")
+	if _, err := os.Stat(simulatorApp); err == nil {
+		return simulatorApp, nil
+	}
+
+	deviceHubApp := filepath.Join(xcodeDevDirPath, "..", "Applications", "DeviceHub.app")
+	if _, err := os.Stat(deviceHubApp); err == nil {
+		return deviceHubApp, nil
+	}
+
+	return "", fmt.Errorf("no Simulator GUI application found (looked for `%s` and `%s`)", simulatorApp, deviceHubApp)
 }
 
 // LaunchWithGUI can be used to run in non-headless mode (with the Simulator visible).
 func (m manager) LaunchWithGUI(simulatorID string) error {
-	simulatorAppFullPath, err := m.getSimulatorAppAbsolutePath()
+	guiPath, err := m.findSimulatorGUIApp()
 	if err != nil {
 		return err
 	}
 
-	openCmd := m.commandFactory.Create("open", []string{simulatorAppFullPath, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
+	openCmd := m.commandFactory.Create("open", []string{guiPath, "--args", "-CurrentDeviceUDID", simulatorID}, nil)
 	m.logger.TPrintf("$ %s", openCmd.PrintableCommandArgs())
 
 	outStr, err := openCmd.RunAndReturnTrimmedCombinedOutput()
