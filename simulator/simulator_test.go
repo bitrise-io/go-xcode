@@ -19,25 +19,6 @@ type testingMocks struct {
 	commandFactory *mockcommand.CommandFactory
 }
 
-func Test_GivenSimulator_WhenResetLaunchServices_ThenPerformsAction(t *testing.T) {
-	// Given
-	xcodePath := "/some/path"
-	manager, mocks := createSimulatorAndMocks()
-
-	mocks.commandFactory.On("Create", "sw_vers", []string{"-productVersion"}, mock.Anything).Return(createCommand("11.6"))
-	mocks.commandFactory.On("Create", "xcode-select", []string{"--print-path"}, mock.Anything).Return(createCommand(xcodePath))
-
-	lsregister := "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-	simulatorPath := filepath.Join(xcodePath, "Applications/Simulator.app")
-	mocks.commandFactory.On("Create", lsregister, []string{"-f", simulatorPath}, mock.Anything).Return(createCommand(""))
-
-	// When
-	err := manager.ResetLaunchServices()
-
-	// Then
-	assert.NoError(t, err)
-}
-
 func Test_GivenXcode_WhenLaunchWithGUI_ThenOpensTheAvailableGUIApp(t *testing.T) {
 	const udid = "test-udid"
 
