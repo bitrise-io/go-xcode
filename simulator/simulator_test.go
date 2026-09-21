@@ -38,90 +38,50 @@ func Test_GivenSimulator_WhenResetLaunchServices_ThenPerformsAction(t *testing.T
 	assert.NoError(t, err)
 }
 
-// makeFakeXcode lays out an Xcode.app-like tree and returns the developer directory path,
-// the same value `xcode-select --print-path` would report.
-func makeFakeXcode(t *testing.T, guiAppName string) (devDir string, guiAppPath string) {
-	t.Helper()
+func Test_GivenXcode_WhenLaunchWithGUI_ThenOpensTheAvailableGUIApp(t *testing.T) {
+	const udid = "test-udid"
 
-	contents := filepath.Join(t.TempDir(), "Xcode.app", "Contents")
-	devDir = filepath.Join(contents, "Developer")
-
-	switch guiAppName {
-	case "Simulator.app":
-		guiAppPath = filepath.Join(devDir, "Applications", "Simulator.app")
-	case "DeviceHub.app":
-		guiAppPath = filepath.Join(contents, "Applications", "DeviceHub.app")
-	default:
-		guiAppPath = ""
+	tests := []struct {
+		name    string
+		guiApp  string // relative to Xcode.app/Contents, empty if none is installed
+		wantErr bool
+	}{
+		{name: "Xcode 26: Simulator.app", guiApp: "Developer/Applications/Simulator.app"},
+		{name: "Xcode 27: DeviceHub.app", guiApp: "Applications/DeviceHub.app"},
+		{name: "no GUI app", wantErr: true},
 	}
 
-	require.NoError(t, os.MkdirAll(devDir, 0700))
-	if guiAppPath != "" {
-		require.NoError(t, os.MkdirAll(guiAppPath, 0700))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			contents := filepath.Join(t.TempDir(), "Xcode.app", "Contents")
+			devDir := filepath.Join(contents, "Developer")
+			require.NoError(t, os.MkdirAll(devDir, 0700))
+
+			appPath := ""
+			if tt.guiApp != "" {
+				appPath = filepath.Join(contents, tt.guiApp)
+				require.NoError(t, os.MkdirAll(appPath, 0700))
+			}
+			openArgs := []string{appPath, "--args", "-CurrentDeviceUDID", udid}
+
+			manager, mocks := createSimulatorAndMocks()
+			mocks.commandFactory.On("Create", "xcode-select", []string{"--print-path"}, mock.Anything).Return(createCommand(devDir))
+			mocks.commandFactory.On("Create", "open", openArgs, mock.Anything).Return(createCommand(""))
+
+			err := manager.LaunchWithGUI(udid)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "Simulator.app")
+				assert.Contains(t, err.Error(), "DeviceHub.app")
+				mocks.commandFactory.AssertNotCalled(t, "Create", "open", mock.Anything, mock.Anything)
+				return
+			}
+
+			require.NoError(t, err)
+			mocks.commandFactory.AssertCalled(t, "Create", "open", openArgs, mock.Anything)
+		})
 	}
-
-	return devDir, guiAppPath
-}
-
-func Test_GivenSimulatorApp_WhenLaunchWithGUI_ThenOpensSimulatorAppWithoutBooting(t *testing.T) {
-	// Given
-	devDir, simulatorApp := makeFakeXcode(t, "Simulator.app")
-	manager, mocks := createSimulatorAndMocks()
-
-	const identifier = "test-identifier"
-	openArgs := []string{simulatorApp, "--args", "-CurrentDeviceUDID", identifier}
-
-	mocks.commandFactory.On("Create", "xcode-select", []string{"--print-path"}, mock.Anything).Return(createCommand(devDir))
-	mocks.commandFactory.On("Create", "open", openArgs, mock.Anything).Return(createCommand(""))
-
-	// When
-	err := manager.LaunchWithGUI(identifier)
-
-	// Then
-	assert.NoError(t, err)
-	mocks.commandFactory.AssertCalled(t, "Create", "open", openArgs, mock.Anything)
-	// Simulator.app boots the device itself, so the step must not issue a separate boot.
-	mocks.commandFactory.AssertNotCalled(t, "Create", "xcrun", mock.Anything, mock.Anything)
-}
-
-func Test_GivenXcode27_WhenLaunchWithGUI_ThenBootsAndOpensDeviceHub(t *testing.T) {
-	// Given: Xcode 27 ships DeviceHub.app instead of Simulator.app.
-	devDir, deviceHubApp := makeFakeXcode(t, "DeviceHub.app")
-	manager, mocks := createSimulatorAndMocks()
-
-	const identifier = "test-identifier"
-	bootArgs := []string{"simctl", "boot", identifier}
-	openArgs := []string{deviceHubApp, "--args", "-CurrentDeviceUDID", identifier}
-
-	mocks.commandFactory.On("Create", "xcode-select", []string{"--print-path"}, mock.Anything).Return(createCommand(devDir))
-	mocks.commandFactory.On("Create", "xcrun", bootArgs, mock.Anything).Return(createCommand(""))
-	mocks.commandFactory.On("Create", "open", openArgs, mock.Anything).Return(createCommand(""))
-
-	// When
-	err := manager.LaunchWithGUI(identifier)
-
-	// Then
-	assert.NoError(t, err)
-	// DeviceHub ignores -CurrentDeviceUDID, so the device has to be booted explicitly.
-	mocks.commandFactory.AssertCalled(t, "Create", "xcrun", bootArgs, mock.Anything)
-	mocks.commandFactory.AssertCalled(t, "Create", "open", openArgs, mock.Anything)
-}
-
-func Test_GivenNoGUIApp_WhenLaunchWithGUI_ThenFailsNamingBothPaths(t *testing.T) {
-	// Given
-	devDir, _ := makeFakeXcode(t, "")
-	manager, mocks := createSimulatorAndMocks()
-
-	mocks.commandFactory.On("Create", "xcode-select", []string{"--print-path"}, mock.Anything).Return(createCommand(devDir))
-
-	// When
-	err := manager.LaunchWithGUI("test-identifier")
-
-	// Then
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "Simulator.app")
-	assert.Contains(t, err.Error(), "DeviceHub.app")
-	mocks.commandFactory.AssertNotCalled(t, "Create", "open", mock.Anything, mock.Anything)
 }
 
 func Test_GivenSimulator_WhenBoot_ThenBootsTheRequestedSimulator(t *testing.T) {
