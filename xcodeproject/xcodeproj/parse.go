@@ -9,11 +9,6 @@ import (
 
 const pbxProjectISA = "PBXProject"
 
-// parsePBXProj decodes project.pbxproj and derives the typed model from it.
-//
-// Unlike the v1 implementation this takes no deep copies of the object graph. Save needs the
-// original state to diff against, but it can recover that by re-decoding originalContents, and
-// saving is rare while parsing is not.
 func parsePBXProj(content []byte) (*XcodeProj, error) {
 	rawProj, format, err := decodePBXProj(content)
 	if err != nil {
@@ -45,7 +40,6 @@ func parsePBXProj(content []byte) (*XcodeProj, error) {
 		return nil, err
 	}
 
-	// attributes and, within it, TargetAttributes are both optional.
 	var targetAttributes serialized.Object
 	if attributes, ok := rawProject.Object("attributes"); ok {
 		targetAttributes, _ = attributes.Object("TargetAttributes")
@@ -63,8 +57,6 @@ func parsePBXProj(content []byte) (*XcodeProj, error) {
 	}, nil
 }
 
-// decodePBXProj unmarshals the project file and strips the byte-offset annotations the custom
-// plist decoder adds. Save re-decodes the original bytes when it needs those offsets.
 func decodePBXProj(content []byte) (serialized.Object, int, error) {
 	var rawProj serialized.Object
 
@@ -104,8 +96,7 @@ func parseTargets(rawProject, objects serialized.Object) ([]Target, error) {
 
 	var targets []Target
 	for _, targetID := range targetIDs {
-		// The targets list can name IDs that have no corresponding object, for instance when a
-		// target was removed without the reference being cleaned up.
+		// The targets list can reference targets that were removed.
 		if _, ok := objects.Object(targetID); !ok {
 			continue
 		}

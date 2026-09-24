@@ -68,8 +68,6 @@ func TestParseConfigurationList_missing(t *testing.T) {
 	require.ErrorContains(t, err, "GONE")
 }
 
-// A project may name a default configuration that does not exist in its list; the name is only a
-// declaration, so it is reported as-is rather than validated.
 func TestParseConfigurationList_defaultNameNeedNotExist(t *testing.T) {
 	project := parseFixture(t, "without-target-attributes.pbxproj")
 

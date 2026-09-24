@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// fakeBuildSettingsProvider stands in for xcodebuild, so these tests need no Xcode installation.
 type fakeBuildSettingsProvider struct {
 	settings serialized.Object
 	err      error
@@ -28,8 +27,6 @@ func (f *fakeBuildSettingsProvider) TargetBuildSettings(projectPath, target, con
 	return f.settings, nil
 }
 
-// projectWithBuildSettings returns a project rooted at a real temporary directory, so that plist
-// reads resolve against a genuine filesystem, with build settings supplied by a fake.
 func projectWithBuildSettings(t *testing.T, settings serialized.Object) (*XcodeProj, *fakeBuildSettingsProvider) {
 	t.Helper()
 
@@ -164,8 +161,6 @@ func TestXcodeProj_TargetCodeSignEntitlements(t *testing.T) {
 		assert.True(t, entitlements.Has("com.apple.developer.applesignin"))
 	})
 
-	// A target with no entitlements is the common case, and callers must be able to tell it apart
-	// from a genuine read failure — this is the replacement for v1's serialized.IsKeyNotFoundError.
 	t.Run("no entitlements setting yields ErrEntitlementsNotFound", func(t *testing.T) {
 		project, _ := projectWithBuildSettings(t, serialized.Object{})
 
@@ -225,8 +220,6 @@ func TestXcodeProj_TargetInfoplistPath(t *testing.T) {
 	})
 }
 
-// Cases ported from v1's TestResolve/TestExpand: bundle identifiers reference build settings in
-// several syntaxes, and undelimited $KEY references may run into surrounding text.
 func TestResolveBundleID(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -316,8 +309,6 @@ func TestResolveBundleID(t *testing.T) {
 	}
 }
 
-// Mirrors go-utils v1 pathutil.IsRelativePath, which this package replicates so that path handling
-// matches the v1 implementation exactly.
 func TestIsRelativePath(t *testing.T) {
 	tests := map[string]bool{
 		"App/Info.plist":            true,
@@ -333,7 +324,6 @@ func TestIsRelativePath(t *testing.T) {
 	}
 }
 
-// A value that still holds an unexpanded reference must not be joined onto the project directory.
 func TestXcodeProj_TargetInfoplistPath_unexpandedReferenceIsLeftAlone(t *testing.T) {
 	project, _ := projectWithBuildSettings(t, serialized.Object{
 		"INFOPLIST_FILE": "$(SRCROOT)/App/Info.plist",

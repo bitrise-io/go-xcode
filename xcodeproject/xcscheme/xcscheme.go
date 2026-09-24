@@ -207,9 +207,7 @@ func Open(pth string) (Scheme, error) {
 	return scheme, nil
 }
 
-// Parse decodes an .xcscheme document. Unlike Open it does no file IO, so callers that read files
-// through their own abstraction can decode the contents themselves. Name and Path are left empty;
-// Open derives them from the file path.
+// Parse decodes an .xcscheme document. Name and Path are left empty.
 func Parse(reader io.Reader) (scheme Scheme, err error) {
 	err = xml.NewDecoder(reader).Decode(&scheme)
 	return

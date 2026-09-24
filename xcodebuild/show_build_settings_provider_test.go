@@ -60,8 +60,6 @@ func TestShowBuildSettingsProvider_SchemeBuildSettings(t *testing.T) {
 	}, (*command.Opts)(nil))
 }
 
-// When xcodebuild exits non-zero its combined output explains why, so the error must carry it
-// rather than only the exit status.
 func TestShowBuildSettingsProvider_exitStatusErrorReportsOutput(t *testing.T) {
 	provider, _ := newProviderWithCommand(t, "xcodebuild: error: The project named \"App\" does not contain a target named \"Nope\"", &exec.ExitError{})
 
@@ -70,7 +68,6 @@ func TestShowBuildSettingsProvider_exitStatusErrorReportsOutput(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "does not contain a target named")
 
-	// The original error must survive the wrapping, so callers can still inspect it.
 	var exitErr *exec.ExitError
 	assert.ErrorAs(t, err, &exitErr)
 }

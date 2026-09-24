@@ -42,7 +42,6 @@ func requireTarget(t *testing.T, project *XcodeProj, name string) Target {
 	return target
 }
 
-// Ported from v1 TestXcodeProj_ForceCodeSign.
 func TestXcodeProj_ForceCodeSign(t *testing.T) {
 	project := parseFixture(t, "without-target-attributes.pbxproj")
 
@@ -63,7 +62,6 @@ func TestXcodeProj_ForceCodeSign(t *testing.T) {
 	requireBuildSetting(t, project, "Target", "Debug", "PROVISIONING_PROFILE", "asdf56b6-e75a-4f86-bf25-101bfc2fasdf")
 }
 
-// Ported from v1 TestXcodeProj_ForceCodeSign_WithouthTargetAttributes.
 func TestXcodeProj_ForceCodeSign_targetWithoutTargetAttributes(t *testing.T) {
 	project := parseFixture(t, "without-target-attributes.pbxproj")
 
@@ -80,7 +78,6 @@ func TestXcodeProj_ForceCodeSign_targetWithoutTargetAttributes(t *testing.T) {
 	assert.False(t, ok, "no TargetAttributes entry may be created for a target that had none")
 }
 
-// Ported from v1 TestXcodeProj_ForceCodeSign_OverridesSigningBuildSettingsOnly.
 func TestXcodeProj_ForceCodeSign_leavesOtherBuildSettingsAlone(t *testing.T) {
 	project := parseFixture(t, "without-target-attributes.pbxproj")
 
@@ -96,8 +93,6 @@ func TestXcodeProj_ForceCodeSign_unknownTargetOrConfiguration(t *testing.T) {
 	require.ErrorContains(t, project.ForceCodeSign(forceCodeSignOptions("Target", "Nope")), "Nope")
 }
 
-// Ported from v1 TestXcodeProj_perObjectModify. Only the changed objects may differ from the
-// original file; everything else, including ordering and comments, must stay byte for byte.
 func TestXcodeProj_perObjectModify(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -151,7 +146,7 @@ func TestXcodeProj_perObjectModify_noChangesReturnsOriginalBytes(t *testing.T) {
 func TestXcodeProj_SetBuildSetting(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
-	// Fetched before the write on purpose: as in v1, build settings are shared, not copied.
+	// Fetched before the write: build settings are shared, as in v1.
 	earlier := requireTarget(t, project, "XcodeProj")
 
 	require.NoError(t, project.SetBuildSetting("XcodeProj", "Release", "MARKETING_VERSION", "2.0"))
@@ -162,7 +157,6 @@ func TestXcodeProj_SetBuildSetting(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "2.0", value, "a Target fetched before the write must see it")
 
-	// Other configurations are untouched.
 	buildSettings, err := targetBuildSettings(requireTarget(t, project, "XcodeProj"), "Debug")
 	require.NoError(t, err)
 	assert.NotEqual(t, "2.0", buildSettings["MARKETING_VERSION"])
@@ -175,8 +169,6 @@ func TestXcodeProj_SetBuildSetting_errors(t *testing.T) {
 	require.ErrorContains(t, project.SetBuildSetting("XcodeProj", "Nope", "K", "V"), "Nope")
 }
 
-// A configuration without buildSettings must fail loudly rather than write into a map that is not
-// part of the project tree and would never reach Save.
 func TestXcodeProj_SetBuildSetting_configurationWithoutBuildSettings(t *testing.T) {
 	project := &XcodeProj{
 		targets: []Target{{
@@ -204,7 +196,6 @@ func TestWriteBuildSettingForAllSDKs(t *testing.T) {
 	}, buildSettings)
 }
 
-// Save end to end, against a real directory: edit, save, re-open.
 func TestXcodeProj_Save(t *testing.T) {
 	projectPath := filepath.Join(t.TempDir(), "XcodeProj.xcodeproj")
 	require.NoError(t, os.MkdirAll(projectPath, 0755))
@@ -229,8 +220,6 @@ func TestXcodeProj_Save(t *testing.T) {
 	assert.Equal(t, os.FileMode(0644), info.Mode().Perm(), "project.pbxproj must be readable by others, as in v1")
 }
 
-// An added object has no original byte range to splice into, so the in-place rewrite gives up and
-// Save writes the whole file instead. The result must still be a valid project.
 func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
 	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
 	require.NoError(t, os.MkdirAll(projectPath, 0755))

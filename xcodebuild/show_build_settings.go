@@ -28,13 +28,7 @@ const (
 	xcworkspaceExtension = ".xcworkspace"
 )
 
-// BuildSettingsProvider resolves the effective build settings of a target or a scheme: the values
-// Xcode would build with, after variable expansion and after any .xcconfig files are applied.
-//
-// Every method runs `xcodebuild -showBuildSettings`, which takes seconds rather than
-// milliseconds, and nothing here memoizes. A caller that asks the same question repeatedly should
-// hold on to the answer, at whatever level knows how long it stays valid: saving an edited project
-// can change its build settings.
+// BuildSettingsProvider returns effective build settings using xcodebuild -showBuildSettings.
 type BuildSettingsProvider interface {
 	TargetBuildSettings(projectPath, target, configuration string, extraArgs ...string) (serialized.Object, error)
 	SchemeBuildSettings(projectPath, scheme, configuration string, extraArgs ...string) (serialized.Object, error)
@@ -45,8 +39,7 @@ type showBuildSettingsProvider struct {
 	logger         log.Logger
 }
 
-// NewShowBuildSettingsProvider returns a BuildSettingsProvider that shells out to
-// `xcodebuild -showBuildSettings`.
+// NewShowBuildSettingsProvider returns a BuildSettingsProvider backed by xcodebuild.
 func NewShowBuildSettingsProvider(commandFactory command.Factory, logger log.Logger) BuildSettingsProvider {
 	return showBuildSettingsProvider{
 		commandFactory: commandFactory,
@@ -60,9 +53,6 @@ func (p showBuildSettingsProvider) TargetBuildSettings(projectPath, target, conf
 }
 
 // SchemeBuildSettings returns the effective build settings of one scheme.
-//
-// A scheme can build several targets. Where the output repeats a key, the first occurrence wins,
-// which is the scheme's main target — see parseShowBuildSettingsOutput.
 func (p showBuildSettingsProvider) SchemeBuildSettings(projectPath, scheme, configuration string, extraArgs ...string) (serialized.Object, error) {
 	return p.run(showBuildSettingsArgs(projectPath, schemeFlag, scheme, configuration, extraArgs))
 }
@@ -70,7 +60,7 @@ func (p showBuildSettingsProvider) SchemeBuildSettings(projectPath, scheme, conf
 func (p showBuildSettingsProvider) run(args []string) (serialized.Object, error) {
 	cmd := p.commandFactory.Create(toolName, args, nil)
 
-	// Logged at normal level, as in v1, so the command shows up in step build logs.
+	// Logged at normal level, as in v1, so the command shows up in step logs.
 	p.logger.TPrintf("Reading build settings...")
 	p.logger.TDonef("$ %s", cmd.PrintableCommandArgs())
 
@@ -78,8 +68,7 @@ func (p showBuildSettingsProvider) run(args []string) (serialized.Object, error)
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			// The combined output holds xcodebuild's own diagnostics, which say far more about the
-			// failure than the exit status does. err is wrapped so callers can still inspect it.
+			// The output explains the failure better than the exit status.
 			return nil, fmt.Errorf("%s failed: %s: %w", cmd.PrintableCommandArgs(), out, err)
 		}
 		return nil, fmt.Errorf("failed to run %s: %w", cmd.PrintableCommandArgs(), err)
@@ -90,10 +79,6 @@ func (p showBuildSettingsProvider) run(args []string) (serialized.Object, error)
 	return parseShowBuildSettingsOutput(out)
 }
 
-// showBuildSettingsArgs assembles the argument list. nameFlag is -target or -scheme.
-//
-// Whether the container is passed as -project or -workspace is decided by its extension, because
-// xcodebuild rejects the wrong one.
 func showBuildSettingsArgs(projectPath, nameFlag, name, configuration string, extraArgs []string) []string {
 	var args []string
 
@@ -118,15 +103,9 @@ func showBuildSettingsArgs(projectPath, nameFlag, name, configuration string, ex
 	return append(args, extraArgs...)
 }
 
-// parseShowBuildSettingsOutput turns `xcodebuild -showBuildSettings` output into build settings.
-//
-// Where a key appears more than once, the FIRST occurrence wins. Output for a multi-target scheme
-// lists every target's settings in turn, and the first block belongs to the main target, so taking
-// the last occurrence would silently return another target's values. This behaviour was a fix in
-// v1 (0c84f25, "Fix build settings overwrite issue") and must not be dropped.
-//
-// Lines are read with bufio.Reader.ReadLine rather than a Scanner: individual values can exceed
-// bufio.Scanner's 64KB line limit.
+// parseShowBuildSettingsOutput keeps the first occurrence of a repeated key, which for a
+// multi-target scheme is the main target (v1 fix 0c84f25). ReadLine is used because values can
+// exceed bufio.Scanner's line limit.
 func parseShowBuildSettingsOutput(out string) (serialized.Object, error) {
 	settings := serialized.Object{}
 
@@ -143,7 +122,6 @@ func parseShowBuildSettingsOutput(out string) (serialized.Object, error) {
 
 		buffer.Write(fragment)
 
-		// isPrefix stays true until the whole line has been read.
 		if isPrefix {
 			continue
 		}

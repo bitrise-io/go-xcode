@@ -66,9 +66,7 @@ func TestFactory_Parse(t *testing.T) {
 	assert.Equal(t, "Release", project.DefaultConfigurationName())
 }
 
-// A target that declares neither dependencies nor buildPhases must parse: both keys are omitted
-// entirely by Xcode when empty. Regression test for the fix carried over from the abandoned
-// xcodeproject-v2 branch (2f529ef).
+// Regression test for 2f529ef from the abandoned xcodeproject-v2 branch.
 func TestFactory_Parse_optionalTargetKeys(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
 	require.NoError(t, err)
@@ -92,7 +90,6 @@ func TestFactory_Parse_invalidContent(t *testing.T) {
 }
 
 func TestFactory_Parse_noProjectObject(t *testing.T) {
-	// A structurally valid plist with an objects dictionary that contains no PBXProject.
 	content := []byte("{\n\tobjects = {\n\t\tAA1 = {\n\t\t\tisa = PBXGroup;\n\t\t};\n\t};\n}\n")
 
 	_, err := testFactory().Parse(content, "/projects/App.xcodeproj")
@@ -100,8 +97,7 @@ func TestFactory_Parse_noProjectObject(t *testing.T) {
 }
 
 func TestFactory_Open(t *testing.T) {
-	// Open is a thin wrapper over path resolution and file reading, so it is exercised against a
-	// real directory: a faked FileManager would have to produce a real *os.File anyway.
+	// Real directory: a faked FileManager would have to return a real *os.File anyway.
 	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
 	require.NoError(t, os.MkdirAll(projectPath, 0755))
 
@@ -151,8 +147,6 @@ func TestXcodeProj_DependentTargetsOfTarget(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, []string{"TodayExtension"}, targetNames(project.DependentTargetsOfTarget(app)))
 
-	// The UI test target depends on the app, which in turn depends on the extension: the
-	// traversal is transitive.
 	uiTests, ok := project.Target(uiTestTargetID)
 	require.True(t, ok)
 	assert.Equal(t, []string{"XcodeProj", "TodayExtension"}, targetNames(project.DependentTargetsOfTarget(uiTests)))
@@ -174,8 +168,6 @@ func TestXcodeProj_DependentTargetsOfTarget_unresolvableDependencyIsSkipped(t *t
 	assert.Equal(t, []string{"B"}, targetNames(project.DependentTargetsOfTarget(project.targets[0])))
 }
 
-// A dependency cycle must terminate rather than recurse forever. Xcode does not create one, but a
-// generated or hand-edited project file can.
 func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
 	project := &XcodeProj{
 		logger: log.NewLogger(),
@@ -186,11 +178,9 @@ func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
 		},
 	}
 
-	// A is the target asked about, so it must not appear as its own dependency.
 	assert.Equal(t, []string{"B", "C"}, targetNames(project.DependentTargetsOfTarget(project.targets[0])))
 }
 
-// A dependency reachable through two paths appears once, where it is first reached.
 func TestXcodeProj_DependentTargetsOfTarget_sharedDependency(t *testing.T) {
 	project := &XcodeProj{
 		logger: log.NewLogger(),

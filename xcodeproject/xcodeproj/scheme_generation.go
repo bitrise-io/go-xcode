@@ -7,7 +7,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 )
 
-// Values Xcode writes into schemes it generates itself.
 const (
 	yes                         = "YES"
 	no                          = "NO"
@@ -18,11 +17,7 @@ const (
 	launcherID                  = "Xcode.DebuggerFoundation.Launcher.LLDB"
 )
 
-// generateSchemes builds, in memory, the schemes Xcode would generate for the project: one per
-// native, non-test target, with the test targets that depend on it attached.
-//
-// Xcode does this when a project has no schemes and "Autocreate schemes" is on, which is why
-// Schemes uses it. It is the same generation v1's ReCreateSchemes used.
+// generateSchemes builds the schemes Xcode would autocreate: one per native, non-test target.
 func (p *XcodeProj) generateSchemes() []xcscheme.Scheme {
 	projectName := path.Base(p.Path)
 
@@ -161,13 +156,10 @@ func newArchiveAction(target Target) xcscheme.ArchiveAction {
 	}
 }
 
-// debugConfigurationName returns "Debug" if the target has it, otherwise its default configuration.
 func debugConfigurationName(target Target) string {
 	return configurationNameOrDefault(target, defaultDebugConfiguration)
 }
 
-// releaseConfigurationName returns "Release" if the target has it, otherwise its default
-// configuration.
 func releaseConfigurationName(target Target) string {
 	return configurationNameOrDefault(target, defaultReleaseConfiguration)
 }

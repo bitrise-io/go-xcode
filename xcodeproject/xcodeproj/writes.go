@@ -11,32 +11,22 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// pbxProjFileMode is the mode project.pbxproj is written with. It matches v1 and Xcode: other tools
-// and users read this file, so it must not be written owner-only.
+// project.pbxproj is written world-readable, as in v1: other tools read it.
 const pbxProjFileMode = 0644
 
 // ForceCodeSignOptions are the manual code signing settings ForceCodeSign applies.
 type ForceCodeSignOptions struct {
-	// TargetName is the target to change.
-	TargetName string
-	// Configuration is the name of the build configuration to change, such as Release.
-	Configuration string
-	// DevelopmentTeam is the team ID.
-	DevelopmentTeam string
-	// CodesignIdentity is the signing identity, such as "Apple Distribution: Bitrise (ABCD1234)".
-	CodesignIdentity string
-	// ProvisioningProfileUUID is the UUID of the provisioning profile to sign with.
+	TargetName              string
+	Configuration           string
+	DevelopmentTeam         string
+	CodesignIdentity        string
 	ProvisioningProfileUUID string
 }
 
-// ForceCodeSign switches one target's configuration to manual code signing, in memory. Call Save to
-// write the change to disk.
-//
-// In the configuration's build settings it sets CODE_SIGN_STYLE, DEVELOPMENT_TEAM,
-// CODE_SIGN_IDENTITY and PROVISIONING_PROFILE, clears PROVISIONING_PROFILE_SPECIFIER, and applies
-// the same value to any SDK-specific variant already present, such as
-// CODE_SIGN_IDENTITY[sdk=iphoneos*]. In the project's TargetAttributes, if the target has an entry,
-// it sets ProvisioningStyle and DevelopmentTeam and clears DevelopmentTeamName.
+// ForceCodeSign switches a target configuration to manual code signing. Call Save to persist it.
+// It sets CODE_SIGN_STYLE, DEVELOPMENT_TEAM, CODE_SIGN_IDENTITY and PROVISIONING_PROFILE, including
+// their existing [sdk=...] variants, clears PROVISIONING_PROFILE_SPECIFIER, and updates the
+// target's TargetAttributes entry if there is one.
 func (p *XcodeProj) ForceCodeSign(opts ForceCodeSignOptions) error {
 	target, ok := p.TargetByName(opts.TargetName)
 	if !ok {
@@ -59,7 +49,6 @@ func (p *XcodeProj) ForceCodeSign(opts ForceCodeSignOptions) error {
 		writeBuildSettingForAllSDKs(buildSettings, key, value)
 	}
 
-	// Projects that do not use TargetAttributes, or have no entry for this target, are left alone.
 	if attributes, ok := p.targetAttributes.Object(target.ID); ok {
 		attributes["ProvisioningStyle"] = "Manual"
 		attributes["DevelopmentTeam"] = opts.DevelopmentTeam
@@ -69,11 +58,8 @@ func (p *XcodeProj) ForceCodeSign(opts ForceCodeSignOptions) error {
 	return nil
 }
 
-// SetBuildSetting sets one build setting of one target configuration, in memory. Call Save to write
-// the change to disk.
-//
-// As in v1, a configuration's build settings are the ones in the project tree, not a copy: Target
-// and BuildConfiguration values fetched before the call see the new value too.
+// SetBuildSetting sets a build setting of a target configuration. Call Save to persist it.
+// Target values fetched earlier see the change, as in v1.
 func (p *XcodeProj) SetBuildSetting(targetName, configurationName, key string, value any) error {
 	target, ok := p.TargetByName(targetName)
 	if !ok {
@@ -90,12 +76,8 @@ func (p *XcodeProj) SetBuildSetting(targetName, configurationName, key string, v
 	return nil
 }
 
-// Save writes the project to <Path>/project.pbxproj.
-//
-// Only the objects that changed are rewritten; every other byte of the file, including ordering and
-// comments, stays as it was. That keeps the file compatible with tools such as Cordova and Xcode's
-// agvtool. If the in-place rewrite is not possible, for instance because an object was added, the
-// whole file is written out instead and a warning is logged.
+// Save writes project.pbxproj, rewriting only the changed objects so the rest of the file stays
+// byte for byte. If that is not possible, it writes the whole file and logs a warning.
 func (p *XcodeProj) Save() error {
 	pth := filepath.Join(p.Path, pbxProjFileName)
 
@@ -130,9 +112,7 @@ func targetBuildSettings(target Target, configurationName string) (serialized.Ob
 	return nil, fmt.Errorf("failed to find build configuration %s of target %s", configurationName, target.Name)
 }
 
-// writeBuildSettingForAllSDKs sets key, and also every SDK-specific variant of it already present.
-// Example: setting CODE_SIGN_IDENTITY also sets CODE_SIGN_IDENTITY[sdk=iphoneos*].
-// See https://stackoverflow.com/a/5382708/5842489
+// writeBuildSettingForAllSDKs also updates the existing [sdk=...] variants of key.
 func writeBuildSettingForAllSDKs(buildSettings serialized.Object, key, value string) {
 	buildSettings[key] = value
 
@@ -149,9 +129,7 @@ type objectChange struct {
 	content    []byte
 }
 
-// perObjectModify rebuilds the file by splicing re-serialised versions of changed objects into the
-// original bytes. It compares the current raw tree with a fresh decode of the original contents to
-// find what changed, and uses the byte offsets the annotating decoder records to find where.
+// perObjectModify splices re-serialised changed objects into the original bytes.
 func (p *XcodeProj) perObjectModify() ([]byte, error) {
 	var annotated serialized.Object
 	if _, err := plist.UnmarshalWithCustomAnnotation(p.originalContents, &annotated); err != nil {

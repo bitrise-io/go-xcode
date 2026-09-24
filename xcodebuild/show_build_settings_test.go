@@ -64,9 +64,7 @@ func TestParseShowBuildSettingsOutput(t *testing.T) {
 	}
 }
 
-// A multi-target scheme prints one block per target. The first block is the main target, so a
-// repeated key must keep its FIRST value. Regression test for v1's 0c84f25 ("Fix build settings
-// overwrite issue"), which the abandoned xcodeproject-v2 branch had reverted by taking the last.
+// Regression test for v1 fix 0c84f25: in multi-target scheme output the first block is the main target.
 func TestParseShowBuildSettingsOutput_firstOccurrenceWins(t *testing.T) {
 	out := `Build settings for action build and target App:
     PRODUCT_BUNDLE_IDENTIFIER = io.bitrise.App
@@ -83,8 +81,6 @@ Build settings for action build and target AppTests:
 		"the main target's value must win over a later target's")
 }
 
-// Individual build setting values can be longer than bufio.Scanner's 64KB line limit, which is why
-// the parser reads with bufio.Reader.ReadLine and reassembles fragments.
 func TestParseShowBuildSettingsOutput_lineLongerThanScannerLimit(t *testing.T) {
 	out, err := os.ReadFile("./testdata/buildSettingsWithLongLine.txt")
 	require.NoError(t, err)

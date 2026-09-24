@@ -12,7 +12,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// Build setting keys this package resolves by name.
 const (
 	bundleIDBuildSettingKey     = "PRODUCT_BUNDLE_IDENTIFIER"
 	entitlementsBuildSettingKey = "CODE_SIGN_ENTITLEMENTS"
@@ -20,30 +19,19 @@ const (
 )
 
 var (
-	// bracedReferenceRegexp matches $(KEY) / ${KEY}, optionally with a :modifier suffix.
+	// $(KEY) or ${KEY}, optionally with a :modifier.
 	bracedReferenceRegexp = regexp.MustCompile(`[$][{(][^$]*?[)}]`)
-	// bareReferenceRegexp matches an undelimited $KEY reference.
+	// $KEY
 	bareReferenceRegexp = regexp.MustCompile(`[$][^$]*`)
 
 	referencePunctuationReplacer = strings.NewReplacer("$", "", "(", "", ")", "", "{", "", "}", "")
 )
 
-// ErrEntitlementsNotFound reports that a target declares no CODE_SIGN_ENTITLEMENTS file. Most
-// targets do not, so this is a normal outcome rather than a failure — distinguish it from a real
-// error (an entitlements file that is named but unreadable) with errors.Is.
+// ErrEntitlementsNotFound is returned when a target declares no CODE_SIGN_ENTITLEMENTS.
 var ErrEntitlementsNotFound = errors.New("target has no code sign entitlements file")
 
-// TargetBuildSettings returns the target's effective build settings for a configuration: the
-// values Xcode would build with, after variable expansion and after any .xcconfig files are
-// applied.
-//
-// Settings are looked up by target (`xcodebuild -project … -target …`), not by scheme, so this
-// works for targets that have no scheme of their own, such as app extensions. It runs
-// `xcodebuild -showBuildSettings`, so it costs seconds.
-//
-// extraArgs are appended to the command. xcodebuild ignores destination-style arguments such as
-// -destination in target mode, so they cannot be used to pick a platform here. Settings that depend
-// on the platform (SDKROOT, PLATFORM_NAME) are therefore unreliable for multiplatform targets.
+// TargetBuildSettings returns the target's effective build settings, looked up by target (not
+// scheme) with xcodebuild. Destination-style extraArgs have no effect in target mode.
 func (p *XcodeProj) TargetBuildSettings(target, configuration string, extraArgs ...string) (serialized.Object, error) {
 	if p.buildSettings == nil {
 		return nil, errors.New("no BuildSettingsProvider was injected")
@@ -51,12 +39,7 @@ func (p *XcodeProj) TargetBuildSettings(target, configuration string, extraArgs 
 	return p.buildSettings.TargetBuildSettings(p.Path, target, configuration, extraArgs...)
 }
 
-// TargetBundleID returns the target's bundle identifier for a configuration, fully resolved.
-//
-// It reads PRODUCT_BUNDLE_IDENTIFIER from the effective build settings and falls back to the
-// Info.plist's CFBundleIdentifier when that setting is absent. Either value may contain build
-// setting references such as $(PRODUCT_NAME:rfc1034identifier), which are expanded against the
-// same build settings.
+// TargetBundleID returns the resolved bundle ID, falling back to the Info.plist's CFBundleIdentifier.
 func (p *XcodeProj) TargetBundleID(target, configuration string) (string, error) {
 	buildSettings, err := p.TargetBuildSettings(target, configuration)
 	if err != nil {
@@ -80,11 +63,8 @@ func (p *XcodeProj) TargetBundleID(target, configuration string) (string, error)
 	return resolveBundleID(bundleID, buildSettings)
 }
 
-// TargetCodeSignEntitlements returns the contents of the target's entitlements file.
-//
-// If the target declares no CODE_SIGN_ENTITLEMENTS setting, the error satisfies
-// errors.Is(err, ErrEntitlementsNotFound). Any other error means the file was named but could not
-// be read or parsed, which is a real failure.
+// TargetCodeSignEntitlements returns the target's entitlements, or ErrEntitlementsNotFound if the
+// target declares none.
 func (p *XcodeProj) TargetCodeSignEntitlements(target, configuration string) (serialized.Object, error) {
 	buildSettings, err := p.TargetBuildSettings(target, configuration)
 	if err != nil {
@@ -105,10 +85,6 @@ func (p *XcodeProj) TargetCodeSignEntitlements(target, configuration string) (se
 }
 
 // TargetInfoplistPath returns the absolute path of the target's Info.plist.
-//
-// The path comes from the effective build settings, so it is already resolved: variable references
-// are expanded and an .xcconfig file that defines INFOPLIST_FILE outside the project file is
-// accounted for. Reading INFOPLIST_FILE from the project file instead would miss both.
 func (p *XcodeProj) TargetInfoplistPath(target, configuration string) (string, error) {
 	buildSettings, err := p.TargetBuildSettings(target, configuration)
 	if err != nil {
@@ -131,8 +107,6 @@ func (p *XcodeProj) readTargetInfoPlist(target, configuration string, buildSetti
 	return p.readPlist(pth)
 }
 
-// buildSettingPath reads a path-valued build setting and makes it absolute. Relative values are
-// resolved against the directory holding the .xcodeproj, which is what Xcode does.
 func (p *XcodeProj) buildSettingPath(buildSettings serialized.Object, key string) (string, bool) {
 	pth, ok := buildSettings.String(key)
 	if !ok || pth == "" {
@@ -146,14 +120,7 @@ func (p *XcodeProj) buildSettingPath(buildSettings serialized.Object, key string
 	return pth, true
 }
 
-// isRelativePath reports whether a build setting's path value should be resolved against the
-// project directory. It mirrors go-utils v1 pathutil.IsRelativePath, which has no go-utils v2
-// equivalent, so that this package treats paths exactly as the v1 implementation did.
-//
-// Note the "$" case: a value that still contains an unexpanded build setting reference is left
-// alone rather than being joined onto the project directory, which would only produce a longer
-// broken path. Effective build settings come from xcodebuild and are normally already expanded, so
-// this is a guard rather than a common route.
+// isRelativePath mirrors go-utils v1 pathutil.IsRelativePath, which has no v2 equivalent.
 func isRelativePath(pth string) bool {
 	switch {
 	case strings.HasPrefix(pth, "./"):
@@ -190,12 +157,6 @@ func (p *XcodeProj) readPlist(pth string) (serialized.Object, int, error) {
 	return object, format, nil
 }
 
-// resolveBundleID expands build setting references in a bundle identifier until none remain.
-//
-// A bundle ID in the project file can reference build settings, for example
-// `Bitrise.Test.$(PRODUCT_NAME:rfc1034identifier).Suffix`, and the referenced value may itself
-// contain a reference. Expansion repeats until the result is literal, and stops with an error if
-// the references form a cycle.
 func resolveBundleID(bundleID string, buildSettings serialized.Object) (string, error) {
 	seen := map[string]bool{}
 	resolved := bundleID
@@ -219,19 +180,14 @@ func resolveBundleID(bundleID string, buildSettings serialized.Object) (string, 
 
 func expandBuildSetting(value string, buildSettings serialized.Object) (string, error) {
 	if bracedReferenceRegexp.MatchString(value) {
-		// $(PRODUCT_NAME) / ${PRODUCT_NAME} / $(PRODUCT_NAME:rfc1034identifier)
 		return expandBracedReference(value, buildSettings)
 	}
-	// $PRODUCT_NAME
 	return expandBareReference(value, buildSettings)
 }
 
-// expandBracedReference replaces the first $(...) or ${...} reference.
-// Example: `prefix.$(ENV_KEY:rfc1034identifier).suffix` => `prefix.value.suffix`
 func expandBracedReference(value string, buildSettings serialized.Object) (string, error) {
 	reference := bracedReferenceRegexp.FindString(value)
 
-	// Strip the punctuation, then drop any :modifier suffix such as :rfc1034identifier.
 	key := referencePunctuationReplacer.Replace(reference)
 	key = strings.Split(key, ":")[0]
 
@@ -243,11 +199,7 @@ func expandBracedReference(value string, buildSettings serialized.Object) (strin
 	return strings.ReplaceAll(value, reference, settingValue), nil
 }
 
-// expandBareReference replaces a `$KEY` reference that has no braces.
-//
-// Where the reference runs into surrounding text, as in `$PRODUCT_NAME.suffix`, the key is not
-// delimited, so the longest match is tried first and characters are dropped from the end until a
-// build setting matches.
+// expandBareReference shortens an undelimited $KEY until it matches a build setting.
 func expandBareReference(value string, buildSettings serialized.Object) (string, error) {
 	if !bareReferenceRegexp.MatchString(value) {
 		return "", fmt.Errorf("failed to match a build setting reference in %s", value)

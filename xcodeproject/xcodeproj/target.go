@@ -7,7 +7,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// Target isa values.
 const (
 	nativeTargetISA    = "PBXNativeTarget"
 	aggregateTargetISA = "PBXAggregateTarget"
@@ -16,14 +15,12 @@ const (
 
 const appClipProductType = "com.apple.product-type.application.on-demand-install-capable"
 
-// Target is a build target of the project: an app, an app extension, a test bundle, a library.
+// Target is a build target of the project.
 type Target struct {
 	ID   string
 	Name string
 
-	// BuildConfigurations are the target's own configurations, in project file order.
-	BuildConfigurations []BuildConfiguration
-	// DefaultConfigurationName is empty when the target's configuration list does not name one.
+	BuildConfigurations      []BuildConfiguration
 	DefaultConfigurationName string
 
 	isa                 string
@@ -33,9 +30,7 @@ type Target struct {
 	buildPhaseIDs       []string
 }
 
-// DependsOn reports whether the target declares a direct dependency on the target with the given
-// ID. It does not consider transitive dependencies; use XcodeProj.DependentTargetsOfTarget for
-// those.
+// DependsOn reports whether the target directly depends on the target with the given ID.
 func (t Target) DependsOn(targetID string) bool {
 	for _, id := range t.dependencyTargetIDs {
 		if id == targetID {
@@ -45,8 +40,7 @@ func (t Target) DependsOn(targetID string) bool {
 	return false
 }
 
-// IsExecutableProduct reports whether the target produces an .app or an .appex bundle, meaning it
-// is a product that gets code signed and embedded in an archive.
+// IsExecutableProduct reports whether the target produces an .app or .appex bundle.
 func (t Target) IsExecutableProduct() bool {
 	return t.isAppProduct() || t.isAppExtensionProduct()
 }
@@ -73,7 +67,6 @@ func (t Target) isNativeTarget() bool {
 	return t.isa == nativeTargetISA
 }
 
-// isTest identifies any flavour of test target.
 // Based on https://github.com/CocoaPods/Xcodeproj/blob/907c81763a7660978fda93b2f38f05de0cbb51ad/lib/xcodeproj/project/object/native_target.rb#L470
 func (t Target) isTest() bool {
 	return t.isTestProduct() ||
@@ -107,7 +100,6 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 		return Target{}, fmt.Errorf("target %s has no name", id)
 	}
 
-	// Only native targets have a product type.
 	productType, _ := rawTarget.String("productType")
 
 	buildConfigurationListID, ok := rawTarget.String("buildConfigurationList")
@@ -120,13 +112,11 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 		return Target{}, fmt.Errorf("target %s: %w", id, err)
 	}
 
-	// dependencies is optional: a target with none omits the key entirely.
 	dependencyIDs, _ := rawTarget.StringSlice("dependencies")
 
 	var dependencyTargetIDs []string
 	for _, dependencyID := range dependencyIDs {
-		// A PBXTargetDependency can reference a target either directly or through a proxy. Only
-		// the direct form carries a "target" key, and only that form interests us.
+		// Only direct target dependencies carry a "target" key.
 		targetID, ok := targetIDOfDependency(dependencyID, objects)
 		if !ok {
 			continue
@@ -134,7 +124,6 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 		dependencyTargetIDs = append(dependencyTargetIDs, targetID)
 	}
 
-	// productReference is absent for targets that build no product, such as aggregate targets.
 	var productPath string
 	if productReferenceID, ok := rawTarget.String("productReference"); ok {
 		productReference, ok := objects.Object(productReferenceID)
@@ -144,7 +133,6 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 		productPath, _ = productReference.String("path")
 	}
 
-	// buildPhases is optional in the same way as dependencies.
 	buildPhaseIDs, _ := rawTarget.StringSlice("buildPhases")
 
 	return Target{

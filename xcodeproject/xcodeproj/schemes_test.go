@@ -16,7 +16,6 @@ import (
 
 const testUserName = "bitrise"
 
-// fakeUserProvider makes user-scheme lookup independent of who runs the tests.
 type fakeUserProvider struct {
 	name string
 	err  error
@@ -29,7 +28,6 @@ const minimalSchemeXML = `<?xml version="1.0" encoding="UTF-8"?>
 </Scheme>
 `
 
-// schemesProject copies a pbxproj fixture into a temporary .xcodeproj and opens it with a fake user.
 func schemesProject(t *testing.T, fixture string, user UserProvider) *XcodeProj {
 	t.Helper()
 
@@ -107,8 +105,6 @@ func TestXcodeProj_Schemes_otherUsersSchemesAreNotVisible(t *testing.T) {
 	assert.Equal(t, []string{"Shared"}, schemeNames(schemes))
 }
 
-// With no schemes on disk and no settings file, autocreate defaults to on and Xcode's default
-// schemes are generated: one per native, non-test target, with dependent test targets attached.
 func TestXcodeProj_Schemes_autocreatedByDefault(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
 
@@ -149,11 +145,9 @@ func TestXcodeProj_Schemes_autocreateOff(t *testing.T) {
 	require.ErrorContains(t, err, "'Autocreate schemes' option is disabled")
 }
 
-// The one case where the two methods differ: inside a workspace, a project without schemes is
-// normal, so no schemes is not an error.
 func TestXcodeProj_SchemesWithAutocreateOverride(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
-	// The project's own setting says on; the override must win.
+	// The override must win over the project's own setting.
 	writeAutocreateSetting(t, project, "<true/>")
 
 	schemes, err := project.SchemesWithAutocreateOverride(false)
@@ -165,8 +159,6 @@ func TestXcodeProj_SchemesWithAutocreateOverride(t *testing.T) {
 	assert.Equal(t, []string{"XcodeProj", "TodayExtension"}, schemeNames(schemes))
 }
 
-// As in v1, the settings file is read only when no schemes were found, so a broken one does not
-// affect a project that has schemes.
 func TestXcodeProj_Schemes_settingsNotReadWhenSchemesExist(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
 	writeFile(t, sharedSchemePath(project, "Shared"), minimalSchemeXML)
@@ -185,8 +177,6 @@ func TestXcodeProj_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
 	require.ErrorContains(t, err, "not a boolean")
 }
 
-// Autocreate on, but nothing to generate a scheme for: an empty result, not the "autocreate
-// disabled" error.
 func TestXcodeProj_Schemes_autocreateWithNothingToGenerate(t *testing.T) {
 	project := &XcodeProj{
 		Path:         filepath.Join(t.TempDir(), "Tests.xcodeproj"),
