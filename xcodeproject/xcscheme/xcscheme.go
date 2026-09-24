@@ -196,7 +196,7 @@ func Open(pth string) (Scheme, error) {
 		_ = f.Close()
 	}()
 
-	scheme, err := parse(f)
+	scheme, err := Parse(f)
 	if err != nil {
 		return Scheme{}, fmt.Errorf("failed to unmarshal scheme file: %s: %s", pth, err)
 	}
@@ -207,7 +207,10 @@ func Open(pth string) (Scheme, error) {
 	return scheme, nil
 }
 
-func parse(reader io.Reader) (scheme Scheme, err error) {
+// Parse decodes an .xcscheme document. Unlike Open it does no file IO, so callers that read files
+// through their own abstraction can decode the contents themselves. Name and Path are left empty;
+// Open derives them from the file path.
+func Parse(reader io.Reader) (scheme Scheme, err error) {
 	err = xml.NewDecoder(reader).Decode(&scheme)
 	return
 }
