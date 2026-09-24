@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/bitrise-io/go-utils/v2/sliceutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
@@ -44,7 +45,7 @@ func (p *XcodeProj) AppIconSetPaths() (map[string][]string, error) {
 			}
 			appIcons = append(appIcons, paths...)
 		}
-		targetToAppIcons[target.ID] = uniqueStrings(appIcons)
+		targetToAppIcons[target.ID] = sliceutil.Unique(appIcons)
 	}
 
 	return targetToAppIcons, nil
@@ -149,16 +150,4 @@ func appIconSetNames(target Target) []string {
 		names = append(names, name)
 	}
 	return names
-}
-
-func uniqueStrings(values []string) []string {
-	seen := map[string]bool{}
-	unique := []string{}
-	for _, value := range values {
-		if !seen[value] {
-			seen[value] = true
-			unique = append(unique, value)
-		}
-	}
-	return unique
 }

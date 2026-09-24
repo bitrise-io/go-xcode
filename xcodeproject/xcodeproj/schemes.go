@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/text/unicode/norm"
 
@@ -191,7 +192,7 @@ func (p *XcodeProj) readScheme(pth string) (xcscheme.Scheme, error) {
 		return xcscheme.Scheme{}, fmt.Errorf("failed to unmarshal scheme file: %s: %w", pth, err)
 	}
 
-	scheme.Name = trimExtension(filepath.Base(pth))
+	scheme.Name = strings.TrimSuffix(filepath.Base(pth), filepath.Ext(pth))
 	scheme.Path = pth
 
 	return scheme, nil
@@ -247,8 +248,4 @@ func (p *XcodeProj) isAutocreateSchemesEnabled() (bool, error) {
 	}
 
 	return autocreate, nil
-}
-
-func trimExtension(name string) string {
-	return name[:len(name)-len(filepath.Ext(name))]
 }

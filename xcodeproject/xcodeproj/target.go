@@ -3,6 +3,7 @@ package xcodeproj
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
@@ -32,12 +33,7 @@ type Target struct {
 
 // DependsOn reports whether the target directly depends on the target with the given ID.
 func (t Target) DependsOn(targetID string) bool {
-	for _, id := range t.dependencyTargetIDs {
-		if id == targetID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(t.dependencyTargetIDs, targetID)
 }
 
 // IsExecutableProduct reports whether the target produces an .app or .appex bundle.
