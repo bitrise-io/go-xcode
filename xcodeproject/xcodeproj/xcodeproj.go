@@ -62,10 +62,6 @@ type Factory struct {
 }
 
 // NewFactory returns a Factory that injects the given collaborators into every project it opens.
-//
-// buildSettings is only consulted by the methods that resolve effective build settings, and
-// pathProvider and userProvider only by app icon and user scheme lookup respectively, so a caller
-// that needs none of those may pass nil for them.
 func NewFactory(
 	logger log.Logger,
 	buildSettings BuildSettingsProvider,
@@ -223,13 +219,14 @@ func (p *XcodeProj) dependentTargetsOfTarget(target Target, visited map[string]b
 			continue
 		}
 
-		dependents = append(dependents, child)
-
+		// A target already seen is skipped entirely. That keeps a cycle from recursing forever and
+		// keeps the target the caller asked about out of its own result.
 		if visited[child.ID] {
 			continue
 		}
 		visited[child.ID] = true
 
+		dependents = append(dependents, child)
 		dependents = append(dependents, p.dependentTargetsOfTarget(child, visited)...)
 	}
 

@@ -9,9 +9,13 @@ import (
 // BuildSettingsProvider resolves the effective build settings of a target, as Xcode would
 // evaluate them: variables expanded and .xcconfig files applied.
 //
+// Lookup is by target only. Scheme-based lookup was left out on purpose: this package works per
+// target, and targets such as app extensions usually have no scheme to look up.
+//
 // This is deliberately narrow: it describes what this package needs, not what the xcodebuild
-// package offers. Implementations run `xcodebuild -showBuildSettings`, which is slow, so wrap
-// one in a caching decorator when the same target is queried repeatedly.
+// package offers. Implementations run `xcodebuild -showBuildSettings`, which costs seconds, and
+// this package does not memoize — a caller that resolves several things for one target will pay
+// for each. Memoizing is left to whoever knows how long an answer stays valid.
 type BuildSettingsProvider interface {
 	TargetBuildSettings(projectPath, target, configuration string, extraArgs ...string) (serialized.Object, error)
 }

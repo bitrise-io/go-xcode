@@ -186,7 +186,24 @@ func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, []string{"B", "C", "A"}, targetNames(project.DependentTargetsOfTarget(project.targets[0])))
+	// A is the target asked about, so it must not appear as its own dependency.
+	assert.Equal(t, []string{"B", "C"}, targetNames(project.DependentTargetsOfTarget(project.targets[0])))
+}
+
+// A dependency reachable through two paths appears once, where it is first reached.
+func TestXcodeProj_DependentTargetsOfTarget_sharedDependency(t *testing.T) {
+	project := &XcodeProj{
+		logger: log.NewLogger(),
+		targets: []Target{
+			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B", "C"}},
+			{ID: "B", Name: "B", dependencyTargetIDs: []string{"D"}},
+			{ID: "C", Name: "C", dependencyTargetIDs: []string{"D"}},
+			{ID: "D", Name: "D", dependencyTargetIDs: []string{"E"}},
+			{ID: "E", Name: "E"},
+		},
+	}
+
+	assert.Equal(t, []string{"B", "D", "E", "C"}, targetNames(project.DependentTargetsOfTarget(project.targets[0])))
 }
 
 func TestXcodeProj_TargetDevelopmentTeam(t *testing.T) {
