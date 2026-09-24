@@ -2,6 +2,7 @@
 package xcodeproj
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -81,12 +82,19 @@ func (f Factory) Open(pth string) (*XcodeProj, error) {
 		return nil, fmt.Errorf("failed to read %s: %w", pbxProjPth, err)
 	}
 
-	return f.Parse(content, absPth)
+	// The buffer was read here and nobody else holds it, so it needs no copy.
+	return f.parse(content, absPth)
 }
 
 // Parse builds a project from project.pbxproj content. projectPath is where the project is
 // considered to live: relative build setting paths resolve against it and Save writes to it.
+// content is copied, so the caller may reuse it.
 func (f Factory) Parse(content []byte, projectPath string) (*XcodeProj, error) {
+	// Save rebuilds the file from these bytes, so a buffer the caller changes later would corrupt it.
+	return f.parse(bytes.Clone(content), projectPath)
+}
+
+func (f Factory) parse(content []byte, projectPath string) (*XcodeProj, error) {
 	p, err := parsePBXProj(content)
 	if err != nil {
 		return nil, err

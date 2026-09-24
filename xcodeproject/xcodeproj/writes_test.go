@@ -281,3 +281,23 @@ func TestXcodeProj_Save_existingFileIsNotChmodded(t *testing.T) {
 
 	require.NoError(t, project.Save())
 }
+
+// Save rebuilds the file from the bytes given to Parse, so Parse must not keep the caller's buffer.
+func TestFactory_Parse_copiesContent(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("testdata", "without-target-attributes.pbxproj"))
+	require.NoError(t, err)
+	want, err := os.ReadFile(filepath.Join("testdata", "without-target-attributes-modified.pbxproj"))
+	require.NoError(t, err)
+
+	project, err := testFactory().Parse(content, "/projects/App.xcodeproj")
+	require.NoError(t, err)
+
+	for i := range content {
+		content[i] = 'x'
+	}
+
+	require.NoError(t, project.ForceCodeSign(forceCodeSignOptions("TargetWithouthTargetAttributes", "Debug")))
+	got, err := project.perObjectModify()
+	require.NoError(t, err)
+	assert.Equal(t, string(want), string(got))
+}
