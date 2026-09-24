@@ -9,6 +9,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/mocks"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -16,12 +17,11 @@ import (
 
 const testUserName = "bitrise"
 
-type fakeUserProvider struct {
-	name string
-	err  error
+func userProvider(t *testing.T, name string, err error) *mocks.UserProvider {
+	provider := mocks.NewUserProvider(t)
+	provider.On("CurrentUserName").Return(name, err).Maybe()
+	return provider
 }
-
-func (f fakeUserProvider) CurrentUserName() (string, error) { return f.name, f.err }
 
 const minimalSchemeXML = `<?xml version="1.0" encoding="UTF-8"?>
 <Scheme LastUpgradeVersion = "1240" version = "1.3">
@@ -81,7 +81,7 @@ func schemeNames(schemes []xcscheme.Scheme) []string {
 }
 
 func TestXcodeProj_Schemes_sharedAndUserSchemes(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeFile(t, sharedSchemePath(project, "Shared"), minimalSchemeXML)
 	writeFile(t, userSchemesPath(project, "Mine.xcscheme"), minimalSchemeXML)
 	writeFile(t, userSchemesPath(project, "notes.txt"), "not a scheme")
@@ -96,7 +96,7 @@ func TestXcodeProj_Schemes_sharedAndUserSchemes(t *testing.T) {
 }
 
 func TestXcodeProj_Schemes_otherUsersSchemesAreNotVisible(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: "someone-else"})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, "someone-else", nil))
 	writeFile(t, sharedSchemePath(project, "Shared"), minimalSchemeXML)
 	writeFile(t, userSchemesPath(project, "Mine.xcscheme"), minimalSchemeXML)
 
@@ -106,7 +106,7 @@ func TestXcodeProj_Schemes_otherUsersSchemesAreNotVisible(t *testing.T) {
 }
 
 func TestXcodeProj_Schemes_autocreatedByDefault(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 
 	schemes, err := project.Schemes()
 	require.NoError(t, err)
@@ -127,7 +127,7 @@ func TestXcodeProj_Schemes_autocreatedByDefault(t *testing.T) {
 }
 
 func TestXcodeProj_Schemes_schemeManagementFileMeansDefaults(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeAutocreateSetting(t, project, "<false/>")
 	writeFile(t, userSchemesPath(project, "xcschememanagement.plist"), "")
 
@@ -138,7 +138,7 @@ func TestXcodeProj_Schemes_schemeManagementFileMeansDefaults(t *testing.T) {
 }
 
 func TestXcodeProj_Schemes_autocreateOff(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeAutocreateSetting(t, project, "<false/>")
 
 	_, err := project.Schemes()
@@ -146,7 +146,7 @@ func TestXcodeProj_Schemes_autocreateOff(t *testing.T) {
 }
 
 func TestXcodeProj_SchemesWithAutocreateOverride(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	// The override must win over the project's own setting.
 	writeAutocreateSetting(t, project, "<true/>")
 
@@ -160,7 +160,7 @@ func TestXcodeProj_SchemesWithAutocreateOverride(t *testing.T) {
 }
 
 func TestXcodeProj_Schemes_settingsNotReadWhenSchemesExist(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeFile(t, sharedSchemePath(project, "Shared"), minimalSchemeXML)
 	writeFile(t, filepath.Join(project.Path, "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings"), "not a plist")
 
@@ -170,7 +170,7 @@ func TestXcodeProj_Schemes_settingsNotReadWhenSchemesExist(t *testing.T) {
 }
 
 func TestXcodeProj_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeAutocreateSetting(t, project, "<string>YES</string>")
 
 	_, err := project.Schemes()
@@ -182,7 +182,7 @@ func TestXcodeProj_Schemes_autocreateWithNothingToGenerate(t *testing.T) {
 		Path:         filepath.Join(t.TempDir(), "Tests.xcodeproj"),
 		logger:       log.NewLogger(),
 		fileManager:  fileutil.NewFileManager(),
-		userProvider: fakeUserProvider{name: testUserName},
+		userProvider: userProvider(t, testUserName, nil),
 		targets: []Target{
 			{ID: "T", Name: "Tests", isa: nativeTargetISA, productType: "com.apple.product-type.bundle.unit-test"},
 		},
@@ -194,7 +194,7 @@ func TestXcodeProj_Schemes_autocreateWithNothingToGenerate(t *testing.T) {
 }
 
 func TestXcodeProj_Schemes_malformedSchemeFile(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeFile(t, sharedSchemePath(project, "Broken"), "<Scheme")
 
 	_, err := project.Schemes()
@@ -203,14 +203,14 @@ func TestXcodeProj_Schemes_malformedSchemeFile(t *testing.T) {
 
 func TestXcodeProj_Schemes_userProviderFailure(t *testing.T) {
 	failure := errors.New("no such user")
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{err: failure})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, "", failure))
 
 	_, err := project.Schemes()
 	assert.ErrorIs(t, err, failure)
 }
 
 func TestXcodeProj_Scheme(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	// "Café" with a decomposed é (e + combining acute accent).
 	writeFile(t, sharedSchemePath(project, "Café"), minimalSchemeXML)
 

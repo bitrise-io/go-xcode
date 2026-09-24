@@ -9,37 +9,31 @@ import (
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-type fakeBuildSettingsProvider struct {
-	settings serialized.Object
-	err      error
-	calls    [][]string
-}
-
-func (f *fakeBuildSettingsProvider) TargetBuildSettings(projectPath, target, configuration string, extraArgs ...string) (serialized.Object, error) {
-	f.calls = append(f.calls, append([]string{projectPath, target, configuration}, extraArgs...))
-	if f.err != nil {
-		return nil, f.err
-	}
-	return f.settings, nil
-}
-
-func projectWithBuildSettings(t *testing.T, settings serialized.Object) (*XcodeProj, *fakeBuildSettingsProvider) {
+func projectWithProvider(t *testing.T, provider BuildSettingsProvider) *XcodeProj {
 	t.Helper()
 
-	provider := &fakeBuildSettingsProvider{settings: settings}
-	project := &XcodeProj{
+	return &XcodeProj{
 		Name:          "App",
 		Path:          filepath.Join(t.TempDir(), "App.xcodeproj"),
 		logger:        log.NewLogger(),
 		buildSettings: provider,
 		fileManager:   fileutil.NewFileManager(),
 	}
+}
 
-	return project, provider
+func projectWithBuildSettings(t *testing.T, settings serialized.Object) *XcodeProj {
+	t.Helper()
+
+	provider := mocks.NewBuildSettingsProvider(t)
+	provider.On("TargetBuildSettings", mock.Anything, mock.Anything, mock.Anything).Return(settings, nil)
+
+	return projectWithProvider(t, provider)
 }
 
 func writePlist(t *testing.T, pth string, content string) {
@@ -59,14 +53,14 @@ func plistWith(entries string) string {
 }
 
 func TestXcodeProj_TargetBuildSettings(t *testing.T) {
-	project, provider := projectWithBuildSettings(t, serialized.Object{"SDKROOT": "iphoneos"})
+	provider := mocks.NewBuildSettingsProvider(t)
+	project := projectWithProvider(t, provider)
+	provider.On("TargetBuildSettings", project.Path, "App", "Release", "-destination", "generic/platform=iOS").
+		Return(serialized.Object{"SDKROOT": "iphoneos"}, nil).Once()
 
 	settings, err := project.TargetBuildSettings("App", "Release", "-destination", "generic/platform=iOS")
 	require.NoError(t, err)
-
 	assert.Equal(t, serialized.Object{"SDKROOT": "iphoneos"}, settings)
-	require.Len(t, provider.calls, 1)
-	assert.Equal(t, []string{project.Path, "App", "Release", "-destination", "generic/platform=iOS"}, provider.calls[0])
 }
 
 func TestXcodeProj_TargetBuildSettings_noProviderInjected(t *testing.T) {
@@ -77,16 +71,17 @@ func TestXcodeProj_TargetBuildSettings_noProviderInjected(t *testing.T) {
 }
 
 func TestXcodeProj_TargetBuildSettings_providerFailure(t *testing.T) {
-	project, provider := projectWithBuildSettings(t, nil)
-	provider.err = errors.New("xcodebuild exploded")
+	failure := errors.New("xcodebuild exploded")
+	provider := mocks.NewBuildSettingsProvider(t)
+	provider.On("TargetBuildSettings", mock.Anything, mock.Anything, mock.Anything).Return(nil, failure)
 
-	_, err := project.TargetBuildSettings("App", "Debug")
-	assert.ErrorIs(t, err, provider.err)
+	_, err := projectWithProvider(t, provider).TargetBuildSettings("App", "Debug")
+	assert.ErrorIs(t, err, failure)
 }
 
 func TestXcodeProj_TargetBundleID(t *testing.T) {
 	t.Run("from the build setting", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{
+		project := projectWithBuildSettings(t, serialized.Object{
 			"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.App",
 		})
 
@@ -96,7 +91,7 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 	})
 
 	t.Run("references in the build setting are expanded", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{
+		project := projectWithBuildSettings(t, serialized.Object{
 			"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.$(PRODUCT_NAME:rfc1034identifier)",
 			"PRODUCT_NAME":              "App",
 		})
@@ -107,7 +102,7 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 	})
 
 	t.Run("falls back to the Info.plist CFBundleIdentifier", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{
+		project := projectWithBuildSettings(t, serialized.Object{
 			"INFOPLIST_FILE": "App/Info.plist",
 		})
 		writePlist(t, filepath.Join(filepath.Dir(project.Path), "App", "Info.plist"),
@@ -119,7 +114,7 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 	})
 
 	t.Run("references in the Info.plist value are expanded too", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{
+		project := projectWithBuildSettings(t, serialized.Object{
 			"INFOPLIST_FILE": "App/Info.plist",
 			"PRODUCT_NAME":   "App",
 		})
@@ -132,14 +127,14 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 	})
 
 	t.Run("neither source available", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{})
+		project := projectWithBuildSettings(t, serialized.Object{})
 
 		_, err := project.TargetBundleID("App", "Release")
 		require.ErrorContains(t, err, "PRODUCT_BUNDLE_IDENTIFIER")
 	})
 
 	t.Run("Info.plist named but missing", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{
+		project := projectWithBuildSettings(t, serialized.Object{
 			"INFOPLIST_FILE": "App/Info.plist",
 		})
 
@@ -150,7 +145,7 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 
 func TestXcodeProj_TargetCodeSignEntitlements(t *testing.T) {
 	t.Run("reads the entitlements file", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{
+		project := projectWithBuildSettings(t, serialized.Object{
 			"CODE_SIGN_ENTITLEMENTS": "App/App.entitlements",
 		})
 		writePlist(t, filepath.Join(filepath.Dir(project.Path), "App", "App.entitlements"),
@@ -162,14 +157,14 @@ func TestXcodeProj_TargetCodeSignEntitlements(t *testing.T) {
 	})
 
 	t.Run("no entitlements setting yields ErrEntitlementsNotFound", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{})
+		project := projectWithBuildSettings(t, serialized.Object{})
 
 		_, err := project.TargetCodeSignEntitlements("App", "Release")
 		assert.ErrorIs(t, err, ErrEntitlementsNotFound)
 	})
 
 	t.Run("entitlements named but unreadable is NOT ErrEntitlementsNotFound", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{
+		project := projectWithBuildSettings(t, serialized.Object{
 			"CODE_SIGN_ENTITLEMENTS": "App/App.entitlements",
 		})
 
@@ -180,7 +175,7 @@ func TestXcodeProj_TargetCodeSignEntitlements(t *testing.T) {
 	})
 
 	t.Run("malformed entitlements is a real error", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{
+		project := projectWithBuildSettings(t, serialized.Object{
 			"CODE_SIGN_ENTITLEMENTS": "App/App.entitlements",
 		})
 		writePlist(t, filepath.Join(filepath.Dir(project.Path), "App", "App.entitlements"), "not a plist")
@@ -193,7 +188,7 @@ func TestXcodeProj_TargetCodeSignEntitlements(t *testing.T) {
 
 func TestXcodeProj_TargetInfoplistPath(t *testing.T) {
 	t.Run("relative paths resolve against the project directory", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{
+		project := projectWithBuildSettings(t, serialized.Object{
 			"INFOPLIST_FILE": "App/Info.plist",
 		})
 
@@ -203,7 +198,7 @@ func TestXcodeProj_TargetInfoplistPath(t *testing.T) {
 	})
 
 	t.Run("absolute paths are returned unchanged", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{
+		project := projectWithBuildSettings(t, serialized.Object{
 			"INFOPLIST_FILE": "/elsewhere/Info.plist",
 		})
 
@@ -213,7 +208,7 @@ func TestXcodeProj_TargetInfoplistPath(t *testing.T) {
 	})
 
 	t.Run("absent setting", func(t *testing.T) {
-		project, _ := projectWithBuildSettings(t, serialized.Object{})
+		project := projectWithBuildSettings(t, serialized.Object{})
 
 		_, err := project.TargetInfoplistPath("App", "Release")
 		require.ErrorContains(t, err, "INFOPLIST_FILE")
@@ -325,7 +320,7 @@ func TestIsRelativePath(t *testing.T) {
 }
 
 func TestXcodeProj_TargetInfoplistPath_unexpandedReferenceIsLeftAlone(t *testing.T) {
-	project, _ := projectWithBuildSettings(t, serialized.Object{
+	project := projectWithBuildSettings(t, serialized.Object{
 		"INFOPLIST_FILE": "$(SRCROOT)/App/Info.plist",
 	})
 

@@ -129,7 +129,7 @@ func TestXcodeProj_RecreateSchemes(t *testing.T) {
 }
 
 func TestXcodeProj_SaveSharedScheme(t *testing.T) {
-	project := schemesProject(t, "ios-sample.pbxproj", fakeUserProvider{name: testUserName})
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 
 	schemes := project.RecreateSchemes()
 	require.NotEmpty(t, schemes)

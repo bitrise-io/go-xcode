@@ -3,12 +3,11 @@ package xcodeproj
 import (
 	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/bitrise-io/go-plist"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
@@ -50,7 +49,7 @@ func (p *XcodeProj) TargetBundleID(target, configuration string) (string, error)
 		return resolveBundleID(bundleID, buildSettings)
 	}
 
-	infoPlist, _, err := p.readTargetInfoPlist(target, configuration, buildSettings)
+	infoPlist, err := p.readTargetInfoPlist(target, buildSettings)
 	if err != nil {
 		return "", fmt.Errorf("no %s build setting, and reading the Info.plist instead failed: %w", bundleIDBuildSettingKey, err)
 	}
@@ -76,7 +75,7 @@ func (p *XcodeProj) TargetCodeSignEntitlements(target, configuration string) (se
 		return nil, fmt.Errorf("target %s: %w", target, ErrEntitlementsNotFound)
 	}
 
-	entitlements, _, err := p.readPlist(pth)
+	entitlements, err := p.readPlist(pth)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read entitlements of target %s: %w", target, err)
 	}
@@ -99,10 +98,10 @@ func (p *XcodeProj) TargetInfoplistPath(target, configuration string) (string, e
 	return pth, nil
 }
 
-func (p *XcodeProj) readTargetInfoPlist(target, configuration string, buildSettings serialized.Object) (serialized.Object, int, error) {
+func (p *XcodeProj) readTargetInfoPlist(target string, buildSettings serialized.Object) (serialized.Object, error) {
 	pth, ok := p.buildSettingPath(buildSettings, infoPlistBuildSettingKey)
 	if !ok {
-		return nil, plist.InvalidFormat, fmt.Errorf("no %s build setting found for target %s", infoPlistBuildSettingKey, target)
+		return nil, fmt.Errorf("no %s build setting found for target %s", infoPlistBuildSettingKey, target)
 	}
 	return p.readPlist(pth)
 }
@@ -134,27 +133,12 @@ func isRelativePath(pth string) bool {
 	}
 }
 
-func (p *XcodeProj) readPlist(pth string) (serialized.Object, int, error) {
-	file, err := p.fileManager.Open(pth)
+func (p *XcodeProj) readPlist(pth string) (serialized.Object, error) {
+	data, _, err := plistutil.NewFileHandler(p.fileManager).Read(pth)
 	if err != nil {
-		return nil, plist.InvalidFormat, err
+		return nil, err
 	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	content, err := io.ReadAll(file)
-	if err != nil {
-		return nil, plist.InvalidFormat, err
-	}
-
-	var object serialized.Object
-	format, err := plist.Unmarshal(content, &object)
-	if err != nil {
-		return nil, plist.InvalidFormat, fmt.Errorf("failed to unmarshal %s: %w", pth, err)
-	}
-
-	return object, format, nil
+	return serialized.Object(data), nil
 }
 
 func resolveBundleID(bundleID string, buildSettings serialized.Object) (string, error) {
