@@ -68,8 +68,10 @@ func (p showBuildSettingsProvider) run(args []string) (serialized.Object, error)
 	if err != nil {
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
-			// The output explains the failure better than the exit status.
-			return nil, fmt.Errorf("%s failed: %s: %w", cmd.PrintableCommandArgs(), out, err)
+			return nil, commandError{
+				message: fmt.Sprintf("%s failed with exit status %d: %s", cmd.PrintableCommandArgs(), exitErr.ExitCode(), out),
+				err:     err,
+			}
 		}
 		return nil, fmt.Errorf("failed to run %s: %w", cmd.PrintableCommandArgs(), err)
 	}
@@ -144,3 +146,14 @@ func parseShowBuildSettingsOutput(out string) (serialized.Object, error) {
 
 	return settings, nil
 }
+
+// commandError reports a failed xcodebuild run with its output, which explains the failure better
+// than the exit status, while still unwrapping to the underlying error.
+type commandError struct {
+	message string
+	err     error
+}
+
+func (e commandError) Error() string { return e.message }
+
+func (e commandError) Unwrap() error { return e.err }

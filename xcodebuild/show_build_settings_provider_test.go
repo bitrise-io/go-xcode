@@ -3,6 +3,7 @@ package xcodebuild
 import (
 	"errors"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/command"
@@ -67,6 +68,8 @@ func TestShowBuildSettingsProvider_exitStatusErrorReportsOutput(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "does not contain a target named")
+	assert.Contains(t, err.Error(), "exit status")
+	assert.Equal(t, 1, strings.Count(err.Error(), "xcodebuild ..."), "the command appears once")
 
 	var exitErr *exec.ExitError
 	assert.ErrorAs(t, err, &exitErr)
