@@ -11,9 +11,10 @@ type BuildConfiguration struct {
 	ID   string
 	Name string
 
-	// buildSettings is the configuration's XCBuildConfiguration.buildSettings node. It is
-	// intentionally unexported: build settings are written through XcodeProj.SetBuildSetting so
-	// that the change reaches the raw project tree that Save writes out.
+	// buildSettings is the configuration's XCBuildConfiguration.buildSettings node: the same map
+	// that lives in the raw project tree, not a copy, exactly as in v1. Writes through
+	// XcodeProj.SetBuildSetting and XcodeProj.ForceCodeSign land in it, which is how they reach
+	// Save. It is nil when the project file declares no buildSettings for the configuration.
 	buildSettings serialized.Object
 }
 
@@ -40,12 +41,10 @@ func parseBuildConfiguration(id string, objects serialized.Object) (BuildConfigu
 		return BuildConfiguration{}, fmt.Errorf("build configuration %s has no name", id)
 	}
 
-	buildSettings, ok := raw.Object("buildSettings")
-	if !ok {
-		// A configuration without any build settings is unusual but valid; treat it as empty
-		// rather than failing the whole parse.
-		buildSettings = serialized.Object{}
-	}
+	// A configuration without build settings is unusual but still readable, so it does not fail the
+	// parse. The map is left nil rather than replaced by an empty one: an empty map would not be
+	// part of the raw tree, and a write into it would silently never reach Save.
+	buildSettings, _ := raw.Object("buildSettings")
 
 	return BuildConfiguration{
 		ID:            id,
