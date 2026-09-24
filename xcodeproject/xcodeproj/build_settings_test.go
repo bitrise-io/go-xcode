@@ -131,6 +131,7 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 
 		_, err := project.TargetBundleID("App", "Release")
 		require.ErrorContains(t, err, "PRODUCT_BUNDLE_IDENTIFIER")
+		assert.ErrorIs(t, err, ErrInfoPlistNotFound)
 	})
 
 	t.Run("Info.plist named but missing", func(t *testing.T) {
@@ -140,6 +141,7 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 
 		_, err := project.TargetBundleID("App", "Release")
 		require.Error(t, err)
+		assert.NotErrorIs(t, err, ErrInfoPlistNotFound, "a declared but missing Info.plist is a real failure")
 	})
 }
 
@@ -211,7 +213,7 @@ func TestXcodeProj_TargetInfoplistPath(t *testing.T) {
 		project := projectWithBuildSettings(t, serialized.Object{})
 
 		_, err := project.TargetInfoplistPath("App", "Release")
-		require.ErrorContains(t, err, "INFOPLIST_FILE")
+		assert.ErrorIs(t, err, ErrInfoPlistNotFound)
 	})
 }
 

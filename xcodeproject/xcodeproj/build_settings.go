@@ -29,6 +29,10 @@ var (
 // ErrEntitlementsNotFound is returned when a target declares no CODE_SIGN_ENTITLEMENTS.
 var ErrEntitlementsNotFound = errors.New("target has no code sign entitlements file")
 
+// ErrInfoPlistNotFound is returned when a target declares no INFOPLIST_FILE, as with a generated
+// Info.plist.
+var ErrInfoPlistNotFound = errors.New("target has no Info.plist file")
+
 // TargetBuildSettings returns the target's effective build settings, looked up by target (not
 // scheme) with xcodebuild. Destination-style extraArgs have no effect in target mode.
 func (p *XcodeProj) TargetBuildSettings(target, configuration string, extraArgs ...string) (serialized.Object, error) {
@@ -83,7 +87,8 @@ func (p *XcodeProj) TargetCodeSignEntitlements(target, configuration string) (se
 	return entitlements, nil
 }
 
-// TargetInfoplistPath returns the absolute path of the target's Info.plist.
+// TargetInfoplistPath returns the absolute path of the target's Info.plist, or ErrInfoPlistNotFound
+// if the target declares none.
 func (p *XcodeProj) TargetInfoplistPath(target, configuration string) (string, error) {
 	buildSettings, err := p.TargetBuildSettings(target, configuration)
 	if err != nil {
@@ -92,7 +97,7 @@ func (p *XcodeProj) TargetInfoplistPath(target, configuration string) (string, e
 
 	pth, ok := p.buildSettingPath(buildSettings, infoPlistBuildSettingKey)
 	if !ok {
-		return "", fmt.Errorf("no %s build setting found for target %s", infoPlistBuildSettingKey, target)
+		return "", fmt.Errorf("target %s: %w", target, ErrInfoPlistNotFound)
 	}
 
 	return pth, nil
@@ -101,7 +106,7 @@ func (p *XcodeProj) TargetInfoplistPath(target, configuration string) (string, e
 func (p *XcodeProj) readTargetInfoPlist(target string, buildSettings serialized.Object) (serialized.Object, error) {
 	pth, ok := p.buildSettingPath(buildSettings, infoPlistBuildSettingKey)
 	if !ok {
-		return nil, fmt.Errorf("no %s build setting found for target %s", infoPlistBuildSettingKey, target)
+		return nil, fmt.Errorf("target %s: %w", target, ErrInfoPlistNotFound)
 	}
 	return p.readPlist(pth)
 }

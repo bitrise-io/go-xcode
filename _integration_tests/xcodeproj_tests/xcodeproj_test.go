@@ -85,7 +85,7 @@ func TestXcodeProj_iosSample(t *testing.T) {
 
 	// The target generates its Info.plist, so there is no INFOPLIST_FILE to resolve.
 	_, err = project.TargetInfoplistPath("ios-sample", "Release")
-	assert.ErrorContains(t, err, "INFOPLIST_FILE")
+	assert.ErrorIs(t, err, xcodeproj.ErrInfoPlistNotFound)
 }
 
 // -scheme needs a destination for the scheme's platform. The multiplatform ios-sample can resolve
