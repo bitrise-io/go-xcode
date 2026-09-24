@@ -19,11 +19,11 @@ const (
 	launcherID                  = "Xcode.DebuggerFoundation.Launcher.LLDB"
 )
 
-// Shared schemes are committed and read by other tools, so the directory is created as Xcode does
-// and not owner-only, which is what FileManager.Write would use.
+// The directory is created as Xcode does, not owner-only as FileManager.Write would. New scheme files
+// get v1's mode; existing ones keep theirs.
 const (
-	sharedSchemesDirMode = 0755
-	sharedSchemeFileMode = 0600
+	sharedSchemesDirMode    = 0755
+	newSharedSchemeFileMode = 0600
 )
 
 // RecreateSchemes returns the schemes Xcode would create for the project, one per native, non-test
@@ -53,7 +53,7 @@ func (p *XcodeProj) SaveSharedScheme(scheme xcscheme.Scheme) error {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	if err := p.fileManager.Write(pth, string(content), sharedSchemeFileMode); err != nil {
+	if err := p.fileManager.Write(pth, string(content), fileMode(p.fileManager, pth, newSharedSchemeFileMode)); err != nil {
 		return fmt.Errorf("failed to write scheme file (%s): %w", pth, err)
 	}
 

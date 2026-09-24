@@ -142,7 +142,13 @@ func TestXcodeProj_SaveSharedScheme(t *testing.T) {
 
 	fileInfo, err := os.Stat(pth)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0600), fileInfo.Mode().Perm(), "scheme file mode, as in v1")
+	assert.Equal(t, os.FileMode(0600), fileInfo.Mode().Perm(), "a new scheme file gets v1's mode")
+
+	require.NoError(t, os.Chmod(pth, 0644))
+	require.NoError(t, project.SaveSharedScheme(scheme))
+	fileInfo, err = os.Stat(pth)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0644), fileInfo.Mode().Perm(), "an existing scheme file keeps its mode, as in v1")
 
 	dirInfo, err := os.Stat(filepath.Dir(pth))
 	require.NoError(t, err)

@@ -204,6 +204,7 @@ func TestXcodeProj_Save(t *testing.T) {
 	require.NoError(t, err)
 	pbxProjPath := filepath.Join(projectPath, "project.pbxproj")
 	require.NoError(t, os.WriteFile(pbxProjPath, content, 0600))
+	require.NoError(t, os.Chmod(pbxProjPath, 0664))
 
 	project, err := testFactory().Open(projectPath)
 	require.NoError(t, err)
@@ -217,7 +218,23 @@ func TestXcodeProj_Save(t *testing.T) {
 
 	info, err := os.Stat(pbxProjPath)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0644), info.Mode().Perm(), "project.pbxproj must be readable by others, as in v1")
+	assert.Equal(t, os.FileMode(0664), info.Mode().Perm(), "an existing file keeps its mode, as in v1")
+}
+
+func TestXcodeProj_Save_newFileGetsV1Mode(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
+	require.NoError(t, err)
+
+	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
+	require.NoError(t, os.MkdirAll(projectPath, 0755))
+
+	project, err := testFactory().Parse(content, projectPath)
+	require.NoError(t, err)
+	require.NoError(t, project.Save())
+
+	info, err := os.Stat(filepath.Join(projectPath, "project.pbxproj"))
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0644), info.Mode().Perm())
 }
 
 func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {

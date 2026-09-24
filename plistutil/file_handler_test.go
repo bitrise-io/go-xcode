@@ -18,6 +18,7 @@ func TestFileHandler_roundTripKeepsFormat(t *testing.T) {
 			content, err := plist.Marshal(PlistData{"CFBundleVersion": "1"}, format)
 			require.NoError(t, err)
 			require.NoError(t, os.WriteFile(pth, content, 0600))
+			require.NoError(t, os.Chmod(pth, 0664))
 
 			handler := NewFileHandler(fileutil.NewFileManager())
 
@@ -36,9 +37,39 @@ func TestFileHandler_roundTripKeepsFormat(t *testing.T) {
 
 			info, err := os.Stat(pth)
 			require.NoError(t, err)
-			assert.Equal(t, os.FileMode(0644), info.Mode().Perm())
+			assert.Equal(t, os.FileMode(0664), info.Mode().Perm(), "an existing file keeps its mode, as in v1")
 		})
 	}
+}
+
+func TestFileHandler_Write_newFileGetsV1Mode(t *testing.T) {
+	pth := filepath.Join(t.TempDir(), "New.plist")
+
+	require.NoError(t, NewFileHandler(fileutil.NewFileManager()).Write(pth, PlistData{"A": "1"}, plist.XMLFormat))
+
+	info, err := os.Stat(pth)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0644), info.Mode().Perm())
+}
+
+// Writing through a symlink keeps the target's mode and the link itself.
+func TestFileHandler_Write_throughSymlink(t *testing.T) {
+	dir := t.TempDir()
+	target := filepath.Join(dir, "Info.plist")
+	link := filepath.Join(dir, "Link.plist")
+	require.NoError(t, os.WriteFile(target, []byte(`<?xml version="1.0" encoding="UTF-8"?><plist version="1.0"><dict/></plist>`), 0600))
+	require.NoError(t, os.Chmod(target, 0664))
+	require.NoError(t, os.Symlink(target, link))
+
+	require.NoError(t, NewFileHandler(fileutil.NewFileManager()).Write(link, PlistData{"A": "1"}, plist.XMLFormat))
+
+	info, err := os.Stat(target)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0664), info.Mode().Perm())
+
+	linkInfo, err := os.Lstat(link)
+	require.NoError(t, err)
+	assert.Equal(t, os.ModeSymlink, linkInfo.Mode()&os.ModeSymlink, "the link is still a link")
 }
 
 func TestFileHandler_Read_errors(t *testing.T) {

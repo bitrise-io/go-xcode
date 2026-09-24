@@ -2,17 +2,19 @@ package xcodeproj
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
 
 	"github.com/bitrise-io/go-plist"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// project.pbxproj is written world-readable, as in v1: other tools read it.
-const pbxProjFileMode = 0644
+// newPBXProjFileMode is v1's mode for a newly created project.pbxproj.
+const newPBXProjFileMode = 0644
 
 // ForceCodeSignOptions are the manual code signing settings ForceCodeSign applies.
 type ForceCodeSignOptions struct {
@@ -91,7 +93,7 @@ func (p *XcodeProj) Save() error {
 		}
 	}
 
-	if err := p.fileManager.Write(pth, string(content), pbxProjFileMode); err != nil {
+	if err := p.fileManager.Write(pth, string(content), fileMode(p.fileManager, pth, newPBXProjFileMode)); err != nil {
 		return fmt.Errorf("failed to write %s: %w", pth, err)
 	}
 
@@ -224,4 +226,24 @@ func (p *XcodeProj) perObjectModify() ([]byte, error) {
 	}
 
 	return result, nil
+}
+
+// fileMode returns the mode of the existing file at pth, or newFileMode if there is none. Writing
+// with it keeps an existing file's mode, as os.WriteFile did in v1; FileManager.Write would
+// otherwise chmod the file to the mode it is given. The file is opened rather than Lstat-ed so
+// that a symlink's target mode is kept, not the link's.
+func fileMode(fileManager fileutil.FileManager, pth string, newFileMode os.FileMode) os.FileMode {
+	file, err := fileManager.Open(pth)
+	if err != nil {
+		return newFileMode
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+
+	info, err := file.Stat()
+	if err != nil {
+		return newFileMode
+	}
+	return info.Mode().Perm()
 }

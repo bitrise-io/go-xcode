@@ -3,13 +3,14 @@ package plistutil
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 )
 
-// Written world-readable, as in v1: other tools read these files.
-const plistFileMode = 0644
+// newPlistFileMode is v1's mode for a newly created plist file.
+const newPlistFileMode = 0644
 
 // FileHandler reads and writes plist files, keeping their format (XML, binary, OpenStep or GNUstep)
 // so a file can be written back as it was read.
@@ -51,12 +52,31 @@ func (h fileHandler) Read(path string) (PlistData, int, error) {
 	return data, format, nil
 }
 
-// Write writes data to path in the given format, such as the one Read returned.
+// Write writes data to path in the given format, such as the one Read returned. An existing file
+// keeps its mode.
 func (h fileHandler) Write(path string, data PlistData, format int) error {
 	content, err := plist.Marshal(data, format)
 	if err != nil {
 		return fmt.Errorf("failed to marshal %s: %w", path, err)
 	}
 
-	return h.fileManager.Write(path, string(content), plistFileMode)
+	return h.fileManager.Write(path, string(content), h.fileMode(path))
+}
+
+// fileMode returns the existing file's mode, so that Write keeps it as os.WriteFile did in v1;
+// FileManager.Write would otherwise chmod the file. Opening follows symlinks, unlike Lstat.
+func (h fileHandler) fileMode(path string) os.FileMode {
+	file, err := h.fileManager.Open(path)
+	if err != nil {
+		return newPlistFileMode
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+
+	info, err := file.Stat()
+	if err != nil {
+		return newPlistFileMode
+	}
+	return info.Mode().Perm()
 }
