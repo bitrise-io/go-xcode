@@ -53,7 +53,7 @@ func (p *XcodeProj) SaveSharedScheme(scheme xcscheme.Scheme) error {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	if err := p.fileManager.Write(pth, string(content), fileMode(p.fileManager, pth, newSharedSchemeFileMode)); err != nil {
+	if err := writeKeepingMode(p.fileManager, pth, content, newSharedSchemeFileMode); err != nil {
 		return fmt.Errorf("failed to write scheme file (%s): %w", pth, err)
 	}
 

@@ -3,7 +3,6 @@ package plistutil
 import (
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/v2/fileutil"
@@ -60,23 +59,11 @@ func (h fileHandler) Write(path string, data PlistData, format int) error {
 		return fmt.Errorf("failed to marshal %s: %w", path, err)
 	}
 
-	return h.fileManager.Write(path, string(content), h.fileMode(path))
-}
-
-// fileMode returns the existing file's mode, so that Write keeps it as os.WriteFile did in v1;
-// FileManager.Write would otherwise chmod the file. Opening follows symlinks, unlike Lstat.
-func (h fileHandler) fileMode(path string) os.FileMode {
-	file, err := h.fileManager.Open(path)
-	if err != nil {
-		return newPlistFileMode
+	// As in v1's os.WriteFile, an existing file keeps its mode. FileManager.Write always chmods,
+	// which fails with EPERM for a file the process can write but doesn't own, so it is only used
+	// to create files.
+	if _, err := h.fileManager.Lstat(path); err == nil {
+		return h.fileManager.WriteBytes(path, content)
 	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	info, err := file.Stat()
-	if err != nil {
-		return newPlistFileMode
-	}
-	return info.Mode().Perm()
+	return h.fileManager.Write(path, string(content), newPlistFileMode)
 }

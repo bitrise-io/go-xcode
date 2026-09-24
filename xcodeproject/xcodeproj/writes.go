@@ -93,7 +93,7 @@ func (p *XcodeProj) Save() error {
 		}
 	}
 
-	if err := p.fileManager.Write(pth, string(content), fileMode(p.fileManager, pth, newPBXProjFileMode)); err != nil {
+	if err := writeKeepingMode(p.fileManager, pth, content, newPBXProjFileMode); err != nil {
 		return fmt.Errorf("failed to write %s: %w", pth, err)
 	}
 
@@ -228,22 +228,13 @@ func (p *XcodeProj) perObjectModify() ([]byte, error) {
 	return result, nil
 }
 
-// fileMode returns the mode of the existing file at pth, or newFileMode if there is none. Writing
-// with it keeps an existing file's mode, as os.WriteFile did in v1; FileManager.Write would
-// otherwise chmod the file to the mode it is given. The file is opened rather than Lstat-ed so
-// that a symlink's target mode is kept, not the link's.
-func fileMode(fileManager fileutil.FileManager, pth string, newFileMode os.FileMode) os.FileMode {
-	file, err := fileManager.Open(pth)
-	if err != nil {
-		return newFileMode
+// writeKeepingMode writes content as v1's os.WriteFile did: an existing file keeps its mode, and a
+// new one gets newFileMode. FileManager.Write always chmods, which fails with EPERM for a file the process
+// can write but doesn't own, so it is only used to create files; WriteBytes, which does not chmod,
+// overwrites existing ones.
+func writeKeepingMode(fileManager fileutil.FileManager, pth string, content []byte, newFileMode os.FileMode) error {
+	if _, err := fileManager.Lstat(pth); err == nil {
+		return fileManager.WriteBytes(pth, content)
 	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	info, err := file.Stat()
-	if err != nil {
-		return newFileMode
-	}
-	return info.Mode().Perm()
+	return fileManager.Write(pth, string(content), newFileMode)
 }

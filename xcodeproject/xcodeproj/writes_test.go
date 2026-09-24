@@ -5,8 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	rootmocks "github.com/bitrise-io/go-xcode/v2/mocks"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -264,4 +266,18 @@ func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
 	reopenedObjects, ok := reopened.rawProj.Object("objects")
 	require.True(t, ok)
 	assert.True(t, reopenedObjects.Has("BB00000000000000000000A1"))
+}
+
+// Overwriting must not chmod: FileManager.Write chmods, which fails for a file the process can write
+// but doesn't own, so an existing file is written with WriteBytes.
+func TestXcodeProj_Save_existingFileIsNotChmodded(t *testing.T) {
+	project := parseFixture(t, "minimal.pbxproj")
+	pth := filepath.Join(project.Path, "project.pbxproj")
+
+	fileManager := rootmocks.NewFileManager(t)
+	fileManager.On("Lstat", pth).Return(nil, nil)
+	fileManager.On("WriteBytes", pth, mock.Anything).Return(nil)
+	project.fileManager = fileManager
+
+	require.NoError(t, project.Save())
 }

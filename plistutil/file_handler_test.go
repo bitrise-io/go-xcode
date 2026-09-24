@@ -7,7 +7,9 @@ import (
 
 	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-xcode/v2/mocks"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -82,4 +84,14 @@ func TestFileHandler_Read_errors(t *testing.T) {
 	require.NoError(t, os.WriteFile(malformed, []byte("<plist"), 0644))
 	_, _, err = handler.Read(malformed)
 	require.ErrorContains(t, err, "malformed.plist")
+}
+
+// Overwriting must not chmod: FileManager.Write chmods, which fails for a file the process can write
+// but doesn't own, so an existing file is written with WriteBytes.
+func TestFileHandler_Write_existingFileIsNotChmodded(t *testing.T) {
+	fileManager := mocks.NewFileManager(t)
+	fileManager.On("Lstat", "Info.plist").Return(nil, nil)
+	fileManager.On("WriteBytes", "Info.plist", mock.Anything).Return(nil)
+
+	require.NoError(t, NewFileHandler(fileManager).Write("Info.plist", PlistData{"A": "1"}, plist.XMLFormat))
 }
