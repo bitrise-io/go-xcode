@@ -55,7 +55,7 @@ func plistWith(entries string) string {
 func TestXcodeProj_TargetBuildSettings(t *testing.T) {
 	provider := mocks.NewBuildSettingsProvider(t)
 	project := projectWithProvider(t, provider)
-	provider.On("TargetBuildSettings", project.Path, "App", "Release", "-destination", "generic/platform=iOS").
+	provider.On("TargetBuildSettings", project.Path, "App", "Release", []string{"-destination", "generic/platform=iOS"}).
 		Return(serialized.Object{"SDKROOT": "iphoneos"}, nil).Once()
 
 	settings, err := project.TargetBuildSettings("App", "Release", "-destination", "generic/platform=iOS")
