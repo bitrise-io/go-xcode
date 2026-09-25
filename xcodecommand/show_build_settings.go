@@ -1,8 +1,6 @@
 package xcodecommand
 
 // showBuildSettingsParams describes an `xcodebuild -showBuildSettings` invocation.
-// Package-local: settings are read through a provider (STEP-2169), the only caller.
-// Narrow forwarded xcodebuild_options with ParseAdditionalOptions and Options.Filter first.
 type showBuildSettingsParams struct {
 	projectPath       string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	target            string // -target; alternative to scheme
