@@ -48,11 +48,11 @@ func (r testRunOptions) render() Options {
 	return appendValue(opts, "-collect-test-diagnostics", r.collectTestDiagnostics)
 }
 
-// testRunSpec is the spec shared by the test actions: selection flags and -destination
+// testRunPolicy is the policy shared by the test actions: selection flags and -destination
 // are appendable (xcodebuild applies -only-testing before -skip-testing, and runs on
 // every destination), -collect-test-diagnostics is a default.
-func testRunSpec(name string, extra ...rejection) actionSpec {
-	return actionSpec{
+func testRunPolicy(name string, extra ...rejection) actionPolicy {
+	return actionPolicy{
 		name:       name,
 		rejects:    append([]rejection{modeSwitching}, extra...),
 		defaults:   []string{"-collect-test-diagnostics"},

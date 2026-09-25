@@ -39,5 +39,5 @@ func Test(params TestParams) (Command, error) {
 		collectTestDiagnostics:         params.CollectTestDiagnostics,
 	}.render()...)
 
-	return assemble(opts, params.AdditionalOptions, testSpec, params.Validation)
+	return assemble(opts, params.AdditionalOptions, testPolicy, params.Validation)
 }

@@ -34,11 +34,11 @@ func (c Command) Create(factory command.Factory, opts *command.Opts) command.Com
 }
 
 // assemble parses, checks and merges the additional options over the derived ones.
-func assemble(derived Options, additional []string, spec actionSpec, validation Validation) (Command, error) {
+func assemble(derived Options, additional []string, policy actionPolicy, validation Validation) (Command, error) {
 	user, diagnostics := ParseAdditionalOptions(additional)
-	diagnostics = append(diagnostics, spec.check(user)...)
+	diagnostics = append(diagnostics, policy.check(user)...)
 
-	merged, mergeDiagnostics := merge(derived, user, spec)
+	merged, mergeDiagnostics := merge(derived, user, policy)
 	diagnostics = append(diagnostics, mergeDiagnostics...)
 	if validation == Fail {
 		if err := firstFailure(diagnostics); err != nil {

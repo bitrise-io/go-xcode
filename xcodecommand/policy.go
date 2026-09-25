@@ -5,8 +5,8 @@ import (
 	"slices"
 )
 
-// actionSpec is a command's policy for additional options; anything not listed passes.
-type actionSpec struct {
+// actionPolicy is a command's policy for additional options; anything not listed passes.
+type actionPolicy struct {
 	name       string
 	rejects    []rejection
 	defaults   []string // derived keys the user's option replaces
@@ -50,49 +50,49 @@ var (
 var (
 	// The build family: a step's -destination is a fallback the user's replaces, -arch
 	// is repeatable.
-	archiveSpec = actionSpec{
+	archivePolicy = actionPolicy{
 		name:       ActionArchive,
 		rejects:    []rejection{modeSwitching, testOnly},
 		defaults:   []string{"-destination"},
 		appendable: []string{"-arch"},
 	}
-	buildSpec = actionSpec{
+	buildPolicy = actionPolicy{
 		name:       ActionBuild,
 		rejects:    []rejection{modeSwitching, testOnly},
 		defaults:   []string{"-destination"},
 		appendable: []string{"-arch"},
 	}
-	analyzeSpec = actionSpec{
+	analyzePolicy = actionPolicy{
 		name:       ActionAnalyze,
 		rejects:    []rejection{modeSwitching, testOnly},
 		defaults:   []string{"-destination", "-resultBundlePath"},
 		appendable: []string{"-arch"},
 	}
 	// build-for-testing takes the test selection flags, which it bakes into the xctestrun.
-	buildForTestingSpec = actionSpec{
+	buildForTestingPolicy = actionPolicy{
 		name:       ActionBuildForTesting,
 		rejects:    []rejection{modeSwitching},
 		defaults:   []string{"-destination"},
 		appendable: []string{"-arch"},
 	}
-	exportArchiveSpec = actionSpec{
+	exportArchivePolicy = actionPolicy{
 		name:    "export archive",
 		rejects: []rejection{modeSwitching.except("-exportArchive"), testOnly},
 	}
-	resolvePackagesSpec = actionSpec{
+	resolvePackagesPolicy = actionPolicy{
 		name:    "resolve packages",
 		rejects: []rejection{modeSwitching.except("-resolvePackageDependencies"), testOnly},
 	}
-	testSpec                = testRunSpec(ActionTest, withoutBuildingOnly)
-	testWithoutBuildingSpec = testRunSpec(ActionTestWithoutBuilding)
-	showBuildSettingsSpec   = actionSpec{
+	testPolicy                = testRunPolicy(ActionTest, withoutBuildingOnly)
+	testWithoutBuildingPolicy = testRunPolicy(ActionTestWithoutBuilding)
+	showBuildSettingsPolicy   = actionPolicy{
 		name:    "show build settings",
 		rejects: []rejection{modeSwitching.except("-showBuildSettings"), testOnly},
 	}
 )
 
 // check reports the options the command refuses; build actions always are.
-func (s actionSpec) check(opts Options) []Diagnostic {
+func (s actionPolicy) check(opts Options) []Diagnostic {
 	var diagnostics []Diagnostic
 	for _, o := range opts {
 		switch o.Kind {

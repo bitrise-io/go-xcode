@@ -18,5 +18,5 @@ func showBuildSettings(params showBuildSettingsParams) (Command, error) {
 	opts = appendValue(opts, "-configuration", params.configuration)
 	opts = append(opts, Option{Kind: Switch, Name: "-showBuildSettings"})
 
-	return assemble(opts, params.additionalOptions, showBuildSettingsSpec, params.validation)
+	return assemble(opts, params.additionalOptions, showBuildSettingsPolicy, params.validation)
 }

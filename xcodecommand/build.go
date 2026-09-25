@@ -29,7 +29,7 @@ func Build(params BuildParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions, buildSpec, params.Validation)
+	return assemble(opts, params.AdditionalOptions, buildPolicy, params.Validation)
 }
 
 // AnalyzeParams describes an `xcodebuild analyze` invocation. Zero-valued fields are omitted.
@@ -61,7 +61,7 @@ func Analyze(params AnalyzeParams) (Command, error) {
 	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions, analyzeSpec, params.Validation)
+	return assemble(opts, params.AdditionalOptions, analyzePolicy, params.Validation)
 }
 
 // BuildForTestingParams describes an `xcodebuild build-for-testing` invocation.
@@ -94,7 +94,7 @@ func BuildForTesting(params BuildForTestingParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendValue(opts, "-testPlan", params.TestPlan)
 
-	return assemble(opts, params.AdditionalOptions, buildForTestingSpec, params.Validation)
+	return assemble(opts, params.AdditionalOptions, buildForTestingPolicy, params.Validation)
 }
 
 func appendCodeSigningAllowed(opts Options, disable bool) Options {

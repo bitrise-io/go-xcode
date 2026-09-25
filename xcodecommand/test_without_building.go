@@ -31,5 +31,5 @@ func TestWithoutBuilding(params TestWithoutBuildingParams) (Command, error) {
 		collectTestDiagnostics:         params.CollectTestDiagnostics,
 	}.render()...)
 
-	return assemble(opts, params.AdditionalOptions, testWithoutBuildingSpec, params.Validation)
+	return assemble(opts, params.AdditionalOptions, testWithoutBuildingPolicy, params.Validation)
 }
