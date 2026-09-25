@@ -1,0 +1,107 @@
+{
+  "id": "2A9F3C1D4B8E5A6700000001",
+  "organization": "Bitrise",
+  "default-configuration": "Release",
+  "configurations": [
+    { "name": "Debug" },
+    { "name": "Release" },
+  ],
+  "localizations": {
+    "development": "en",
+    "supported": [ "en", "de" ],
+  },
+  "last-upgrade": 2700,
+  "files": [
+    {
+      "path": "SimpleApp",
+      "children": [
+        {
+          "path": "SimpleAppApp.swift",
+          "target-membership": [ "SimpleApp/compile-sources" ],
+        },
+        {
+          "path": "ContentView.swift",
+          "target-membership": [ "SimpleApp/compile-sources" ],
+        },
+        {
+          "path": "Assets.xcassets",
+          "target-membership": [ "SimpleApp/resources" ],
+        },
+        {
+          "path": "Info.plist",
+        },
+      ],
+    },
+    {
+      "path": "SimpleAppTests",
+      "children": [
+        {
+          "path": "SimpleAppTests.swift",
+          "target-membership": [ "SimpleAppTests/compile-sources" ],
+        },
+      ],
+    },
+  ],
+  "targets": [
+    {
+      "name": "SimpleApp",
+      "id": "2A9F3C1D4B8E5A6700000010",
+      "product-type": "application",
+      "product": "Products/SimpleApp.app",
+      "legacy-provisioning-style": "manual",
+      "legacy-team-id": "72SA8V3WYL",
+      "build-phases": [
+        { "kind": "compile-sources", "id": "SimpleApp/compile-sources" },
+        { "kind": "resources", "id": "SimpleApp/resources" },
+        { "kind": "frameworks", "id": "SimpleApp/frameworks" },
+        {
+          "kind": "script",
+          "id": "SimpleApp/script",
+          "name": "Stamp the build number",
+          "shell": "/bin/sh",
+          "script": [
+            "set -euo pipefail",
+            "echo \"building $CONFIGURATION\"",
+          ],
+          "input-paths": [],
+          "run-on-every-build": true,
+        },
+      ],
+      "build-settings": {
+        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.SimpleApp",
+        "INFOPLIST_FILE": "SimpleApp/Info.plist",
+        "CODE_SIGN_STYLE": "Manual",
+        "CODE_SIGN_IDENTITY": "Apple Development",
+        "CODE_SIGN_IDENTITY[config=Release][sdk=iphoneos*]": "Apple Distribution",
+        "PROVISIONING_PROFILE_SPECIFIER[config=Release]": "SimpleApp Distribution",
+        "SWIFT_VERSION": "6.0",
+        "TARGETED_DEVICE_FAMILY": "1,2",
+      },
+    },
+    {
+      "name": "SimpleAppTests",
+      "id": "2A9F3C1D4B8E5A6700000020",
+      "product-type": "unit-test-bundle",
+      "product": "Products/SimpleAppTests.xctest",
+      "test-host-target": "SimpleApp",
+      "dependencies": [
+        { "target": "SimpleApp" },
+      ],
+      "build-phases": [
+        { "kind": "compile-sources", "id": "SimpleAppTests/compile-sources" },
+      ],
+      "build-settings": {
+        "PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.SimpleAppTests",
+        "GENERATE_INFOPLIST_FILE": true,
+        "SWIFT_VERSION": "6.0",
+      },
+    },
+  ],
+  "build-settings": {
+    "IPHONEOS_DEPLOYMENT_TARGET": "18.0",
+    "SDKROOT": "iphoneos",
+    "SWIFT_OPTIMIZATION_LEVEL[config=Debug]": "-Onone",
+    "ENABLE_TESTABILITY[config=Debug]": true,
+  },
+}
