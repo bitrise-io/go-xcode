@@ -1,6 +1,7 @@
 package xcodecommand
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -148,8 +149,8 @@ func TestParseAdditionalOptions(t *testing.T) {
 // TestOptions_Filter reproduces xcode-archive's filterSPMAdditionalOptions on typed
 // options: keep SPM flags and build settings for -showBuildSettings, drop the rest.
 func TestOptions_Filter(t *testing.T) {
-	spmFlags := set("-skipPackagePluginValidation", "-skipMacroValidation", "-skipPackageUpdates",
-		"-disableAutomaticPackageResolution", "-onlyUsePackageVersionsFromResolvedFile", "-clonedSourcePackagesDirPath")
+	spmFlags := []string{"-skipPackagePluginValidation", "-skipMacroValidation", "-skipPackageUpdates",
+		"-disableAutomaticPackageResolution", "-onlyUsePackageVersionsFromResolvedFile", "-clonedSourcePackagesDirPath"}
 	opts, diags := ParseAdditionalOptions([]string{
 		"-destination", "generic/platform=iOS",
 		"-skipPackagePluginValidation",
@@ -159,7 +160,7 @@ func TestOptions_Filter(t *testing.T) {
 	})
 	require.Empty(t, diags)
 
-	kept := opts.Filter(func(o Option) bool { return o.Kind == BuildSetting || spmFlags[o.Name] })
+	kept := opts.Filter(func(o Option) bool { return o.Kind == BuildSetting || slices.Contains(spmFlags, o.Name) })
 
 	require.Equal(t, []string{
 		"-skipPackagePluginValidation",

@@ -18,7 +18,7 @@ func TestMerge(t *testing.T) {
 		{Kind: Switch, Name: "-allowProvisioningUpdates"},
 		{Kind: BuildSetting, Name: "CODE_SIGNING_ALLOWED", Value: "NO"},
 	}
-	spec := actionSpec{name: "archive", defaults: set("-destination"), appendable: set("-skip-testing")}
+	spec := actionSpec{name: "archive", defaults: []string{"-destination"}, appendable: []string{"-skip-testing"}}
 	base := []string{
 		"clean", "archive", "-project", "App.xcodeproj", "-scheme", "App",
 		"-configuration", "Release", "-destination", "generic/platform=iOS",
@@ -121,7 +121,7 @@ func TestMerge_appendableKeepsDerivedEntries(t *testing.T) {
 	}
 	user := Options{{Kind: ColonOption, Name: "-skip-testing", Value: "AppTests/Manual"}}
 
-	got, diags := merge(derived, user, actionSpec{name: "test", appendable: set("-skip-testing")})
+	got, diags := merge(derived, user, actionSpec{name: "test", appendable: []string{"-skip-testing"}})
 	require.Equal(t, []string{"test", "-skip-testing:AppTests/Flaky", "-skip-testing:AppTests/Slow", "-skip-testing:AppTests/Manual"}, got.Args())
 	require.Empty(t, diags)
 }
@@ -130,7 +130,7 @@ func TestMerge_userDefaultDoesNotCollideWithAFlag(t *testing.T) {
 	derived := Options{{Kind: ValueOption, Name: "-collect-test-diagnostics", Value: "never"}}
 	user := Options{{Kind: UserDefault, Name: "-collect-test-diagnostics", Value: "on-failure"}}
 
-	got, diags := merge(derived, user, actionSpec{name: "test", defaults: set("-collect-test-diagnostics")})
+	got, diags := merge(derived, user, actionSpec{name: "test", defaults: []string{"-collect-test-diagnostics"}})
 
 	require.Equal(t, []string{"-collect-test-diagnostics", "never", "-collect-test-diagnostics=on-failure"}, got.Args(), "the step's flag stays; xcodebuild ignores the = form")
 	require.Equal(t, []Diagnostic{{Kind: SuspiciousUserDefault, Message: `"-collect-test-diagnostics never" is written as "-collect-test-diagnostics=on-failure" in the additional options: xcodebuild reads the "=" form as a user default and ignores it; use "-collect-test-diagnostics value"`}}, diags)

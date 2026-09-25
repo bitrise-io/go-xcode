@@ -3,6 +3,7 @@ package xcodecommand
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -87,12 +88,12 @@ var (
 // freeFormValueFlags always take the next argument: their value may look like a build
 // setting (-destination platform=iOS), an action (-scheme test) or a path named like one
 // (-derivedDataPath build).
-var freeFormValueFlags = map[string]bool{
-	"-destination": true, "-scheme": true, "-target": true, "-configuration": true,
-	"-testPlan": true, "-only-test-configuration": true, "-skip-test-configuration": true,
-	"-project": true, "-workspace": true, "-xcconfig": true, "-archivePath": true,
-	"-derivedDataPath": true, "-resultBundlePath": true, "-clonedSourcePackagesDirPath": true,
-	"-packageCachePath": true, "-exportPath": true, "-exportOptionsPlist": true, "-xctestrun": true,
+var freeFormValueFlags = []string{
+	"-destination", "-scheme", "-target", "-configuration",
+	"-testPlan", "-only-test-configuration", "-skip-test-configuration",
+	"-project", "-workspace", "-xcconfig", "-archivePath",
+	"-derivedDataPath", "-resultBundlePath", "-clonedSourcePackagesDirPath",
+	"-packageCachePath", "-exportPath", "-exportOptionsPlist", "-xctestrun",
 }
 
 // ParseAdditionalOptions turns shell-split xcodebuild arguments into typed Options.
@@ -128,7 +129,7 @@ func ParseAdditionalOptions(args []string) (Options, []Diagnostic) {
 		case buildSettingPattern.MatchString(arg):
 			name, value, _ := strings.Cut(arg, "=")
 			opts = append(opts, Option{Kind: BuildSetting, Name: name, Value: value})
-		case knownActions[arg]:
+		case slices.Contains(knownActions, arg):
 			opts = append(opts, Option{Kind: Action, Name: arg})
 		default:
 			malformed(arg, "is not a -flag, -flag value, -flag:value, -key=value, NAME=value or a build action; xcodebuild treats it as an unknown build action")
@@ -169,7 +170,7 @@ func parseFlag(args []string) (opt Option, consumed int, why string) {
 
 	hasNext := len(args) > 1
 	switch {
-	case freeFormValueFlags[flag]:
+	case slices.Contains(freeFormValueFlags, flag):
 		if !hasNext {
 			return Option{}, 0, "requires a value"
 		}
@@ -185,5 +186,5 @@ func looksLikeValue(arg string) bool {
 	return strings.TrimSpace(arg) != "" &&
 		!strings.HasPrefix(arg, "-") &&
 		!buildSettingPattern.MatchString(arg) &&
-		!knownActions[arg]
+		!slices.Contains(knownActions, arg)
 }

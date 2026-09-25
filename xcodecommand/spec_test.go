@@ -1,7 +1,7 @@
 package xcodecommand
 
 import (
-	"sort"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -79,8 +79,8 @@ func TestSpecs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.spec.name, func(t *testing.T) {
-			require.Equal(t, tt.defaults, sortedKeys(tt.spec.defaults))
-			require.Equal(t, tt.appendable, sortedKeys(tt.spec.appendable))
+			require.Equal(t, tt.defaults, slices.Sorted(slices.Values(tt.spec.defaults)))
+			require.Equal(t, tt.appendable, slices.Sorted(slices.Values(tt.spec.appendable)))
 			for _, flag := range tt.rejects {
 				require.Equal(t, []DiagnosticKind{RejectedOption}, kinds(tt.spec.check(Options{{Kind: Switch, Name: flag}})), flag)
 			}
@@ -100,15 +100,6 @@ func TestActionSpec_checkMessages(t *testing.T) {
 		`"-test-iterations 2" is not valid for archive: applies to test actions only`,
 		`"clean" is a build action, and archive sets its own actions`,
 	}, messages(diags))
-}
-
-func sortedKeys(m map[string]bool) []string {
-	var keys []string
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 func messages(diagnostics []Diagnostic) []string {

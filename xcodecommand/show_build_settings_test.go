@@ -1,6 +1,7 @@
 package xcodecommand
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -41,11 +42,11 @@ func TestShowBuildSettings(t *testing.T) {
 // The xcode-archive flow: narrow the user's archive options to what a settings query
 // accepts, then assemble the query from them.
 func TestShowBuildSettings_narrowedArchiveOptions(t *testing.T) {
-	spmFlags := set("-skipPackagePluginValidation", "-skipMacroValidation", "-skipPackageUpdates",
-		"-disableAutomaticPackageResolution", "-onlyUsePackageVersionsFromResolvedFile", "-clonedSourcePackagesDirPath")
+	spmFlags := []string{"-skipPackagePluginValidation", "-skipMacroValidation", "-skipPackageUpdates",
+		"-disableAutomaticPackageResolution", "-onlyUsePackageVersionsFromResolvedFile", "-clonedSourcePackagesDirPath"}
 	user, diags := ParseAdditionalOptions([]string{"-destination", "generic/platform=iOS", "-skipMacroValidation", "COMPILER_INDEX_STORE_ENABLE=NO", "-quiet"})
 	require.Empty(t, diags)
-	narrowed := user.Filter(func(o Option) bool { return o.Kind == BuildSetting || spmFlags[o.Name] })
+	narrowed := user.Filter(func(o Option) bool { return o.Kind == BuildSetting || slices.Contains(spmFlags, o.Name) })
 
 	cmd, err := showBuildSettings(showBuildSettingsParams{projectPath: "App.xcodeproj", scheme: "App", additionalOptions: narrowed.Args()})
 	require.NoError(t, err)

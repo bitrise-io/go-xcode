@@ -6,8 +6,8 @@ import "fmt"
 type actionSpec struct {
 	name       string
 	rejected   map[string]string // flag -> reason
-	defaults   map[string]bool   // derived keys the user's option replaces
-	appendable map[string]bool   // repeatable keys where derived and user entries both stay
+	defaults   []string          // derived keys the user's option replaces
+	appendable []string          // repeatable keys where derived and user entries both stay
 }
 
 var modeSwitchingFlags = map[string]string{
@@ -50,27 +50,27 @@ var (
 	archiveSpec = actionSpec{
 		name:       ActionArchive,
 		rejected:   union(modeSwitchingFlags, testOnlyFlags),
-		defaults:   set("-destination"),
-		appendable: set("-arch"),
+		defaults:   []string{"-destination"},
+		appendable: []string{"-arch"},
 	}
 	buildSpec = actionSpec{
 		name:       ActionBuild,
 		rejected:   union(modeSwitchingFlags, testOnlyFlags),
-		defaults:   set("-destination"),
-		appendable: set("-arch"),
+		defaults:   []string{"-destination"},
+		appendable: []string{"-arch"},
 	}
 	analyzeSpec = actionSpec{
 		name:       ActionAnalyze,
 		rejected:   union(modeSwitchingFlags, testOnlyFlags),
-		defaults:   set("-destination", "-resultBundlePath"),
-		appendable: set("-arch"),
+		defaults:   []string{"-destination", "-resultBundlePath"},
+		appendable: []string{"-arch"},
 	}
 	// build-for-testing takes the test selection flags, which it bakes into the xctestrun.
 	buildForTestingSpec = actionSpec{
 		name:       ActionBuildForTesting,
 		rejected:   modeSwitchingFlags,
-		defaults:   set("-destination"),
-		appendable: set("-arch"),
+		defaults:   []string{"-destination"},
+		appendable: []string{"-arch"},
 	}
 	exportArchiveSpec = actionSpec{
 		name:     "export archive",
@@ -118,14 +118,6 @@ func without(m map[string]string, keys ...string) map[string]string {
 	out := union(m)
 	for _, k := range keys {
 		delete(out, k)
-	}
-	return out
-}
-
-func set(keys ...string) map[string]bool {
-	out := map[string]bool{}
-	for _, k := range keys {
-		out[k] = true
 	}
 	return out
 }

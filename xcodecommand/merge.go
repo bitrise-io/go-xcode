@@ -30,9 +30,9 @@ func merge(derived, user Options, spec actionSpec) (Options, []Diagnostic) {
 			report(SuspiciousUserDefault, "%q is written as %q in the additional options: xcodebuild reads the \"=\" form as a user default and ignores it; use \"%s value\"", o, shadow[0], o.Name)
 		}
 		conflicting, ok := userByKey[o.Key()]
-		yields := spec.defaults[o.Key()] || o.Kind == Switch || o.Kind == BuildSetting
+		yields := slices.Contains(spec.defaults, o.Key()) || o.Kind == Switch || o.Kind == BuildSetting
 		switch {
-		case o.Kind == Action || !ok || spec.appendable[o.Key()]:
+		case o.Kind == Action || !ok || slices.Contains(spec.appendable, o.Key()):
 			merged = append(merged, o)
 		case yields && slices.Equal(conflicting.Args(), o.render()):
 			report(RedundantOption, "%q is already set by %s; it can be removed from the additional options", o, spec.name)

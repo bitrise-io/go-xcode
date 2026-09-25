@@ -55,7 +55,7 @@ func testRunSpec(name string, rejected map[string]string) actionSpec {
 	return actionSpec{
 		name:       name,
 		rejected:   union(modeSwitchingFlags, rejected),
-		defaults:   set("-collect-test-diagnostics"),
-		appendable: set("-only-testing", "-skip-testing", "-only-test-configuration", "-skip-test-configuration", "-destination", "-arch"),
+		defaults:   []string{"-collect-test-diagnostics"},
+		appendable: []string{"-only-testing", "-skip-testing", "-only-test-configuration", "-skip-test-configuration", "-destination", "-arch"},
 	}
 }
