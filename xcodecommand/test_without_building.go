@@ -1,9 +1,9 @@
 package xcodecommand
 
-// TestWithoutBuildingParams describes an `xcodebuild test-without-building` invocation.
-// Zero-valued fields are omitted. Argument order follows the xcode-test-without-building step.
+// TestWithoutBuildingParams describes an `xcodebuild test-without-building` invocation,
+// the run half of test. Zero-valued fields are omitted.
 type TestWithoutBuildingParams struct {
-	XCTestRun                      string // the .xctestrun file
+	XCTestRun                      string // the .xctestrun file build-for-testing produced
 	Destination                    string // a user -destination is added, not replaced
 	ResultBundlePath               string
 	TestRepetitionMode             TestRepetitionMode
@@ -21,15 +21,15 @@ func TestWithoutBuilding(params TestWithoutBuildingParams) (Command, error) {
 	opts := Options{{Kind: Action, Name: ActionTestWithoutBuilding}}
 	opts = appendValue(opts, "-xctestrun", params.XCTestRun)
 	opts = appendValue(opts, "-destination", params.Destination)
-	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
-	opts = append(opts, testRepetitionOptions(params.TestRepetitionMode, params.MaximumTestRepetitions, params.RelaunchTestsForEachRepetition)...)
-	for _, id := range params.OnlyTesting {
-		opts = append(opts, Option{Kind: ColonOption, Name: "-only-testing", Value: id})
-	}
-	for _, id := range params.SkipTesting {
-		opts = append(opts, Option{Kind: ColonOption, Name: "-skip-testing", Value: id})
-	}
-	opts = appendValue(opts, "-collect-test-diagnostics", params.CollectTestDiagnostics)
+	opts = append(opts, testRunOptions{
+		resultBundlePath:               params.ResultBundlePath,
+		repetitionMode:                 params.TestRepetitionMode,
+		maximumRepetitions:             params.MaximumTestRepetitions,
+		relaunchTestsForEachRepetition: params.RelaunchTestsForEachRepetition,
+		onlyTesting:                    params.OnlyTesting,
+		skipTesting:                    params.SkipTesting,
+		collectTestDiagnostics:         params.CollectTestDiagnostics,
+	}.render()...)
 
 	return assemble(opts, params.AdditionalOptions, testWithoutBuildingSpec, params.Validation)
 }

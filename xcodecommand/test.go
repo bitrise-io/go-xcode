@@ -1,31 +1,21 @@
 package xcodecommand
 
-import "strconv"
-
-// TestRepetitionMode is the -run-tests-until-failure / -retry-tests-on-failure choice.
-type TestRepetitionMode string
-
-// Test repetition modes.
-const (
-	TestRepetitionNone           TestRepetitionMode = "none"
-	TestRepetitionUntilFailure   TestRepetitionMode = "until_failure"
-	TestRepetitionRetryOnFailure TestRepetitionMode = "retry_on_failure"
-)
-
-// TestParams describes an `xcodebuild test` invocation. Zero-valued fields are omitted.
-// Argument order follows the xcode-test step.
+// TestParams describes an `xcodebuild test` invocation, which is build-for-testing
+// followed by test-without-building; the fields are the union of the two. Zero-valued
+// fields are omitted.
 type TestParams struct {
 	ProjectPath                    string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme                         string
 	Destination                    string // a user -destination is added, not replaced: test runs on several destinations
 	TestPlan                       string
+	XCConfigPath                   string
+	Clean                          bool // run clean first
 	ResultBundlePath               string
 	TestRepetitionMode             TestRepetitionMode
 	MaximumTestRepetitions         int
 	RelaunchTestsForEachRepetition bool
-	XCConfigPath                   string
-	Clean                          bool     // run clean first
-	SkipTesting                    []string // -skip-testing:<id>; user entries are added, not replaced
+	OnlyTesting                    []string // -only-testing:<id>; user entries are added
+	SkipTesting                    []string // -skip-testing:<id>; user entries are added
 	CollectTestDiagnostics         string   // a default: a user -collect-test-diagnostics replaces it
 	AdditionalOptions              []string // the step's xcodebuild_options, shell-split
 	Validation                     Validation
@@ -38,31 +28,16 @@ func Test(params TestParams) (Command, error) {
 	opts = append(opts, actions(params.Clean, ActionTest)...)
 	opts = appendValue(opts, "-destination", params.Destination)
 	opts = appendValue(opts, "-testPlan", params.TestPlan)
-	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
-
-	opts = append(opts, testRepetitionOptions(params.TestRepetitionMode, params.MaximumTestRepetitions, params.RelaunchTestsForEachRepetition)...)
 	opts = appendValue(opts, "-xcconfig", params.XCConfigPath)
-	for _, test := range params.SkipTesting {
-		opts = append(opts, Option{Kind: ColonOption, Name: "-skip-testing", Value: test})
-	}
-	opts = appendValue(opts, "-collect-test-diagnostics", params.CollectTestDiagnostics)
+	opts = append(opts, testRunOptions{
+		resultBundlePath:               params.ResultBundlePath,
+		repetitionMode:                 params.TestRepetitionMode,
+		maximumRepetitions:             params.MaximumTestRepetitions,
+		relaunchTestsForEachRepetition: params.RelaunchTestsForEachRepetition,
+		onlyTesting:                    params.OnlyTesting,
+		skipTesting:                    params.SkipTesting,
+		collectTestDiagnostics:         params.CollectTestDiagnostics,
+	}.render()...)
 
 	return assemble(opts, params.AdditionalOptions, testSpec, params.Validation)
-}
-
-func testRepetitionOptions(mode TestRepetitionMode, maximum int, relaunch bool) Options {
-	var opts Options
-	switch mode {
-	case TestRepetitionUntilFailure:
-		opts = append(opts, Option{Kind: Switch, Name: "-run-tests-until-failure"})
-	case TestRepetitionRetryOnFailure:
-		opts = append(opts, Option{Kind: Switch, Name: "-retry-tests-on-failure"})
-	}
-	if mode != "" && mode != TestRepetitionNone {
-		opts = appendValue(opts, "-test-iterations", strconv.Itoa(maximum))
-	}
-	if relaunch {
-		opts = appendValue(opts, "-test-repetition-relaunch-enabled", "YES")
-	}
-	return opts
 }

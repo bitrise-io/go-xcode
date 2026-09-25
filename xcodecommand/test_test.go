@@ -41,16 +41,17 @@ func TestTest(t *testing.T) {
 				RelaunchTestsForEachRepetition: true,
 				XCConfigPath:                   "/tmp/temp.xcconfig",
 				Clean:                          true,
+				OnlyTesting:                    []string{"AppTests"},
 				SkipTesting:                    []string{"TestTarget1/TestClass1", "TestTarget2"},
 				CollectTestDiagnostics:         "never",
 				AdditionalOptions:              []string{"-quiet"},
 			},
 			want: []string{
 				"-project", "App.xcodeproj", "-scheme", "App", "clean", "test", "-destination", "id=SIM",
-				"-testPlan", "Full", "-resultBundlePath", "/tmp/Test.xcresult",
+				"-testPlan", "Full", "-xcconfig", "/tmp/temp.xcconfig",
+				"-resultBundlePath", "/tmp/Test.xcresult",
 				"-retry-tests-on-failure", "-test-iterations", "3", "-test-repetition-relaunch-enabled", "YES",
-				"-xcconfig", "/tmp/temp.xcconfig",
-				"-skip-testing:TestTarget1/TestClass1", "-skip-testing:TestTarget2",
+				"-only-testing:AppTests", "-skip-testing:TestTarget1/TestClass1", "-skip-testing:TestTarget2",
 				"-collect-test-diagnostics", "never", "-quiet",
 			},
 		},
@@ -102,6 +103,12 @@ func TestTest_additionalOptions(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, []string{"-scheme", "App", "test", "-resultBundlePath", "/tmp/Test.xcresult", "-resultBundlePath", "/mine.xcresult"}, cmd.Args())
 		require.Equal(t, []DiagnosticKind{RepeatedOption}, kinds(cmd.Diagnostics()))
+	})
+
+	t.Run("-xctestrun belongs to test-without-building", func(t *testing.T) {
+		cmd, err := Test(TestParams{Scheme: "App", AdditionalOptions: []string{"-xctestrun", "a.xctestrun"}})
+		require.NoError(t, err)
+		require.Equal(t, []DiagnosticKind{RejectedOption}, kinds(cmd.Diagnostics()))
 	})
 
 	t.Run("test selection flags are valid for test", func(t *testing.T) {
