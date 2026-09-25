@@ -59,7 +59,7 @@ type projectOptions struct {
 	sdk           string
 }
 
-func (p projectOptions) render() Options {
+func (p projectOptions) options() Options {
 	opts := containerOptions(p.projectPath)
 	opts = appendValue(opts, "-scheme", p.scheme)
 	opts = appendValue(opts, "-configuration", p.configuration)

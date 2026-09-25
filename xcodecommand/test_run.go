@@ -23,7 +23,7 @@ type testRunOptions struct {
 	collectTestDiagnostics         string
 }
 
-func (r testRunOptions) render() Options {
+func (r testRunOptions) options() Options {
 	opts := appendValue(nil, "-resultBundlePath", r.resultBundlePath)
 
 	switch r.repetitionMode {

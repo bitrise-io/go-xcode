@@ -25,7 +25,7 @@ func Build(params BuildParams) (Command, error) {
 		destination:   params.Destination,
 		xcconfigPath:  params.XCConfigPath,
 		sdk:           params.SDK,
-	}.render()...)
+	}.options()...)
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
@@ -57,7 +57,7 @@ func Analyze(params AnalyzeParams) (Command, error) {
 		destination:   params.Destination,
 		xcconfigPath:  params.XCConfigPath,
 		sdk:           params.SDK,
-	}.render()...)
+	}.options()...)
 	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
@@ -90,7 +90,7 @@ func BuildForTesting(params BuildForTestingParams) (Command, error) {
 		destination:   params.Destination,
 		xcconfigPath:  params.XCConfigPath,
 		sdk:           params.SDK,
-	}.render()...)
+	}.options()...)
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendValue(opts, "-testPlan", params.TestPlan)
 

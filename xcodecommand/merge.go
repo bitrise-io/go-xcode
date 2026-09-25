@@ -42,7 +42,7 @@ func merge(derived, user Options, policy actionPolicy) (Options, []Diagnostic) {
 		case slices.Contains(policy.appendable, o.Key()):
 			// test: "-skip-testing:Flaky" from quarantine + "-skip-testing:Manual" from the user -> both
 			merged = append(merged, o)
-		case yields && slices.Equal(conflicting.Args(), o.render()):
+		case yields && slices.Equal(conflicting.Args(), o.args()):
 			// "-allowProvisioningUpdates" set by the step and again by the user -> once, with a note
 			report(RedundantOption, "%q is already set by %s; it can be removed from the additional options", o, policy.name)
 		case yields:

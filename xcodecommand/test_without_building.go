@@ -29,7 +29,7 @@ func TestWithoutBuilding(params TestWithoutBuildingParams) (Command, error) {
 		onlyTesting:                    params.OnlyTesting,
 		skipTesting:                    params.SkipTesting,
 		collectTestDiagnostics:         params.CollectTestDiagnostics,
-	}.render()...)
+	}.options()...)
 
 	return assemble(opts, params.AdditionalOptions, testWithoutBuildingPolicy, params.Validation)
 }

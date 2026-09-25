@@ -39,10 +39,12 @@ func (o Option) Key() string {
 
 // String renders the option as it appears on the command line.
 func (o Option) String() string {
-	return strings.Join(o.render(), " ")
+	return strings.Join(o.args(), " ")
 }
 
-func (o Option) render() []string {
+// args is the option as xcodebuild arguments: one for a switch, an action or a joined
+// form, two for a flag with a value.
+func (o Option) args() []string {
 	switch o.Kind {
 	case ValueOption:
 		return []string{o.Name, o.Value}
@@ -62,7 +64,7 @@ type Options []Option
 func (opts Options) Args() []string {
 	var args []string
 	for _, o := range opts {
-		args = append(args, o.render()...)
+		args = append(args, o.args()...)
 	}
 	return args
 }
@@ -151,35 +153,30 @@ func parseFlag(args []string) (opt Option, consumed int, why string) {
 		return Option{}, 0, "contains whitespace: quote only the value, not the flag and the value together"
 	}
 
-	// Whichever of "=" and ":" comes first decides the form (-only-testing:Suite/test=1, -IDEFoo=a:b).
-	eq, colon := strings.Index(flag, "="), strings.Index(flag, ":")
-	switch {
-	case eq > 0 && (colon < 0 || eq < colon):
-		name, value := flag[:eq], flag[eq+1:]
-		if !flagNamePattern.MatchString(name) {
-			return Option{}, 0, "is not a valid -key=value user default"
-		}
-		return Option{Kind: UserDefault, Name: name, Value: value}, 1, ""
-	case colon > 0:
-		name, value := flag[:colon], flag[colon+1:]
-		if !flagNamePattern.MatchString(name) || value == "" {
-			return Option{}, 0, "is not a valid -flag:value option"
-		}
-		return Option{Kind: ColonOption, Name: name, Value: value}, 1, ""
+	// The first of "=" and ":" decides the form: -IDEFoo=a:b is a user default,
+	// -only-testing:Suite/test=1 a colon option, anything without either a plain flag.
+	name, value := flag, ""
+	if sep := strings.IndexAny(flag, "=:"); sep > 0 {
+		name, value = flag[:sep], flag[sep+1:]
 	}
-
-	if !flagNamePattern.MatchString(flag) {
+	if !flagNamePattern.MatchString(name) {
 		return Option{}, 0, "is not a valid flag"
 	}
 
-	hasNext := len(args) > 1
 	switch {
+	case len(name) < len(flag) && flag[len(name)] == '=':
+		return Option{Kind: UserDefault, Name: name, Value: value}, 1, ""
+	case len(name) < len(flag):
+		if value == "" {
+			return Option{}, 0, "is not a valid -flag:value option"
+		}
+		return Option{Kind: ColonOption, Name: name, Value: value}, 1, ""
 	case slices.Contains(freeFormValueFlags, flag):
-		if !hasNext {
+		if len(args) < 2 {
 			return Option{}, 0, "requires a value"
 		}
 		return Option{Kind: ValueOption, Name: flag, Value: args[1]}, 2, ""
-	case hasNext && looksLikeValue(args[1]):
+	case len(args) > 1 && looksLikeValue(args[1]):
 		return Option{Kind: ValueOption, Name: flag, Value: args[1]}, 2, ""
 	default:
 		return Option{Kind: Switch, Name: flag}, 1, ""

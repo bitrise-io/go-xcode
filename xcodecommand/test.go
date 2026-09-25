@@ -37,7 +37,7 @@ func Test(params TestParams) (Command, error) {
 		onlyTesting:                    params.OnlyTesting,
 		skipTesting:                    params.SkipTesting,
 		collectTestDiagnostics:         params.CollectTestDiagnostics,
-	}.render()...)
+	}.options()...)
 
 	return assemble(opts, params.AdditionalOptions, testPolicy, params.Validation)
 }

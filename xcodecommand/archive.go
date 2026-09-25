@@ -25,7 +25,7 @@ func Archive(params ArchiveParams) (Command, error) {
 		destination:   params.Destination,
 		xcconfigPath:  params.XCConfigPath,
 		sdk:           params.SDK,
-	}.render()...)
+	}.options()...)
 	opts = appendValue(opts, "-archivePath", params.ArchivePath)
 	opts = appendAuthentication(opts, params.Authentication)
 
