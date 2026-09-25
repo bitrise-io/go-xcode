@@ -91,6 +91,9 @@ var (
 	// -ENABLE_BITCODE, -MARKETING_VERSION: a build setting typed with a dash, which
 	// xcodebuild accepts as a user default and silently ignores. Not -IDEFoo.
 	upperCaseFlag = regexp.MustCompile(`^-[A-Z][A-Z0-9_]*$`)
+	// "-destination generic/platform=iOS" as one argument: a flag, a space, then a value
+	// containing "=". xcodebuild reads the whole thing as a user default and ignores it.
+	flagQuotedWithValue = regexp.MustCompile(`^-[A-Za-z0-9][A-Za-z0-9_.-]*\s+[^=:\s][^=]*=`)
 )
 
 // freeFormValueFlags always take the next argument: their value may look like a build
@@ -127,6 +130,12 @@ func ParseAdditionalOptions(args []string) (Options, []Diagnostic) {
 		case strings.TrimSpace(arg) == "":
 			// "" (an env var that expanded to nothing): xcodebuild sees an unknown build action
 			malformed(arg, "is empty")
+		case strings.HasPrefix(arg, "-") && flagQuotedWithValue.MatchString(arg):
+			// "-destination generic/platform=iOS" as one argument: xcodebuild reads it as a user
+			// default named "destination generic/platform" and ignores it; the step's own
+			// -destination wins. Kept verbatim, as xcodebuild takes it.
+			opts = append(opts, Option{Kind: Unknown, Name: arg})
+			diagnostics = append(diagnostics, Diagnostic{Kind: SuspiciousUserDefault, Message: fmt.Sprintf("%q is a flag quoted together with its value; xcodebuild reads it as a user default and ignores it; quote only the value", arg)})
 		case strings.HasPrefix(arg, "-"):
 			// -quiet | -destination id=SIM | -only-testing:AppTests | -UseModernBuildSystem=NO
 			opt, consumed, why := parseFlag(args[i:])
@@ -160,19 +169,20 @@ func ParseAdditionalOptions(args []string) (Options, []Diagnostic) {
 // a non-empty why means it is malformed.
 func parseFlag(args []string) (opt Option, consumed int, why string) {
 	flag := args[0]
-	if strings.ContainsAny(flag, " \t") {
-		// "-destination generic/platform=iOS" quoted as one argument
-		return Option{}, 0, "contains whitespace: quote only the value, not the flag and the value together"
-	}
 
-	// The first of "=" and ":" splits name from value:
-	//   -UseModernBuildSystem=NO      -> name -UseModernBuildSystem, value NO
-	//   -IDEFoo=a:b                   -> name -IDEFoo, value a:b
-	//   -only-testing:Suite/test=1    -> name -only-testing, value Suite/test=1
-	//   -quiet                        -> name -quiet, no value
+	// The first of "=" and ":" splits name from value; values may contain spaces:
+	//   -UseModernBuildSystem=NO                  -> name -UseModernBuildSystem, value NO
+	//   -IDEFoo=a:b                               -> name -IDEFoo, value a:b
+	//   -only-testing:Suite/test=1                -> name -only-testing, value Suite/test=1
+	//   -only-testing:Pulley ManagerTests         -> name -only-testing, value Pulley ManagerTests
+	//   -quiet                                    -> name -quiet, no value
 	name, value := flag, ""
 	if sep := strings.IndexAny(flag, "=:"); sep > 0 {
 		name, value = flag[:sep], flag[sep+1:]
+	}
+	if strings.ContainsAny(name, " \t") {
+		// "-sdk macosx" quoted as one argument: xcodebuild refuses it
+		return Option{}, 0, "contains whitespace: quote only the value, not the flag and the value together"
 	}
 	if !flagNamePattern.MatchString(name) {
 		// "-", "-=x"

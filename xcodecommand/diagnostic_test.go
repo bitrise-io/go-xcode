@@ -41,8 +41,8 @@ func TestValidation(t *testing.T) {
 			name:     "flag quoted together with its value",
 			params:   ArchiveParams{AdditionalOptions: []string{"-destination generic/platform=iOS"}},
 			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-destination generic/platform=iOS"},
-			wantKind: MalformedOption,
-			wantErr:  `invalid additional option: "-destination generic/platform=iOS" contains whitespace: quote only the value, not the flag and the value together`,
+			wantKind: SuspiciousUserDefault,
+			wantErr:  `invalid additional option: "-destination generic/platform=iOS" is a flag quoted together with its value; xcodebuild reads it as a user default and ignores it; quote only the value`,
 		},
 		{
 			name:     "build setting written with a leading dash",

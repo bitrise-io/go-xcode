@@ -119,10 +119,26 @@ func TestParseAdditionalOptions(t *testing.T) {
 			diags: []DiagnosticKind{MalformedOption},
 		},
 		{
-			name:  "flag and value quoted together are reported",
-			args:  []string{"-destination generic/platform=iOS"},
-			want:  Options{{Kind: Unknown, Name: "-destination generic/platform=iOS"}},
-			diags: []DiagnosticKind{MalformedOption},
+			name:  "flag and value quoted together, value with '=': xcodebuild ignores it as a user default",
+			args:  []string{"-destination generic/platform=iOS", "-destination 'platform=iOS'"},
+			want:  Options{{Kind: Unknown, Name: "-destination generic/platform=iOS"}, {Kind: Unknown, Name: "-destination 'platform=iOS'"}},
+			diags: []DiagnosticKind{SuspiciousUserDefault, SuspiciousUserDefault},
+		},
+		{
+			name:  "flag and value quoted together, no '=': xcodebuild refuses it",
+			args:  []string{"-sdk macosx", "-quiet foo"},
+			want:  Options{{Kind: Unknown, Name: "-sdk macosx"}, {Kind: Unknown, Name: "-quiet foo"}},
+			diags: []DiagnosticKind{MalformedOption, MalformedOption},
+		},
+		{
+			name: "values may contain spaces",
+			args: []string{"-only-testing:Pulley ManagerTests", "-PROVISIONING_PROFILE_SPECIFIER=match AppStore com.example", "-destination", "platform=iOS Simulator,name=iPhone 15"},
+			want: Options{
+				{Kind: ColonOption, Name: "-only-testing", Value: "Pulley ManagerTests"},
+				{Kind: UserDefault, Name: "-PROVISIONING_PROFILE_SPECIFIER", Value: "match AppStore com.example"},
+				{Kind: ValueOption, Name: "-destination", Value: "platform=iOS Simulator,name=iPhone 15"},
+			},
+			diags: []DiagnosticKind{SuspiciousUserDefault},
 		},
 		{
 			name:  "lone dash, empty user default name and empty colon value are reported",
