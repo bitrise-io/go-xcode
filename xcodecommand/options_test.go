@@ -176,3 +176,10 @@ func TestParseAdditionalOptions_pathValueNamedLikeAnAction(t *testing.T) {
 		{Kind: ValueOption, Name: "-clonedSourcePackagesDirPath", Value: "test"},
 	}, got)
 }
+
+func TestOption_Key(t *testing.T) {
+	require.Equal(t, "-quiet", Option{Kind: Switch, Name: "-quiet"}.Key())
+	require.Equal(t, "-sdk", Option{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}.Key())
+	require.Equal(t, "-sdk=", Option{Kind: UserDefault, Name: "-sdk", Value: "iphoneos"}.Key(), "a user default never collides with the flag of the same name")
+	require.Equal(t, "ARCHS", Option{Kind: BuildSetting, Name: "ARCHS", Value: "arm64"}.Key())
+}
