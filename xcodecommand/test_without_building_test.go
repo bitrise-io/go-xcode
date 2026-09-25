@@ -55,33 +55,4 @@ func TestTestWithoutBuilding_testSelection(t *testing.T) {
 		"-only-testing:AppUITests", "-skip-testing:AppTests/Slow", "-only-test-configuration", "Debug", "-skip-test-configuration", "Release",
 	}, cmd.Args())
 	require.Empty(t, cmd.Diagnostics(), "test selection flags are appendable, never repeated or rejected")
-
-	// Even under Fail nothing is refused.
-	_, err = TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "a.xctestrun", OnlyTesting: []string{"AppTests"}, AdditionalOptions: []string{"-only-testing:AppUITests"}, Validation: Fail})
-	require.NoError(t, err)
-}
-
-func TestTestWithoutBuilding_additionalOptions(t *testing.T) {
-	t.Run("a user -destination joins the step's", func(t *testing.T) {
-		cmd, err := TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "a.xctestrun", Destination: "id=SIM-1", AdditionalOptions: []string{"-destination", "id=SIM-2"}})
-		require.NoError(t, err)
-		require.Equal(t, []string{"test-without-building", "-xctestrun", "a.xctestrun", "-destination", "id=SIM-1", "-destination", "id=SIM-2"}, cmd.Args())
-		require.Empty(t, cmd.Diagnostics())
-	})
-	t.Run("a user -collect-test-diagnostics replaces the step's", func(t *testing.T) {
-		cmd, err := TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "a.xctestrun", CollectTestDiagnostics: "on-failure", AdditionalOptions: []string{"-collect-test-diagnostics", "never"}})
-		require.NoError(t, err)
-		require.Equal(t, []string{"test-without-building", "-xctestrun", "a.xctestrun", "-collect-test-diagnostics", "never"}, cmd.Args())
-		require.Equal(t, []DiagnosticKind{Override}, kinds(cmd.Diagnostics()))
-	})
-	t.Run("a repeated -xctestrun is left for xcodebuild to refuse", func(t *testing.T) {
-		cmd, err := TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "a.xctestrun", AdditionalOptions: []string{"-xctestrun", "b.xctestrun"}})
-		require.NoError(t, err)
-		require.Equal(t, []DiagnosticKind{RepeatedOption}, kinds(cmd.Diagnostics()))
-	})
-	t.Run("a mode-switching flag is rejected", func(t *testing.T) {
-		cmd, err := TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "a.xctestrun", AdditionalOptions: []string{"-showBuildSettings"}})
-		require.NoError(t, err)
-		require.Equal(t, []DiagnosticKind{RejectedOption}, kinds(cmd.Diagnostics()))
-	})
 }

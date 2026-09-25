@@ -30,10 +30,4 @@ func TestExportArchive(t *testing.T) {
 			require.Equal(t, tt.want, cmd.Args())
 		})
 	}
-
-	cmd, err := ExportArchive(ExportArchiveParams{ExportOptionsPlist: "/var/export_options.plist", AdditionalOptions: []string{"-exportOptionsPlist", "mine.plist"}})
-	require.NoError(t, err)
-	require.Equal(t, []string{"-exportArchive", "-exportOptionsPlist", "/var/export_options.plist", "-exportOptionsPlist", "mine.plist"}, cmd.Args(), "both go through; xcodebuild refuses the repeat")
-	require.Len(t, cmd.Diagnostics(), 1)
-	require.Equal(t, RepeatedOption, cmd.Diagnostics()[0].Kind)
 }

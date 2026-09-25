@@ -1,47 +1,120 @@
 package xcodecommand
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestActionSpec_check(t *testing.T) {
+// One row per command: what its spec replaces, keeps both of, refuses and lets through.
+// The constructors are wired to these specs; the merge rules themselves are covered in
+// merge_test.go.
+func TestSpecs(t *testing.T) {
 	tests := []struct {
-		name string
-		spec actionSpec
-		args []string
-		want []DiagnosticKind
-		msg  string
+		spec       actionSpec
+		defaults   []string
+		appendable []string
+		rejects    []string
+		accepts    []string
 	}{
-		{name: "archive accepts ordinary flags", spec: archiveSpec, args: []string{"-destination", "generic/platform=iOS", "-quiet", "CODE_SIGNING_ALLOWED=NO", "-UseModernBuildSystem=YES", "-allowProvisioningUpdates", "-someFutureFlag", "value", "-skipPackagePluginValidation", "-clonedSourcePackagesDirPath", "/tmp/spm"}},
-		{name: "archive refuses a mode-switching flag", spec: archiveSpec, args: []string{"-exportArchive"}, want: []DiagnosticKind{RejectedOption}, msg: `"-exportArchive" is not valid for archive: switches xcodebuild into export mode`},
-		{name: "archive refuses a test-only flag", spec: archiveSpec, args: []string{"-test-iterations", "2"}, want: []DiagnosticKind{RejectedOption}, msg: `"-test-iterations 2" is not valid for archive: applies to test actions only`},
-		{name: "archive refuses a test plan", spec: archiveSpec, args: []string{"-testPlan", "Full"}, want: []DiagnosticKind{RejectedOption}},
-		{name: "archive refuses a colon test selection", spec: archiveSpec, args: []string{"-only-testing:AppTests"}, want: []DiagnosticKind{RejectedOption}},
-		{name: "archive refuses actions", spec: archiveSpec, args: []string{"clean", "archive"}, want: []DiagnosticKind{ActionInOptions, ActionInOptions}, msg: `"clean" is a build action, and archive sets its own actions`},
-		{name: "build-for-testing accepts test selection and a test plan", spec: buildForTestingSpec, args: []string{"-only-testing:AppTests", "-skip-testing:AppTests/Slow", "-only-test-configuration", "Debug", "-testPlan", "Full"}},
-		{name: "build-for-testing refuses a mode-switching flag", spec: buildForTestingSpec, args: []string{"-showBuildSettings"}, want: []DiagnosticKind{RejectedOption}},
-		{name: "export accepts -exportArchive itself", spec: exportArchiveSpec, args: []string{"-exportArchive"}},
-		{name: "export refuses another mode", spec: exportArchiveSpec, args: []string{"-resolvePackageDependencies"}, want: []DiagnosticKind{RejectedOption}},
-		{name: "resolve accepts its own mode flag", spec: resolvePackagesSpec, args: []string{"-resolvePackageDependencies", "-skipPackagePluginValidation"}},
-		{name: "resolve refuses export mode", spec: resolvePackagesSpec, args: []string{"-exportArchive"}, want: []DiagnosticKind{RejectedOption}},
+		{
+			spec:       archiveSpec,
+			defaults:   []string{"-destination"},
+			appendable: []string{"-arch"},
+			rejects:    []string{"-exportArchive", "-showBuildSettings", "-testPlan", "-only-testing", "-test-iterations", "-xctestrun"},
+			accepts:    []string{"-allowProvisioningUpdates", "-skipPackagePluginValidation", "-someFutureFlag"},
+		},
+		{
+			spec:       buildSpec,
+			defaults:   []string{"-destination"},
+			appendable: []string{"-arch"},
+			rejects:    []string{"-exportArchive", "-testPlan", "-only-testing"},
+			accepts:    []string{"-quiet"},
+		},
+		{
+			spec:       analyzeSpec,
+			defaults:   []string{"-destination", "-resultBundlePath"},
+			appendable: []string{"-arch"},
+			rejects:    []string{"-exportArchive", "-testPlan", "-skip-testing"},
+			accepts:    []string{"-quiet"},
+		},
+		{
+			// build-for-testing bakes the test selection into the xctestrun.
+			spec:       buildForTestingSpec,
+			defaults:   []string{"-destination"},
+			appendable: []string{"-arch"},
+			rejects:    []string{"-exportArchive", "-showBuildSettings"},
+			accepts:    []string{"-testPlan", "-only-testing", "-skip-testing", "-only-test-configuration"},
+		},
+		{
+			spec:       testSpec,
+			defaults:   []string{"-collect-test-diagnostics"},
+			appendable: []string{"-arch", "-destination", "-only-test-configuration", "-only-testing", "-skip-test-configuration", "-skip-testing"},
+			rejects:    []string{"-exportArchive", "-xctestrun"},
+			accepts:    []string{"-testPlan", "-only-testing", "-parallel-testing-enabled", "-enableCodeCoverage"},
+		},
+		{
+			spec:       testWithoutBuildingSpec,
+			defaults:   []string{"-collect-test-diagnostics"},
+			appendable: []string{"-arch", "-destination", "-only-test-configuration", "-only-testing", "-skip-test-configuration", "-skip-testing"},
+			rejects:    []string{"-exportArchive", "-showBuildSettings"},
+			accepts:    []string{"-xctestrun", "-only-testing", "-skip-testing", "-test-iterations"},
+		},
+		{
+			spec:    exportArchiveSpec,
+			rejects: []string{"-resolvePackageDependencies", "-showBuildSettings", "-testPlan"},
+			accepts: []string{"-exportArchive", "-allowProvisioningUpdates"},
+		},
+		{
+			spec:    resolvePackagesSpec,
+			rejects: []string{"-exportArchive", "-showBuildSettings", "-only-testing"},
+			accepts: []string{"-resolvePackageDependencies", "-skipPackagePluginValidation"},
+		},
+		{
+			spec:    showBuildSettingsSpec,
+			rejects: []string{"-exportArchive", "-resolvePackageDependencies", "-testPlan"},
+			accepts: []string{"-showBuildSettings", "-skipMacroValidation"},
+		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			opts, parseDiags := ParseAdditionalOptions(tt.args)
-			require.Empty(t, parseDiags)
-
-			diags := tt.spec.check(opts)
-
-			var kinds []DiagnosticKind
-			for _, d := range diags {
-				kinds = append(kinds, d.Kind)
+		t.Run(tt.spec.name, func(t *testing.T) {
+			require.Equal(t, tt.defaults, sortedKeys(tt.spec.defaults))
+			require.Equal(t, tt.appendable, sortedKeys(tt.spec.appendable))
+			for _, flag := range tt.rejects {
+				require.Equal(t, []DiagnosticKind{RejectedOption}, kinds(tt.spec.check(Options{{Kind: Switch, Name: flag}})), flag)
 			}
-			require.Equal(t, tt.want, kinds)
-			if tt.msg != "" {
-				require.Equal(t, tt.msg, diags[0].Message)
+			for _, flag := range tt.accepts {
+				require.Empty(t, tt.spec.check(Options{{Kind: Switch, Name: flag}}), flag)
 			}
+			require.Equal(t, []DiagnosticKind{ActionInOptions}, kinds(tt.spec.check(Options{{Kind: Action, Name: "clean"}})), "every command owns its action list")
 		})
 	}
+}
+
+func TestActionSpec_checkMessages(t *testing.T) {
+	opts, _ := ParseAdditionalOptions([]string{"-exportArchive", "-test-iterations", "2", "clean"})
+	diags := archiveSpec.check(opts)
+	require.Equal(t, []string{
+		`"-exportArchive" is not valid for archive: switches xcodebuild into export mode`,
+		`"-test-iterations 2" is not valid for archive: applies to test actions only`,
+		`"clean" is a build action, and archive sets its own actions`,
+	}, messages(diags))
+}
+
+func sortedKeys(m map[string]bool) []string {
+	var keys []string
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func messages(diagnostics []Diagnostic) []string {
+	var out []string
+	for _, d := range diagnostics {
+		out = append(out, d.Message)
+	}
+	return out
 }

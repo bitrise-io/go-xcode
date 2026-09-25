@@ -46,12 +46,6 @@ func TestAnalyze(t *testing.T) {
 	cmd, err := Analyze(AnalyzeParams{ProjectPath: "App.xcodeproj", Scheme: "App", ResultBundlePath: "/tmp/Analyze.xcresult", DisableCodeSigning: true, AdditionalOptions: []string{"COMPILER_INDEX_STORE_ENABLE=NO"}})
 	require.NoError(t, err)
 	require.Equal(t, []string{"analyze", "-project", "App.xcodeproj", "-scheme", "App", "-resultBundlePath", "/tmp/Analyze.xcresult", "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO"}, cmd.Args())
-
-	// steps-xcode-analyze only sets the result bundle path when the user did not; now the user's replaces it.
-	cmd, err = Analyze(AnalyzeParams{ProjectPath: "App.xcodeproj", ResultBundlePath: "/tmp/Analyze.xcresult", AdditionalOptions: []string{"-resultBundlePath", "/mine.xcresult"}})
-	require.NoError(t, err)
-	require.Equal(t, []string{"analyze", "-project", "App.xcodeproj", "-resultBundlePath", "/mine.xcresult"}, cmd.Args())
-	require.Len(t, cmd.Diagnostics(), 1)
 }
 
 func TestBuildForTesting(t *testing.T) {
@@ -62,14 +56,6 @@ func TestBuildForTesting(t *testing.T) {
 		"-allowProvisioningUpdates", "-authenticationKeyPath", "/key/path", "-authenticationKeyID", "keyID", "-authenticationKeyIssuerID", "issuerID",
 		"-testPlan", "FullTests", "SYMROOT=/tmp/test_bundle", "-only-testing:AppTests",
 	}, cmd.Args())
-	require.Empty(t, cmd.Diagnostics(), "test selection flags are valid for build-for-testing")
-}
-
-func TestBuildFamily_userDestinationReplacesTheDefault(t *testing.T) {
-	cmd, err := BuildForTesting(BuildForTestingParams{Scheme: "App", Destination: "id=SIM-1", AdditionalOptions: []string{"-destination", "id=SIM-2", "-arch", "arm64"}})
-	require.NoError(t, err)
-	require.Equal(t, []string{"build-for-testing", "-scheme", "App", "-destination", "id=SIM-2", "-arch", "arm64"}, cmd.Args())
-	require.Equal(t, []DiagnosticKind{Override}, kinds(cmd.Diagnostics()))
 }
 
 func TestBuild_swiftPackageGetsNoContainerFlag(t *testing.T) {

@@ -25,6 +25,7 @@ var modeSwitchingFlags = map[string]string{
 }
 
 var testOnlyFlags = map[string]string{
+	"-testPlan":                                       "applies to test and build-for-testing only",
 	"-xctestrun":                                      "applies to test-without-building only",
 	"-only-testing":                                   "applies to test actions only",
 	"-skip-testing":                                   "applies to test actions only",
@@ -48,19 +49,19 @@ var (
 	// is repeatable.
 	archiveSpec = actionSpec{
 		name:       ActionArchive,
-		rejected:   union(modeSwitchingFlags, testOnlyFlags, map[string]string{"-testPlan": "applies to test and build-for-testing only"}),
+		rejected:   union(modeSwitchingFlags, testOnlyFlags),
 		defaults:   set("-destination"),
 		appendable: set("-arch"),
 	}
 	buildSpec = actionSpec{
 		name:       ActionBuild,
-		rejected:   union(modeSwitchingFlags, testOnlyFlags, map[string]string{"-testPlan": "applies to test and build-for-testing only"}),
+		rejected:   union(modeSwitchingFlags, testOnlyFlags),
 		defaults:   set("-destination"),
 		appendable: set("-arch"),
 	}
 	analyzeSpec = actionSpec{
 		name:       ActionAnalyze,
-		rejected:   union(modeSwitchingFlags, testOnlyFlags, map[string]string{"-testPlan": "applies to test and build-for-testing only"}),
+		rejected:   union(modeSwitchingFlags, testOnlyFlags),
 		defaults:   set("-destination", "-resultBundlePath"),
 		appendable: set("-arch"),
 	}

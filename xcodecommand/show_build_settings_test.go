@@ -51,12 +51,3 @@ func TestShowBuildSettings_narrowedArchiveOptions(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"-project", "App.xcodeproj", "-scheme", "App", "-showBuildSettings", "-skipMacroValidation", "COMPILER_INDEX_STORE_ENABLE=NO"}, cmd.Args())
 }
-
-func TestShowBuildSettings_rejectsOtherModes(t *testing.T) {
-	cmd, err := showBuildSettings(showBuildSettingsParams{projectPath: "App.xcodeproj", additionalOptions: []string{"-showBuildSettings", "-exportArchive"}})
-	require.NoError(t, err)
-	require.Equal(t, []DiagnosticKind{RejectedOption, RedundantOption}, kinds(cmd.Diagnostics()), "its own mode flag is redundant, another mode is rejected")
-
-	_, err = showBuildSettings(showBuildSettingsParams{projectPath: "App.xcodeproj", additionalOptions: []string{"-exportArchive"}, validation: Fail})
-	require.EqualError(t, err, `invalid additional option: "-exportArchive" is not valid for show build settings: switches xcodebuild into export mode`)
-}

@@ -6,6 +6,77 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Warn passes every option through and reports; Fail refuses the same input before
+// xcodebuild runs. The rows are production xcodebuild_options seen on xcode-archive.
+func TestValidation(t *testing.T) {
+	tests := []struct {
+		name     string
+		params   ArchiveParams
+		wantArgs []string
+		wantKind DiagnosticKind
+		wantErr  string
+	}{
+		{
+			name:     "actions in the options",
+			params:   ArchiveParams{AdditionalOptions: []string{"clean", "archive"}},
+			wantArgs: []string{"archive", "-project", "App.xcodeproj", "clean", "archive"},
+			wantKind: ActionInOptions,
+			wantErr:  `invalid additional option: "clean" is a build action, and archive sets its own actions`,
+		},
+		{
+			name:     "test-only flags",
+			params:   ArchiveParams{AdditionalOptions: []string{"-test-iterations", "2", "-retry-tests-on-failure"}},
+			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-test-iterations", "2", "-retry-tests-on-failure"},
+			wantKind: RejectedOption,
+			wantErr:  `invalid additional option: "-test-iterations 2" is not valid for archive: applies to test actions only`,
+		},
+		{
+			name:     "free-form value flag left without its value",
+			params:   ArchiveParams{AdditionalOptions: []string{"-skipMacroValidation", "-destination"}},
+			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-skipMacroValidation", "-destination"},
+			wantKind: MalformedOption,
+			wantErr:  `invalid additional option: "-destination" requires a value`,
+		},
+		{
+			name:     "flag quoted together with its value",
+			params:   ArchiveParams{AdditionalOptions: []string{"-destination generic/platform=iOS"}},
+			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-destination generic/platform=iOS"},
+			wantKind: MalformedOption,
+			wantErr:  `invalid additional option: "-destination generic/platform=iOS" contains whitespace: quote only the value, not the flag and the value together`,
+		},
+		{
+			name:     "build setting written with a leading dash",
+			params:   ArchiveParams{AdditionalOptions: []string{"-ENABLE_BITCODE=NO"}},
+			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-ENABLE_BITCODE=NO"},
+			wantKind: SuspiciousUserDefault,
+			wantErr:  `invalid additional option: "-ENABLE_BITCODE=NO" looks like the build setting ENABLE_BITCODE=NO written with a leading dash; xcodebuild accepts it as a user default and the setting never applies`,
+		},
+		{
+			name:     "repeated value option",
+			params:   ArchiveParams{XCConfigPath: "/tmp/temp.xcconfig", AdditionalOptions: []string{"-xcconfig", "mine.xcconfig"}},
+			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-xcconfig", "/tmp/temp.xcconfig", "-xcconfig", "mine.xcconfig"},
+			wantKind: RepeatedOption,
+			wantErr:  `invalid additional option: "-xcconfig /tmp/temp.xcconfig" is set by archive and again as additional option [-xcconfig mine.xcconfig]; xcodebuild refuses a repeated option`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			params := tt.params
+			params.ProjectPath = "App.xcodeproj"
+
+			cmd, err := Archive(params)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantArgs, cmd.Args())
+			require.NotEmpty(t, cmd.Diagnostics())
+			require.Equal(t, tt.wantKind, cmd.Diagnostics()[0].Kind)
+
+			params.Validation = Fail
+			_, err = Archive(params)
+			require.EqualError(t, err, tt.wantErr)
+		})
+	}
+}
+
 func TestFail_ignoresInformationalDiagnostics(t *testing.T) {
 	// A redundant switch and a replaced default are informational: Fail still succeeds.
 	cmd, err := Archive(ArchiveParams{
