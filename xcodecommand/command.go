@@ -38,6 +38,7 @@ func assemble(derived Options, additional []string, policy actionPolicy, validat
 	user, diagnostics := ParseAdditionalOptions(additional)
 	diagnostics = append(diagnostics, policy.check(user)...)
 
+	diagnostics = append(diagnostics, hintStepInputs(derived, user)...)
 	merged, mergeDiagnostics := merge(derived, user, policy)
 	diagnostics = append(diagnostics, mergeDiagnostics...)
 	if validation == Fail {

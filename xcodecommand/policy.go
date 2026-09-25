@@ -91,6 +91,26 @@ var (
 	}
 )
 
+// stepInputFlags only work together with what a step derives from its own inputs. Passed
+// alone in the additional options they are reported, so the user reaches for the input.
+var stepInputFlags = map[string]string{
+	"-allowProvisioningUpdates": "cannot update provisioning on its own: xcodebuild needs the App Store Connect API key flags, which the step adds when its automatic code signing is enabled; use that instead",
+}
+
+// hintStepInputs reports user options from stepInputFlags that the command did not derive
+// itself. When it did, merge reports them as redundant instead.
+func hintStepInputs(derived, user Options) []Diagnostic {
+	var diagnostics []Diagnostic
+	for _, o := range user {
+		hint, ok := stepInputFlags[o.Key()]
+		if !ok || slices.ContainsFunc(derived, func(d Option) bool { return d.Key() == o.Key() }) {
+			continue
+		}
+		diagnostics = append(diagnostics, Diagnostic{Kind: PreferStepInput, Message: fmt.Sprintf("%q %s", o, hint)})
+	}
+	return diagnostics
+}
+
 // check reports the options the command refuses; build actions always are.
 func (s actionPolicy) check(opts Options) []Diagnostic {
 	var diagnostics []Diagnostic

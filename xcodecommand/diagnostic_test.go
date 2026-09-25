@@ -102,3 +102,20 @@ func kinds(diagnostics []Diagnostic) []DiagnosticKind {
 	}
 	return out
 }
+
+// -allowProvisioningUpdates only works with the API key flags the step adds when its
+// automatic code signing is on; passed alone it points the user at the step input.
+func TestPreferStepInput_allowProvisioningUpdates(t *testing.T) {
+	cmd, err := Archive(ArchiveParams{ProjectPath: "App.xcodeproj", AdditionalOptions: []string{"-allowProvisioningUpdates"}})
+	require.NoError(t, err)
+	require.Equal(t, []string{"archive", "-project", "App.xcodeproj", "-allowProvisioningUpdates"}, cmd.Args(), "passed through under Warn")
+	require.Equal(t, []Diagnostic{{Kind: PreferStepInput, Message: `"-allowProvisioningUpdates" cannot update provisioning on its own: xcodebuild needs the App Store Connect API key flags, which the step adds when its automatic code signing is enabled; use that instead`}}, cmd.Diagnostics())
+
+	_, err = Archive(ArchiveParams{ProjectPath: "App.xcodeproj", AdditionalOptions: []string{"-allowProvisioningUpdates"}, Validation: Fail})
+	require.Error(t, err)
+
+	// With the step's API key on, the same option is merely redundant.
+	cmd, err = Archive(ArchiveParams{ProjectPath: "App.xcodeproj", Authentication: &testAuth, AdditionalOptions: []string{"-allowProvisioningUpdates"}})
+	require.NoError(t, err)
+	require.Equal(t, []DiagnosticKind{RedundantOption}, kinds(cmd.Diagnostics()))
+}
