@@ -63,13 +63,6 @@ func TestXcodeProj_TargetBuildSettings(t *testing.T) {
 	assert.Equal(t, serialized.Object{"SDKROOT": "iphoneos"}, settings)
 }
 
-func TestXcodeProj_TargetBuildSettings_noProviderInjected(t *testing.T) {
-	project := &XcodeProj{Path: "/p/App.xcodeproj"}
-
-	_, err := project.TargetBuildSettings("App", "Debug")
-	require.ErrorContains(t, err, "BuildSettingsProvider")
-}
-
 func TestXcodeProj_TargetBuildSettings_providerFailure(t *testing.T) {
 	failure := errors.New("xcodebuild exploded")
 	provider := mocks.NewBuildSettingsProvider(t)

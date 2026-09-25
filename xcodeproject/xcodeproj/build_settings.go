@@ -36,9 +36,6 @@ var ErrInfoPlistNotFound = errors.New("target has no Info.plist file")
 // TargetBuildSettings returns the target's effective build settings, looked up by target (not
 // scheme) with xcodebuild. Destination-style extraArgs have no effect in target mode.
 func (p *XcodeProj) TargetBuildSettings(target, configuration string, extraArgs ...string) (serialized.Object, error) {
-	if p.buildSettings == nil {
-		return nil, errors.New("no BuildSettingsProvider was injected")
-	}
 	return p.buildSettings.TargetBuildSettings(p.Path, target, configuration, extraArgs...)
 }
 
