@@ -38,5 +38,5 @@ func ExampleArchive() {
 	}
 	// Output:
 	// clean archive -workspace App.xcworkspace -scheme App -configuration Release -xcconfig /tmp/temp.xcconfig -archivePath /tmp/App.xcarchive -destination generic/platform=iOS Simulator -quiet
-	// warning: "-destination generic/platform=iOS" replaced by additional option [-destination generic/platform=iOS Simulator]
+	// warning: "-destination generic/platform=iOS Simulator" replaces the Step's default "-destination generic/platform=iOS".
 }

@@ -96,9 +96,9 @@ func TestActionPolicy_checkMessages(t *testing.T) {
 	opts, _ := ParseAdditionalOptions([]string{"-exportArchive", "-test-iterations", "2", "clean"})
 	diags := archivePolicy.check(opts)
 	require.Equal(t, []string{
-		`"-exportArchive" is not valid for archive: switches xcodebuild into another mode`,
-		`"-test-iterations 2" is not valid for archive: applies to test actions only`,
-		`"clean" is a build action, and archive sets its own actions`,
+		`"-exportArchive" switches xcodebuild into another mode and is not valid for archive. Remove it.`,
+		`"-test-iterations 2" applies to test actions only and is not valid for archive. Remove it.`,
+		`"clean" is a build action. The archive command sets its own actions. Remove it.`,
 	}, messages(diags))
 }
 

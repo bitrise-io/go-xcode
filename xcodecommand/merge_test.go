@@ -55,13 +55,13 @@ func TestMerge(t *testing.T) {
 			name:        "a repeated value option is passed through for xcodebuild to refuse, and reported",
 			user:        Options{{Kind: ValueOption, Name: "-configuration", Value: "Debug"}},
 			want:        append(without("", 0), "-configuration", "Debug"),
-			diagnostics: []Diagnostic{{Kind: RepeatedOption, Message: `"-configuration Release" is set by archive and again as additional option [-configuration Debug]; xcodebuild refuses a repeated option`}},
+			diagnostics: []Diagnostic{{Kind: RepeatedOption, Message: `"-configuration Debug" repeats "-configuration Release", which the Step sets. xcodebuild refuses a repeated option. Remove it, or change the Step input instead.`}},
 		},
 		{
 			name:        "a repeated owned path is passed through the same way",
 			user:        Options{{Kind: ValueOption, Name: "-xcconfig", Value: "mine.xcconfig"}},
 			want:        append(without("", 0), "-xcconfig", "mine.xcconfig"),
-			diagnostics: []Diagnostic{{Kind: RepeatedOption, Message: `"-xcconfig /tmp/temp.xcconfig" is set by archive and again as additional option [-xcconfig mine.xcconfig]; xcodebuild refuses a repeated option`}},
+			diagnostics: []Diagnostic{{Kind: RepeatedOption, Message: `"-xcconfig mine.xcconfig" repeats "-xcconfig /tmp/temp.xcconfig", which the Step sets. xcodebuild refuses a repeated option. Remove it, or change the Step input instead.`}},
 		},
 		{
 			name: "several user destinations replace the default as a group and all survive",
@@ -72,31 +72,31 @@ func TestMerge(t *testing.T) {
 			want: append(without("-destination", 2),
 				"-destination", "platform=iOS Simulator,name=iPhone 15",
 				"-destination", "platform=iOS Simulator,name=iPad Air"),
-			diagnostics: []Diagnostic{{Kind: Override, Message: `"-destination generic/platform=iOS" replaced by additional option [-destination platform=iOS Simulator,name=iPhone 15 -destination platform=iOS Simulator,name=iPad Air]`}},
+			diagnostics: []Diagnostic{{Kind: Override, Message: `"-destination platform=iOS Simulator,name=iPhone 15 -destination platform=iOS Simulator,name=iPad Air" replaces the Step's default "-destination generic/platform=iOS".`}},
 		},
 		{
 			name:        "a repeated build setting yields to the user's, as xcodebuild takes the last value",
 			user:        Options{{Kind: BuildSetting, Name: "CODE_SIGNING_ALLOWED", Value: "YES"}},
 			want:        append(without("CODE_SIGNING_ALLOWED=NO", 1), "CODE_SIGNING_ALLOWED=YES"),
-			diagnostics: []Diagnostic{{Kind: Override, Message: `"CODE_SIGNING_ALLOWED=NO" replaced by additional option [CODE_SIGNING_ALLOWED=YES]`}},
+			diagnostics: []Diagnostic{{Kind: Override, Message: `"CODE_SIGNING_ALLOWED=YES" replaces the Step's default "CODE_SIGNING_ALLOWED=NO".`}},
 		},
 		{
 			name:        "a repeated switch is dropped and reported as redundant",
 			user:        Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}},
 			want:        append(without("-allowProvisioningUpdates", 1), "-allowProvisioningUpdates"),
-			diagnostics: []Diagnostic{{Kind: RedundantOption, Message: `"-allowProvisioningUpdates" is already set by archive; it can be removed from the additional options`}},
+			diagnostics: []Diagnostic{{Kind: RedundantOption, Message: `"-allowProvisioningUpdates" is already set by the Step. Remove it.`}},
 		},
 		{
 			name:        "a default repeated with the same value is redundant, not an override",
 			user:        Options{{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"}},
 			want:        append(without("-destination", 2), "-destination", "generic/platform=iOS"),
-			diagnostics: []Diagnostic{{Kind: RedundantOption, Message: `"-destination generic/platform=iOS" is already set by archive; it can be removed from the additional options`}},
+			diagnostics: []Diagnostic{{Kind: RedundantOption, Message: `"-destination generic/platform=iOS" is already set by the Step. Remove it.`}},
 		},
 		{
 			name:        "a value option repeated with the same value is still left for xcodebuild to refuse",
 			user:        Options{{Kind: ValueOption, Name: "-scheme", Value: "App"}},
 			want:        append(without("", 0), "-scheme", "App"),
-			diagnostics: []Diagnostic{{Kind: RepeatedOption, Message: `"-scheme App" is set by archive and again as additional option [-scheme App]; xcodebuild refuses a repeated option`}},
+			diagnostics: []Diagnostic{{Kind: RepeatedOption, Message: `"-scheme App" repeats "-scheme App", which the Step sets. xcodebuild refuses a repeated option. Remove it, or change the Step input instead.`}},
 		},
 		{
 			name: "actions and unknown tokens are appended, never merged",
@@ -133,5 +133,5 @@ func TestMerge_userDefaultDoesNotCollideWithAFlag(t *testing.T) {
 	got, diags := merge(derived, user, actionPolicy{name: "test", defaults: []string{"-collect-test-diagnostics"}})
 
 	require.Equal(t, []string{"-collect-test-diagnostics", "never", "-collect-test-diagnostics=on-failure"}, got.Args(), "the step's flag stays; xcodebuild ignores the = form")
-	require.Equal(t, []Diagnostic{{Kind: SuspiciousUserDefault, Message: `"-collect-test-diagnostics never" is written as "-collect-test-diagnostics=on-failure" in the additional options: xcodebuild reads the "=" form as a user default and ignores it; use "-collect-test-diagnostics value"`}}, diags)
+	require.Equal(t, []Diagnostic{{Kind: SuspiciousUserDefault, Message: `"-collect-test-diagnostics=on-failure" is written with "=". xcodebuild reads it as a user default and ignores it, so the Step's "-collect-test-diagnostics never" stays. Use -collect-test-diagnostics on-failure instead.`}}, diags)
 }
