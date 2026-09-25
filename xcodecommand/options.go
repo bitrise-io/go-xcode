@@ -88,6 +88,10 @@ var (
 // freeFormValueFlags always take the next argument: their value may look like a build
 // setting (-destination platform=iOS), an action (-scheme test) or a path named like one
 // (-derivedDataPath build).
+//
+// This is a hint, not a grammar. A flag missing here is still parsed by the lookahead,
+// and the rendered arguments are the same either way; only the diagnostics and merge keys
+// can differ. It does not need updating when xcodebuild gains flags.
 var freeFormValueFlags = []string{
 	"-destination", "-scheme", "-target", "-configuration",
 	"-testPlan", "-only-test-configuration", "-skip-test-configuration",
