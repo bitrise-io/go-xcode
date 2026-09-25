@@ -9,7 +9,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/env"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/logio"
-	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
+	"github.com/bitrise-io/go-xcode/v2/xcodecommand"
 	"github.com/hashicorp/go-version"
 )
 
@@ -19,12 +19,12 @@ const (
 
 // CommandModel ...
 type CommandModel struct {
-	xcodebuildCommand xcodebuild.CommandModel
+	xcodebuildCommand xcodecommand.CommandModel
 	customOptions     []string
 }
 
 // New ...
-func New(xcodebuildCommand xcodebuild.CommandModel) *CommandModel {
+func New(xcodebuildCommand xcodecommand.CommandModel) *CommandModel {
 	return &CommandModel{
 		xcodebuildCommand: xcodebuildCommand,
 	}

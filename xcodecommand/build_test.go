@@ -1,4 +1,4 @@
-package xcodebuild
+package xcodecommand
 
 import (
 	"testing"

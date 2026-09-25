@@ -1,4 +1,4 @@
-package xcodebuild
+package xcodecommand
 
 import "github.com/bitrise-io/go-utils/v2/command"
 
