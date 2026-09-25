@@ -87,6 +87,14 @@ var (
 		defaults:   set("-collect-test-diagnostics"),
 		appendable: set("-skip-testing", "-destination", "-arch"),
 	}
+	// test-without-building derives -only-testing and -skip-testing from its inputs; the
+	// user's entries join them (xcodebuild gives -only-testing precedence over -skip-testing).
+	testWithoutBuildingSpec = actionSpec{
+		name:       ActionTestWithoutBuilding,
+		rejected:   modeSwitchingFlags,
+		defaults:   set("-collect-test-diagnostics"),
+		appendable: set("-only-testing", "-skip-testing", "-only-test-configuration", "-skip-test-configuration", "-destination", "-arch"),
+	}
 	showBuildSettingsSpec = actionSpec{
 		name:     "show build settings",
 		rejected: union(without(modeSwitchingFlags, "-showBuildSettings"), testOnlyFlags),

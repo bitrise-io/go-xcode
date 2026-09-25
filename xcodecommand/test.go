@@ -40,19 +40,7 @@ func Test(params TestParams) (Command, error) {
 	opts = appendValue(opts, "-testPlan", params.TestPlan)
 	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
 
-	switch params.TestRepetitionMode {
-	case TestRepetitionUntilFailure:
-		opts = append(opts, Option{Kind: Switch, Name: "-run-tests-until-failure"})
-	case TestRepetitionRetryOnFailure:
-		opts = append(opts, Option{Kind: Switch, Name: "-retry-tests-on-failure"})
-	}
-	if params.TestRepetitionMode != "" && params.TestRepetitionMode != TestRepetitionNone {
-		opts = appendValue(opts, "-test-iterations", strconv.Itoa(params.MaximumTestRepetitions))
-	}
-	if params.RelaunchTestsForEachRepetition {
-		opts = appendValue(opts, "-test-repetition-relaunch-enabled", "YES")
-	}
-
+	opts = append(opts, testRepetitionOptions(params.TestRepetitionMode, params.MaximumTestRepetitions, params.RelaunchTestsForEachRepetition)...)
 	opts = appendValue(opts, "-xcconfig", params.XCConfigPath)
 	for _, test := range params.SkipTesting {
 		opts = append(opts, Option{Kind: ColonOption, Name: "-skip-testing", Value: test})
@@ -60,4 +48,21 @@ func Test(params TestParams) (Command, error) {
 	opts = appendValue(opts, "-collect-test-diagnostics", params.CollectTestDiagnostics)
 
 	return assemble(opts, params.AdditionalOptions, testSpec, params.Validation)
+}
+
+func testRepetitionOptions(mode TestRepetitionMode, maximum int, relaunch bool) Options {
+	var opts Options
+	switch mode {
+	case TestRepetitionUntilFailure:
+		opts = append(opts, Option{Kind: Switch, Name: "-run-tests-until-failure"})
+	case TestRepetitionRetryOnFailure:
+		opts = append(opts, Option{Kind: Switch, Name: "-retry-tests-on-failure"})
+	}
+	if mode != "" && mode != TestRepetitionNone {
+		opts = appendValue(opts, "-test-iterations", strconv.Itoa(maximum))
+	}
+	if relaunch {
+		opts = appendValue(opts, "-test-repetition-relaunch-enabled", "YES")
+	}
+	return opts
 }
