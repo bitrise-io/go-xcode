@@ -1,225 +1,105 @@
 package xcodecommand
 
-import (
-	"os"
-	"os/exec"
-	"path/filepath"
-
-	"github.com/bitrise-io/go-utils/command"
-)
-
-const (
-	// XCWorkspaceExtension ...
-	XCWorkspaceExtension = ".xcworkspace"
-	// XCProjExtension ...
-	XCProjExtension = ".xcodeproj"
-)
-
-/*
-xcodebuild [-project <projectname>] \
-	-scheme <schemeName> \
-	[-destination <destinationspecifier>]... \
-	[-configuration <configurationname>] \
-	[-arch <architecture>]... \
-	[-sdk [<sdkname>|<sdkpath>]] \
-	[-showBuildSettings] \
-	[<buildsetting>=<value>]... \
-	[<buildaction>]...
-xcodebuild -workspace <workspacename> \
-	-scheme <schemeName> \
-	[-destination <destinationspecifier>]... \
-	[-configuration <configurationname>] \
-	[-arch <architecture>]... \
-	[-sdk [<sdkname>|<sdkpath>]] \
-	[-showBuildSettings] \
-	[<buildsetting>=<value>]... \
-	[<buildaction>]...
-*/
-
-// CommandBuilder ...
-type CommandBuilder struct {
-	actions []string
-
-	// Options
-	projectPath      string
-	scheme           string
-	configuration    string
-	destination      string
-	xcconfigPath     string
-	authentication   *AuthenticationParams
-	archivePath      string
-	customOptions    []string
-	sdk              string
-	resultBundlePath string
-	testPlan         string
-
-	// buildsetting
-	disableCodesign bool
+// BuildParams describes an `xcodebuild build` invocation. Zero-valued fields are omitted.
+type BuildParams struct {
+	ProjectPath        string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
+	Scheme             string
+	Configuration      string
+	Destination        string // a default: a -destination in AdditionalOptions replaces it
+	XCConfigPath       string
+	SDK                string
+	DisableCodeSigning bool // CODE_SIGNING_ALLOWED=NO
+	Clean              bool // run clean first
+	Authentication     *Authentication
+	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
+	Validation         Validation
 }
 
-// NewCommandBuilder ...
-func NewCommandBuilder(projectPath string, actions ...string) *CommandBuilder {
-	return &CommandBuilder{
-		projectPath: projectPath,
-		actions:     actions,
+// Build renders params into a build Command.
+func Build(params BuildParams) (Command, error) {
+	opts := actions(params.Clean, ActionBuild)
+	opts = append(opts, projectOptions{
+		projectPath:   params.ProjectPath,
+		scheme:        params.Scheme,
+		configuration: params.Configuration,
+		destination:   params.Destination,
+		xcconfigPath:  params.XCConfigPath,
+		sdk:           params.SDK,
+	}.render()...)
+	opts = appendAuthentication(opts, params.Authentication)
+	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
+
+	return assemble(opts, params.AdditionalOptions, buildSpec, params.Validation)
+}
+
+// AnalyzeParams describes an `xcodebuild analyze` invocation. Zero-valued fields are omitted.
+type AnalyzeParams struct {
+	ProjectPath        string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
+	Scheme             string
+	Configuration      string
+	Destination        string // a default: a -destination in AdditionalOptions replaces it
+	XCConfigPath       string
+	SDK                string
+	ResultBundlePath   string   // a default: a -resultBundlePath in AdditionalOptions replaces it
+	DisableCodeSigning bool     // CODE_SIGNING_ALLOWED=NO
+	Clean              bool     // run clean first
+	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
+	Validation         Validation
+}
+
+// Analyze renders params into an analyze Command.
+func Analyze(params AnalyzeParams) (Command, error) {
+	opts := actions(params.Clean, ActionAnalyze)
+	opts = append(opts, projectOptions{
+		projectPath:   params.ProjectPath,
+		scheme:        params.Scheme,
+		configuration: params.Configuration,
+		destination:   params.Destination,
+		xcconfigPath:  params.XCConfigPath,
+		sdk:           params.SDK,
+	}.render()...)
+	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
+	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
+
+	return assemble(opts, params.AdditionalOptions, analyzeSpec, params.Validation)
+}
+
+// BuildForTestingParams describes an `xcodebuild build-for-testing` invocation.
+// Zero-valued fields are omitted.
+type BuildForTestingParams struct {
+	ProjectPath       string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
+	Scheme            string
+	Configuration     string
+	Destination       string // a default: a -destination in AdditionalOptions replaces it
+	XCConfigPath      string
+	SDK               string
+	TestPlan          string
+	Clean             bool // run clean first
+	Authentication    *Authentication
+	AdditionalOptions []string // the step's xcodebuild_options, shell-split
+	Validation        Validation
+}
+
+// BuildForTesting renders params into a build-for-testing Command.
+func BuildForTesting(params BuildForTestingParams) (Command, error) {
+	opts := actions(params.Clean, ActionBuildForTesting)
+	opts = append(opts, projectOptions{
+		projectPath:   params.ProjectPath,
+		scheme:        params.Scheme,
+		configuration: params.Configuration,
+		destination:   params.Destination,
+		xcconfigPath:  params.XCConfigPath,
+		sdk:           params.SDK,
+	}.render()...)
+	opts = appendAuthentication(opts, params.Authentication)
+	opts = appendValue(opts, "-testPlan", params.TestPlan)
+
+	return assemble(opts, params.AdditionalOptions, buildForTestingSpec, params.Validation)
+}
+
+func appendCodeSigningAllowed(opts Options, disable bool) Options {
+	if !disable {
+		return opts
 	}
-}
-
-// SetScheme ...
-func (c *CommandBuilder) SetScheme(scheme string) *CommandBuilder {
-	c.scheme = scheme
-	return c
-}
-
-// SetConfiguration ...
-func (c *CommandBuilder) SetConfiguration(configuration string) *CommandBuilder {
-	c.configuration = configuration
-	return c
-}
-
-// SetDestination ...
-func (c *CommandBuilder) SetDestination(destination string) *CommandBuilder {
-	c.destination = destination
-	return c
-}
-
-// SetXCConfigPath ...
-func (c *CommandBuilder) SetXCConfigPath(xcconfigPath string) *CommandBuilder {
-	c.xcconfigPath = xcconfigPath
-	return c
-}
-
-// SetAuthentication ...
-func (c *CommandBuilder) SetAuthentication(authenticationParams AuthenticationParams) *CommandBuilder {
-	c.authentication = &authenticationParams
-	return c
-}
-
-// SetArchivePath ...
-func (c *CommandBuilder) SetArchivePath(archivePath string) *CommandBuilder {
-	c.archivePath = archivePath
-	return c
-}
-
-// SetResultBundlePath ...
-func (c *CommandBuilder) SetResultBundlePath(resultBundlePath string) *CommandBuilder {
-	c.resultBundlePath = resultBundlePath
-	return c
-}
-
-// SetCustomOptions ...
-func (c *CommandBuilder) SetCustomOptions(customOptions []string) *CommandBuilder {
-	c.customOptions = customOptions
-	return c
-}
-
-// SetSDK ...
-func (c *CommandBuilder) SetSDK(sdk string) *CommandBuilder {
-	c.sdk = sdk
-	return c
-}
-
-// SetDisableCodesign ...
-func (c *CommandBuilder) SetDisableCodesign(disable bool) *CommandBuilder {
-	c.disableCodesign = disable
-	return c
-}
-
-// SetTestPlan ...
-func (c *CommandBuilder) SetTestPlan(testPlan string) *CommandBuilder {
-	c.testPlan = testPlan
-	return c
-}
-
-func (c *CommandBuilder) cmdSlice() []string {
-	slice := []string{toolName}
-	slice = append(slice, c.CommandArgs()...)
-
-	return slice
-}
-
-// CommandArgs returns the xcodebuild command arguments, including actions and options
-func (c *CommandBuilder) CommandArgs() []string {
-	slice := append([]string{}, c.actions...)
-
-	if c.projectPath != "" {
-		if filepath.Ext(c.projectPath) == XCWorkspaceExtension {
-			slice = append(slice, "-workspace", c.projectPath)
-		} else {
-			slice = append(slice, "-project", c.projectPath)
-		}
-	}
-
-	if c.scheme != "" {
-		slice = append(slice, "-scheme", c.scheme)
-	}
-
-	if c.configuration != "" {
-		slice = append(slice, "-configuration", c.configuration)
-	}
-
-	if c.destination != "" {
-		// "-destination" "id=07933176-D03B-48D3-A853-0800707579E6" => (need the plus `"` marks between the `destination` and the `id`)
-		slice = append(slice, "-destination", c.destination)
-	}
-
-	if c.xcconfigPath != "" {
-		slice = append(slice, "-xcconfig", c.xcconfigPath)
-	}
-
-	if c.archivePath != "" {
-		slice = append(slice, "-archivePath", c.archivePath)
-	}
-
-	if c.sdk != "" {
-		slice = append(slice, "-sdk", c.sdk)
-	}
-
-	if c.resultBundlePath != "" {
-		slice = append(slice, "-resultBundlePath", c.resultBundlePath)
-	}
-
-	if c.authentication != nil {
-		slice = append(slice, c.authentication.args()...)
-	}
-
-	if c.testPlan != "" {
-		slice = append(slice, "-testPlan", c.testPlan)
-	}
-
-	if c.disableCodesign {
-		slice = append(slice, "CODE_SIGNING_ALLOWED=NO")
-	}
-
-	slice = append(slice, c.customOptions...)
-
-	return slice
-}
-
-// PrintableCmd ...
-func (c *CommandBuilder) PrintableCmd() string {
-	cmdSlice := c.cmdSlice()
-	return command.PrintableCommandArgs(false, cmdSlice)
-}
-
-// Command ...
-func (c *CommandBuilder) Command() *command.Model {
-	cmdSlice := c.cmdSlice()
-	return command.New(cmdSlice[0], cmdSlice[1:]...)
-}
-
-// ExecCommand ...
-func (c *CommandBuilder) ExecCommand() *exec.Cmd {
-	command := c.Command()
-	return command.GetCmd()
-}
-
-// Run ...
-func (c *CommandBuilder) Run() error {
-	command := c.Command()
-
-	command.SetStdout(os.Stdout)
-	command.SetStderr(os.Stderr)
-
-	return command.Run()
+	return append(opts, Option{Kind: BuildSetting, Name: "CODE_SIGNING_ALLOWED", Value: "NO"})
 }

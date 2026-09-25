@@ -6,57 +6,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResolvePackagesCommandModel_cmdSlice(t *testing.T) {
-	type fields struct {
-		projectPath   string
-		scheme        string
-		configuration string
-		customOptions []string
-	}
+func TestResolvePackages(t *testing.T) {
 	tests := []struct {
 		name   string
-		fields fields
+		params ResolvePackagesParams
 		want   []string
 	}{
 		{
-			name: "workspace",
-			fields: fields{
-				projectPath: "test.xcworkspace",
-			},
-			want: []string{
-				"xcodebuild",
-				"-workspace", "test.xcworkspace",
-				"-resolvePackageDependencies",
-			},
+			name:   "workspace",
+			params: ResolvePackagesParams{ProjectPath: "test.xcworkspace"},
+			want:   []string{"-workspace", "test.xcworkspace", "-resolvePackageDependencies"},
 		},
 		{
-			name: "project",
-			fields: fields{
-				projectPath:   "test.xcodeproj",
-				scheme:        "Test",
-				configuration: "Debug",
-			},
-			want: []string{
-				"xcodebuild",
-				"-project", "test.xcodeproj",
-				"-scheme", "Test",
-				"-configuration", "Debug",
-				"-resolvePackageDependencies",
-			},
+			name:   "project",
+			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", Scheme: "Test", Configuration: "Debug"},
+			want:   []string{"-project", "test.xcodeproj", "-scheme", "Test", "-configuration", "Debug", "-resolvePackageDependencies"},
+		},
+		{
+			name:   "user options pass through, including the SPM flags xcode-archive forwards",
+			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: []string{"-skipPackagePluginValidation", "-clonedSourcePackagesDirPath", "/tmp/spm"}},
+			want:   []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "-skipPackagePluginValidation", "-clonedSourcePackagesDirPath", "/tmp/spm"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := &ResolvePackagesCommandModel{
-				projectPath:   tt.fields.projectPath,
-				scheme:        tt.fields.scheme,
-				configuration: tt.fields.configuration,
-				customOptions: tt.fields.customOptions,
-			}
-
-			got := m.cmdSlice()
-
-			require.Equal(t, got, tt.want)
+			cmd, err := ResolvePackages(tt.params)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, cmd.Args())
 		})
 	}
 }

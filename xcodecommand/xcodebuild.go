@@ -1,29 +1,39 @@
 package xcodecommand
 
-import "github.com/bitrise-io/go-utils/v2/command"
+const toolName = "xcodebuild"
 
+// Build actions xcodebuild accepts (Xcode 16).
 const (
-	toolName = "xcodebuild"
+	ActionBuild               = "build"
+	ActionBuildForTesting     = "build-for-testing"
+	ActionAnalyze             = "analyze"
+	ActionArchive             = "archive"
+	ActionTest                = "test"
+	ActionTestWithoutBuilding = "test-without-building"
+	ActionDocBuild            = "docbuild"
+	ActionInstallSrc          = "installsrc"
+	ActionInstall             = "install"
+	ActionClean               = "clean"
 )
 
-// CommandModel ...
-type CommandModel interface {
-	PrintableCmd() string
-	Command(opts *command.Opts) command.Command
+var knownActions = map[string]bool{
+	ActionBuild: true, ActionBuildForTesting: true, ActionAnalyze: true, ActionArchive: true,
+	ActionTest: true, ActionTestWithoutBuilding: true, ActionDocBuild: true,
+	ActionInstallSrc: true, ActionInstall: true, ActionClean: true,
 }
 
-// AuthenticationParams are used to authenticate to App Store Connect API and let xcodebuild download missing provisioning profiles.
-type AuthenticationParams struct {
-	KeyID     string
-	IsssuerID string
-	KeyPath   string
+// Authentication is the App Store Connect API key for -allowProvisioningUpdates.
+type Authentication struct {
+	KeyPath  string
+	KeyID    string
+	IssuerID string
 }
 
-func (a *AuthenticationParams) args() []string {
-	return []string{
-		"-allowProvisioningUpdates",
-		"-authenticationKeyPath", a.KeyPath,
-		"-authenticationKeyID", a.KeyID,
-		"-authenticationKeyIssuerID", a.IsssuerID,
+func (a Authentication) options() Options {
+	return Options{
+		{Kind: Switch, Name: "-allowProvisioningUpdates"},
+		{Kind: ValueOption, Name: "-authenticationKeyPath", Value: a.KeyPath},
+		{Kind: ValueOption, Name: "-authenticationKeyID", Value: a.KeyID},
+		{Kind: ValueOption, Name: "-authenticationKeyIssuerID", Value: a.IssuerID},
 	}
 }

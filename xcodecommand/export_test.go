@@ -6,60 +6,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestExportCommandModel_cmdSlice(t *testing.T) {
+func TestExportArchive(t *testing.T) {
 	tests := []struct {
-		name               string
-		archivePath        string
-		exportDir          string
-		exportOptionsPlist string
-		authentication     *AuthenticationParams
-		want               []string
+		name   string
+		params ExportArchiveParams
+		want   []string
 	}{
 		{
-			name:               "basic export",
-			archivePath:        "sample.xcarchive",
-			exportDir:          "/var/exported",
-			exportOptionsPlist: "/var/export_options.plist",
-			want: []string{"xcodebuild",
-				"-exportArchive",
-				"-archivePath", "sample.xcarchive",
-				"-exportPath", "/var/exported",
-				"-exportOptionsPlist", "/var/export_options.plist",
-			},
+			name:   "basic export",
+			params: ExportArchiveParams{ArchivePath: "sample.xcarchive", ExportPath: "/var/exported", ExportOptionsPlist: "/var/export_options.plist"},
+			want:   []string{"-exportArchive", "-archivePath", "sample.xcarchive", "-exportPath", "/var/exported", "-exportOptionsPlist", "/var/export_options.plist"},
 		},
 		{
-			name:        "export with authentication",
-			archivePath: "sample.xcarchive",
-			authentication: &AuthenticationParams{
-				KeyID:     "keyID",
-				IsssuerID: "issuerID",
-				KeyPath:   "/key/path",
-			},
-			want: []string{"xcodebuild",
-				"-exportArchive",
-				"-archivePath", "sample.xcarchive",
-				"-allowProvisioningUpdates",
-				"-authenticationKeyPath", "/key/path",
-				"-authenticationKeyID", "keyID",
-				"-authenticationKeyIssuerID", "issuerID",
-			},
+			name:   "export with authentication",
+			params: ExportArchiveParams{ArchivePath: "sample.xcarchive", Authentication: &testAuth},
+			want:   []string{"-exportArchive", "-archivePath", "sample.xcarchive", "-allowProvisioningUpdates", "-authenticationKeyPath", "/key/path", "-authenticationKeyID", "keyID", "-authenticationKeyIssuerID", "issuerID"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := NewExportCommand()
-			c.SetArchivePath(tt.archivePath)
-			c.SetExportDir(tt.exportDir)
-			c.SetExportOptionsPlist(tt.exportOptionsPlist)
-			if tt.authentication != nil {
-				c.SetAuthentication(*tt.authentication)
-			}
-
-			got := c.cmdSlice()
-			require.Equal(t, tt.want, got)
-
-			got2 := c.cmdSlice()
-			require.Equal(t, tt.want, got2, "Second run should return the same result")
+			cmd, err := ExportArchive(tt.params)
+			require.NoError(t, err)
+			require.Equal(t, tt.want, cmd.Args())
 		})
 	}
+
+	cmd, err := ExportArchive(ExportArchiveParams{ExportOptionsPlist: "/var/export_options.plist", AdditionalOptions: []string{"-exportOptionsPlist", "mine.plist"}})
+	require.NoError(t, err)
+	require.Equal(t, []string{"-exportArchive", "-exportOptionsPlist", "/var/export_options.plist", "-exportOptionsPlist", "mine.plist"}, cmd.Args(), "both go through; xcodebuild refuses the repeat")
+	require.Len(t, cmd.Diagnostics(), 1)
+	require.Equal(t, RepeatedOption, cmd.Diagnostics()[0].Kind)
 }
