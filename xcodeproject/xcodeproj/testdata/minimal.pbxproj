@@ -1,0 +1,108 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildConfiguration section */
+		AA00000000000000000000A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		AA00000000000000000000A2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				INFOPLIST_FILE = "App/Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "io.bitrise.App";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+/* End PBXBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA00000000000000000000B1 /* Build configuration list for PBXProject */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000000A1 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AA00000000000000000000B2 /* Build configuration list for PBXNativeTarget "App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA00000000000000000000A2 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin PBXFileReference section */
+		AA00000000000000000000C1 /* App.app */ = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.application;
+			includeInIndex = 0;
+			path = App.app;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		AA00000000000000000000D1 = {
+			isa = PBXGroup;
+			children = (
+				AA00000000000000000000C1 /* App.app */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA00000000000000000000E1 /* App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA00000000000000000000B2 /* Build configuration list for PBXNativeTarget "App" */;
+			name = App;
+			productName = App;
+			productReference = AA00000000000000000000C1 /* App.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA00000000000000000000F1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1200;
+				TargetAttributes = {
+					AA00000000000000000000E1 = {
+						CreatedOnToolsVersion = 12.0;
+						DevelopmentTeam = TEAM123456;
+					};
+				};
+			};
+			buildConfigurationList = AA00000000000000000000B1 /* Build configuration list for PBXProject */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = AA00000000000000000000D1;
+			productRefGroup = AA00000000000000000000D1;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA00000000000000000000E1 /* App */,
+			);
+		};
+/* End PBXProject section */
+	};
+	rootObject = AA00000000000000000000F1 /* Project object */;
+}

@@ -15,7 +15,7 @@ func Test_GivenScheme_WhenMarshal_ThenContentRemain(t *testing.T) {
 	f, err := os.Open(schemePth)
 	require.NoError(t, err)
 
-	scheme, err := parse(f)
+	scheme, err := Parse(f)
 	require.NoError(t, err)
 
 	// When

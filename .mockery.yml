@@ -1,3 +1,4 @@
+# Generated with mockery v3.7.0: go run github.com/vektra/mockery/v3@v3.7.0
 template: testify
 dir: mocks
 pkgname: mocks
@@ -8,3 +9,14 @@ packages:
   github.com/bitrise-io/go-utils/v2/command:
     interfaces:
       Command:
+  github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj:
+    config:
+      dir: xcodeproject/xcodeproj/mocks
+    interfaces:
+      BuildSettingsProvider:
+      UserProvider:
+  github.com/bitrise-io/go-xcode/v2/plistutil:
+    config:
+      dir: plistutil/mocks
+    interfaces:
+      FileHandler:

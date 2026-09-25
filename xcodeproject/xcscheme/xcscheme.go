@@ -196,7 +196,7 @@ func Open(pth string) (Scheme, error) {
 		_ = f.Close()
 	}()
 
-	scheme, err := parse(f)
+	scheme, err := Parse(f)
 	if err != nil {
 		return Scheme{}, fmt.Errorf("failed to unmarshal scheme file: %s: %s", pth, err)
 	}
@@ -207,7 +207,8 @@ func Open(pth string) (Scheme, error) {
 	return scheme, nil
 }
 
-func parse(reader io.Reader) (scheme Scheme, err error) {
+// Parse decodes an .xcscheme document. Name and Path are left empty.
+func Parse(reader io.Reader) (scheme Scheme, err error) {
 	err = xml.NewDecoder(reader).Decode(&scheme)
 	return
 }
