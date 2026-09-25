@@ -51,10 +51,10 @@ func (r testRunOptions) render() Options {
 // testRunSpec is the spec shared by the test actions: selection flags and -destination
 // are appendable (xcodebuild applies -only-testing before -skip-testing, and runs on
 // every destination), -collect-test-diagnostics is a default.
-func testRunSpec(name string, rejected map[string]string) actionSpec {
+func testRunSpec(name string, extra ...rejection) actionSpec {
 	return actionSpec{
 		name:       name,
-		rejected:   union(modeSwitchingFlags, rejected),
+		rejects:    append([]rejection{modeSwitching}, extra...),
 		defaults:   []string{"-collect-test-diagnostics"},
 		appendable: []string{"-only-testing", "-skip-testing", "-only-test-configuration", "-skip-test-configuration", "-destination", "-arch"},
 	}

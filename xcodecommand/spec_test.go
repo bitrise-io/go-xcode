@@ -96,7 +96,7 @@ func TestActionSpec_checkMessages(t *testing.T) {
 	opts, _ := ParseAdditionalOptions([]string{"-exportArchive", "-test-iterations", "2", "clean"})
 	diags := archiveSpec.check(opts)
 	require.Equal(t, []string{
-		`"-exportArchive" is not valid for archive: switches xcodebuild into export mode`,
+		`"-exportArchive" is not valid for archive: switches xcodebuild into another mode`,
 		`"-test-iterations 2" is not valid for archive: applies to test actions only`,
 		`"clean" is a build action, and archive sets its own actions`,
 	}, messages(diags))

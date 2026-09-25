@@ -1,90 +1,93 @@
 package xcodecommand
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 // actionSpec is a command's policy for additional options; anything not listed passes.
 type actionSpec struct {
 	name       string
-	rejected   map[string]string // flag -> reason
-	defaults   []string          // derived keys the user's option replaces
-	appendable []string          // repeatable keys where derived and user entries both stay
+	rejects    []rejection
+	defaults   []string // derived keys the user's option replaces
+	appendable []string // repeatable keys where derived and user entries both stay
 }
 
-var modeSwitchingFlags = map[string]string{
-	"-exportArchive":              "switches xcodebuild into export mode",
-	"-showBuildSettings":          "switches xcodebuild into build settings listing mode",
-	"-resolvePackageDependencies": "switches xcodebuild into package resolution mode",
-	"-list":                       "switches xcodebuild into listing mode",
-	"-version":                    "switches xcodebuild into version printing mode",
-	"-showsdks":                   "switches xcodebuild into SDK listing mode",
-	"-showdestinations":           "switches xcodebuild into destination listing mode",
-	"-showTestPlans":              "switches xcodebuild into test plan listing mode",
-	"-create-xcframework":         "switches xcodebuild into xcframework creation mode",
-	"-usage":                      "switches xcodebuild into help mode",
-	"-help":                       "switches xcodebuild into help mode",
+// rejection is a group of flags a command refuses, with the reason for all of them.
+type rejection struct {
+	flags  []string
+	reason string
 }
 
-var testOnlyFlags = map[string]string{
-	"-testPlan":                                       "applies to test and build-for-testing only",
-	"-xctestrun":                                      "applies to test-without-building only",
-	"-only-testing":                                   "applies to test actions only",
-	"-skip-testing":                                   "applies to test actions only",
-	"-only-test-configuration":                        "applies to test actions only",
-	"-skip-test-configuration":                        "applies to test actions only",
-	"-test-iterations":                                "applies to test actions only",
-	"-run-tests-until-failure":                        "applies to test actions only",
-	"-retry-tests-on-failure":                         "applies to test actions only",
-	"-test-repetition-relaunch-enabled":               "applies to test actions only",
-	"-parallel-testing-enabled":                       "applies to test actions only",
-	"-parallel-testing-worker-count":                  "applies to test actions only",
-	"-collect-test-diagnostics":                       "applies to test actions only",
-	"-testLanguage":                                   "applies to test actions only",
-	"-testRegion":                                     "applies to test actions only",
-	"-maximum-concurrent-test-device-destinations":    "applies to test actions only",
-	"-maximum-concurrent-test-simulator-destinations": "applies to test actions only",
+func (r rejection) except(flags ...string) rejection {
+	return rejection{
+		flags:  slices.DeleteFunc(slices.Clone(r.flags), func(f string) bool { return slices.Contains(flags, f) }),
+		reason: r.reason,
+	}
 }
+
+var (
+	modeSwitching = rejection{
+		reason: "switches xcodebuild into another mode",
+		flags: []string{
+			"-exportArchive", "-showBuildSettings", "-resolvePackageDependencies", "-list", "-version",
+			"-showsdks", "-showdestinations", "-showTestPlans", "-create-xcframework", "-usage", "-help",
+		},
+	}
+	testOnly = rejection{
+		reason: "applies to test actions only",
+		flags: []string{
+			"-testPlan", "-xctestrun", "-only-testing", "-skip-testing", "-only-test-configuration",
+			"-skip-test-configuration", "-test-iterations", "-run-tests-until-failure", "-retry-tests-on-failure",
+			"-test-repetition-relaunch-enabled", "-parallel-testing-enabled", "-parallel-testing-worker-count",
+			"-collect-test-diagnostics", "-testLanguage", "-testRegion",
+			"-maximum-concurrent-test-device-destinations", "-maximum-concurrent-test-simulator-destinations",
+		},
+	}
+	withoutBuildingOnly = rejection{flags: []string{"-xctestrun"}, reason: "applies to test-without-building only"}
+)
 
 var (
 	// The build family: a step's -destination is a fallback the user's replaces, -arch
 	// is repeatable.
 	archiveSpec = actionSpec{
 		name:       ActionArchive,
-		rejected:   union(modeSwitchingFlags, testOnlyFlags),
+		rejects:    []rejection{modeSwitching, testOnly},
 		defaults:   []string{"-destination"},
 		appendable: []string{"-arch"},
 	}
 	buildSpec = actionSpec{
 		name:       ActionBuild,
-		rejected:   union(modeSwitchingFlags, testOnlyFlags),
+		rejects:    []rejection{modeSwitching, testOnly},
 		defaults:   []string{"-destination"},
 		appendable: []string{"-arch"},
 	}
 	analyzeSpec = actionSpec{
 		name:       ActionAnalyze,
-		rejected:   union(modeSwitchingFlags, testOnlyFlags),
+		rejects:    []rejection{modeSwitching, testOnly},
 		defaults:   []string{"-destination", "-resultBundlePath"},
 		appendable: []string{"-arch"},
 	}
 	// build-for-testing takes the test selection flags, which it bakes into the xctestrun.
 	buildForTestingSpec = actionSpec{
 		name:       ActionBuildForTesting,
-		rejected:   modeSwitchingFlags,
+		rejects:    []rejection{modeSwitching},
 		defaults:   []string{"-destination"},
 		appendable: []string{"-arch"},
 	}
 	exportArchiveSpec = actionSpec{
-		name:     "export archive",
-		rejected: union(without(modeSwitchingFlags, "-exportArchive"), testOnlyFlags),
+		name:    "export archive",
+		rejects: []rejection{modeSwitching.except("-exportArchive"), testOnly},
 	}
 	resolvePackagesSpec = actionSpec{
-		name:     "resolve packages",
-		rejected: union(without(modeSwitchingFlags, "-resolvePackageDependencies"), testOnlyFlags),
+		name:    "resolve packages",
+		rejects: []rejection{modeSwitching.except("-resolvePackageDependencies"), testOnly},
 	}
-	testSpec                = testRunSpec(ActionTest, map[string]string{"-xctestrun": "applies to test-without-building only"})
-	testWithoutBuildingSpec = testRunSpec(ActionTestWithoutBuilding, nil)
+	testSpec                = testRunSpec(ActionTest, withoutBuildingOnly)
+	testWithoutBuildingSpec = testRunSpec(ActionTestWithoutBuilding)
 	showBuildSettingsSpec   = actionSpec{
-		name:     "show build settings",
-		rejected: union(without(modeSwitchingFlags, "-showBuildSettings"), testOnlyFlags),
+		name:    "show build settings",
+		rejects: []rejection{modeSwitching.except("-showBuildSettings"), testOnly},
 	}
 )
 
@@ -96,28 +99,13 @@ func (s actionSpec) check(opts Options) []Diagnostic {
 		case Action:
 			diagnostics = append(diagnostics, Diagnostic{Kind: ActionInOptions, Message: fmt.Sprintf("%q is a build action, and %s sets its own actions", o.Name, s.name)})
 		case Switch, ValueOption, ColonOption:
-			if reason, ok := s.rejected[o.Name]; ok {
-				diagnostics = append(diagnostics, Diagnostic{Kind: RejectedOption, Message: fmt.Sprintf("%q is not valid for %s: %s", o.String(), s.name, reason)})
+			for _, r := range s.rejects {
+				if slices.Contains(r.flags, o.Name) {
+					diagnostics = append(diagnostics, Diagnostic{Kind: RejectedOption, Message: fmt.Sprintf("%q is not valid for %s: %s", o.String(), s.name, r.reason)})
+					break
+				}
 			}
 		}
 	}
 	return diagnostics
-}
-
-func union(maps ...map[string]string) map[string]string {
-	out := map[string]string{}
-	for _, m := range maps {
-		for k, v := range m {
-			out[k] = v
-		}
-	}
-	return out
-}
-
-func without(m map[string]string, keys ...string) map[string]string {
-	out := union(m)
-	for _, k := range keys {
-		delete(out, k)
-	}
-	return out
 }
