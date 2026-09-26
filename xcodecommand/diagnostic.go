@@ -121,12 +121,9 @@ func lintPolicy(user Options, policy actionPolicy) []Diagnostic {
 		switch o.Kind {
 		case Action:
 			diagnostics = append(diagnostics, Diagnostic{Kind: ActionInOptions, Message: fmt.Sprintf("%q is a build action. The %s command sets its own actions. Remove it.", o.Name, policy.name)})
-		case Switch, ValueOption, ColonOption:
-			for _, r := range policy.rejects {
-				if slices.Contains(r.flags, o.Name) {
-					diagnostics = append(diagnostics, Diagnostic{Kind: RejectedOption, Message: fmt.Sprintf("%q %s and is not valid for %s. Remove it.", o.String(), r.reason, policy.name)})
-					break
-				}
+		default:
+			if r, rejected := policy.rejects(o); rejected {
+				diagnostics = append(diagnostics, Diagnostic{Kind: RejectedOption, Message: fmt.Sprintf("%q %s and is not valid for %s. Remove it.", o.String(), r.reason, policy.name)})
 			}
 		}
 	}
