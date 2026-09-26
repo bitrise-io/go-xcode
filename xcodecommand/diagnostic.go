@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 )
 
@@ -192,12 +191,20 @@ func (opts Options) join() string {
 	return strings.Join(opts.Args(), " ")
 }
 
-// shellQuoted renders a value as it has to be written in xcodebuild_options.
+// shellQuoted renders a value as it has to be written in xcodebuild_options, which the
+// steps split with POSIX shell rules (go-shellquote): double quotes around a value with
+// spaces, single quotes when the value has characters double quotes would interpret.
 func shellQuoted(value string) string {
-	if strings.ContainsAny(value, " \t\"'") {
-		return strconv.Quote(value)
+	switch {
+	case value == "":
+		return `""`
+	case !strings.ContainsAny(value, " \t'\"\\$`"):
+		return value
+	case !strings.ContainsAny(value, "\"\\$`"):
+		return `"` + value + `"`
+	default:
+		return "'" + strings.ReplaceAll(value, "'", `'\''`) + "'"
 	}
-	return value
 }
 
 // unquoteFlag turns "-destination 'generic/platform=iOS'" (one argument) into the form the

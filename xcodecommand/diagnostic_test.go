@@ -185,3 +185,24 @@ func messages(diagnostics []Diagnostic) []string {
 	}
 	return out
 }
+
+// The corrected forms in the messages are pasted back into xcodebuild_options, which the
+// steps split with POSIX shell rules; each rendering must read back as the same value.
+func TestShellQuoted(t *testing.T) {
+	for value, want := range map[string]string{
+		"":                                      `""`,
+		"iphoneos":                              "iphoneos",
+		"generic/platform=iOS":                  "generic/platform=iOS",
+		"platform=iOS Simulator,name=iPhone 15": `"platform=iOS Simulator,name=iPhone 15"`,
+		"Apple Development: Bot":                `"Apple Development: Bot"`,
+		`say "hi"`:                              `'say "hi"'`,
+		"it's here":                             `"it's here"`,
+		`a\b`:                                   `'a\b'`,
+		"$HOME/dd":                              `'$HOME/dd'`,
+		"don't $shout":                          `'don'\''t $shout'`,
+	} {
+		require.Equal(t, want, shellQuoted(value), value)
+	}
+	require.Equal(t, `-destination "platform=iOS Simulator,name=iPhone 15"`, unquoteFlag("-destination 'platform=iOS Simulator,name=iPhone 15'"))
+	require.Equal(t, "-sdk macosx", unquoteFlag("-sdk  macosx"))
+}
