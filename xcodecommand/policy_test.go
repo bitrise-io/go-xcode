@@ -9,7 +9,7 @@ import (
 
 // One row per command: what its policy replaces, keeps both of, refuses and lets through.
 // The constructors are wired to these policies; the merge rules themselves are covered in
-// merge_test.go.
+// merge_test.go and the messages in lint_test.go.
 func TestPolicies(t *testing.T) {
 	tests := []struct {
 		policy     actionPolicy
@@ -82,30 +82,12 @@ func TestPolicies(t *testing.T) {
 			require.Equal(t, tt.defaults, slices.Sorted(slices.Values(tt.policy.defaults)))
 			require.Equal(t, tt.appendable, slices.Sorted(slices.Values(tt.policy.appendable)))
 			for _, flag := range tt.rejects {
-				require.Equal(t, []DiagnosticKind{RejectedOption}, kinds(tt.policy.check(Options{{Kind: Switch, Name: flag}})), flag)
+				require.Equal(t, []DiagnosticKind{RejectedOption}, kinds(lintPolicy(Options{{Kind: Switch, Name: flag}}, tt.policy)), flag)
 			}
 			for _, flag := range tt.accepts {
-				require.Empty(t, tt.policy.check(Options{{Kind: Switch, Name: flag}}), flag)
+				require.Empty(t, lintPolicy(Options{{Kind: Switch, Name: flag}}, tt.policy), flag)
 			}
-			require.Equal(t, []DiagnosticKind{ActionInOptions}, kinds(tt.policy.check(Options{{Kind: Action, Name: "clean"}})), "every command owns its action list")
+			require.Equal(t, []DiagnosticKind{ActionInOptions}, kinds(lintPolicy(Options{{Kind: Action, Name: "clean"}}, tt.policy)), "every command owns its action list")
 		})
 	}
-}
-
-func TestActionPolicy_checkMessages(t *testing.T) {
-	opts, _ := ParseAdditionalOptions([]string{"-exportArchive", "-test-iterations", "2", "clean"})
-	diags := archivePolicy.check(opts)
-	require.Equal(t, []string{
-		`"-exportArchive" switches xcodebuild into another mode and is not valid for archive. Remove it.`,
-		`"-test-iterations 2" applies to test actions only and is not valid for archive. Remove it.`,
-		`"clean" is a build action. The archive command sets its own actions. Remove it.`,
-	}, messages(diags))
-}
-
-func messages(diagnostics []Diagnostic) []string {
-	var out []string
-	for _, d := range diagnostics {
-		out = append(out, d.Message)
-	}
-	return out
 }

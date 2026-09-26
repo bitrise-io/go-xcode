@@ -103,31 +103,31 @@ func TestParseAdditionalOptions(t *testing.T) {
 		{
 			name:  "bare word is kept verbatim and reported",
 			args:  []string{"-sdk", "iphoneos", "PRODUCT_NAME=My", "App"},
-			want:  Options{{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}, {Kind: BuildSetting, Name: "PRODUCT_NAME", Value: "My"}, {Kind: Unknown, Name: "App"}},
+			want:  Options{{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}, {Kind: BuildSetting, Name: "PRODUCT_NAME", Value: "My"}, {Kind: Unknown, Name: "App", issue: bareWord}},
 			diags: []DiagnosticKind{MalformedOption},
 		},
 		{
 			name:  "empty argument is kept verbatim and reported",
 			args:  []string{""},
-			want:  Options{{Kind: Unknown, Name: ""}},
+			want:  Options{{Kind: Unknown, Name: "", issue: emptyArgument}},
 			diags: []DiagnosticKind{MalformedOption},
 		},
 		{
 			name:  "free-form value flag without a value is reported",
 			args:  []string{"-destination"},
-			want:  Options{{Kind: Unknown, Name: "-destination"}},
+			want:  Options{{Kind: Unknown, Name: "-destination", issue: missingValue}},
 			diags: []DiagnosticKind{MalformedOption},
 		},
 		{
 			name:  "flag and value quoted together, value with '=': xcodebuild ignores it as a user default",
 			args:  []string{"-destination generic/platform=iOS", "-destination 'platform=iOS'"},
-			want:  Options{{Kind: Unknown, Name: "-destination generic/platform=iOS"}, {Kind: Unknown, Name: "-destination 'platform=iOS'"}},
+			want:  Options{{Kind: Unknown, Name: "-destination generic/platform=iOS", issue: quotedFlagWithValue}, {Kind: Unknown, Name: "-destination 'platform=iOS'", issue: quotedFlagWithValue}},
 			diags: []DiagnosticKind{SuspiciousUserDefault, SuspiciousUserDefault},
 		},
 		{
 			name:  "flag and value quoted together, no '=': xcodebuild refuses it",
 			args:  []string{"-sdk macosx", "-quiet foo"},
-			want:  Options{{Kind: Unknown, Name: "-sdk macosx"}, {Kind: Unknown, Name: "-quiet foo"}},
+			want:  Options{{Kind: Unknown, Name: "-sdk macosx", issue: quotedFlag}, {Kind: Unknown, Name: "-quiet foo", issue: quotedFlag}},
 			diags: []DiagnosticKind{MalformedOption, MalformedOption},
 		},
 		{
@@ -143,18 +143,18 @@ func TestParseAdditionalOptions(t *testing.T) {
 		{
 			name:  "lone dash, empty user default name and empty colon value are reported",
 			args:  []string{"-", "-=x", "-only-testing:"},
-			want:  Options{{Kind: Unknown, Name: "-"}, {Kind: Unknown, Name: "-=x"}, {Kind: Unknown, Name: "-only-testing:"}},
+			want:  Options{{Kind: Unknown, Name: "-", issue: invalidFlag}, {Kind: Unknown, Name: "-=x", issue: invalidFlag}, {Kind: Unknown, Name: "-only-testing:", issue: colonWithoutValue}},
 			diags: []DiagnosticKind{MalformedOption, MalformedOption, MalformedOption},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, diags := ParseAdditionalOptions(tt.args)
+			got := ParseAdditionalOptions(tt.args)
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.args, got.Args(), "parsing must round-trip")
 
 			var kinds []DiagnosticKind
-			for _, d := range diags {
+			for _, d := range got.Diagnostics() {
 				kinds = append(kinds, d.Kind)
 			}
 			require.Equal(t, tt.diags, kinds)
@@ -167,14 +167,14 @@ func TestParseAdditionalOptions(t *testing.T) {
 func TestOptions_Filter(t *testing.T) {
 	spmFlags := []string{"-skipPackagePluginValidation", "-skipMacroValidation", "-skipPackageUpdates",
 		"-disableAutomaticPackageResolution", "-onlyUsePackageVersionsFromResolvedFile", "-clonedSourcePackagesDirPath"}
-	opts, diags := ParseAdditionalOptions([]string{
+	opts := ParseAdditionalOptions([]string{
 		"-destination", "generic/platform=iOS",
 		"-skipPackagePluginValidation",
 		"-clonedSourcePackagesDirPath", "/tmp/spm",
 		"BUNDLE_IDENTIFIER=io.bitrise.sample",
 		"-quiet",
 	})
-	require.Empty(t, diags)
+	require.Empty(t, opts.Diagnostics())
 
 	kept := opts.Filter(func(o Option) bool { return o.Kind == BuildSetting || slices.Contains(spmFlags, o.Name) })
 
@@ -186,8 +186,8 @@ func TestOptions_Filter(t *testing.T) {
 }
 
 func TestParseAdditionalOptions_pathValueNamedLikeAnAction(t *testing.T) {
-	got, diags := ParseAdditionalOptions([]string{"-derivedDataPath", "build", "-clonedSourcePackagesDirPath", "test"})
-	require.Empty(t, diags)
+	got := ParseAdditionalOptions([]string{"-derivedDataPath", "build", "-clonedSourcePackagesDirPath", "test"})
+	require.Empty(t, got.Diagnostics())
 	require.Equal(t, Options{
 		{Kind: ValueOption, Name: "-derivedDataPath", Value: "build"},
 		{Kind: ValueOption, Name: "-clonedSourcePackagesDirPath", Value: "test"},

@@ -44,8 +44,8 @@ func TestShowBuildSettings(t *testing.T) {
 func TestShowBuildSettings_narrowedArchiveOptions(t *testing.T) {
 	spmFlags := []string{"-skipPackagePluginValidation", "-skipMacroValidation", "-skipPackageUpdates",
 		"-disableAutomaticPackageResolution", "-onlyUsePackageVersionsFromResolvedFile", "-clonedSourcePackagesDirPath"}
-	user, diags := ParseAdditionalOptions([]string{"-destination", "generic/platform=iOS", "-skipMacroValidation", "COMPILER_INDEX_STORE_ENABLE=NO", "-quiet"})
-	require.Empty(t, diags)
+	user := ParseAdditionalOptions([]string{"-destination", "generic/platform=iOS", "-skipMacroValidation", "COMPILER_INDEX_STORE_ENABLE=NO", "-quiet"})
+	require.Empty(t, user.Diagnostics())
 	narrowed := user.Filter(func(o Option) bool { return o.Kind == BuildSetting || slices.Contains(spmFlags, o.Name) })
 
 	cmd, err := showBuildSettings(showBuildSettingsParams{projectPath: "App.xcodeproj", scheme: "App", additionalOptions: narrowed.Args()})
