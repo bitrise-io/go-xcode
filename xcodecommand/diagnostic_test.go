@@ -42,14 +42,14 @@ func TestValidation(t *testing.T) {
 			params:   ArchiveParams{AdditionalOptions: []string{"-destination generic/platform=iOS"}},
 			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-destination generic/platform=iOS"},
 			wantKind: SuspiciousUserDefault,
-			wantErr:  `invalid additional option: "-destination generic/platform=iOS" is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it. Use -destination generic/platform=iOS instead.`,
+			wantErr:  `invalid additional option: "-destination generic/platform=iOS" is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so today's build runs without it. Remove it to keep that, or use -destination generic/platform=iOS to apply it.`,
 		},
 		{
 			name:     "build setting written with a leading dash",
 			params:   ArchiveParams{AdditionalOptions: []string{"-ENABLE_BITCODE=NO"}},
 			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-ENABLE_BITCODE=NO"},
 			wantKind: SuspiciousUserDefault,
-			wantErr:  `invalid additional option: "-ENABLE_BITCODE=NO" looks like the build setting ENABLE_BITCODE=NO with a leading dash. xcodebuild reads it as a user default and the setting never applies. Use ENABLE_BITCODE=NO instead.`,
+			wantErr:  `invalid additional option: "-ENABLE_BITCODE=NO" looks like the build setting ENABLE_BITCODE=NO with a leading dash. xcodebuild reads it as a user default and ignores it, so today's build runs without it. Remove it to keep that, or use ENABLE_BITCODE=NO to apply it.`,
 		},
 		{
 			name:     "repeated value option",
@@ -127,12 +127,12 @@ func TestOptions_Diagnostics_messages(t *testing.T) {
 	opts := ParseAdditionalOptions([]string{"", "-destination 'platform=iOS Simulator,name=iPhone 15'", "-sdk macosx", "-=x", "-only-testing:", "Distribution", "-ENABLE_BITCODE=NO", "-destination"})
 	require.Equal(t, []string{
 		`"" is empty. xcodebuild treats it as an unknown build action. Remove it.`,
-		`"-destination 'platform=iOS Simulator,name=iPhone 15'" is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it. Use -destination 'platform=iOS Simulator,name=iPhone 15' instead.`,
+		`"-destination 'platform=iOS Simulator,name=iPhone 15'" is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so today's build runs without it. Remove it to keep that, or use -destination 'platform=iOS Simulator,name=iPhone 15' to apply it.`,
 		`"-sdk macosx" is a flag quoted together with its value. xcodebuild refuses it. Use -sdk macosx instead.`,
 		`"-=x" is not a valid flag. xcodebuild refuses it. Remove it.`,
 		`"-only-testing:" has no value after the colon. Add the value or remove the flag.`,
 		`"Distribution" is not a flag, a NAME=value build setting or a build action. xcodebuild treats it as an unknown build action. Quote a value with spaces, for example CODE_SIGN_IDENTITY="Apple Distribution", or remove it.`,
-		`"-ENABLE_BITCODE=NO" looks like the build setting ENABLE_BITCODE=NO with a leading dash. xcodebuild reads it as a user default and the setting never applies. Use ENABLE_BITCODE=NO instead.`,
+		`"-ENABLE_BITCODE=NO" looks like the build setting ENABLE_BITCODE=NO with a leading dash. xcodebuild reads it as a user default and ignores it, so today's build runs without it. Remove it to keep that, or use ENABLE_BITCODE=NO to apply it.`,
 		`"-destination" has no value. Add one or remove the flag.`,
 	}, messages(opts.Diagnostics()))
 }
@@ -163,7 +163,7 @@ func TestLint_mergeMessages(t *testing.T) {
 	_, collisions := merge(derived, user, policy)
 
 	require.Equal(t, []string{
-		`"-collect-test-diagnostics=on-failure" is written with "=". xcodebuild reads it as a user default and ignores it, so the Step's "-collect-test-diagnostics never" stays. Use -collect-test-diagnostics on-failure instead.`,
+		`"-collect-test-diagnostics=on-failure" is written with "=". xcodebuild reads it as a user default and ignores it, so today's build uses the Step's "-collect-test-diagnostics never". Remove it to keep that, or use -collect-test-diagnostics on-failure to apply it.`,
 		`"-destination generic/platform=tvOS" replaces the Step's default "-destination generic/platform=iOS".`,
 		`"-allowProvisioningUpdates" is already set by the Step. Remove it.`,
 		`"-xcconfig mine.xcconfig" repeats "-xcconfig /tmp/temp.xcconfig", which the Step sets. xcodebuild refuses a repeated option. Remove it, or change the Step input instead.`,
