@@ -20,7 +20,11 @@ func FuzzAdditionalOptions(f *testing.F) {
 		f.Add(seed)
 	}
 	f.Fuzz(func(t *testing.T, input string) {
-		for _, args := range [][]string{strings.Fields(input), {input}} {
+		variants := [][]string{strings.Fields(input), {input}}
+		if split, err := SplitAdditionalOptions(input); err == nil {
+			variants = append(variants, split)
+		}
+		for _, args := range variants {
 			opts := ParseAdditionalOptions(args)
 			if len(args) == 0 {
 				require.Empty(t, opts.Args())

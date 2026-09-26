@@ -127,7 +127,7 @@ func TestOptions_Diagnostics_messages(t *testing.T) {
 	opts := ParseAdditionalOptions([]string{"", "-destination 'platform=iOS Simulator,name=iPhone 15'", "-sdk macosx", "-=x", "-only-testing:", "Distribution", "-ENABLE_BITCODE=NO", "-destination"})
 	require.Equal(t, []string{
 		`"" is empty. xcodebuild treats it as an unknown build action. Remove it.`,
-		`"-destination 'platform=iOS Simulator,name=iPhone 15'" is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it. Use -destination "platform=iOS Simulator,name=iPhone 15" instead.`,
+		`"-destination 'platform=iOS Simulator,name=iPhone 15'" is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it. Use -destination 'platform=iOS Simulator,name=iPhone 15' instead.`,
 		`"-sdk macosx" is a flag quoted together with its value. xcodebuild refuses it. Use -sdk macosx instead.`,
 		`"-=x" is not a valid flag. xcodebuild refuses it. Remove it.`,
 		`"-only-testing:" has no value after the colon. Add the value or remove the flag.`,
@@ -186,23 +186,40 @@ func messages(diagnostics []Diagnostic) []string {
 	return out
 }
 
-// The corrected forms in the messages are pasted back into xcodebuild_options, which the
-// steps split with POSIX shell rules; each rendering must read back as the same value.
+// The corrected forms in the messages are pasted back into xcodebuild_options, which
+// SplitAdditionalOptions reads with POSIX shell rules; each rendering must read back as
+// the same value.
 func TestShellQuoted(t *testing.T) {
 	for value, want := range map[string]string{
-		"":                                      `""`,
+		"":                                      `''`,
 		"iphoneos":                              "iphoneos",
 		"generic/platform=iOS":                  "generic/platform=iOS",
-		"platform=iOS Simulator,name=iPhone 15": `"platform=iOS Simulator,name=iPhone 15"`,
-		"Apple Development: Bot":                `"Apple Development: Bot"`,
+		"platform=iOS Simulator,name=iPhone 15": `'platform=iOS Simulator,name=iPhone 15'`,
+		"Apple Development: Bot":                `'Apple Development: Bot'`,
 		`say "hi"`:                              `'say "hi"'`,
-		"it's here":                             `"it's here"`,
-		`a\b`:                                   `'a\b'`,
-		"$HOME/dd":                              `'$HOME/dd'`,
+		"it's here":                             `'it'\''s here'`,
+		`a\b`:                                   `a\\b`,
+		"$HOME/dd":                              `\$HOME/dd`,
 		"don't $shout":                          `'don'\''t $shout'`,
 	} {
 		require.Equal(t, want, shellQuoted(value), value)
+		args, err := SplitAdditionalOptions("-flag " + shellQuoted(value))
+		require.NoError(t, err)
+		require.Equal(t, []string{"-flag", value}, args, "must read back as the same value")
 	}
-	require.Equal(t, `-destination "platform=iOS Simulator,name=iPhone 15"`, unquoteFlag("-destination 'platform=iOS Simulator,name=iPhone 15'"))
+	require.Equal(t, `-destination 'platform=iOS Simulator,name=iPhone 15'`, unquoteFlag("-destination 'platform=iOS Simulator,name=iPhone 15'"))
 	require.Equal(t, "-sdk macosx", unquoteFlag("-sdk  macosx"))
+}
+
+func TestSplitAdditionalOptions(t *testing.T) {
+	args, err := SplitAdditionalOptions(`-destination "platform=iOS Simulator,name=iPhone 15" -only-testing:'App Tests/Login' CODE_SIGN_IDENTITY=Apple\ Distribution`)
+	require.NoError(t, err)
+	require.Equal(t, []string{"-destination", "platform=iOS Simulator,name=iPhone 15", "-only-testing:App Tests/Login", "CODE_SIGN_IDENTITY=Apple Distribution"}, args)
+
+	args, err = SplitAdditionalOptions("")
+	require.NoError(t, err)
+	require.Empty(t, args)
+
+	_, err = SplitAdditionalOptions(`-destination "platform=iOS`)
+	require.EqualError(t, err, `xcodebuild_options "-destination \"platform=iOS" cannot be split like a shell command line: Unterminated double-quoted string`)
 }
