@@ -29,35 +29,44 @@ type testRunOptions struct {
 	collectTestDiagnostics         string
 }
 
-// options renders the run flags. A mode it does not know, a repeating mode with fewer
-// than two repetitions, and relaunching without repetition are refused: xcodebuild would
-// refuse the last two, and an unknown mode used to mean -test-iterations alone.
+// ValidateTestRepetition checks the test steps' repetition inputs: a known mode, at least
+// two repetitions for a repeating mode (xcodebuild refuses fewer), and relaunching only
+// with repetition (xcodebuild refuses it otherwise). Test and TestWithoutBuilding apply it;
+// a step calls it while processing its inputs to fail before any work.
+func ValidateTestRepetition(mode TestRepetitionMode, maximumRepetitions int, relaunchTestsForEachRepetition bool) error {
+	switch mode {
+	case "", TestRepetitionNone:
+		if relaunchTestsForEachRepetition {
+			return fmt.Errorf("relaunch_tests_for_each_repetition needs a test_repetition_mode other than %s", TestRepetitionNone)
+		}
+		return nil
+	case TestRepetitionUntilFailure, TestRepetitionRetryOnFailure, TestRepetitionUpUntilMaximumRuns:
+		if maximumRepetitions < 2 {
+			return fmt.Errorf("test_repetition_mode %s needs a maximum_test_repetitions of at least 2, got %d", mode, maximumRepetitions)
+		}
+		return nil
+	default:
+		return fmt.Errorf("test_repetition_mode %q is not one of %s, %s, %s, %s", mode,
+			TestRepetitionNone, TestRepetitionUntilFailure, TestRepetitionRetryOnFailure, TestRepetitionUpUntilMaximumRuns)
+	}
+}
+
 func (r testRunOptions) options() (Options, error) {
+	if err := ValidateTestRepetition(r.repetitionMode, r.maximumRepetitions, r.relaunchTestsForEachRepetition); err != nil {
+		return nil, err
+	}
 	opts := appendValue(nil, "-resultBundlePath", r.resultBundlePath)
 
-	repeats := true
 	switch r.repetitionMode {
-	case "", TestRepetitionNone:
-		repeats = false
 	case TestRepetitionUntilFailure:
 		opts = append(opts, Option{Kind: Switch, Name: "-run-tests-until-failure"})
 	case TestRepetitionRetryOnFailure:
 		opts = append(opts, Option{Kind: Switch, Name: "-retry-tests-on-failure"})
-	case TestRepetitionUpUntilMaximumRuns:
-	default:
-		return nil, fmt.Errorf("unknown test repetition mode %q: use %s, %s, %s or %s", r.repetitionMode,
-			TestRepetitionNone, TestRepetitionUntilFailure, TestRepetitionRetryOnFailure, TestRepetitionUpUntilMaximumRuns)
 	}
-	if repeats {
-		if r.maximumRepetitions < 2 {
-			return nil, fmt.Errorf("test repetition mode %s needs at least 2 maximum test repetitions, got %d", r.repetitionMode, r.maximumRepetitions)
-		}
+	if r.repetitionMode != "" && r.repetitionMode != TestRepetitionNone {
 		opts = appendValue(opts, "-test-iterations", strconv.Itoa(r.maximumRepetitions))
 	}
 	if r.relaunchTestsForEachRepetition {
-		if !repeats {
-			return nil, fmt.Errorf("relaunching tests for each repetition needs a test repetition mode other than %s", TestRepetitionNone)
-		}
 		opts = appendValue(opts, "-test-repetition-relaunch-enabled", "YES")
 	}
 

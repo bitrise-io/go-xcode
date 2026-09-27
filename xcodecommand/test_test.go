@@ -91,9 +91,9 @@ func TestTest_repetition(t *testing.T) {
 		{mode: TestRepetitionUntilFailure, max: 3, want: []string{"-run-tests-until-failure", "-test-iterations", "3"}},
 		{mode: TestRepetitionRetryOnFailure, max: 3, relaunch: true, want: []string{"-retry-tests-on-failure", "-test-iterations", "3", "-test-repetition-relaunch-enabled", "YES"}},
 		{mode: TestRepetitionUpUntilMaximumRuns, max: 5, want: []string{"-test-iterations", "5"}},
-		{mode: "retry-on-failure", max: 3, wantErr: `unknown test repetition mode "retry-on-failure"`},
-		{mode: TestRepetitionRetryOnFailure, max: 0, wantErr: "needs at least 2 maximum test repetitions, got 0"},
-		{mode: TestRepetitionNone, relaunch: true, wantErr: "relaunching tests for each repetition needs a test repetition mode"},
+		{mode: "retry-on-failure", max: 3, wantErr: `test_repetition_mode "retry-on-failure" is not one of none, until_failure, retry_on_failure, up_until_maximum_repetitions`},
+		{mode: TestRepetitionRetryOnFailure, max: 0, wantErr: "test_repetition_mode retry_on_failure needs a maximum_test_repetitions of at least 2, got 0"},
+		{mode: TestRepetitionNone, relaunch: true, wantErr: "relaunch_tests_for_each_repetition needs a test_repetition_mode other than none"},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.mode)+tt.wantErr, func(t *testing.T) {
