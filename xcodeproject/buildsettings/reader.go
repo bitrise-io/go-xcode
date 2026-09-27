@@ -34,8 +34,9 @@ func NewReader(commandFactory command.Factory, logger log.Logger) Reader {
 	return reader{commandFactory: commandFactory, logger: logger}
 }
 
-// Read runs `xcodebuild -showBuildSettings -json` and parses its stdout; xcodebuild's
-// warnings go to stderr, which only appears in the error of a failed run.
+// Read runs `xcodebuild -showBuildSettings -json` and parses its stdout. xcodebuild's
+// warnings go to stderr, which is logged at debug level and included in the error of a
+// failed run.
 func (r reader) Read(query Query) (List, error) {
 	cmd, err := xcodecommand.ShowBuildSettings(xcodecommand.ShowBuildSettingsParams{
 		ProjectPath:       query.ProjectPath,
@@ -58,8 +59,12 @@ func (r reader) Read(query Query) (List, error) {
 	r.logger.TPrintf("Reading build settings...")
 	r.logger.TDonef("$ %s", run.PrintableCommandArgs())
 
-	if err := run.Run(); err != nil {
-		return nil, fmt.Errorf("%s: %w\n%s", run.PrintableCommandArgs(), err, strings.TrimSpace(stderr.String()+"\n"+stdout.String()))
+	runErr := run.Run()
+	if warnings := strings.TrimSpace(stderr.String()); warnings != "" {
+		r.logger.Debugf("xcodebuild stderr:\n%s", warnings)
+	}
+	if runErr != nil {
+		return nil, fmt.Errorf("%s: %w\n%s", run.PrintableCommandArgs(), runErr, strings.TrimSpace(stderr.String()+"\n"+stdout.String()))
 	}
 
 	list, err := Parse(stdout.Bytes())

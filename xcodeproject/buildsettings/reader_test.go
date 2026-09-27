@@ -2,6 +2,7 @@ package buildsettings
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os/exec"
 	"testing"
@@ -81,4 +82,24 @@ func TestReader_Read_errors(t *testing.T) {
 	r, _ = newReader("Build settings for action build and target App:", "", nil)
 	_, err = r.Read(Query{ProjectPath: "App.xcodeproj", Target: "App"})
 	require.ErrorContains(t, err, "printed no build settings JSON")
+}
+
+// debugRecorder keeps what is logged at debug level.
+type debugRecorder struct {
+	log.Logger
+	debug []string
+}
+
+func (l *debugRecorder) Debugf(format string, v ...interface{}) {
+	l.debug = append(l.debug, fmt.Sprintf(format, v...))
+}
+
+// stderr carries xcodebuild's warnings: logged at debug level, kept out of the JSON.
+func TestReader_Read_logsStderrAtDebugLevel(t *testing.T) {
+	_, factory := newReader(`[]`, warnings, nil)
+	logger := &debugRecorder{Logger: log.NewLogger()}
+
+	_, err := NewReader(factory, logger).Read(Query{ProjectPath: "App.xcodeproj", Target: "App"})
+	require.NoError(t, err)
+	require.Equal(t, []string{"xcodebuild stderr:\n" + warnings}, logger.debug)
 }
