@@ -141,6 +141,14 @@ func TestParseAdditionalOptions(t *testing.T) {
 			diags: []DiagnosticKind{SuspiciousUserDefault},
 		},
 		{
+			name: "a path value named like an action stays the value",
+			args: []string{"-derivedDataPath", "build", "-clonedSourcePackagesDirPath", "test"},
+			want: Options{
+				{Kind: ValueOption, Name: "-derivedDataPath", Value: "build"},
+				{Kind: ValueOption, Name: "-clonedSourcePackagesDirPath", Value: "test"},
+			},
+		},
+		{
 			name:  "lone dash, empty user default name and empty colon value are reported",
 			args:  []string{"-", "-=x", "-only-testing:"},
 			want:  Options{{Kind: Unknown, Name: "-", issue: invalidFlag}, {Kind: Unknown, Name: "-=x", issue: invalidFlag}, {Kind: Unknown, Name: "-only-testing:", issue: colonWithoutValue}},
@@ -183,15 +191,6 @@ func TestOptions_Filter(t *testing.T) {
 		"-clonedSourcePackagesDirPath", "/tmp/spm",
 		"BUNDLE_IDENTIFIER=io.bitrise.sample",
 	}, kept.Args(), "the destination value generic/platform=iOS is not mistaken for a build setting")
-}
-
-func TestParseAdditionalOptions_pathValueNamedLikeAnAction(t *testing.T) {
-	got := ParseAdditionalOptions([]string{"-derivedDataPath", "build", "-clonedSourcePackagesDirPath", "test"})
-	require.Empty(t, got.Diagnostics())
-	require.Equal(t, Options{
-		{Kind: ValueOption, Name: "-derivedDataPath", Value: "build"},
-		{Kind: ValueOption, Name: "-clonedSourcePackagesDirPath", Value: "test"},
-	}, got)
 }
 
 func TestOption_Key(t *testing.T) {

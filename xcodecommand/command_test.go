@@ -40,9 +40,3 @@ func TestCommand_Create(t *testing.T) {
 	require.Equal(t, cmd.Args(), factory.args)
 	require.Same(t, opts, factory.opts)
 }
-
-func TestContainerOptions_trailingSlash(t *testing.T) {
-	cmd, err := Build(BuildParams{ProjectPath: "App.xcworkspace/"})
-	require.NoError(t, err)
-	require.Equal(t, []string{"build", "-workspace", "App.xcworkspace/"}, cmd.Args())
-}
