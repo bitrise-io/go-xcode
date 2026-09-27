@@ -15,7 +15,8 @@ import (
 )
 
 // newReader fakes an xcodebuild run that writes stdout and stderr separately.
-func newReader(stdout, stderr string, runErr error) (Reader, *mocks.CommandFactory) {
+func newReader(t *testing.T, stdout, stderr string, runErr error) (Reader, *mocks.CommandFactory) {
+	t.Helper()
 	var opts *command.Opts
 	cmd := new(mocks.Command)
 	cmd.On("Run").Run(func(mock.Arguments) {
@@ -35,52 +36,65 @@ func newReader(stdout, stderr string, runErr error) (Reader, *mocks.CommandFacto
 const warnings = `--- xcodebuild: WARNING: Using the first of multiple matching destinations:
 { platform:macOS, arch:arm64, id:0000, name:My Mac }`
 
-func TestReader_Read(t *testing.T) {
-	tests := []struct {
-		name  string
-		query Query
-		args  []string
-	}{
-		{
-			name:  "target",
-			query: Query{ProjectPath: "App.xcodeproj", Target: "App", Configuration: "Release", AdditionalOptions: []string{"COMPILER_INDEX_STORE_ENABLE=NO"}},
-			args:  []string{"-project", "App.xcodeproj", "-target", "App", "-configuration", "Release", "-showBuildSettings", "-json", "COMPILER_INDEX_STORE_ENABLE=NO"},
-		},
-		{
-			name:  "scheme in a workspace",
-			query: Query{ProjectPath: "App.xcworkspace", Scheme: "App"},
-			args:  []string{"-workspace", "App.xcworkspace", "-scheme", "App", "-showBuildSettings", "-json"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r, factory := newReader(`[{"action": "build", "target": "App", "buildSettings": {"SDKROOT": "iphoneos"}}]`, warnings, nil)
+func TestReader_Target(t *testing.T) {
+	r, factory := newReader(t, `[{"action": "build", "target": "App", "buildSettings": {"SDKROOT": "iphoneos"}}]`, warnings, nil)
 
-			list, err := r.Read(tt.query)
-			require.NoError(t, err)
-			require.Equal(t, List{{Target: "App", Action: "build", Values: map[string]string{"SDKROOT": "iphoneos"}}}, list, "stderr warnings stay out of the JSON")
-			factory.AssertCalled(t, "Create", "xcodebuild", tt.args, mock.Anything)
-		})
-	}
+	settings, err := r.Target("App.xcodeproj", "App", "Release", "COMPILER_INDEX_STORE_ENABLE=NO")
+	require.NoError(t, err)
+	require.Equal(t, Settings{"SDKROOT": "iphoneos"}, settings, "stderr warnings stay out of the JSON")
+	factory.AssertCalled(t, "Create", "xcodebuild", []string{"-project", "App.xcodeproj", "-target", "App", "-configuration", "Release", "-showBuildSettings", "-json", "COMPILER_INDEX_STORE_ENABLE=NO"}, mock.Anything)
 }
 
-func TestReader_Read_failedRunReportsOutput(t *testing.T) {
-	r, _ := newReader("", `xcodebuild: error: The project named "App" does not contain a target named "Nope".`, &exec.ExitError{})
+// A scheme's targets are keyed by name, so the result does not depend on the order of the
+// scheme's build entries.
+func TestReader_SchemeTarget(t *testing.T) {
+	out := readFixture(t, "scheme_with_test_target.json")
+	r, factory := newReader(t, string(out), warnings, nil)
 
-	_, err := r.Read(Query{ProjectPath: "App.xcodeproj", Target: "Nope"})
+	settings, err := r.SchemeTarget("App.xcworkspace", "App", "ios-simple-objc", "Debug")
+	require.NoError(t, err)
+	require.Equal(t, "Bitrise.ios-simple-objc", settings["PRODUCT_BUNDLE_IDENTIFIER"])
+	factory.AssertCalled(t, "Create", "xcodebuild", []string{"-workspace", "App.xcworkspace", "-scheme", "App", "-configuration", "Debug", "-showBuildSettings", "-json"}, mock.Anything)
+
+	_, err = r.SchemeTarget("App.xcworkspace", "App", "Nope", "Debug")
+	require.EqualError(t, err, "no build settings for target Nope in scheme App; it has settings for: ios-simple-objc, ios-simple-objcTests")
+}
+
+func TestReader_Scheme(t *testing.T) {
+	r, _ := newReader(t, string(readFixture(t, "scheme_with_test_target.json")), "", nil)
+
+	targets, err := r.Scheme("App.xcodeproj", "App", "")
+	require.NoError(t, err)
+	require.Len(t, targets, 2)
+	require.Contains(t, targets, "ios-simple-objcTests")
+}
+
+func TestReader_rejectsPathsWithoutBuildSettings(t *testing.T) {
+	r, factory := newReader(t, "[]", "", nil)
+
+	_, err := r.Scheme("MyPackage/Package.swift", "MyPackage", "")
+	require.ErrorContains(t, err, "needs an .xcodeproj or .xcworkspace, got MyPackage/Package.swift")
+	_, err = r.SchemeTarget("MyPackage", "MyPackage", "MyPackage", "")
+	require.ErrorContains(t, err, "needs an .xcodeproj or .xcworkspace")
+	_, err = r.Target("App.xcworkspace", "App", "")
+	require.ErrorContains(t, err, "reading a target's build settings needs an .xcodeproj, got App.xcworkspace")
+	factory.AssertNotCalled(t, "Create", mock.Anything, mock.Anything, mock.Anything)
+}
+
+func TestReader_errors(t *testing.T) {
+	r, _ := newReader(t, "", `xcodebuild: error: The project named "App" does not contain a target named "Nope".`, &exec.ExitError{})
+	_, err := r.Target("App.xcodeproj", "Nope", "")
 	require.ErrorContains(t, err, `does not contain a target named "Nope"`)
 	var exitErr *exec.ExitError
 	require.ErrorAs(t, err, &exitErr)
-}
 
-func TestReader_Read_errors(t *testing.T) {
 	notFound := errors.New("executable file not found in $PATH")
-	r, _ := newReader("", "", notFound)
-	_, err := r.Read(Query{ProjectPath: "App.xcodeproj", Target: "App"})
+	r, _ = newReader(t, "", "", notFound)
+	_, err = r.Target("App.xcodeproj", "App", "")
 	require.ErrorIs(t, err, notFound)
 
-	r, _ = newReader("Build settings for action build and target App:", "", nil)
-	_, err = r.Read(Query{ProjectPath: "App.xcodeproj", Target: "App"})
+	r, _ = newReader(t, "Build settings for action build and target App:", "", nil)
+	_, err = r.Target("App.xcodeproj", "App", "")
 	require.ErrorContains(t, err, "printed no build settings JSON")
 }
 
@@ -95,11 +109,11 @@ func (l *debugRecorder) Debugf(format string, v ...interface{}) {
 }
 
 // stderr carries xcodebuild's warnings: logged at debug level, kept out of the JSON.
-func TestReader_Read_logsStderrAtDebugLevel(t *testing.T) {
-	_, factory := newReader(`[]`, warnings, nil)
+func TestReader_logsStderrAtDebugLevel(t *testing.T) {
+	_, factory := newReader(t, `[{"target": "App", "buildSettings": {}}]`, warnings, nil)
 	logger := &debugRecorder{Logger: log.NewLogger()}
 
-	_, err := NewReader(factory, logger).Read(Query{ProjectPath: "App.xcodeproj", Target: "App"})
+	_, err := NewReader(factory, logger).Target("App.xcodeproj", "App", "")
 	require.NoError(t, err)
 	require.Equal(t, []string{"xcodebuild stderr:\n" + warnings}, logger.debug)
 }

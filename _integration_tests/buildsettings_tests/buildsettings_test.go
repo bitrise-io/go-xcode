@@ -17,18 +17,16 @@ func TestReader_simpleObjc(t *testing.T) {
 	projectPath := filepath.Join(_integration_tests.GetRepository(t, "https://github.com/bitrise-io/sample-apps-ios-simple-objc.git", "master"), "ios-simple-objc", "ios-simple-objc.xcodeproj")
 	reader := buildsettings.NewReader(command.NewFactory(env.NewRepository()), log.NewLogger())
 
-	list, err := reader.Read(buildsettings.Query{ProjectPath: projectPath, Target: "ios-simple-objc", Configuration: "Release"})
+	settings, err := reader.Target(projectPath, "ios-simple-objc", "Release")
 	require.NoError(t, err)
-	main, ok := list.Main()
-	require.True(t, ok)
-	require.Equal(t, "ios-simple-objc", main.Target)
-	require.Equal(t, "Bitrise.ios-simple-objc", main.Values["PRODUCT_BUNDLE_IDENTIFIER"])
+	require.Equal(t, "Bitrise.ios-simple-objc", settings["PRODUCT_BUNDLE_IDENTIFIER"])
 
-	list, err = reader.Read(buildsettings.Query{ProjectPath: projectPath, Scheme: "ios-simple-objc"})
+	settings, err = reader.SchemeTarget(projectPath, "ios-simple-objc", "ios-simple-objcTests", "Debug")
 	require.NoError(t, err)
-	require.GreaterOrEqual(t, len(list), 2, "the scheme builds its test target too")
-	main, _ = list.Main()
-	require.Equal(t, "ios-simple-objc", main.Target, "the scheme's main target comes first")
-	_, ok = list.Target("ios-simple-objcTests")
-	require.True(t, ok)
+	require.Equal(t, "Bitrise.ios-simple-objcTests", settings["PRODUCT_BUNDLE_IDENTIFIER"])
+
+	targets, err := reader.Scheme(projectPath, "ios-simple-objc", "Debug")
+	require.NoError(t, err)
+	require.Contains(t, targets, "ios-simple-objc")
+	require.Contains(t, targets, "ios-simple-objcTests", "the scheme builds its test target too")
 }
