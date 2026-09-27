@@ -112,11 +112,12 @@ func TestDiagnosticMessages(t *testing.T) {
 		},
 		{
 			name:   "policy and step input",
-			user:   []string{"-exportArchive", "-test-iterations", "2", "clean", "-allowProvisioningUpdates"},
+			user:   []string{"-exportArchive", "-test-iterations", "2", "-testPlan", "Full", "clean", "-allowProvisioningUpdates"},
 			policy: archivePolicy,
 			want: []string{
-				`"-exportArchive" switches xcodebuild into another mode and is not valid for archive. Remove it.`,
-				`"-test-iterations 2" applies to test actions only and is not valid for archive. Remove it.`,
+				`"-exportArchive" is not valid for archive. It switches xcodebuild into another mode, so the command does not run as the Step expects. Remove it.`,
+				`"-test-iterations 2" is not valid for archive. It applies to test actions only. Remove it.`,
+				`"-testPlan Full" is not valid for archive. It applies to test actions only, and xcodebuild refuses it here. Remove it.`,
 				`"clean" is a build action. The archive command sets its own actions. Remove it.`,
 				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead.`,
 			},
