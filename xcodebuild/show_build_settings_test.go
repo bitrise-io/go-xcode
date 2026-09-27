@@ -116,7 +116,7 @@ func TestShowBuildSettingsArgs(t *testing.T) {
 			nameFlag:    targetFlag,
 			targetName:  "App",
 			config:      "Release",
-			want:        []string{"-project", "/p/App.xcodeproj", "-target", "App", "-configuration", "Release", "-showBuildSettings"},
+			want:        []string{"-project", "/p/App.xcodeproj", "-target", "App", "-configuration", "Release", "-showBuildSettings", "-json"},
 		},
 		{
 			name:        "a workspace path is passed as -workspace",
@@ -124,7 +124,7 @@ func TestShowBuildSettingsArgs(t *testing.T) {
 			nameFlag:    schemeFlag,
 			targetName:  "App",
 			config:      "Debug",
-			want:        []string{"-workspace", "/p/App.xcworkspace", "-scheme", "App", "-configuration", "Debug", "-showBuildSettings"},
+			want:        []string{"-workspace", "/p/App.xcworkspace", "-scheme", "App", "-configuration", "Debug", "-showBuildSettings", "-json"},
 		},
 		{
 			name:        "extra args come last",
@@ -133,14 +133,14 @@ func TestShowBuildSettingsArgs(t *testing.T) {
 			targetName:  "App",
 			config:      "Debug",
 			extraArgs:   []string{"-destination", "generic/platform=iOS"},
-			want: []string{"-project", "/p/App.xcodeproj", "-target", "App", "-configuration", "Debug", "-showBuildSettings",
+			want: []string{"-project", "/p/App.xcodeproj", "-target", "App", "-configuration", "Debug", "-showBuildSettings", "-json",
 				"-destination", "generic/platform=iOS"},
 		},
 		{
 			name:       "empty container and configuration are omitted",
 			nameFlag:   targetFlag,
 			targetName: "App",
-			want:       []string{"-target", "App", "-showBuildSettings"},
+			want:       []string{"-target", "App", "-showBuildSettings", "-json"},
 		},
 	}
 
@@ -149,4 +149,67 @@ func TestShowBuildSettingsArgs(t *testing.T) {
 			assert.Equal(t, tt.want, showBuildSettingsArgs(tt.projectPath, tt.nameFlag, tt.targetName, tt.config, tt.extraArgs))
 		})
 	}
+}
+
+func TestParseShowBuildSettingsJSON(t *testing.T) {
+	schemeWithTests, err := os.ReadFile("./testdata/showBuildSettingsSchemeWithTestTarget.json")
+	require.NoError(t, err)
+	quotedValue, err := os.ReadFile("./testdata/showBuildSettingsQuotedValue.json")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name   string
+		out    []byte
+		target string
+		want   map[string]string // a subset of the result
+		absent []string
+	}{
+		{
+			name: "scheme: the first entry, the main target, without the test target's keys",
+			out:  schemeWithTests,
+			want: map[string]string{
+				"PRODUCT_BUNDLE_IDENTIFIER":    "Bitrise.ios-simple-objc",
+				"LD_RUNPATH_SEARCH_PATHS":      "@executable_path/Frameworks", // xcodebuild pads it with a space
+				"GCC_PREPROCESSOR_DEFINITIONS": "DEBUG=1",
+			},
+			absent: []string{"BUNDLE_LOADER"},
+		},
+		{
+			name:   "target: the entry named after it",
+			out:    schemeWithTests,
+			target: "ios-simple-objcTests",
+			want:   map[string]string{"PRODUCT_BUNDLE_IDENTIFIER": "Bitrise.ios-simple-objcTests"},
+		},
+		{
+			name:   "target not listed: the first entry",
+			out:    schemeWithTests,
+			target: "Nope",
+			want:   map[string]string{"PRODUCT_BUNDLE_IDENTIFIER": "Bitrise.ios-simple-objc"},
+		},
+		{
+			name: "quotes inside a value stay, which the text parser loses",
+			out:  quotedValue,
+			want: map[string]string{"OTHER_LDFLAGS": `-framework "SnapKit"`},
+		},
+		{
+			name: "no entries, as for a Swift package scheme",
+			out:  []byte("[\n\n]"),
+			want: map[string]string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseShowBuildSettingsJSON(tt.out, tt.target)
+			require.NoError(t, err)
+			for key, value := range tt.want {
+				assert.Equal(t, value, got[key], key)
+			}
+			for _, key := range tt.absent {
+				assert.NotContains(t, got, key)
+			}
+		})
+	}
+
+	_, err = parseShowBuildSettingsJSON([]byte("Build settings for action build and target App:"), "")
+	assert.Error(t, err, "text output is not JSON; the provider falls back to the text parser")
 }

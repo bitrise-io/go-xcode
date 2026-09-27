@@ -3,6 +3,7 @@ package xcodebuild
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ const (
 	toolName = "xcodebuild"
 
 	showBuildSettingsFlag = "-showBuildSettings"
+	jsonFlag              = "-json"
 	projectFlag           = "-project"
 	workspaceFlag         = "-workspace"
 	targetFlag            = "-target"
@@ -49,23 +51,28 @@ func NewShowBuildSettingsProvider(commandFactory command.Factory, logger log.Log
 
 // TargetBuildSettings returns the effective build settings of one target.
 func (p showBuildSettingsProvider) TargetBuildSettings(projectPath, target, configuration string, extraArgs ...string) (serialized.Object, error) {
-	return p.run(showBuildSettingsArgs(projectPath, targetFlag, target, configuration, extraArgs))
+	return p.run(showBuildSettingsArgs(projectPath, targetFlag, target, configuration, extraArgs), target)
 }
 
-// SchemeBuildSettings returns the effective build settings of one scheme.
+// SchemeBuildSettings returns the effective build settings of one scheme: its first
+// target's, which is the scheme's main target.
 func (p showBuildSettingsProvider) SchemeBuildSettings(projectPath, scheme, configuration string, extraArgs ...string) (serialized.Object, error) {
-	return p.run(showBuildSettingsArgs(projectPath, schemeFlag, scheme, configuration, extraArgs))
+	return p.run(showBuildSettingsArgs(projectPath, schemeFlag, scheme, configuration, extraArgs), "")
 }
 
-func (p showBuildSettingsProvider) run(args []string) (serialized.Object, error) {
-	cmd := p.commandFactory.Create(toolName, args, nil)
+// run reads the settings from -json output on stdout; stderr carries xcodebuild's
+// warnings, which would break the JSON. If stdout is not JSON, it falls back to the text
+// parser on the whole output.
+func (p showBuildSettingsProvider) run(args []string, target string) (serialized.Object, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := p.commandFactory.Create(toolName, args, &command.Opts{Stdout: &stdout, Stderr: &stderr})
 
 	// Logged at normal level, as in v1, so the command shows up in step logs.
 	p.logger.TPrintf("Reading build settings...")
 	p.logger.TDonef("$ %s", cmd.PrintableCommandArgs())
 
-	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
+		out := strings.TrimSpace(stdout.String() + "\n" + stderr.String())
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			return nil, commandError{
@@ -78,7 +85,12 @@ func (p showBuildSettingsProvider) run(args []string) (serialized.Object, error)
 
 	p.logger.TPrintf("Read target settings.")
 
-	return parseShowBuildSettingsOutput(out)
+	settings, err := parseShowBuildSettingsJSON(stdout.Bytes(), target)
+	if err != nil {
+		p.logger.Debugf("Reading build settings as JSON failed (%s), reading the text output", err)
+		return parseShowBuildSettingsOutput(stdout.String() + "\n" + stderr.String())
+	}
+	return settings, nil
 }
 
 func showBuildSettingsArgs(projectPath, nameFlag, name, configuration string, extraArgs []string) []string {
@@ -100,9 +112,46 @@ func showBuildSettingsArgs(projectPath, nameFlag, name, configuration string, ex
 		args = append(args, configurationFlag, configuration)
 	}
 
-	args = append(args, showBuildSettingsFlag)
+	args = append(args, showBuildSettingsFlag, jsonFlag)
 
 	return append(args, extraArgs...)
+}
+
+// showBuildSettingsEntry is one element of `xcodebuild -showBuildSettings -json`: one per
+// target the command covers, a scheme's main target first.
+type showBuildSettingsEntry struct {
+	Target        string            `json:"target"`
+	BuildSettings map[string]string `json:"buildSettings"`
+}
+
+// parseShowBuildSettingsJSON returns the settings of target, or of the first entry when
+// target is empty or not listed. Values are trimmed: xcodebuild pads list values with
+// spaces (" @executable_path/Frameworks"), which the text output never showed. Quotes
+// inside values stay, unlike in the text parser (-framework "SnapKit").
+func parseShowBuildSettingsJSON(out []byte, target string) (serialized.Object, error) {
+	var entries []showBuildSettingsEntry
+	if err := json.Unmarshal(out, &entries); err != nil {
+		return nil, err
+	}
+
+	settings := serialized.Object{}
+	if len(entries) == 0 {
+		// a Swift package scheme lists no targets, as its text output lists no settings
+		return settings, nil
+	}
+
+	entry := entries[0]
+	for _, e := range entries {
+		if target != "" && e.Target == target {
+			entry = e
+			break
+		}
+	}
+
+	for key, value := range entry.BuildSettings {
+		settings[key] = strings.TrimSpace(value)
+	}
+	return settings, nil
 }
 
 // parseShowBuildSettingsOutput keeps the first occurrence of a repeated key, which for a
