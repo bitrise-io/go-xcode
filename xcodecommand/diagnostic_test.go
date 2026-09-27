@@ -55,6 +55,13 @@ func TestValidation(t *testing.T) {
 			wantKinds: []DiagnosticKind{PreferStepInput},
 		},
 		{
+			// archive has no test repetition inputs: the flag is reported as test-only instead.
+			name:      "a test repetition flag on archive is test-only, not a Step input",
+			params:    ArchiveParams{AdditionalOptions: []string{"-retry-tests-on-failure"}},
+			wantArgs:  []string{"archive", "-project", "App.xcodeproj", "-retry-tests-on-failure"},
+			wantKinds: []DiagnosticKind{RejectedOption},
+		},
+		{
 			name:     "a redundant switch and a replaced default are informational",
 			params:   ArchiveParams{Destination: "generic/platform=iOS", Authentication: &testAuth, AdditionalOptions: []string{"-allowProvisioningUpdates", "-destination", "id=SIM"}},
 			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-authenticationKeyPath", "/key/path", "-authenticationKeyID", "keyID", "-authenticationKeyIssuerID", "issuerID", "-allowProvisioningUpdates", "-destination", "id=SIM"},
@@ -120,6 +127,26 @@ func TestDiagnosticMessages(t *testing.T) {
 				`"-testPlan Full" is not valid for archive. It applies to test actions only, and xcodebuild refuses it here. Remove it.`,
 				`"clean" is a build action. The archive command sets its own actions. Remove it.`,
 				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead.`,
+			},
+		},
+		{
+			name:   "test repetition flags point at the Step's inputs on test runs",
+			user:   []string{"-test-iterations", "2", "-retry-tests-on-failure"},
+			policy: testPolicy,
+			want: []string{
+				`"-test-iterations 2" is set by the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead.`,
+				`"-retry-tests-on-failure" is set by the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead.`,
+			},
+		},
+		{
+			name: "a switch written with = next to the Step's switch",
+			user: []string{"-allowProvisioningUpdates=YES"},
+			derived: Options{
+				{Kind: Switch, Name: "-allowProvisioningUpdates"},
+			},
+			policy: archivePolicy,
+			want: []string{
+				`"-allowProvisioningUpdates=YES" is written with "=". xcodebuild reads it as a user default and ignores it, and the Step already sets "-allowProvisioningUpdates". Remove it.`,
 			},
 		},
 		{

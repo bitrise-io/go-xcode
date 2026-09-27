@@ -75,3 +75,38 @@ func TestTest(t *testing.T) {
 		})
 	}
 }
+
+// The modes are the test steps' test_repetition_mode values; every mode but none repeats
+// up to MaximumTestRepetitions times.
+func TestTest_repetition(t *testing.T) {
+	tests := []struct {
+		mode     TestRepetitionMode
+		max      int
+		relaunch bool
+		want     []string
+		wantErr  string
+	}{
+		{mode: "", want: nil},
+		{mode: TestRepetitionNone, max: 3, want: nil},
+		{mode: TestRepetitionUntilFailure, max: 3, want: []string{"-run-tests-until-failure", "-test-iterations", "3"}},
+		{mode: TestRepetitionRetryOnFailure, max: 3, relaunch: true, want: []string{"-retry-tests-on-failure", "-test-iterations", "3", "-test-repetition-relaunch-enabled", "YES"}},
+		{mode: TestRepetitionUpUntilMaximumRuns, max: 5, want: []string{"-test-iterations", "5"}},
+		{mode: "retry-on-failure", max: 3, wantErr: `unknown test repetition mode "retry-on-failure"`},
+		{mode: TestRepetitionRetryOnFailure, max: 0, wantErr: "needs at least 2 maximum test repetitions, got 0"},
+		{mode: TestRepetitionNone, relaunch: true, wantErr: "relaunching tests for each repetition needs a test repetition mode"},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.mode)+tt.wantErr, func(t *testing.T) {
+			params := TestParams{TestRepetitionMode: tt.mode, MaximumTestRepetitions: tt.max, RelaunchTestsForEachRepetition: tt.relaunch}
+			cmd, err := Test(params)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				_, err = TestWithoutBuilding(TestWithoutBuildingParams{TestRepetitionMode: tt.mode, MaximumTestRepetitions: tt.max, RelaunchTestsForEachRepetition: tt.relaunch})
+				require.ErrorContains(t, err, tt.wantErr, "test-without-building shares the validation")
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, append([]string{"test"}, tt.want...), cmd.Args())
+		})
+	}
+}
