@@ -119,6 +119,6 @@ var (
 	testWithoutBuildingPolicy = testRunPolicy(ActionTestWithoutBuilding, listsTests, withXCTestRun)
 	showBuildSettingsPolicy   = actionPolicy{
 		name:       "show build settings",
-		rejections: []rejection{modeSwitching.except("-showBuildSettings"), testOnlyRefused, testOnly},
+		rejections: []rejection{modeSwitching.except("-showBuildSettings", "-json"), testOnlyRefused, testOnly},
 	}
 )

@@ -42,7 +42,7 @@ func FuzzAdditionalOptions(f *testing.F) {
 				_, _ = TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "/tmp/App.xctestrun", Destination: "id=SIM", AdditionalOptions: args, Validation: validation})
 				_, _ = ExportArchive(ExportArchiveParams{ArchivePath: "/tmp/App.xcarchive", ExportPath: "/tmp/out", ExportOptionsPlist: "/tmp/o.plist", AdditionalOptions: args, Validation: validation})
 				_, _ = ResolvePackages(ResolvePackagesParams{ProjectPath: "App.xcodeproj", AdditionalOptions: args})
-				_, _ = showBuildSettings(showBuildSettingsParams{projectPath: "App.xcodeproj", scheme: "App", additionalOptions: args, validation: validation})
+				_, _ = ShowBuildSettings(ShowBuildSettingsParams{ProjectPath: "App.xcodeproj", Scheme: "App", AdditionalOptions: args, Validation: validation})
 			}
 		}
 	})
