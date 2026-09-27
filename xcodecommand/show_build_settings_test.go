@@ -29,7 +29,7 @@ func TestShowBuildSettings(t *testing.T) {
 			name:   "a user -json is reported, not repeated",
 			params: ShowBuildSettingsParams{ProjectPath: "App.xcodeproj", Target: "App", AdditionalOptions: []string{"-json"}},
 			want:   []string{"-project", "App.xcodeproj", "-target", "App", "-showBuildSettings", "-json"},
-			kinds:  []DiagnosticKind{RejectedOption, RedundantOption},
+			kinds:  []DiagnosticKind{RedundantOption},
 		},
 		{
 			name:   "SPM flags and build settings pass through after the flag",

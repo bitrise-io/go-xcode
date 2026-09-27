@@ -74,7 +74,7 @@ func TestPolicies(t *testing.T) {
 		{
 			policy:  showBuildSettingsPolicy,
 			rejects: []string{"-exportArchive", "-resolvePackageDependencies", "-testPlan"},
-			accepts: []string{"-showBuildSettings", "-skipMacroValidation"},
+			accepts: []string{"-showBuildSettings", "-json", "-skipMacroValidation"},
 		},
 	}
 	for _, tt := range tests {
