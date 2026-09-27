@@ -1,0 +1,11 @@
+[
+    {
+        "action": "build",
+        "target": "sample-apps-ios-workspace-swift",
+        "buildSettings": {
+            "PRODUCT_BUNDLE_IDENTIFIER": "bitfall.sample-apps-ios-workspace-swift",
+            "OTHER_LDFLAGS": " -framework \"SnapKit\"",
+            "LD_RUNPATH_SEARCH_PATHS": " /usr/lib/swift '@executable_path/Frameworks' '@loader_path/Frameworks' @executable_path/Frameworks"
+        }
+    }
+]
