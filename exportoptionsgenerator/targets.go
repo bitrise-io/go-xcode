@@ -36,7 +36,7 @@ func ReadArchiveInfoFromXcodeproject(xcodeProj *xcodeproj.XcodeProj, scheme *xcs
 		}
 
 		entitlements, err := xcodeProj.TargetCodeSignEntitlements(target.Name, configuration)
-		if err != nil && !errors.Is(err, xcodeproj.ErrEntitlementsNotFound) {
+		if err != nil && !errors.Is(err, xcodeproj.ErrCodeSignEntitlementsNotFound) {
 			return ArchiveInfo{}, fmt.Errorf("failed to get target (%s) bundle id: %s", target.Name, err)
 		}
 

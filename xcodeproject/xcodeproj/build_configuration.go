@@ -11,7 +11,7 @@ type BuildConfiguration struct {
 	ID   string
 	Name string
 
-	// buildSettings is shared with the raw project tree, as in v1, so writes to it reach Save.
+	// buildSettings is shared with the raw project tree, so writes to it reach Save.
 	buildSettings serialized.Object
 }
 
@@ -32,8 +32,10 @@ func parseBuildConfiguration(id string, objects serialized.Object) (BuildConfigu
 		return BuildConfiguration{}, fmt.Errorf("build configuration %s has no name", id)
 	}
 
-	// Left nil, not empty: an empty map would not be part of the raw tree, so writes would be lost.
-	buildSettings, _ := raw.Object("buildSettings")
+	buildSettings, ok := raw.Object("buildSettings")
+	if !ok {
+		return BuildConfiguration{}, fmt.Errorf("build configuration %s has no buildSettings", id)
+	}
 
 	return BuildConfiguration{
 		ID:            id,

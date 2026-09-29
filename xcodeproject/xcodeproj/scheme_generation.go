@@ -2,10 +2,10 @@ package xcodeproj
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/bitrise-io/go-xcode/v2/internal/filewriter"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 )
 
@@ -19,12 +19,8 @@ const (
 	launcherID                  = "Xcode.DebuggerFoundation.Launcher.LLDB"
 )
 
-// The directory is created as Xcode does, not owner-only as FileManager.Write would. New scheme files
-// get v1's mode; existing ones keep theirs.
-const (
-	sharedSchemesDirMode    = 0755
-	newSharedSchemeFileMode = 0600
-)
+// newSharedSchemeFileMode is the mode of a newly created scheme file; an existing one keeps its mode.
+const newSharedSchemeFileMode = 0600
 
 // RecreateSchemes returns the schemes Xcode would create for the project, one per native, non-test
 // target. It only builds them in memory; use SaveSharedScheme to write them.
@@ -39,21 +35,16 @@ func (p *XcodeProj) RecreateSchemes() []xcscheme.Scheme {
 }
 
 // SaveSharedScheme writes the scheme to <Path>/xcshareddata/xcschemes/<scheme name>.xcscheme,
-// overwriting an existing file.
+// overwriting an existing file. Missing directories are created.
 func (p *XcodeProj) SaveSharedScheme(scheme xcscheme.Scheme) error {
-	dir := p.sharedSchemesDir()
-	pth := filepath.Join(dir, scheme.Name+xcschemeExtension)
+	pth := filepath.Join(p.sharedSchemesDir(), scheme.Name+xcschemeExtension)
 
 	content, err := scheme.Marshal()
 	if err != nil {
 		return fmt.Errorf("failed to marshal scheme: %w", err)
 	}
 
-	if err := os.MkdirAll(dir, sharedSchemesDirMode); err != nil {
-		return fmt.Errorf("failed to create directory: %w", err)
-	}
-
-	if err := writeKeepingMode(p.fileManager, pth, content, newSharedSchemeFileMode); err != nil {
+	if err := filewriter.WriteKeepingMode(p.fileManager, pth, content, newSharedSchemeFileMode); err != nil {
 		return fmt.Errorf("failed to write scheme file (%s): %w", pth, err)
 	}
 

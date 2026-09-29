@@ -3,14 +3,12 @@ package xcodeproj
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"golang.org/x/text/unicode/norm"
 
-	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 )
@@ -32,7 +30,7 @@ func (p *XcodeProj) Schemes() ([]xcscheme.Scheme, error) {
 		return schemes, err
 	}
 
-	// Read lazily, as in v1: a project that has schemes never depends on this file.
+	// Read lazily: a project that has schemes never depends on this file.
 	autocreate, err := p.isAutocreateSchemesEnabled()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read the project autocreate scheme option: %w", err)
@@ -217,26 +215,14 @@ func (p *XcodeProj) isUserSchemeManagementFileExist() (bool, error) {
 func (p *XcodeProj) isAutocreateSchemesEnabled() (bool, error) {
 	pth := filepath.Join(p.Path, "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings")
 
-	file, err := p.fileManager.Open(pth)
+	data, _, err := p.plistFileHandler.Read(pth)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return true, nil
 		}
 		return false, err
 	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	content, err := io.ReadAll(file)
-	if err != nil {
-		return false, err
-	}
-
-	var settings serialized.Object
-	if _, err := plist.Unmarshal(content, &settings); err != nil {
-		return false, err
-	}
+	settings := serialized.Object(data)
 
 	if !settings.Has(autocreateSchemesSettingKey) {
 		return true, nil

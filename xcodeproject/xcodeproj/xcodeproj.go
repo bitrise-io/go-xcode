@@ -12,6 +12,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
@@ -33,12 +34,13 @@ func IsXcodeProj(pth string) bool {
 
 // Factory opens Xcode projects with a fixed set of dependencies.
 type Factory struct {
-	logger        log.Logger
-	buildSettings BuildSettingsProvider
-	fileManager   fileutil.FileManager
-	pathModifier  pathutil.PathModifier
-	pathProvider  pathutil.PathProvider
-	userProvider  UserProvider
+	logger           log.Logger
+	buildSettings    BuildSettingsProvider
+	fileManager      fileutil.FileManager
+	plistFileHandler plistutil.FileHandler
+	pathModifier     pathutil.PathModifier
+	pathProvider     pathutil.PathProvider
+	userProvider     UserProvider
 }
 
 // NewFactory returns a Factory that injects the given collaborators into every project it opens.
@@ -46,17 +48,19 @@ func NewFactory(
 	logger log.Logger,
 	buildSettings BuildSettingsProvider,
 	fileManager fileutil.FileManager,
+	plistFileHandler plistutil.FileHandler,
 	pathModifier pathutil.PathModifier,
 	pathProvider pathutil.PathProvider,
 	userProvider UserProvider,
 ) Factory {
 	return Factory{
-		logger:        logger,
-		buildSettings: buildSettings,
-		fileManager:   fileManager,
-		pathModifier:  pathModifier,
-		pathProvider:  pathProvider,
-		userProvider:  userProvider,
+		logger:           logger,
+		buildSettings:    buildSettings,
+		fileManager:      fileManager,
+		plistFileHandler: plistFileHandler,
+		pathModifier:     pathModifier,
+		pathProvider:     pathProvider,
+		userProvider:     userProvider,
 	}
 }
 
@@ -103,6 +107,7 @@ func (f Factory) parse(content []byte, projectPath string) (*XcodeProj, error) {
 	p.logger = f.logger
 	p.buildSettings = f.buildSettings
 	p.fileManager = f.fileManager
+	p.plistFileHandler = f.plistFileHandler
 	p.pathModifier = f.pathModifier
 	p.pathProvider = f.pathProvider
 	p.userProvider = f.userProvider
@@ -118,12 +123,13 @@ type XcodeProj struct {
 	Name string
 	Path string
 
-	logger        log.Logger
-	buildSettings BuildSettingsProvider
-	fileManager   fileutil.FileManager
-	pathModifier  pathutil.PathModifier
-	pathProvider  pathutil.PathProvider
-	userProvider  UserProvider
+	logger           log.Logger
+	buildSettings    BuildSettingsProvider
+	fileManager      fileutil.FileManager
+	plistFileHandler plistutil.FileHandler
+	pathModifier     pathutil.PathModifier
+	pathProvider     pathutil.PathProvider
+	userProvider     UserProvider
 
 	// rawProj is the source of truth Save writes out; every edit lands here.
 	rawProj serialized.Object

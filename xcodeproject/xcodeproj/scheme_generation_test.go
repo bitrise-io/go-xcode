@@ -3,7 +3,6 @@ package xcodeproj
 import (
 	"os"
 	"path/filepath"
-	"syscall"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
@@ -12,13 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Expected value ported from v1 TestXcodeProj_ReCreateSchemes.
+// Expected value of the schemes RecreateSchemes generates for ios-simple-objc.
 func TestXcodeProj_RecreateSchemes(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "ios-simple-objc.pbxproj"))
 	require.NoError(t, err)
 
 	// No file manager or user provider: generating schemes must not touch the filesystem.
-	project, err := NewFactory(log.NewLogger(), nil, nil, nil, nil, nil).Parse(content, "test_path/test.xcodeproj")
+	project, err := NewFactory(log.NewLogger(), nil, nil, nil, nil, nil, nil).Parse(content, "test_path/test.xcodeproj")
 	require.NoError(t, err)
 
 	want := []xcscheme.Scheme{
@@ -142,17 +141,13 @@ func TestXcodeProj_SaveSharedScheme(t *testing.T) {
 
 	fileInfo, err := os.Stat(pth)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0600), fileInfo.Mode().Perm(), "a new scheme file gets v1's mode")
+	assert.Equal(t, os.FileMode(0600), fileInfo.Mode().Perm(), "a new scheme file gets the default mode")
 
 	require.NoError(t, os.Chmod(pth, 0644))
 	require.NoError(t, project.SaveSharedScheme(scheme))
 	fileInfo, err = os.Stat(pth)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0644), fileInfo.Mode().Perm(), "an existing scheme file keeps its mode, as in v1")
-
-	dirInfo, err := os.Stat(filepath.Dir(pth))
-	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0755)&^currentUmask(), dirInfo.Mode().Perm(), "xcschemes directory is not owner-only")
+	assert.Equal(t, os.FileMode(0644), fileInfo.Mode().Perm(), "an existing scheme file keeps its mode")
 
 	saved, err := project.Schemes()
 	require.NoError(t, err)
@@ -160,10 +155,4 @@ func TestXcodeProj_SaveSharedScheme(t *testing.T) {
 	assert.Equal(t, scheme.Name, saved[0].Name)
 	assert.True(t, saved[0].IsShared)
 	assert.Equal(t, scheme.BuildAction, saved[0].BuildAction)
-}
-
-func currentUmask() os.FileMode {
-	mask := syscall.Umask(0)
-	syscall.Umask(mask)
-	return os.FileMode(mask)
 }

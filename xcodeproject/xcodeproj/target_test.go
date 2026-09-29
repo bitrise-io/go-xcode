@@ -110,3 +110,19 @@ func TestParseTarget_unknownTargetType(t *testing.T) {
 	_, err := parseTarget("T1", objects)
 	require.ErrorContains(t, err, "unknown target type")
 }
+
+func TestParseTarget_productReferenceWithoutPath(t *testing.T) {
+	objects := map[string]any{
+		"T1": map[string]any{
+			"isa":                    nativeTargetISA,
+			"name":                   "App",
+			"buildConfigurationList": "L1",
+			"productReference":       "P1",
+		},
+		"L1": map[string]any{"buildConfigurations": []any{}},
+		"P1": map[string]any{"isa": "PBXFileReference"},
+	}
+
+	_, err := parseTarget("T1", objects)
+	require.ErrorContains(t, err, "has no path")
+}

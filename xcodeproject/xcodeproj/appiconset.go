@@ -10,6 +10,9 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
+// appIconSetNameBuildSettingKey is read from the project file, not through BuildSettingsProvider
+// like other build settings, so no xcodebuild call is needed per target and configuration. As a
+// result, values set in .xcconfig files are not seen, and ${...} references are matched as globs.
 const appIconSetNameBuildSettingKey = "ASSETCATALOG_COMPILER_APPICON_NAME"
 
 var buildSettingReferenceRegexp = regexp.MustCompile(`\$\{(.+)\}`)
@@ -63,8 +66,7 @@ func (p *XcodeProj) lookupAppIconPaths(catalogs []fileReference, appIconSetName 
 
 		pattern := buildSettingReferenceRegexp.ReplaceAllString(appIconSetName, "*")
 
-		// regexp.QuoteMeta escapes every glob metacharacter, so it works as a glob escaper here.
-		matches, err := p.pathProvider.Glob(path.Join(regexp.QuoteMeta(resolvedPath), pattern+".appiconset"))
+		matches, err := p.pathProvider.Glob(path.Join(p.pathModifier.EscapeGlobPath(resolvedPath), pattern+".appiconset"))
 		if err != nil {
 			return nil, err
 		}
@@ -107,7 +109,7 @@ func findResourcesBuildPhase(buildPhaseIDs []string, objects serialized.Object) 
 }
 
 func filterAssetCatalogs(buildPhase resourcesBuildPhase, objects serialized.Object) ([]fileReference, error) {
-	catalogs := []fileReference{}
+	var catalogs []fileReference
 	for _, fileID := range buildPhase.files {
 		file, err := parseBuildFile(fileID, objects)
 		if err != nil {
@@ -139,9 +141,9 @@ func filterAssetCatalogs(buildPhase resourcesBuildPhase, objects serialized.Obje
 	return catalogs, nil
 }
 
-// appIconSetNames returns nothing if any configuration lacks the setting, as in v1.
+// appIconSetNames returns nothing if any configuration lacks the setting.
 func appIconSetNames(target Target) []string {
-	names := []string{}
+	var names []string
 	for _, configuration := range target.BuildConfigurations {
 		name, ok := configuration.BuildSetting(appIconSetNameBuildSettingKey)
 		if !ok {

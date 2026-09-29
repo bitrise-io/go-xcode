@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -24,6 +25,7 @@ func testFactory() Factory {
 		log.NewLogger(),
 		nil, // build settings are not needed by the parse-and-read surface
 		fileutil.NewFileManager(),
+		plistutil.NewFileHandler(fileutil.NewFileManager()),
 		pathutil.NewPathModifier(),
 		nil, // path provider is only needed for app icon lookup
 		NewUserProvider(),

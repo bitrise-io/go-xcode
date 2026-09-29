@@ -64,7 +64,7 @@ func TestParseShowBuildSettingsOutput(t *testing.T) {
 	}
 }
 
-// Regression test for v1 fix 0c84f25: in multi-target scheme output the first block is the main target.
+// In multi-target scheme output the first block is the main target.
 func TestParseShowBuildSettingsOutput_firstOccurrenceWins(t *testing.T) {
 	out := `Build settings for action build and target App:
     PRODUCT_BUNDLE_IDENTIFIER = io.bitrise.App

@@ -63,6 +63,15 @@ func TestParseBuildConfiguration_fromFixture(t *testing.T) {
 	assert.Equal(t, "com.bitrise.XcodeProj", bundleID)
 }
 
+func TestParseBuildConfiguration_withoutBuildSettings(t *testing.T) {
+	objects := serialized.Object{
+		"C1": map[string]any{"isa": "XCBuildConfiguration", "name": "Debug"},
+	}
+
+	_, err := parseBuildConfiguration("C1", objects)
+	require.ErrorContains(t, err, "has no buildSettings")
+}
+
 func TestParseConfigurationList_missing(t *testing.T) {
 	_, _, err := parseConfigurationList("GONE", serialized.Object{})
 	require.ErrorContains(t, err, "GONE")

@@ -9,6 +9,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/mocks"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	"github.com/stretchr/testify/assert"
@@ -38,7 +39,7 @@ func schemesProject(t *testing.T, fixture string, user UserProvider) *XcodeProj 
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), content, 0644))
 
-	factory := NewFactory(log.NewLogger(), nil, fileutil.NewFileManager(), pathutil.NewPathModifier(), nil, user)
+	factory := NewFactory(log.NewLogger(), nil, fileutil.NewFileManager(), plistutil.NewFileHandler(fileutil.NewFileManager()), pathutil.NewPathModifier(), nil, user)
 	project, err := factory.Open(projectPath)
 	require.NoError(t, err)
 
@@ -113,7 +114,7 @@ func TestXcodeProj_Schemes_autocreatedByDefault(t *testing.T) {
 
 	require.Equal(t, []string{"XcodeProj", "TodayExtension"}, schemeNames(schemes))
 	for _, scheme := range schemes {
-		assert.True(t, scheme.IsShared, "generated schemes are marked shared, as in v1")
+		assert.True(t, scheme.IsShared, "generated schemes are marked shared")
 	}
 
 	app := schemes[0]
@@ -179,10 +180,11 @@ func TestXcodeProj_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
 
 func TestXcodeProj_Schemes_autocreateWithNothingToGenerate(t *testing.T) {
 	project := &XcodeProj{
-		Path:         filepath.Join(t.TempDir(), "Tests.xcodeproj"),
-		logger:       log.NewLogger(),
-		fileManager:  fileutil.NewFileManager(),
-		userProvider: userProvider(t, testUserName, nil),
+		Path:             filepath.Join(t.TempDir(), "Tests.xcodeproj"),
+		logger:           log.NewLogger(),
+		fileManager:      fileutil.NewFileManager(),
+		plistFileHandler: plistutil.NewFileHandler(fileutil.NewFileManager()),
+		userProvider:     userProvider(t, testUserName, nil),
 		targets: []Target{
 			{ID: "T", Name: "Tests", isa: nativeTargetISA, productType: "com.apple.product-type.bundle.unit-test"},
 		},

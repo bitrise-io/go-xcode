@@ -2,18 +2,17 @@ package xcodeproj
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
 
 	"github.com/bitrise-io/go-plist"
-	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-xcode/v2/internal/filewriter"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// newPBXProjFileMode is v1's mode for a newly created project.pbxproj.
+// newPBXProjFileMode is the mode of a newly created project.pbxproj; an existing one keeps its mode.
 const newPBXProjFileMode = 0644
 
 // ForceCodeSignOptions are the manual code signing settings ForceCodeSign applies.
@@ -60,8 +59,9 @@ func (p *XcodeProj) ForceCodeSign(opts ForceCodeSignOptions) error {
 	return nil
 }
 
-// SetBuildSetting sets a build setting of a target configuration. Call Save to persist it.
-// Target values fetched earlier see the change, as in v1.
+// SetBuildSetting sets a build setting of a target configuration, such as CURRENT_PROJECT_VERSION or
+// PRODUCT_BUNDLE_IDENTIFIER, in the project file. Several settings can be set before one Save
+// persists them. Targets fetched earlier see the change, as they share the build settings.
 func (p *XcodeProj) SetBuildSetting(targetName, configurationName, key string, value any) error {
 	target, ok := p.TargetByName(targetName)
 	if !ok {
@@ -93,7 +93,7 @@ func (p *XcodeProj) Save() error {
 		}
 	}
 
-	if err := writeKeepingMode(p.fileManager, pth, content, newPBXProjFileMode); err != nil {
+	if err := filewriter.WriteKeepingMode(p.fileManager, pth, content, newPBXProjFileMode); err != nil {
 		return fmt.Errorf("failed to write %s: %w", pth, err)
 	}
 
@@ -102,13 +102,9 @@ func (p *XcodeProj) Save() error {
 
 func targetBuildSettings(target Target, configurationName string) (serialized.Object, error) {
 	for _, configuration := range target.BuildConfigurations {
-		if configuration.Name != configurationName {
-			continue
+		if configuration.Name == configurationName {
+			return configuration.buildSettings, nil
 		}
-		if configuration.buildSettings == nil {
-			return nil, fmt.Errorf("build configuration %s of target %s has no buildSettings", configurationName, target.Name)
-		}
-		return configuration.buildSettings, nil
 	}
 
 	return nil, fmt.Errorf("failed to find build configuration %s of target %s", configurationName, target.Name)
@@ -132,6 +128,8 @@ type objectChange struct {
 }
 
 // perObjectModify splices re-serialised changed objects into the original bytes.
+// The original and annotated trees are decoded from originalContents here rather than kept from
+// parse time, so an opened project holds no extra copies of the tree; Save is called rarely.
 func (p *XcodeProj) perObjectModify() ([]byte, error) {
 	var annotated serialized.Object
 	if _, err := plist.UnmarshalWithCustomAnnotation(p.originalContents, &annotated); err != nil {
@@ -226,15 +224,4 @@ func (p *XcodeProj) perObjectModify() ([]byte, error) {
 	}
 
 	return result, nil
-}
-
-// writeKeepingMode writes content as v1's os.WriteFile did: an existing file keeps its mode, and a
-// new one gets newFileMode. FileManager.Write always chmods, which fails with EPERM for a file the process
-// can write but doesn't own, so it is only used to create files; WriteBytes, which does not chmod,
-// overwrites existing ones.
-func writeKeepingMode(fileManager fileutil.FileManager, pth string, content []byte, newFileMode os.FileMode) error {
-	if _, err := fileManager.Lstat(pth); err == nil {
-		return fileManager.WriteBytes(pth, content)
-	}
-	return fileManager.Write(pth, string(content), newFileMode)
 }

@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/errorfinder"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
@@ -27,6 +27,8 @@ const (
 
 	xcworkspaceExtension = ".xcworkspace"
 )
+
+var findErrors = errorfinder.FindXcodebuildErrors
 
 // BuildSettingsProvider returns effective build settings using xcodebuild -showBuildSettings.
 type BuildSettingsProvider interface {
@@ -58,22 +60,21 @@ func (p showBuildSettingsProvider) SchemeBuildSettings(projectPath, scheme, conf
 }
 
 func (p showBuildSettingsProvider) run(args []string) (serialized.Object, error) {
-	cmd := p.commandFactory.Create(toolName, args, nil)
+	// The error finder puts xcodebuild's error lines into the returned error; without it, a failure
+	// with combined output only says to check the command's output.
+	cmd := p.commandFactory.Create(toolName, args, &command.Opts{ErrorFinder: findErrors})
 
-	// Logged at normal level, as in v1, so the command shows up in step logs.
+	// Logged at normal level, so the command shows up in step logs.
 	p.logger.TPrintf("Reading build settings...")
 	p.logger.TDonef("$ %s", cmd.PrintableCommandArgs())
 
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return nil, commandError{
-				message: fmt.Sprintf("%s failed with exit status %d: %s", cmd.PrintableCommandArgs(), exitErr.ExitCode(), out),
-				err:     err,
-			}
+		// The output is captured, not logged, so it is kept when it has no line the finder recognises.
+		if out != "" && len(findErrors(out)) == 0 {
+			return nil, fmt.Errorf("failed to read build settings: %w, output: %s", err, out)
 		}
-		return nil, fmt.Errorf("failed to run %s: %w", cmd.PrintableCommandArgs(), err)
+		return nil, fmt.Errorf("failed to read build settings: %w", err)
 	}
 
 	p.logger.TPrintf("Read target settings.")
@@ -106,8 +107,8 @@ func showBuildSettingsArgs(projectPath, nameFlag, name, configuration string, ex
 }
 
 // parseShowBuildSettingsOutput keeps the first occurrence of a repeated key, which for a
-// multi-target scheme is the main target (v1 fix 0c84f25). ReadLine is used because values can
-// exceed bufio.Scanner's line limit.
+// multi-target scheme is the main target. ReadLine is used because values can exceed
+// bufio.Scanner's line limit.
 func parseShowBuildSettingsOutput(out string) (serialized.Object, error) {
 	settings := serialized.Object{}
 
@@ -146,14 +147,3 @@ func parseShowBuildSettingsOutput(out string) (serialized.Object, error) {
 
 	return settings, nil
 }
-
-// commandError reports a failed xcodebuild run with its output, which explains the failure better
-// than the exit status, while still unwrapping to the underlying error.
-type commandError struct {
-	message string
-	err     error
-}
-
-func (e commandError) Error() string { return e.message }
-
-func (e commandError) Unwrap() error { return e.err }

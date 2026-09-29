@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
@@ -26,8 +25,8 @@ var (
 	referencePunctuationReplacer = strings.NewReplacer("$", "", "(", "", ")", "", "{", "", "}", "")
 )
 
-// ErrEntitlementsNotFound is returned when a target declares no CODE_SIGN_ENTITLEMENTS.
-var ErrEntitlementsNotFound = errors.New("target has no code sign entitlements file")
+// ErrCodeSignEntitlementsNotFound is returned when a target declares no CODE_SIGN_ENTITLEMENTS.
+var ErrCodeSignEntitlementsNotFound = errors.New("target has no code sign entitlements file")
 
 // ErrInfoPlistNotFound is returned when a target declares no INFOPLIST_FILE, as with a generated
 // Info.plist.
@@ -63,8 +62,8 @@ func (p *XcodeProj) TargetBundleID(target, configuration string) (string, error)
 	return resolveBundleID(bundleID, buildSettings)
 }
 
-// TargetCodeSignEntitlements returns the target's entitlements, or ErrEntitlementsNotFound if the
-// target declares none.
+// TargetCodeSignEntitlements returns the target's entitlements, or ErrCodeSignEntitlementsNotFound
+// if the target declares none.
 func (p *XcodeProj) TargetCodeSignEntitlements(target, configuration string) (serialized.Object, error) {
 	buildSettings, err := p.TargetBuildSettings(target, configuration)
 	if err != nil {
@@ -73,7 +72,7 @@ func (p *XcodeProj) TargetCodeSignEntitlements(target, configuration string) (se
 
 	pth, ok := p.buildSettingPath(buildSettings, entitlementsBuildSettingKey)
 	if !ok {
-		return nil, fmt.Errorf("target %s: %w", target, ErrEntitlementsNotFound)
+		return nil, fmt.Errorf("target %s: %w", target, ErrCodeSignEntitlementsNotFound)
 	}
 
 	entitlements, err := p.readPlist(pth)
@@ -121,7 +120,7 @@ func (p *XcodeProj) buildSettingPath(buildSettings serialized.Object, key string
 	return pth, true
 }
 
-// isRelativePath mirrors go-utils v1 pathutil.IsRelativePath, which has no v2 equivalent.
+// isRelativePath treats a path starting with a build setting reference ($) as absolute.
 func isRelativePath(pth string) bool {
 	switch {
 	case strings.HasPrefix(pth, "./"):
@@ -136,7 +135,7 @@ func isRelativePath(pth string) bool {
 }
 
 func (p *XcodeProj) readPlist(pth string) (serialized.Object, error) {
-	data, _, err := plistutil.NewFileHandler(p.fileManager).Read(pth)
+	data, _, err := p.plistFileHandler.Read(pth)
 	if err != nil {
 		return nil, err
 	}

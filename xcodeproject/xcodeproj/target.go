@@ -126,7 +126,10 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 		if !ok {
 			return Target{}, fmt.Errorf("target %s references missing product %s", id, productReferenceID)
 		}
-		productPath, _ = productReference.String("path")
+		productPath, ok = productReference.String("path")
+		if !ok {
+			return Target{}, fmt.Errorf("target %s product %s has no path", id, productReferenceID)
+		}
 	}
 
 	buildPhaseIDs, _ := rawTarget.StringSlice("buildPhases")

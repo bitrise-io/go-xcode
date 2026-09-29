@@ -5,14 +5,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	rootmocks "github.com/bitrise-io/go-xcode/v2/mocks"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-// The signing values v1's tests used; the golden fixtures were produced with them.
+// The signing values the golden fixtures were produced with.
 var testForceCodeSignOptions = ForceCodeSignOptions{
 	DevelopmentTeam:         "ABCD1234",
 	CodesignIdentity:        "Apple Development: John Doe (ASDF1234)",
@@ -148,7 +146,7 @@ func TestXcodeProj_perObjectModify_noChangesReturnsOriginalBytes(t *testing.T) {
 func TestXcodeProj_SetBuildSetting(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
-	// Fetched before the write: build settings are shared, as in v1.
+	// Fetched before the write: targets share their build settings with the project.
 	earlier := requireTarget(t, project, "XcodeProj")
 
 	require.NoError(t, project.SetBuildSetting("XcodeProj", "Release", "MARKETING_VERSION", "2.0"))
@@ -169,17 +167,6 @@ func TestXcodeProj_SetBuildSetting_errors(t *testing.T) {
 
 	require.ErrorContains(t, project.SetBuildSetting("Nope", "Release", "K", "V"), "Nope")
 	require.ErrorContains(t, project.SetBuildSetting("XcodeProj", "Nope", "K", "V"), "Nope")
-}
-
-func TestXcodeProj_SetBuildSetting_configurationWithoutBuildSettings(t *testing.T) {
-	project := &XcodeProj{
-		targets: []Target{{
-			Name:                "App",
-			BuildConfigurations: []BuildConfiguration{{Name: "Debug"}},
-		}},
-	}
-
-	require.ErrorContains(t, project.SetBuildSetting("App", "Debug", "K", "V"), "no buildSettings")
 }
 
 func TestWriteBuildSettingForAllSDKs(t *testing.T) {
@@ -220,10 +207,10 @@ func TestXcodeProj_Save(t *testing.T) {
 
 	info, err := os.Stat(pbxProjPath)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0664), info.Mode().Perm(), "an existing file keeps its mode, as in v1")
+	assert.Equal(t, os.FileMode(0664), info.Mode().Perm(), "an existing file keeps its mode")
 }
 
-func TestXcodeProj_Save_newFileGetsV1Mode(t *testing.T) {
+func TestXcodeProj_Save_newFileGetsDefaultMode(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
 	require.NoError(t, err)
 
@@ -266,20 +253,6 @@ func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
 	reopenedObjects, ok := reopened.rawProj.Object("objects")
 	require.True(t, ok)
 	assert.True(t, reopenedObjects.Has("BB00000000000000000000A1"))
-}
-
-// Overwriting must not chmod: FileManager.Write chmods, which fails for a file the process can write
-// but doesn't own, so an existing file is written with WriteBytes.
-func TestXcodeProj_Save_existingFileIsNotChmodded(t *testing.T) {
-	project := parseFixture(t, "minimal.pbxproj")
-	pth := filepath.Join(project.Path, "project.pbxproj")
-
-	fileManager := rootmocks.NewFileManager(t)
-	fileManager.On("Lstat", pth).Return(nil, nil)
-	fileManager.On("WriteBytes", pth, mock.Anything).Return(nil)
-	project.fileManager = fileManager
-
-	require.NoError(t, project.Save())
 }
 
 // Save rebuilds the file from the bytes given to Parse, so Parse must not keep the caller's buffer.

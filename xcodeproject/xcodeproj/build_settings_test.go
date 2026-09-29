@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	plistmocks "github.com/bitrise-io/go-xcode/v2/plistutil/mocks"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/mocks"
 	"github.com/stretchr/testify/assert"
@@ -19,11 +21,11 @@ func projectWithProvider(t *testing.T, provider BuildSettingsProvider) *XcodePro
 	t.Helper()
 
 	return &XcodeProj{
-		Name:          "App",
-		Path:          filepath.Join(t.TempDir(), "App.xcodeproj"),
-		logger:        log.NewLogger(),
-		buildSettings: provider,
-		fileManager:   fileutil.NewFileManager(),
+		Name:             "App",
+		Path:             "/projects/App.xcodeproj",
+		logger:           log.NewLogger(),
+		buildSettings:    provider,
+		plistFileHandler: plistmocks.NewFileHandler(t),
 	}
 }
 
@@ -36,20 +38,10 @@ func projectWithBuildSettings(t *testing.T, settings serialized.Object) *XcodePr
 	return projectWithProvider(t, provider)
 }
 
-func writePlist(t *testing.T, pth string, content string) {
-	t.Helper()
-	require.NoError(t, os.MkdirAll(filepath.Dir(pth), 0755))
-	require.NoError(t, os.WriteFile(pth, []byte(content), 0644))
-}
-
-func plistWith(entries string) string {
-	return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-` + entries + `
-</dict>
-</plist>`
+// expectPlistRead makes reading the plist at pth, relative to the project directory, return data and err.
+func expectPlistRead(project *XcodeProj, pth string, data plistutil.PlistData, err error) {
+	handler := project.plistFileHandler.(*plistmocks.FileHandler)
+	handler.On("Read", filepath.Join(filepath.Dir(project.Path), pth)).Return(data, plist.XMLFormat, err).Once()
 }
 
 func TestXcodeProj_TargetBuildSettings(t *testing.T) {
@@ -98,8 +90,7 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 		project := projectWithBuildSettings(t, serialized.Object{
 			"INFOPLIST_FILE": "App/Info.plist",
 		})
-		writePlist(t, filepath.Join(filepath.Dir(project.Path), "App", "Info.plist"),
-			plistWith("\t<key>CFBundleIdentifier</key>\n\t<string>io.bitrise.FromPlist</string>"))
+		expectPlistRead(project, "App/Info.plist", plistutil.PlistData{"CFBundleIdentifier": "io.bitrise.FromPlist"}, nil)
 
 		bundleID, err := project.TargetBundleID("App", "Release")
 		require.NoError(t, err)
@@ -111,8 +102,7 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 			"INFOPLIST_FILE": "App/Info.plist",
 			"PRODUCT_NAME":   "App",
 		})
-		writePlist(t, filepath.Join(filepath.Dir(project.Path), "App", "Info.plist"),
-			plistWith("\t<key>CFBundleIdentifier</key>\n\t<string>io.bitrise.$(PRODUCT_NAME)</string>"))
+		expectPlistRead(project, "App/Info.plist", plistutil.PlistData{"CFBundleIdentifier": "io.bitrise.$(PRODUCT_NAME)"}, nil)
 
 		bundleID, err := project.TargetBundleID("App", "Release")
 		require.NoError(t, err)
@@ -131,9 +121,10 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 		project := projectWithBuildSettings(t, serialized.Object{
 			"INFOPLIST_FILE": "App/Info.plist",
 		})
+		expectPlistRead(project, "App/Info.plist", nil, os.ErrNotExist)
 
 		_, err := project.TargetBundleID("App", "Release")
-		require.Error(t, err)
+		assert.ErrorIs(t, err, os.ErrNotExist)
 		assert.NotErrorIs(t, err, ErrInfoPlistNotFound, "a declared but missing Info.plist is a real failure")
 	})
 }
@@ -143,41 +134,31 @@ func TestXcodeProj_TargetCodeSignEntitlements(t *testing.T) {
 		project := projectWithBuildSettings(t, serialized.Object{
 			"CODE_SIGN_ENTITLEMENTS": "App/App.entitlements",
 		})
-		writePlist(t, filepath.Join(filepath.Dir(project.Path), "App", "App.entitlements"),
-			plistWith("\t<key>com.apple.developer.applesignin</key>\n\t<array>\n\t\t<string>Default</string>\n\t</array>"))
+		expectPlistRead(project, "App/App.entitlements", plistutil.PlistData{"com.apple.developer.applesignin": []any{"Default"}}, nil)
 
 		entitlements, err := project.TargetCodeSignEntitlements("App", "Release")
 		require.NoError(t, err)
 		assert.True(t, entitlements.Has("com.apple.developer.applesignin"))
 	})
 
-	t.Run("no entitlements setting yields ErrEntitlementsNotFound", func(t *testing.T) {
+	t.Run("no entitlements setting yields ErrCodeSignEntitlementsNotFound", func(t *testing.T) {
 		project := projectWithBuildSettings(t, serialized.Object{})
 
 		_, err := project.TargetCodeSignEntitlements("App", "Release")
-		assert.ErrorIs(t, err, ErrEntitlementsNotFound)
+		assert.ErrorIs(t, err, ErrCodeSignEntitlementsNotFound)
 	})
 
-	t.Run("entitlements named but unreadable is NOT ErrEntitlementsNotFound", func(t *testing.T) {
+	t.Run("entitlements named but unreadable is NOT ErrCodeSignEntitlementsNotFound", func(t *testing.T) {
 		project := projectWithBuildSettings(t, serialized.Object{
 			"CODE_SIGN_ENTITLEMENTS": "App/App.entitlements",
 		})
+		readErr := errors.New("failed to unmarshal")
+		expectPlistRead(project, "App/App.entitlements", nil, readErr)
 
 		_, err := project.TargetCodeSignEntitlements("App", "Release")
-		require.Error(t, err)
-		assert.NotErrorIs(t, err, ErrEntitlementsNotFound,
-			"a missing-but-declared entitlements file is a real failure and must not be swallowed")
-	})
-
-	t.Run("malformed entitlements is a real error", func(t *testing.T) {
-		project := projectWithBuildSettings(t, serialized.Object{
-			"CODE_SIGN_ENTITLEMENTS": "App/App.entitlements",
-		})
-		writePlist(t, filepath.Join(filepath.Dir(project.Path), "App", "App.entitlements"), "not a plist")
-
-		_, err := project.TargetCodeSignEntitlements("App", "Release")
-		require.Error(t, err)
-		assert.NotErrorIs(t, err, ErrEntitlementsNotFound)
+		assert.ErrorIs(t, err, readErr)
+		assert.NotErrorIs(t, err, ErrCodeSignEntitlementsNotFound,
+			"a declared but unreadable entitlements file is a real failure and must not be swallowed")
 	})
 }
 

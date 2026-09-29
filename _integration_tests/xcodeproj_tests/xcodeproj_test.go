@@ -11,6 +11,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/_integration_tests"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 	"github.com/stretchr/testify/assert"
@@ -23,26 +24,6 @@ const (
 	simpleObjcRepoURL = "https://github.com/bitrise-io/sample-apps-ios-simple-objc.git"
 	iosSampleRepoURL  = "https://github.com/bitrise-io/newly-generated-ios-sample-project.git"
 )
-
-func buildSettingsProvider() xcodebuild.BuildSettingsProvider {
-	logger := log.NewLogger()
-	return xcodebuild.NewShowBuildSettingsProvider(command.NewFactory(env.NewRepository()), logger)
-}
-
-func newFactory() xcodeproj.Factory {
-	return xcodeproj.NewFactory(
-		log.NewLogger(),
-		buildSettingsProvider(),
-		fileutil.NewFileManager(),
-		pathutil.NewPathModifier(),
-		pathutil.NewPathProvider(),
-		xcodeproj.NewUserProvider(),
-	)
-}
-
-func simpleObjcProjectPath(t *testing.T) string {
-	return filepath.Join(_integration_tests.GetRepository(t, simpleObjcRepoURL, "master"), "ios-simple-objc", "ios-simple-objc.xcodeproj")
-}
 
 func TestXcodeProj_simpleObjc(t *testing.T) {
 	projectPath := simpleObjcProjectPath(t)
@@ -61,7 +42,7 @@ func TestXcodeProj_simpleObjc(t *testing.T) {
 	assert.Equal(t, filepath.Join(filepath.Dir(projectPath), "ios-simple-objc", "Info.plist"), infoPlistPath)
 
 	_, err = project.TargetCodeSignEntitlements(target.Name, "Release")
-	assert.ErrorIs(t, err, xcodeproj.ErrEntitlementsNotFound)
+	assert.ErrorIs(t, err, xcodeproj.ErrCodeSignEntitlementsNotFound)
 
 	scheme, _, err := project.Scheme("ios-simple-objc")
 	require.NoError(t, err)
@@ -88,8 +69,6 @@ func TestXcodeProj_iosSample(t *testing.T) {
 	assert.ErrorIs(t, err, xcodeproj.ErrInfoPlistNotFound)
 }
 
-// -scheme needs a destination for the scheme's platform. The multiplatform ios-sample can resolve
-// to macOS, which every Xcode install has; an iOS-only project would need the iOS platform installed.
 func TestShowBuildSettingsProvider_SchemeBuildSettings(t *testing.T) {
 	projectPath := filepath.Join(_integration_tests.GetRepository(t, iosSampleRepoURL, "main"), "ios-sample.xcodeproj")
 
@@ -107,7 +86,7 @@ func TestXcodeProj_ForceCodeSignRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 
 	projectPath := filepath.Join(t.TempDir(), "ios-simple-objc.xcodeproj")
-	require.NoError(t, os.MkdirAll(projectPath, 0755))
+	require.NoError(t, os.MkdirAll(projectPath, 0o755))
 
 	project, err := newFactory().Parse(content, projectPath)
 	require.NoError(t, err)
@@ -134,4 +113,25 @@ func TestXcodeProj_ForceCodeSignRoundTrip(t *testing.T) {
 		got, _ := settings.String(key)
 		assert.Equal(t, want, got, key)
 	}
+}
+
+func buildSettingsProvider() xcodebuild.BuildSettingsProvider {
+	logger := log.NewLogger()
+	return xcodebuild.NewShowBuildSettingsProvider(command.NewFactory(env.NewRepository()), logger)
+}
+
+func newFactory() xcodeproj.Factory {
+	return xcodeproj.NewFactory(
+		log.NewLogger(),
+		buildSettingsProvider(),
+		fileutil.NewFileManager(),
+		plistutil.NewFileHandler(fileutil.NewFileManager()),
+		pathutil.NewPathModifier(),
+		pathutil.NewPathProvider(),
+		xcodeproj.NewUserProvider(),
+	)
+}
+
+func simpleObjcProjectPath(t *testing.T) string {
+	return filepath.Join(_integration_tests.GetRepository(t, simpleObjcRepoURL, "master"), "ios-simple-objc", "ios-simple-objc.xcodeproj")
 }

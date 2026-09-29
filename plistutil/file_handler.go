@@ -6,9 +6,10 @@ import (
 
 	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-xcode/v2/internal/filewriter"
 )
 
-// newPlistFileMode is v1's mode for a newly created plist file.
+// newPlistFileMode is the mode of a newly created plist file.
 const newPlistFileMode = 0644
 
 // FileHandler reads and writes plist files, keeping their format (XML, binary, OpenStep or GNUstep)
@@ -59,11 +60,5 @@ func (h fileHandler) Write(path string, data PlistData, format int) error {
 		return fmt.Errorf("failed to marshal %s: %w", path, err)
 	}
 
-	// As in v1's os.WriteFile, an existing file keeps its mode. FileManager.Write always chmods,
-	// which fails with EPERM for a file the process can write but doesn't own, so it is only used
-	// to create files.
-	if _, err := h.fileManager.Lstat(path); err == nil {
-		return h.fileManager.WriteBytes(path, content)
-	}
-	return h.fileManager.Write(path, string(content), newPlistFileMode)
+	return filewriter.WriteKeepingMode(h.fileManager, path, content, newPlistFileMode)
 }
