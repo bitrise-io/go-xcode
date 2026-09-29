@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/text/unicode/norm"
 
@@ -165,7 +164,7 @@ func (p *XcodeProj) readSchemes(dir string) ([]xcscheme.Scheme, error) {
 			continue
 		}
 
-		scheme, err := p.readScheme(filepath.Join(dir, name))
+		scheme, err := xcscheme.Open(p.fileManager, filepath.Join(dir, name))
 		if err != nil {
 			return nil, err
 		}
@@ -174,26 +173,6 @@ func (p *XcodeProj) readSchemes(dir string) ([]xcscheme.Scheme, error) {
 	}
 
 	return schemes, nil
-}
-
-func (p *XcodeProj) readScheme(pth string) (xcscheme.Scheme, error) {
-	file, err := p.fileManager.Open(pth)
-	if err != nil {
-		return xcscheme.Scheme{}, err
-	}
-	defer func() {
-		_ = file.Close()
-	}()
-
-	scheme, err := xcscheme.Parse(file)
-	if err != nil {
-		return xcscheme.Scheme{}, fmt.Errorf("failed to unmarshal scheme file: %s: %w", pth, err)
-	}
-
-	scheme.Name = strings.TrimSuffix(filepath.Base(pth), filepath.Ext(pth))
-	scheme.Path = pth
-
-	return scheme, nil
 }
 
 func (p *XcodeProj) isUserSchemeManagementFileExist() (bool, error) {

@@ -4,11 +4,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
@@ -186,9 +186,9 @@ type Scheme struct {
 	IsShared bool   `xml:"-"`
 }
 
-// Open ...
-func Open(pth string) (Scheme, error) {
-	f, err := os.Open(pth)
+// Open reads the scheme at pth through fileManager and sets Name and Path from it.
+func Open(fileManager fileutil.FileManager, pth string) (Scheme, error) {
+	f, err := fileManager.Open(pth)
 	if err != nil {
 		return Scheme{}, err
 	}
@@ -196,9 +196,9 @@ func Open(pth string) (Scheme, error) {
 		_ = f.Close()
 	}()
 
-	scheme, err := Parse(f)
+	scheme, err := parse(f)
 	if err != nil {
-		return Scheme{}, fmt.Errorf("failed to unmarshal scheme file: %s: %s", pth, err)
+		return Scheme{}, fmt.Errorf("failed to unmarshal scheme file: %s: %w", pth, err)
 	}
 
 	scheme.Name = strings.TrimSuffix(filepath.Base(pth), filepath.Ext(pth))
@@ -207,8 +207,7 @@ func Open(pth string) (Scheme, error) {
 	return scheme, nil
 }
 
-// Parse decodes an .xcscheme document. Name and Path are left empty.
-func Parse(reader io.Reader) (scheme Scheme, err error) {
+func parse(reader io.Reader) (scheme Scheme, err error) {
 	err = xml.NewDecoder(reader).Decode(&scheme)
 	return
 }
