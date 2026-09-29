@@ -113,8 +113,9 @@ func parseTargets(rawProject, objects serialized.Object) ([]Target, error) {
 }
 
 // removeCustomInfoObject strips the byte positions UnmarshalWithCustomAnnotation stores under
-// customAnnotationKey in every dictionary, so the tree reads, compares and marshals like the plain
-// project. Only perObjectModify needs the positions, and it decodes them itself.
+// customAnnotationKey in every dictionary, so they don't show up as keys or get written back.
+// The positions exist for save only because the file on disk should change only where we changed it,
+// so perObjectModify decodes them again and replaces only the changed objects.
 func removeCustomInfoObject(o serialized.Object) serialized.Object {
 	for _, v := range o {
 		removeCustomInfo(v)
