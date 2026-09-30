@@ -164,7 +164,7 @@ func (p *XcodeProj) readSchemes(dir string) ([]xcscheme.Scheme, error) {
 			continue
 		}
 
-		scheme, err := xcscheme.Open(p.fileManager, filepath.Join(dir, name))
+		scheme, err := p.schemeFactory.Open(filepath.Join(dir, name))
 		if err != nil {
 			return nil, err
 		}

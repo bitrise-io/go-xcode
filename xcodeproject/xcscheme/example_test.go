@@ -7,7 +7,7 @@ import (
 )
 
 func Example() {
-	scheme, err := Open(fileutil.NewFileManager(), "scheme.xcscheme")
+	scheme, err := NewFactory(fileutil.NewFileManager()).Open("scheme.xcscheme")
 	if err != nil {
 		panic(err)
 	}

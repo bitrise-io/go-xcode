@@ -186,9 +186,21 @@ type Scheme struct {
 	IsShared bool   `xml:"-"`
 }
 
-// Open reads the scheme at pth through fileManager and sets Name and Path from it.
-func Open(fileManager fileutil.FileManager, pth string) (Scheme, error) {
-	f, err := fileManager.Open(pth)
+// Factory opens scheme files with a fixed set of dependencies.
+type Factory struct {
+	fileManager fileutil.FileManager
+}
+
+// NewFactory returns a Factory that reads scheme files through fileManager.
+func NewFactory(fileManager fileutil.FileManager) Factory {
+	return Factory{
+		fileManager: fileManager,
+	}
+}
+
+// Open reads the scheme at pth and sets Name and Path from it.
+func (factory Factory) Open(pth string) (Scheme, error) {
+	f, err := factory.fileManager.Open(pth)
 	if err != nil {
 		return Scheme{}, err
 	}

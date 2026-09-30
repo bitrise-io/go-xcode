@@ -14,6 +14,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 )
 
 // XcodeProjExtension is the file extension of an Xcode project bundle.
@@ -41,6 +42,7 @@ type Factory struct {
 	pathModifier     pathutil.PathModifier
 	pathProvider     pathutil.PathProvider
 	userProvider     UserProvider
+	schemeFactory    xcscheme.Factory
 }
 
 // NewFactory returns a Factory that injects the given collaborators into every project it opens.
@@ -61,6 +63,7 @@ func NewFactory(
 		pathModifier:     pathModifier,
 		pathProvider:     pathProvider,
 		userProvider:     userProvider,
+		schemeFactory:    xcscheme.NewFactory(fileManager),
 	}
 }
 
@@ -111,6 +114,7 @@ func (f Factory) parse(content []byte, projectPath string) (*XcodeProj, error) {
 	p.pathModifier = f.pathModifier
 	p.pathProvider = f.pathProvider
 	p.userProvider = f.userProvider
+	p.schemeFactory = f.schemeFactory
 
 	p.Path = projectPath
 	p.Name = strings.TrimSuffix(filepath.Base(projectPath), filepath.Ext(projectPath))
@@ -130,6 +134,7 @@ type XcodeProj struct {
 	pathModifier     pathutil.PathModifier
 	pathProvider     pathutil.PathProvider
 	userProvider     UserProvider
+	schemeFactory    xcscheme.Factory
 
 	// rawProj is the source of truth Save writes out; every edit lands here.
 	rawProj serialized.Object
