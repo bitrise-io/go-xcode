@@ -1,11 +1,13 @@
 package xcodeproj
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/mocks"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +19,7 @@ func TestXcodeProj_RecreateSchemes(t *testing.T) {
 	require.NoError(t, err)
 
 	// No file manager or user provider: generating schemes must not touch the filesystem.
-	project, err := NewFactory(log.NewLogger(), nil, nil, nil, nil, nil, nil).Parse(content, "test_path/test.xcodeproj")
+	project, err := NewFactory(log.NewLogger(), nil, nil, nil, nil, nil, nil, nil).Parse(content, "test_path/test.xcodeproj")
 	require.NoError(t, err)
 
 	want := []xcscheme.Scheme{
@@ -155,4 +157,17 @@ func TestXcodeProj_SaveSharedScheme(t *testing.T) {
 	assert.Equal(t, scheme.Name, saved[0].Name)
 	assert.True(t, saved[0].IsShared)
 	assert.Equal(t, scheme.BuildAction, saved[0].BuildAction)
+}
+
+// Missing scheme directories get v1's mode, not the 0700 FileManager.Write would create them with.
+func TestXcodeProj_SaveSharedScheme_createsSchemesDirWithV1Mode(t *testing.T) {
+	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
+	dirCreator := mocks.NewDirCreator(t)
+	dirCreator.On("MkdirAll", project.sharedSchemesDir(), os.ModePerm).Return(errors.New("mkdir failed"))
+	project.dirCreator = dirCreator
+
+	scheme := project.RecreateSchemes()[0]
+
+	require.ErrorContains(t, project.SaveSharedScheme(scheme), "mkdir failed")
+	assert.NoFileExists(t, sharedSchemePath(project, scheme.Name), "the scheme is not written if its directory can't be created")
 }

@@ -29,6 +29,7 @@ func testFactory() Factory {
 		pathutil.NewPathModifier(),
 		nil, // path provider is only needed for app icon lookup
 		NewUserProvider(),
+		NewDirCreator(),
 	)
 }
 

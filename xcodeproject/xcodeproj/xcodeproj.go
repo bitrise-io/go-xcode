@@ -42,6 +42,7 @@ type Factory struct {
 	pathModifier     pathutil.PathModifier
 	pathProvider     pathutil.PathProvider
 	userProvider     UserProvider
+	dirCreator       DirCreator
 	schemeFactory    xcscheme.Factory
 }
 
@@ -54,6 +55,7 @@ func NewFactory(
 	pathModifier pathutil.PathModifier,
 	pathProvider pathutil.PathProvider,
 	userProvider UserProvider,
+	dirCreator DirCreator,
 ) Factory {
 	return Factory{
 		logger:           logger,
@@ -63,6 +65,7 @@ func NewFactory(
 		pathModifier:     pathModifier,
 		pathProvider:     pathProvider,
 		userProvider:     userProvider,
+		dirCreator:       dirCreator,
 		schemeFactory:    xcscheme.NewFactory(fileManager),
 	}
 }
@@ -114,6 +117,7 @@ func (f Factory) parse(content []byte, projectPath string) (*XcodeProj, error) {
 	p.pathModifier = f.pathModifier
 	p.pathProvider = f.pathProvider
 	p.userProvider = f.userProvider
+	p.dirCreator = f.dirCreator
 	p.schemeFactory = f.schemeFactory
 
 	p.Path = projectPath
@@ -134,6 +138,7 @@ type XcodeProj struct {
 	pathModifier     pathutil.PathModifier
 	pathProvider     pathutil.PathProvider
 	userProvider     UserProvider
+	dirCreator       DirCreator
 	schemeFactory    xcscheme.Factory
 
 	// rawProj is the source of truth Save writes out; every edit lands here.

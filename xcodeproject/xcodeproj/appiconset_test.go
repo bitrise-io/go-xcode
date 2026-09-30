@@ -87,7 +87,7 @@ func TestXcodeProj_AppIconSetPaths(t *testing.T) {
 				require.NoError(t, os.MkdirAll(filepath.Join(append([]string{projectDir}, elements...)...), 0755))
 			}
 
-			factory := NewFactory(log.NewLogger(), nil, fileutil.NewFileManager(), nil, pathutil.NewPathModifier(), pathutil.NewPathProvider(), nil)
+			factory := NewFactory(log.NewLogger(), nil, fileutil.NewFileManager(), nil, pathutil.NewPathModifier(), pathutil.NewPathProvider(), nil, nil)
 			project, err := factory.Parse(tt.content, filepath.Join(projectDir, tt.projPath))
 			require.NoError(t, err)
 

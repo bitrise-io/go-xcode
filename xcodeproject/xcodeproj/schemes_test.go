@@ -39,7 +39,7 @@ func schemesProject(t *testing.T, fixture string, user UserProvider) *XcodeProj 
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), content, 0644))
 
-	factory := NewFactory(log.NewLogger(), nil, fileutil.NewFileManager(), plistutil.NewFileHandler(fileutil.NewFileManager()), pathutil.NewPathModifier(), nil, user)
+	factory := NewFactory(log.NewLogger(), nil, fileutil.NewFileManager(), plistutil.NewFileHandler(fileutil.NewFileManager()), pathutil.NewPathModifier(), nil, user, NewDirCreator())
 	project, err := factory.Open(projectPath)
 	require.NoError(t, err)
 

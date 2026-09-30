@@ -129,6 +129,7 @@ func newFactory() xcodeproj.Factory {
 		pathutil.NewPathModifier(),
 		pathutil.NewPathProvider(),
 		xcodeproj.NewUserProvider(),
+		xcodeproj.NewDirCreator(),
 	)
 }
 

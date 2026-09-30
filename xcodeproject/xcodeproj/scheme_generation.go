@@ -2,6 +2,7 @@ package xcodeproj
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 
@@ -20,7 +21,7 @@ const (
 )
 
 // newSharedSchemeFileMode is the mode of a newly created scheme file; an existing one keeps its mode.
-const newSharedSchemeFileMode = 0600
+const newSharedSchemeFileMode = 0o600
 
 // RecreateSchemes returns the schemes Xcode would create for the project, one per native, non-test
 // target. It only builds them in memory; use SaveSharedScheme to write them.
@@ -37,11 +38,16 @@ func (p *XcodeProj) RecreateSchemes() []xcscheme.Scheme {
 // SaveSharedScheme writes the scheme to <Path>/xcshareddata/xcschemes/<scheme name>.xcscheme,
 // overwriting an existing file. Missing directories are created.
 func (p *XcodeProj) SaveSharedScheme(scheme xcscheme.Scheme) error {
-	pth := filepath.Join(p.sharedSchemesDir(), scheme.Name+xcschemeExtension)
+	dir := p.sharedSchemesDir()
+	pth := filepath.Join(dir, scheme.Name+xcschemeExtension)
 
 	content, err := scheme.Marshal()
 	if err != nil {
 		return fmt.Errorf("failed to marshal scheme: %w", err)
+	}
+
+	if err := p.dirCreator.MkdirAll(dir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create scheme directory (%s): %w", dir, err)
 	}
 
 	if err := filewriter.WriteKeepingMode(p.fileManager, pth, content, newSharedSchemeFileMode); err != nil {

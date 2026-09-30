@@ -1,6 +1,7 @@
 package xcodeproj
 
 import (
+	"os"
 	"os/user"
 
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
@@ -30,4 +31,21 @@ func (osUserProvider) CurrentUserName() (string, error) {
 		return "", err
 	}
 	return currentUser.Username, nil
+}
+
+// DirCreator creates directories, including missing parents.
+type DirCreator interface {
+	MkdirAll(path string, perm os.FileMode) error
+}
+
+type osDirCreator struct{}
+
+// NewDirCreator returns a DirCreator backed by os.MkdirAll.
+func NewDirCreator() DirCreator {
+	return osDirCreator{}
+}
+
+// MkdirAll creates path and its missing parents with perm, before umask.
+func (osDirCreator) MkdirAll(path string, perm os.FileMode) error {
+	return os.MkdirAll(path, perm)
 }
