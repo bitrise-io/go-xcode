@@ -28,8 +28,6 @@ const (
 	xcworkspaceExtension = ".xcworkspace"
 )
 
-var findErrors = errorfinder.FindXcodebuildErrors
-
 // BuildSettingsProvider returns effective build settings using xcodebuild -showBuildSettings.
 type BuildSettingsProvider interface {
 	TargetBuildSettings(projectPath, target, configuration string, extraArgs ...string) (serialized.Object, error)
@@ -62,7 +60,7 @@ func (p showBuildSettingsProvider) SchemeBuildSettings(projectPath, scheme, conf
 func (p showBuildSettingsProvider) run(args []string) (serialized.Object, error) {
 	// The error finder puts xcodebuild's error lines into the returned error; without it, a failure
 	// with combined output only says to check the command's output.
-	cmd := p.commandFactory.Create(toolName, args, &command.Opts{ErrorFinder: findErrors})
+	cmd := p.commandFactory.Create(toolName, args, &command.Opts{ErrorFinder: errorfinder.FindXcodebuildErrors})
 
 	// Logged at normal level, so the command shows up in step logs.
 	p.logger.TPrintf("Reading build settings...")
@@ -71,7 +69,7 @@ func (p showBuildSettingsProvider) run(args []string) (serialized.Object, error)
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
 	if err != nil {
 		// The output is captured, not logged, so it is kept when it has no line the finder recognises.
-		if out != "" && len(findErrors(out)) == 0 {
+		if out != "" && len(errorfinder.FindXcodebuildErrors(out)) == 0 {
 			return nil, fmt.Errorf("failed to read build settings: %w, output: %s", err, out)
 		}
 		return nil, fmt.Errorf("failed to read build settings: %w", err)
