@@ -159,8 +159,9 @@ func TestXcodeProj_SaveSharedScheme(t *testing.T) {
 	assert.Equal(t, scheme.BuildAction, saved[0].BuildAction)
 }
 
-// Missing scheme directories get v1's mode, not the 0700 FileManager.Write would create them with.
-func TestXcodeProj_SaveSharedScheme_createsSchemesDirWithV1Mode(t *testing.T) {
+// Missing scheme directories are created with os.ModePerm (0755 under the usual umask), not the
+// 0700 FileManager.Write would use.
+func TestXcodeProj_SaveSharedScheme_createsSchemesDirWithModePerm(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	dirCreator := mocks.NewDirCreator(t)
 	dirCreator.On("MkdirAll", project.sharedSchemesDir(), os.ModePerm).Return(errors.New("mkdir failed"))
