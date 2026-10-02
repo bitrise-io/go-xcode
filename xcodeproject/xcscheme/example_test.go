@@ -2,10 +2,12 @@ package xcscheme
 
 import (
 	"fmt"
+
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 )
 
 func Example() {
-	scheme, err := Open("scheme.xcscheme")
+	scheme, err := NewFactory(fileutil.NewFileManager()).Open("scheme.xcscheme")
 	if err != nil {
 		panic(err)
 	}

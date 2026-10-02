@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,7 +38,7 @@ func Test_GivenSchemeWithTestPlan_WhenOpen_ThenDefaultTestPlanSet(t *testing.T) 
 	schemePth := "testdata/BullsEye.xcscheme"
 
 	// When
-	scheme, err := Open(schemePth)
+	scheme, err := NewFactory(fileutil.NewFileManager()).Open(schemePth)
 
 	// Then
 	require.NoError(t, err)
@@ -52,7 +53,7 @@ func Test_GivenSimpleScheme_WhenOpen(t *testing.T) {
 	schemePth := "testdata/ios-simple-objc.xcscheme"
 
 	// When
-	scheme, err := Open(schemePth)
+	scheme, err := NewFactory(fileutil.NewFileManager()).Open(schemePth)
 
 	// Then
 	require.NoError(t, err)

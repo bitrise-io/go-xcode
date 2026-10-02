@@ -4,11 +4,11 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
@@ -186,9 +186,21 @@ type Scheme struct {
 	IsShared bool   `xml:"-"`
 }
 
-// Open ...
-func Open(pth string) (Scheme, error) {
-	f, err := os.Open(pth)
+// Factory opens scheme files with a fixed set of dependencies.
+type Factory struct {
+	fileManager fileutil.FileManager
+}
+
+// NewFactory returns a Factory that reads scheme files through fileManager.
+func NewFactory(fileManager fileutil.FileManager) Factory {
+	return Factory{
+		fileManager: fileManager,
+	}
+}
+
+// Open reads the scheme at pth and sets Name and Path from it.
+func (factory Factory) Open(pth string) (Scheme, error) {
+	f, err := factory.fileManager.Open(pth)
 	if err != nil {
 		return Scheme{}, err
 	}
@@ -198,7 +210,7 @@ func Open(pth string) (Scheme, error) {
 
 	scheme, err := parse(f)
 	if err != nil {
-		return Scheme{}, fmt.Errorf("failed to unmarshal scheme file: %s: %s", pth, err)
+		return Scheme{}, fmt.Errorf("failed to unmarshal scheme file: %s: %w", pth, err)
 	}
 
 	scheme.Name = strings.TrimSuffix(filepath.Base(pth), filepath.Ext(pth))
