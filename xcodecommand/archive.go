@@ -11,7 +11,7 @@ type ArchiveParams struct {
 	ArchivePath       string
 	Clean             bool // run clean first
 	Authentication    *Authentication
-	AdditionalOptions []string // the step's xcodebuild_options, shell-split
+	AdditionalOptions Options // the step's xcodebuild_options, from ParseOptions
 }
 
 // Archive renders params into an archive Command.

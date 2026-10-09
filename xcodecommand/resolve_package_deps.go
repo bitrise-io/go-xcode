@@ -6,7 +6,7 @@ type ResolvePackagesParams struct {
 	ProjectPath       string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme            string
 	Configuration     string
-	AdditionalOptions []string // the step's xcodebuild_options, shell-split
+	AdditionalOptions Options // the step's xcodebuild_options, from ParseOptions
 }
 
 // ResolvePackages renders params into a package resolution Command; run it with a Runner.

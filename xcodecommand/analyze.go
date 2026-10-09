@@ -9,9 +9,9 @@ type AnalyzeParams struct {
 	XCConfigPath       string
 	SDK                string
 	ResultBundlePath   string
-	DisableCodeSigning bool     // CODE_SIGNING_ALLOWED=NO
-	Clean              bool     // run clean first
-	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
+	DisableCodeSigning bool    // CODE_SIGNING_ALLOWED=NO
+	Clean              bool    // run clean first
+	AdditionalOptions  Options // the step's xcodebuild_options, from ParseOptions
 }
 
 // Analyze renders params into an analyze Command.
