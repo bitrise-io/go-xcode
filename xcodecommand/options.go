@@ -44,6 +44,7 @@ type Option struct {
 	Name    string
 	Value   string
 	issue   issue // why an Unknown option was not parsed
+	user    bool  // from xcodebuild_options; the zero value is the Step's own
 	dropped bool  // the merge left it off the command line: the user set it too
 }
 
@@ -151,7 +152,7 @@ func ParseOptions(input string) (Options, error) {
 	return parse(args), nil
 }
 
-// parse turns shell-split arguments into typed Options.
+// parse turns shell-split arguments into typed Options, marked as the user's.
 func parse(args []string) Options {
 	var opts Options
 
@@ -189,6 +190,9 @@ func parse(args []string) Options {
 		}
 	}
 
+	for i := range opts {
+		opts[i].user = true
+	}
 	return opts
 }
 
