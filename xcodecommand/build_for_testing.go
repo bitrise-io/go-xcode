@@ -13,6 +13,7 @@ type BuildForTestingParams struct {
 	Clean             bool // run clean first
 	Authentication    *Authentication
 	AdditionalOptions []string // the step's xcodebuild_options, shell-split
+	Validation        Validation
 }
 
 // BuildForTesting renders params into a build-for-testing Command.
@@ -29,7 +30,7 @@ func BuildForTesting(params BuildForTestingParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendValue(opts, "-testPlan", params.TestPlan)
 
-	return assemble(opts, params.AdditionalOptions, buildForTestingPolicy)
+	return assemble(opts, params.AdditionalOptions, buildForTestingPolicy, params.Validation)
 }
 
 // build-for-testing takes the test selection flags, which it bakes into the xctestrun, and

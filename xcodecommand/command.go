@@ -14,7 +14,8 @@ const (
 
 // Command is an assembled xcodebuild invocation.
 type Command struct {
-	args []string
+	args        []string
+	diagnostics []Diagnostic
 }
 
 // Args returns the xcodebuild arguments without the tool name, ready for Runner.Run.
@@ -22,17 +23,31 @@ func (c Command) Args() []string {
 	return slices.Clone(c.args)
 }
 
+// Diagnostics lists what the constructor found in the additional options.
+func (c Command) Diagnostics() []Diagnostic {
+	return slices.Clone(c.diagnostics)
+}
+
 // Create returns a runnable command; its PrintableCommandArgs is the line to log.
 func (c Command) Create(factory command.Factory, opts *command.Opts) command.Command {
 	return factory.Create(toolName, c.Args(), opts)
 }
 
-// assemble parses the step's additional options and merges them over the derived flags.
-func assemble(derived Options, additional []string, policy actionPolicy) (Command, error) {
+// assemble parses and merges the additional options over the derived ones, then lints
+// what the parser found.
+func assemble(derived Options, additional []string, policy actionPolicy, validation Validation) (Command, error) {
+	user := ParseAdditionalOptions(additional)
 	// merge also returns the collisions (what it dropped or left repeated); nothing reports
 	// them yet.
-	merged, _ := merge(derived, ParseAdditionalOptions(additional), policy)
-	return Command{args: merged.Args()}, nil
+	merged, _ := merge(derived, user, policy)
+	diagnostics := lint(user)
+	if validation == Fail {
+		if err := firstFailure(diagnostics); err != nil {
+			return Command{}, err
+		}
+	}
+
+	return Command{args: merged.Args(), diagnostics: diagnostics}, nil
 }
 
 // projectOptions are the flags every scheme-building action shares.

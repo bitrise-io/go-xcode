@@ -12,6 +12,7 @@ type AnalyzeParams struct {
 	DisableCodeSigning bool     // CODE_SIGNING_ALLOWED=NO
 	Clean              bool     // run clean first
 	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
+	Validation         Validation
 }
 
 // Analyze renders params into an analyze Command.
@@ -28,7 +29,7 @@ func Analyze(params AnalyzeParams) (Command, error) {
 	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions, analyzePolicy)
+	return assemble(opts, params.AdditionalOptions, analyzePolicy, params.Validation)
 }
 
 var analyzePolicy = actionPolicy{
