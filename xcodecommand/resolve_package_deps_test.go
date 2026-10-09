@@ -14,8 +14,8 @@ func TestResolvePackages(t *testing.T) {
 	}{
 		{
 			name:   "workspace",
-			params: ResolvePackagesParams{ProjectPath: "test.xcworkspace"},
-			want:   []string{"-workspace", "test.xcworkspace", "-resolvePackageDependencies"},
+			params: ResolvePackagesParams{ProjectPath: "test.xcworkspace", Scheme: "Test"},
+			want:   []string{"-workspace", "test.xcworkspace", "-scheme", "Test", "-resolvePackageDependencies"},
 		},
 		{
 			name:   "project",
@@ -23,14 +23,14 @@ func TestResolvePackages(t *testing.T) {
 			want:   []string{"-project", "test.xcodeproj", "-scheme", "Test", "-configuration", "Debug", "-resolvePackageDependencies"},
 		},
 		{
-			name:   "user options pass through verbatim, as in v1",
-			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: additional("clean", "archive", "-skipMacroValidation")},
-			want:   []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "clean", "archive", "-skipMacroValidation"},
-		},
-		{
 			name:   "user options pass through, including the SPM flags xcode-archive forwards",
 			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: additional("-skipPackagePluginValidation", "-clonedSourcePackagesDirPath", "/tmp/spm")},
 			want:   []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "-skipPackagePluginValidation", "-clonedSourcePackagesDirPath", "/tmp/spm"},
+		},
+		{
+			name:   "options that do not apply to resolution are left out, for the main command to report",
+			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: additional("clean", "archive", "-test-iterations", "2", "-exportArchive", "Distribution", "-skipMacroValidation", "FOO=1", "-allowProvisioningUpdates")},
+			want:   []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "-skipMacroValidation", "FOO=1", "-allowProvisioningUpdates"},
 		},
 	}
 	for _, tt := range tests {
@@ -40,4 +40,9 @@ func TestResolvePackages(t *testing.T) {
 			require.Equal(t, tt.want, cmd.Args())
 		})
 	}
+}
+
+func TestResolvePackages_WorkspaceNeedsScheme(t *testing.T) {
+	_, err := ResolvePackages(ResolvePackagesParams{ProjectPath: "test.xcworkspace"})
+	require.EqualError(t, err, "resolving the packages of workspace test.xcworkspace needs a scheme")
 }
