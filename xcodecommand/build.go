@@ -5,7 +5,7 @@ type BuildParams struct {
 	ProjectPath        string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme             string
 	Configuration      string
-	Destination        string
+	Destination        string // a default: a -destination in AdditionalOptions replaces it
 	XCConfigPath       string
 	SDK                string
 	DisableCodeSigning bool // CODE_SIGNING_ALLOWED=NO
@@ -28,7 +28,7 @@ func Build(params BuildParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions)
+	return assemble(opts, params.AdditionalOptions, buildPolicy)
 }
 
 func appendCodeSigningAllowed(opts Options, disable bool) Options {
@@ -36,4 +36,10 @@ func appendCodeSigningAllowed(opts Options, disable bool) Options {
 		return opts
 	}
 	return append(opts, Option{Kind: BuildSetting, Name: "CODE_SIGNING_ALLOWED", Value: "NO"})
+}
+
+var buildPolicy = actionPolicy{
+	name:       ActionBuild,
+	defaults:   []string{"-destination"},
+	appendable: []string{"-arch"},
 }

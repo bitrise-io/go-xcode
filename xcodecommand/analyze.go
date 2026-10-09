@@ -5,10 +5,10 @@ type AnalyzeParams struct {
 	ProjectPath        string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme             string
 	Configuration      string
-	Destination        string
+	Destination        string // a default: a -destination in AdditionalOptions replaces it
 	XCConfigPath       string
 	SDK                string
-	ResultBundlePath   string
+	ResultBundlePath   string  // a default: a -resultBundlePath in AdditionalOptions replaces it
 	DisableCodeSigning bool    // CODE_SIGNING_ALLOWED=NO
 	Clean              bool    // run clean first
 	AdditionalOptions  Options // the step's xcodebuild_options, from ParseOptions
@@ -28,5 +28,11 @@ func Analyze(params AnalyzeParams) (Command, error) {
 	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions)
+	return assemble(opts, params.AdditionalOptions, analyzePolicy)
+}
+
+var analyzePolicy = actionPolicy{
+	name:       ActionAnalyze,
+	defaults:   []string{"-destination", "-resultBundlePath"},
+	appendable: []string{"-arch"},
 }

@@ -6,7 +6,7 @@ type BuildForTestingParams struct {
 	ProjectPath       string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme            string
 	Configuration     string
-	Destination       string
+	Destination       string // a default: a -destination in AdditionalOptions replaces it
 	XCConfigPath      string
 	SDK               string
 	TestPlan          string
@@ -29,5 +29,12 @@ func BuildForTesting(params BuildForTestingParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendValue(opts, "-testPlan", params.TestPlan)
 
-	return assemble(opts, params.AdditionalOptions)
+	return assemble(opts, params.AdditionalOptions, buildForTestingPolicy)
+}
+
+// build-for-testing takes the test selection flags, which it bakes into the xctestrun.
+var buildForTestingPolicy = actionPolicy{
+	name:       ActionBuildForTesting,
+	defaults:   []string{"-destination"},
+	appendable: []string{"-arch"},
 }

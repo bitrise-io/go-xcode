@@ -27,10 +27,9 @@ func (c Command) Create(factory command.Factory, opts *command.Opts) command.Com
 	return factory.Create(toolName, c.Args(), opts)
 }
 
-// assemble appends the step's additional options to the derived flags, as the v1
-// builders did.
-func assemble(derived, user Options) (Command, error) {
-	return Command{args: append(derived.Args(), user.Args()...)}, nil
+// assemble merges the step's additional options over the derived flags.
+func assemble(derived, user Options, policy actionPolicy) (Command, error) {
+	return Command{args: merge(derived, user, policy).Args()}, nil
 }
 
 // projectOptions are the flags every scheme-building action shares.
