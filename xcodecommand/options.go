@@ -21,7 +21,21 @@ const (
 	UserDefault              // -UseModernBuildSystem=YES
 	BuildSetting             // CODE_SIGNING_ALLOWED=NO
 	Action                   // clean, build, archive, ...
-	Unknown                  // fits no form; Name holds it verbatim, and xcodebuild fails on it with its own message
+	Unknown                  // fits no form; Name holds it verbatim
+)
+
+// issue says why an argument was kept as Unknown; Options.Diagnostics turns it into a message.
+type issue int
+
+const (
+	noIssue             issue = iota
+	emptyArgument             // "" from an env var that expanded to nothing
+	quotedFlagWithValue       // "-destination generic/platform=iOS": xcodebuild takes it as a user default
+	quotedFlag                // "-sdk macosx": xcodebuild refuses it
+	invalidFlag               // "-", "-=x"
+	colonWithoutValue         // "-only-testing:"
+	missingValue              // "-destination" as the last argument
+	bareWord                  // "Distribution" from an unquoted CODE_SIGN_IDENTITY=Apple Distribution
 )
 
 // Option is one xcodebuild argument, parsed from user input or derived from params.
@@ -115,7 +129,7 @@ var freeFormValueFlags = []string{
 // rules, as the steps always have (quotes group a value that contains spaces), and reads
 // the arguments as xcodebuild does. Only a quoting error fails: whatever fits no form is
 // kept verbatim as Unknown, so the command line stays as the user wrote it and xcodebuild
-// refuses it with its own message.
+// refuses it with its own message; Options.Diagnostics says why.
 func ParseOptions(input string) (Options, error) {
 	args, err := shellquote.Split(input)
 	if err != nil {
