@@ -34,11 +34,11 @@ func (c Command) Create(factory command.Factory, opts *command.Opts) command.Com
 }
 
 // assemble parses and merges the additional options over the derived ones, then lints
-// what the parser found.
+// what the two decided.
 func assemble(derived Options, additional []string, policy actionPolicy, validation Validation) (Command, error) {
 	user := ParseAdditionalOptions(additional)
-	merged, _ := merge(derived, user, policy)
-	diagnostics := lint(user)
+	merged, collisions := merge(derived, user, policy)
+	diagnostics := lint(user, derived, collisions, policy)
 	if validation == Fail {
 		if err := firstFailure(diagnostics); err != nil {
 			return Command{}, err
