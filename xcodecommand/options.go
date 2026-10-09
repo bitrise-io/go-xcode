@@ -24,7 +24,7 @@ const (
 	Unknown                  // fits no form; Name holds it verbatim
 )
 
-// issue says why an argument was kept as Unknown.
+// issue says why an argument was kept as Unknown; Options.Diagnostics turns it into a message.
 type issue int
 
 const (
@@ -142,7 +142,7 @@ var freeFormValueFlags = []string{
 // rules, as the steps always have (quotes group a value that contains spaces), and reads
 // the arguments as xcodebuild does. Only a quoting error fails: whatever fits no form is
 // kept verbatim as Unknown, so the command line stays as the user wrote it and xcodebuild
-// refuses it with its own message.
+// refuses it with its own message; Options.Diagnostics says why.
 func ParseOptions(input string) (Options, error) {
 	args, err := shellquote.Split(input)
 	if err != nil {

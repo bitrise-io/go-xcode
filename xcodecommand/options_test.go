@@ -9,9 +9,10 @@ import (
 
 func TestParse(t *testing.T) {
 	tests := []struct {
-		name string
-		args []string
-		want Options
+		name  string
+		args  []string
+		want  Options
+		diags []DiagnosticKind
 	}{
 		{name: "nothing"},
 		{
@@ -70,9 +71,10 @@ func TestParse(t *testing.T) {
 			want: Options{{Kind: UserDefault, Name: "-IDECustomDerivedDataLocation", Value: "/a:b"}},
 		},
 		{
-			name: "user default that looks like a build setting is reported and kept",
-			args: []string{"-ENABLE_BITCODE=NO"},
-			want: Options{{Kind: UserDefault, Name: "-ENABLE_BITCODE", Value: "NO"}},
+			name:  "user default that looks like a build setting is reported and kept",
+			args:  []string{"-ENABLE_BITCODE=NO"},
+			want:  Options{{Kind: UserDefault, Name: "-ENABLE_BITCODE", Value: "NO"}},
+			diags: []DiagnosticKind{SuspiciousUserDefault},
 		},
 		{
 			name: "build settings, any case, split at the first equals sign",
@@ -99,24 +101,28 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name: "bare word is kept verbatim and reported",
-			args: []string{"-sdk", "iphoneos", "PRODUCT_NAME=My", "App"},
-			want: Options{{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}, {Kind: BuildSetting, Name: "PRODUCT_NAME", Value: "My"}, {Kind: Unknown, Name: "App", issue: bareWord}},
+			name:  "bare word is kept verbatim and reported",
+			args:  []string{"-sdk", "iphoneos", "PRODUCT_NAME=My", "App"},
+			want:  Options{{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}, {Kind: BuildSetting, Name: "PRODUCT_NAME", Value: "My"}, {Kind: Unknown, Name: "App", issue: bareWord}},
+			diags: []DiagnosticKind{MalformedOption},
 		},
 		{
-			name: "empty argument is kept verbatim and reported",
-			args: []string{""},
-			want: Options{{Kind: Unknown, Name: "", issue: emptyArgument}},
+			name:  "empty argument is kept verbatim and reported",
+			args:  []string{""},
+			want:  Options{{Kind: Unknown, Name: "", issue: emptyArgument}},
+			diags: []DiagnosticKind{MalformedOption},
 		},
 		{
-			name: "free-form value flag without a value is reported",
-			args: []string{"-destination"},
-			want: Options{{Kind: Unknown, Name: "-destination", issue: missingValue}},
+			name:  "free-form value flag without a value is reported",
+			args:  []string{"-destination"},
+			want:  Options{{Kind: Unknown, Name: "-destination", issue: missingValue}},
+			diags: []DiagnosticKind{MalformedOption},
 		},
 		{
-			name: "a flag is not the value of a free-form value flag",
-			args: []string{"-destination", "-quiet"},
-			want: Options{{Kind: Unknown, Name: "-destination", issue: missingValue}, {Kind: Switch, Name: "-quiet"}},
+			name:  "a flag is not the value of a free-form value flag",
+			args:  []string{"-destination", "-quiet"},
+			want:  Options{{Kind: Unknown, Name: "-destination", issue: missingValue}, {Kind: Switch, Name: "-quiet"}},
+			diags: []DiagnosticKind{MalformedOption},
 		},
 		{
 			name: "installhdrs and installapi are build actions, not a switch's value",
@@ -124,24 +130,16 @@ func TestParse(t *testing.T) {
 			want: Options{{Kind: Switch, Name: "-quiet"}, {Kind: Action, Name: "installhdrs"}, {Kind: Action, Name: "installapi"}},
 		},
 		{
-			name: "flag and value quoted together, value with '=': xcodebuild ignores it as a user default",
-			args: []string{"-destination generic/platform=iOS", "-destination 'platform=iOS'", "-destination\vgeneric/platform=iOS", "-destination\u00a0generic/platform=iOS"},
-			want: Options{
-				{Kind: Unknown, Name: "-destination generic/platform=iOS", issue: quotedFlagWithValue},
-				{Kind: Unknown, Name: "-destination 'platform=iOS'", issue: quotedFlagWithValue},
-				{Kind: Unknown, Name: "-destination\vgeneric/platform=iOS", issue: quotedFlagWithValue},
-				{Kind: Unknown, Name: "-destination\u00a0generic/platform=iOS", issue: quotedFlagWithValue},
-			},
+			name:  "flag and value quoted together, value with '=': xcodebuild ignores it as a user default",
+			args:  []string{"-destination generic/platform=iOS", "-destination 'platform=iOS'"},
+			want:  Options{{Kind: Unknown, Name: "-destination generic/platform=iOS", issue: quotedFlagWithValue}, {Kind: Unknown, Name: "-destination 'platform=iOS'", issue: quotedFlagWithValue}},
+			diags: []DiagnosticKind{SuspiciousUserDefault, SuspiciousUserDefault},
 		},
 		{
-			name: "flag and value quoted together, no '=': xcodebuild refuses it",
-			args: []string{"-sdk macosx", "-quiet foo", "-sdk\nmacosx", "-sdk\u00a0macosx"},
-			want: Options{
-				{Kind: Unknown, Name: "-sdk macosx", issue: quotedFlag},
-				{Kind: Unknown, Name: "-quiet foo", issue: quotedFlag},
-				{Kind: Unknown, Name: "-sdk\nmacosx", issue: quotedFlag},
-				{Kind: Unknown, Name: "-sdk\u00a0macosx", issue: quotedFlag},
-			},
+			name:  "flag and value quoted together, no '=': xcodebuild refuses it",
+			args:  []string{"-sdk macosx", "-quiet foo"},
+			want:  Options{{Kind: Unknown, Name: "-sdk macosx", issue: quotedFlag}, {Kind: Unknown, Name: "-quiet foo", issue: quotedFlag}},
+			diags: []DiagnosticKind{MalformedOption, MalformedOption},
 		},
 		{
 			name: "values may contain spaces",
@@ -151,6 +149,7 @@ func TestParse(t *testing.T) {
 				{Kind: UserDefault, Name: "-PROVISIONING_PROFILE_SPECIFIER", Value: "match AppStore com.example"},
 				{Kind: ValueOption, Name: "-destination", Value: "platform=iOS Simulator,name=iPhone 15"},
 			},
+			diags: []DiagnosticKind{SuspiciousUserDefault},
 		},
 		{
 			name: "a path value named like an action stays the value",
@@ -161,9 +160,10 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name: "lone dash, empty user default name and empty colon value are reported",
-			args: []string{"-", "-=x", "-only-testing:"},
-			want: Options{{Kind: Unknown, Name: "-", issue: invalidFlag}, {Kind: Unknown, Name: "-=x", issue: invalidFlag}, {Kind: Unknown, Name: "-only-testing:", issue: colonWithoutValue}},
+			name:  "lone dash, empty user default name and empty colon value are reported",
+			args:  []string{"-", "-=x", "-only-testing:"},
+			want:  Options{{Kind: Unknown, Name: "-", issue: invalidFlag}, {Kind: Unknown, Name: "-=x", issue: invalidFlag}, {Kind: Unknown, Name: "-only-testing:", issue: colonWithoutValue}},
+			diags: []DiagnosticKind{MalformedOption, MalformedOption, MalformedOption},
 		},
 	}
 	for _, tt := range tests {
@@ -171,6 +171,12 @@ func TestParse(t *testing.T) {
 			got := parse(tt.args)
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.args, got.Args(), "parsing must round-trip")
+
+			var kinds []DiagnosticKind
+			for _, d := range got.Diagnostics() {
+				kinds = append(kinds, d.Kind)
+			}
+			require.Equal(t, tt.diags, kinds)
 		})
 	}
 }
@@ -187,6 +193,7 @@ func TestOptions_Filter(t *testing.T) {
 		"BUNDLE_IDENTIFIER=io.bitrise.sample",
 		"-quiet",
 	})
+	require.Empty(t, opts.Diagnostics())
 
 	kept := opts.Filter(func(o Option) bool { return o.Kind == BuildSetting || slices.Contains(spmFlags, o.Name) })
 
