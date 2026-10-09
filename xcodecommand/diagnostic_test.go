@@ -130,6 +130,15 @@ func TestDiagnosticMessages(t *testing.T) {
 			},
 		},
 		{
+			name:   "test repetition flags point at the Step's inputs on test runs",
+			user:   []string{"-test-iterations", "2", "-retry-tests-on-failure"},
+			policy: testPolicy,
+			want: []string{
+				`"-test-iterations 2" belongs to the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead.`,
+				`"-retry-tests-on-failure" belongs to the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead.`,
+			},
+		},
+		{
 			name: "a switch written with = next to the Step's switch",
 			user: []string{"-allowProvisioningUpdates=YES"},
 			derived: Options{

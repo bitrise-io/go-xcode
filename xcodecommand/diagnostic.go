@@ -69,7 +69,7 @@ func lint(user, merged Options, collisions []collision, policy actionPolicy) []D
 	var diagnostics []Diagnostic
 	diagnostics = append(diagnostics, user.Diagnostics()...)
 	diagnostics = append(diagnostics, lintPolicy(user, policy)...)
-	diagnostics = append(diagnostics, lintStepInputs(user, collisions)...)
+	diagnostics = append(diagnostics, lintStepInputs(user, collisions, policy.name)...)
 	diagnostics = append(diagnostics, lintShadows(user, merged)...)
 	diagnostics = append(diagnostics, lintCollisions(collisions)...)
 	return diagnostics
@@ -135,23 +135,35 @@ func lintPolicy(user Options, policy actionPolicy) []Diagnostic {
 // reported so the user reaches for the input.
 type stepInput struct {
 	hint      string
+	commands  []string // the commands whose Steps have the input; empty means all
 	satisfied []string // value flags that, all set by the user too, make the flag work without the input
 }
+
+var testRunCommands = []string{ActionTest, ActionTestWithoutBuilding}
+
+const testRepetitionHint = "belongs to the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead."
 
 var stepInputFlags = map[string]stepInput{
 	"-allowProvisioningUpdates": {
 		hint:      "cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead.",
 		satisfied: []string{"-authenticationKeyPath", "-authenticationKeyID", "-authenticationKeyIssuerID"},
 	},
+	// xcode-test and xcode-test-without-building render these from their inputs.
+	"-test-iterations":                  {hint: testRepetitionHint, commands: testRunCommands},
+	"-retry-tests-on-failure":           {hint: testRepetitionHint, commands: testRunCommands},
+	"-run-tests-until-failure":          {hint: testRepetitionHint, commands: testRunCommands},
+	"-test-repetition-relaunch-enabled": {hint: testRepetitionHint, commands: testRunCommands},
 }
 
 // lintStepInputs reports user options from stepInputFlags that the command did not derive
-// itself. When it did, they collide, and lintCollisions reports them instead.
-func lintStepInputs(user Options, collisions []collision) []Diagnostic {
+// itself. When it did, they collide, and lintCollisions reports them as redundant or
+// repeated instead.
+func lintStepInputs(user Options, collisions []collision, command string) []Diagnostic {
 	var diagnostics []Diagnostic
 	for _, o := range user {
 		input, ok := stepInputFlags[o.Key()]
-		if !ok || slices.ContainsFunc(collisions, func(c collision) bool { return c.derived.Key() == o.Key() }) ||
+		if !ok || (len(input.commands) > 0 && !slices.Contains(input.commands, command)) ||
+			slices.ContainsFunc(collisions, func(c collision) bool { return c.derived.Key() == o.Key() }) ||
 			setsAll(user, input.satisfied) {
 			continue
 		}
