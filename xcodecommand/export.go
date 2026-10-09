@@ -7,7 +7,7 @@ type ExportArchiveParams struct {
 	ExportPath         string
 	ExportOptionsPlist string
 	Authentication     *Authentication
-	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
+	AdditionalOptions  Options // the step's xcodebuild_options, from ParseOptions
 }
 
 // ExportArchive renders params into an export Command.

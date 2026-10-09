@@ -11,7 +11,7 @@ type BuildParams struct {
 	DisableCodeSigning bool // CODE_SIGNING_ALLOWED=NO
 	Clean              bool // run clean first
 	Authentication     *Authentication
-	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
+	AdditionalOptions  Options // the step's xcodebuild_options, from ParseOptions
 }
 
 // Build renders params into a build Command.
