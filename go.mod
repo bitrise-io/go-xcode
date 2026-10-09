@@ -1,8 +1,6 @@
 module github.com/bitrise-io/go-xcode/v2
 
-go 1.22
-
-toolchain go1.23.2
+go 1.23
 
 require (
 	cloud.google.com/go/secretmanager v1.14.3

@@ -33,11 +33,10 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		{
-			// As in v1, additional options are appended verbatim: a user -destination is added
-			// next to the params' one.
-			name:   "a -destination in both the params and the additional options",
+			// The params' -destination is a default: the user's replaces it.
+			name:   "a -destination in the additional options replaces the params' one",
 			params: BuildParams{Scheme: "App", Destination: "generic/platform=iOS", AdditionalOptions: []string{"-destination", "platform=iOS Simulator,name=iPhone 17"}},
-			want:   []string{"build", "-scheme", "App", "-destination", "generic/platform=iOS", "-destination", "platform=iOS Simulator,name=iPhone 17"},
+			want:   []string{"build", "-scheme", "App", "-destination", "platform=iOS Simulator,name=iPhone 17"},
 		},
 		{name: "workspace path with a trailing slash", params: BuildParams{ProjectPath: "App.xcworkspace/"}, want: []string{"build", "-workspace", "App.xcworkspace/"}},
 		{name: "Swift package manifest gets no container flag", params: BuildParams{ProjectPath: "MyPackage/Package.swift", Scheme: "CoolLibrary"}, want: []string{"build", "-scheme", "CoolLibrary"}},
