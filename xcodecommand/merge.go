@@ -46,8 +46,8 @@ func merge(derived, user Options, policy actionPolicy) (Options, []collision) {
 		case slices.Contains(policy.appendable, o.Key()):
 			// test: "-skip-testing:Flaky" from quarantine + "-skip-testing:Manual" from the user -> both
 			merged = append(merged, o)
-		case yields && slices.Equal(conflicting.Args(), o.args()):
-			// "-allowProvisioningUpdates" set by the step and again by the user -> once
+		case yields && !slices.ContainsFunc(conflicting, func(u Option) bool { return !slices.Equal(u.args(), o.args()) }):
+			// "-allowProvisioningUpdates" set by the step and again by the user, even twice -> the user's
 			collisions = append(collisions, collision{redundant, o, conflicting})
 		case yields:
 			// archive: "-destination generic/platform=iOS" + user "-destination generic/platform=tvOS" -> the user's

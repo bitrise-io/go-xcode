@@ -91,6 +91,12 @@ func TestMerge(t *testing.T) {
 			collisions: []collision{{redundant, Option{Kind: Switch, Name: "-allowProvisioningUpdates"}, Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}}}},
 		},
 		{
+			name:       "a switch the user repeats on top of the step's is still redundant",
+			user:       Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}, {Kind: Switch, Name: "-allowProvisioningUpdates"}},
+			want:       append(without("-allowProvisioningUpdates", 1), "-allowProvisioningUpdates", "-allowProvisioningUpdates"),
+			collisions: []collision{{redundant, Option{Kind: Switch, Name: "-allowProvisioningUpdates"}, Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}, {Kind: Switch, Name: "-allowProvisioningUpdates"}}}},
+		},
+		{
 			name:       "a default repeated with the same value is redundant, not an override",
 			user:       Options{{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"}},
 			want:       append(without("-destination", 2), "-destination", "generic/platform=iOS"),
