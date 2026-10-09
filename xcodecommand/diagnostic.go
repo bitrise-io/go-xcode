@@ -123,14 +123,29 @@ func (p actionPolicy) refusal(o Option) (Diagnostic, bool) {
 // reported so the user reaches for the input.
 type stepInput struct {
 	hint      string
+	commands  []string // the commands whose Steps have the input; empty means all
 	satisfied []string // value flags that, all set by the user too, make the flag work without the input
 }
+
+// appliesTo says whether the command's Step has the input.
+func (in stepInput) appliesTo(command string) bool {
+	return len(in.commands) == 0 || slices.Contains(in.commands, command)
+}
+
+var testRunCommands = []string{ActionTest, ActionTestWithoutBuilding}
+
+const testRepetitionHint = "belongs to the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead."
 
 var stepInputFlags = map[string]stepInput{
 	"-allowProvisioningUpdates": {
 		hint:      "cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead.",
 		satisfied: []string{"-authenticationKeyPath", "-authenticationKeyID", "-authenticationKeyIssuerID"},
 	},
+	// xcode-test and xcode-test-without-building render these from their inputs.
+	"-test-iterations":                  {hint: testRepetitionHint, commands: testRunCommands},
+	"-retry-tests-on-failure":           {hint: testRepetitionHint, commands: testRunCommands},
+	"-run-tests-until-failure":          {hint: testRepetitionHint, commands: testRunCommands},
+	"-test-repetition-relaunch-enabled": {hint: testRepetitionHint, commands: testRunCommands},
 }
 
 // setsAll says whether opts gives every one of the value flags a value. It is false for
@@ -231,7 +246,7 @@ func (g flagGroup) findings(all Options, policy actionPolicy) []Diagnostic {
 		}
 	}
 
-	if in, ok := stepInputFlags[g.name]; ok && len(g.step) == 0 && !setsAll(all, in.satisfied) {
+	if in, ok := stepInputFlags[g.name]; ok && in.appliesTo(policy.name) && len(g.step) == 0 && !setsAll(all, in.satisfied) {
 		// -allowProvisioningUpdates without the Step's API key flags, or the user's own
 		for _, u := range g.user {
 			if u.key() == g.name {

@@ -71,7 +71,9 @@ var (
 			"-enumerate-tests", "-test-enumeration-style", "-test-enumeration-format", "-test-enumeration-output-path",
 		},
 	}
-	// xcodebuild refuses -xctestrun next to -project, -workspace or -scheme, which
-	// build-for-testing always passes; -xctestrun is an input of test-without-building.
+	// On a test run, -enumerate-tests lists the tests and runs none, and the command succeeds.
+	listsTests = rejection{reason: "It makes xcodebuild list the tests instead of running them.", flags: []string{"-enumerate-tests"}}
+	// xcodebuild refuses -xctestrun next to -project, -workspace or -scheme, which test and
+	// build-for-testing always pass.
 	withoutBuildingOnly = rejection{reason: "It applies to test-without-building only, and xcodebuild refuses it next to -scheme.", flags: []string{"-xctestrun"}}
 )

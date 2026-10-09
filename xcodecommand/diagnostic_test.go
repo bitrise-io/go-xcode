@@ -70,6 +70,13 @@ func TestCommand_Diagnostics(t *testing.T) {
 			wantKinds: []DiagnosticKind{PreferStepInput},
 		},
 		{
+			// archive has no test repetition inputs: the flag is reported as test-only instead.
+			name:      "a test repetition flag on archive is test-only, not a Step input",
+			params:    ArchiveParams{AdditionalOptions: additional("-retry-tests-on-failure")},
+			wantArgs:  []string{"archive", "-project", "App.xcodeproj", "-retry-tests-on-failure"},
+			wantKinds: []DiagnosticKind{RejectedOption},
+		},
+		{
 			name:     "a redundant switch and a replaced default are informational",
 			params:   ArchiveParams{Destination: "generic/platform=iOS", Authentication: &testAuth, AdditionalOptions: additional("-allowProvisioningUpdates", "-destination", "id=SIM")},
 			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-authenticationKeyPath", "/key/path", "-authenticationKeyID", "keyID", "-authenticationKeyIssuerID", "issuerID", "-allowProvisioningUpdates", "-destination", "id=SIM"},
@@ -126,6 +133,15 @@ func TestDiagnosticMessages(t *testing.T) {
 				`"-testPlan Full" does not work with archive. It applies to test actions only, and xcodebuild refuses it here. Remove it.`,
 				`"clean" is a build action. The Step sets the actions itself. Remove it.`,
 				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead.`,
+			},
+		},
+		{
+			name:   "test repetition flags point at the Step's inputs on test runs",
+			user:   []string{"-test-iterations", "2", "-retry-tests-on-failure"},
+			policy: testPolicy,
+			want: []string{
+				`"-test-iterations 2" belongs to the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead.`,
+				`"-retry-tests-on-failure" belongs to the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead.`,
 			},
 		},
 		{
