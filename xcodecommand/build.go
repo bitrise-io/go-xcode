@@ -5,7 +5,7 @@ type BuildParams struct {
 	ProjectPath        string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme             string
 	Configuration      string
-	Destination        string
+	Destination        string // a default: a -destination in AdditionalOptions replaces it
 	XCConfigPath       string
 	SDK                string
 	DisableCodeSigning bool // CODE_SIGNING_ALLOWED=NO
@@ -28,7 +28,7 @@ func Build(params BuildParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions)
+	return assemble(opts, params.AdditionalOptions, buildPolicy)
 }
 
 // AnalyzeParams describes an `xcodebuild analyze` invocation. Zero-valued fields are omitted.
@@ -36,10 +36,10 @@ type AnalyzeParams struct {
 	ProjectPath        string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme             string
 	Configuration      string
-	Destination        string
+	Destination        string // a default: a -destination in AdditionalOptions replaces it
 	XCConfigPath       string
 	SDK                string
-	ResultBundlePath   string
+	ResultBundlePath   string   // a default: a -resultBundlePath in AdditionalOptions replaces it
 	DisableCodeSigning bool     // CODE_SIGNING_ALLOWED=NO
 	Clean              bool     // run clean first
 	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
@@ -59,7 +59,7 @@ func Analyze(params AnalyzeParams) (Command, error) {
 	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions)
+	return assemble(opts, params.AdditionalOptions, analyzePolicy)
 }
 
 // BuildForTestingParams describes an `xcodebuild build-for-testing` invocation.
@@ -68,7 +68,7 @@ type BuildForTestingParams struct {
 	ProjectPath       string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme            string
 	Configuration     string
-	Destination       string
+	Destination       string // a default: a -destination in AdditionalOptions replaces it
 	XCConfigPath      string
 	SDK               string
 	TestPlan          string
@@ -91,7 +91,7 @@ func BuildForTesting(params BuildForTestingParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendValue(opts, "-testPlan", params.TestPlan)
 
-	return assemble(opts, params.AdditionalOptions)
+	return assemble(opts, params.AdditionalOptions, buildForTestingPolicy)
 }
 
 func appendCodeSigningAllowed(opts Options, disable bool) Options {

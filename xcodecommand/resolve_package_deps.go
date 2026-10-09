@@ -6,7 +6,7 @@ type ResolvePackagesParams struct {
 	ProjectPath       string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme            string
 	Configuration     string
-	AdditionalOptions []string // the step's xcodebuild_options, shell-split
+	AdditionalOptions []string // the step's xcodebuild_options, shell-split, as given to its main command
 }
 
 // ResolvePackages renders params into a package resolution Command; run it with a Runner.
@@ -16,5 +16,5 @@ func ResolvePackages(params ResolvePackagesParams) (Command, error) {
 	opts = appendValue(opts, "-configuration", params.Configuration)
 	opts = append(opts, Option{Kind: Switch, Name: "-resolvePackageDependencies"})
 
-	return assemble(opts, params.AdditionalOptions)
+	return assemble(opts, params.AdditionalOptions, resolvePackagesPolicy)
 }

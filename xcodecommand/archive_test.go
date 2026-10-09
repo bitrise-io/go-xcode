@@ -30,11 +30,10 @@ func TestArchive(t *testing.T) {
 			want:   []string{"archive", "-workspace", "App.xcworkspace", "-scheme", "App"},
 		},
 		{
-			// As in v1, additional options are appended verbatim: a user -destination is added
-			// next to the step's.
-			name:   "additional options are appended verbatim",
+			// The step's -destination is a default: the user's replaces it.
+			name:   "a user -destination replaces the step's default",
 			params: ArchiveParams{Destination: "generic/platform=iOS", AdditionalOptions: []string{"-destination", "generic/platform=tvOS"}},
-			want:   []string{"archive", "-destination", "generic/platform=iOS", "-destination", "generic/platform=tvOS"},
+			want:   []string{"archive", "-destination", "generic/platform=tvOS"},
 		},
 		{
 			name: "steps-xcode-archive: clean, xcconfig, archive path, API key, additional options last",
