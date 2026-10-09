@@ -12,6 +12,7 @@ type ArchiveParams struct {
 	Clean             bool // run clean first
 	Authentication    *Authentication
 	AdditionalOptions []string // the step's xcodebuild_options, shell-split
+	Validation        Validation
 }
 
 // Archive renders params into an archive Command.
@@ -28,5 +29,5 @@ func Archive(params ArchiveParams) (Command, error) {
 	opts = appendValue(opts, "-archivePath", params.ArchivePath)
 	opts = appendAuthentication(opts, params.Authentication)
 
-	return assemble(opts, params.AdditionalOptions, archivePolicy)
+	return assemble(opts, params.AdditionalOptions, archivePolicy, params.Validation)
 }
