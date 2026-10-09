@@ -5,7 +5,7 @@ type ArchiveParams struct {
 	ProjectPath       string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme            string
 	Configuration     string
-	Destination       string
+	Destination       string // a default: a -destination in AdditionalOptions replaces it
 	XCConfigPath      string
 	SDK               string
 	ArchivePath       string
@@ -28,5 +28,13 @@ func Archive(params ArchiveParams) (Command, error) {
 	opts = appendValue(opts, "-archivePath", params.ArchivePath)
 	opts = appendAuthentication(opts, params.Authentication)
 
-	return assemble(opts, params.AdditionalOptions)
+	return assemble(opts, params.AdditionalOptions, archivePolicy)
+}
+
+// The step's -destination is a fallback the user's replaces; -arch is repeatable. The
+// other build actions follow the same rule.
+var archivePolicy = actionPolicy{
+	name:       ActionArchive,
+	defaults:   []string{"-destination"},
+	appendable: []string{"-arch"},
 }

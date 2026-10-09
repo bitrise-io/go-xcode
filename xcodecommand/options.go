@@ -40,10 +40,11 @@ const (
 
 // Option is one xcodebuild argument, parsed from user input or derived from params.
 type Option struct {
-	Kind  Kind
-	Name  string
-	Value string
-	issue issue // why an Unknown option was not parsed
+	Kind    Kind
+	Name    string
+	Value   string
+	issue   issue // why an Unknown option was not parsed
+	dropped bool  // the merge left it off the command line: the user set it too
 }
 
 // key identifies the option when merging: the flag, the build setting name or the
@@ -78,13 +79,21 @@ func (o Option) args() []string {
 // Options is an ordered list of xcodebuild arguments.
 type Options []Option
 
-// Args renders the options as xcodebuild arguments.
+// Args renders the options as xcodebuild arguments, without the ones the merge dropped.
 func (opts Options) Args() []string {
 	var args []string
 	for _, o := range opts {
-		args = append(args, o.args()...)
+		if !o.dropped {
+			args = append(args, o.args()...)
+		}
 	}
 	return args
+}
+
+// sets says whether a flag or build setting with the key is among the options. Actions
+// and unparsed arguments never replace a derived flag.
+func (opts Options) sets(key string) bool {
+	return slices.ContainsFunc(opts, func(o Option) bool { return o.Kind != Action && o.Kind != Unknown && o.key() == key })
 }
 
 // Filter returns the options for which keep is true, in order.
