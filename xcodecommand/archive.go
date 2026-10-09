@@ -35,6 +35,7 @@ func Archive(params ArchiveParams) (Command, error) {
 // other build actions follow the same rule.
 var archivePolicy = actionPolicy{
 	name:       ActionArchive,
+	rejections: []rejection{modeSwitching, testOnlyRefused, testOnly},
 	defaults:   []string{"-destination"},
 	appendable: []string{"-arch"},
 }
