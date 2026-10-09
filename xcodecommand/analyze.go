@@ -30,3 +30,8 @@ func Analyze(params AnalyzeParams) (Command, error) {
 
 	return assemble(opts, params.AdditionalOptions)
 }
+
+var analyzePolicy = actionPolicy{
+	name:       ActionAnalyze,
+	rejections: []rejection{modeSwitching, testOnlyRefused, testOnly},
+}

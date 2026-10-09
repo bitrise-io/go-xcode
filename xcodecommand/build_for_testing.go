@@ -31,3 +31,10 @@ func BuildForTesting(params BuildForTestingParams) (Command, error) {
 
 	return assemble(opts, params.AdditionalOptions)
 }
+
+// build-for-testing takes the test selection flags, which it bakes into the xctestrun, and
+// writes -testProductsPath; -xctestrun is an input of test-without-building.
+var buildForTestingPolicy = actionPolicy{
+	name:       ActionBuildForTesting,
+	rejections: []rejection{modeSwitching, withoutBuildingOnly},
+}
