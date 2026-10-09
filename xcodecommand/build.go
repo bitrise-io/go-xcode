@@ -12,6 +12,7 @@ type BuildParams struct {
 	Clean              bool // run clean first
 	Authentication     *Authentication
 	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
+	Validation         Validation
 }
 
 // Build renders params into a build Command.
@@ -28,7 +29,7 @@ func Build(params BuildParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions, buildPolicy)
+	return assemble(opts, params.AdditionalOptions, buildPolicy, params.Validation)
 }
 
 // AnalyzeParams describes an `xcodebuild analyze` invocation. Zero-valued fields are omitted.
@@ -43,6 +44,7 @@ type AnalyzeParams struct {
 	DisableCodeSigning bool     // CODE_SIGNING_ALLOWED=NO
 	Clean              bool     // run clean first
 	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
+	Validation         Validation
 }
 
 // Analyze renders params into an analyze Command.
@@ -59,7 +61,7 @@ func Analyze(params AnalyzeParams) (Command, error) {
 	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions, analyzePolicy)
+	return assemble(opts, params.AdditionalOptions, analyzePolicy, params.Validation)
 }
 
 // BuildForTestingParams describes an `xcodebuild build-for-testing` invocation.
@@ -75,6 +77,7 @@ type BuildForTestingParams struct {
 	Clean             bool // run clean first
 	Authentication    *Authentication
 	AdditionalOptions []string // the step's xcodebuild_options, shell-split
+	Validation        Validation
 }
 
 // BuildForTesting renders params into a build-for-testing Command.
@@ -91,7 +94,7 @@ func BuildForTesting(params BuildForTestingParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendValue(opts, "-testPlan", params.TestPlan)
 
-	return assemble(opts, params.AdditionalOptions, buildForTestingPolicy)
+	return assemble(opts, params.AdditionalOptions, buildForTestingPolicy, params.Validation)
 }
 
 func appendCodeSigningAllowed(opts Options, disable bool) Options {

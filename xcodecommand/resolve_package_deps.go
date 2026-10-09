@@ -13,7 +13,8 @@ type ResolvePackagesParams struct {
 //
 // A step resolves packages as a preparation for its main command and passes it the same
 // xcodebuild_options. Options that do not apply to resolution (build actions, test-only
-// and mode-switching flags, anything unparseable) are left out.
+// and mode-switching flags, anything unparseable) are left out, and the Command reports no
+// diagnostics: the main command reports those options, once.
 func ResolvePackages(params ResolvePackagesParams) (Command, error) {
 	opts := containerOptions(params.ProjectPath)
 	opts = appendValue(opts, "-scheme", params.Scheme)

@@ -23,7 +23,7 @@ const (
 	Unknown                  // fits no form; Name holds it verbatim
 )
 
-// issue says why an argument was kept as Unknown.
+// issue says why an argument was kept as Unknown; Options.Diagnostics turns it into a message.
 type issue int
 
 const (
@@ -137,8 +137,9 @@ func SplitAdditionalOptions(input string) ([]string, error) {
 }
 
 // ParseAdditionalOptions turns shell-split xcodebuild arguments into typed Options.
-// Whatever fits no form is kept verbatim as Unknown, with the reason, so the command line
-// stays as the user wrote it and xcodebuild refuses it with its own message.
+// Whatever fits no form is kept verbatim as Unknown, so the command line stays as the
+// user wrote it and xcodebuild refuses it with its own message; Options.Diagnostics
+// says why.
 func ParseAdditionalOptions(args []string) Options {
 	var opts Options
 

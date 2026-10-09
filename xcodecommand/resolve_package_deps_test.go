@@ -38,6 +38,7 @@ func TestResolvePackages(t *testing.T) {
 			cmd, err := ResolvePackages(tt.params)
 			require.NoError(t, err)
 			require.Equal(t, tt.want, cmd.Args())
+			require.Empty(t, cmd.Diagnostics(), "the main command reports the options, once")
 		})
 	}
 }
