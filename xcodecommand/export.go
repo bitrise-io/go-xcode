@@ -18,5 +18,5 @@ func ExportArchive(params ExportArchiveParams) (Command, error) {
 	opts = appendValue(opts, "-exportOptionsPlist", params.ExportOptionsPlist)
 	opts = appendAuthentication(opts, params.Authentication)
 
-	return assemble(opts, params.AdditionalOptions)
+	return assemble(opts, params.AdditionalOptions, exportArchivePolicy)
 }
