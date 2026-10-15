@@ -3,7 +3,7 @@ package testdata
 // DeviceListXcode27 is a trimmed `xcrun simctl list --json` output of an Xcode 27 stack.
 // The iOS 27.1 runtime supports only the iPhone Duo device type, and iOS 27.2 is installed twice:
 // an iPhone Duo-only runtime (listed first) and a generic one, both reporting version 27.2.
-// The iPhone 8 device type is not supported by any of the runtimes.
+// The iPhone Duo-only iOS 27.2 runtime has no device created yet, and the iPhone 8 device type is not supported by any of the runtimes.
 const DeviceListXcode27 = `
 {
   "devicetypes" : [
@@ -252,13 +252,7 @@ const DeviceListXcode27 = `
       }
     ],
     "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4" : [
-      {
-        "udid" : "524E5A02-EC53-4129-BB01-E6832E4FE238",
-        "isAvailable" : true,
-        "deviceTypeIdentifier" : "com.apple.CoreSimulator.SimDeviceType.iPhone-Duo",
-        "state" : "Shutdown",
-        "name" : "iPhone Duo"
-      }
+
     ]
   },
   "pairs" : {

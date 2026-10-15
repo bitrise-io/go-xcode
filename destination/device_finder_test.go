@@ -1,9 +1,7 @@
 package destination
 
 import (
-	"encoding/json"
 	"errors"
-	"slices"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
@@ -335,12 +333,13 @@ func Test_deviceFinder_FindDevice_MultipleRuntimesWithSameVersion(t *testing.T) 
 			},
 		},
 		{
-			name:         "iPhone Duo-only and generic runtime: device created for the iPhone Duo-only runtime",
+			name:         "iPhone Duo-only and generic runtime: missing iPhone Duo is created for the iPhone Duo-only runtime",
 			wantedDevice: Simulator{Platform: xcodeDevice, OS: "latest", Name: "iPhone Duo"},
-			want: Device{
-				UDID: "524E5A02-EC53-4129-BB01-E6832E4FE238", State: "Shutdown", TypeIdentifier: duoTypeID, IsAvailable: true,
-				Type: "iPhone Duo", Platform: xcodeDevice, Name: "iPhone Duo", OS: "27.2",
+			wantCreateArgs: []string{
+				"simctl", "create", "iPhone Duo", duoTypeID,
+				"com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4",
 			},
+			wantErr: true,
 		},
 		{
 			name:         "iPhone Duo-only and generic runtime: default device",
@@ -408,26 +407,6 @@ func Test_deviceFinder_FindDevice_MultipleRuntimesWithSameVersion(t *testing.T) 
 			require.Equal(t, tt.want, got)
 		})
 	}
-}
-
-func Test_deviceFinder_deviceForDestination_MissingDeviceOnDuoOnlyRuntime(t *testing.T) {
-	var list DeviceList
-	require.NoError(t, json.Unmarshal([]byte(testdata.DeviceListXcode27), &list))
-	for runtimeID, devices := range list.Devices {
-		list.Devices[runtimeID] = slices.DeleteFunc(devices, func(d Device) bool { return d.Name == "iPhone Duo" })
-	}
-	d := deviceFinder{
-		logger:       log.NewLogger(),
-		xcodeVersion: xcodeversion.Version{Major: 27, Minor: 2},
-		list:         &list,
-	}
-
-	_, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone Duo"})
-
-	// The generic runtime is listed too, but only the Duo-only one supports the device type.
-	var missingErr *missingDeviceErr
-	require.ErrorAs(t, err, &missingErr)
-	require.Equal(t, "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4", missingErr.runtimeID)
 }
 
 func Test_deviceFinder_runtimesForPlatformVersion(t *testing.T) {
