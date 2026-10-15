@@ -3,6 +3,7 @@ package destination
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/errorutil"
@@ -383,15 +384,7 @@ func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion s
 }
 
 func (r DeviceRuntime) isDeviceSupported(wantedDeviceIdentifier string) bool {
-	if len(r.SupportedDeviceTypes) != 0 {
-		for _, d := range r.SupportedDeviceTypes {
-			if d.Identifier == wantedDeviceIdentifier {
-				return true
-			}
-		}
-
-		return false
-	}
-
-	return true
+	return slices.ContainsFunc(r.SupportedDeviceTypes, func(d DeviceType) bool {
+		return d.Identifier == wantedDeviceIdentifier
+	})
 }
