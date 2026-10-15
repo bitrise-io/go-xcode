@@ -3,6 +3,7 @@ package destination
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/bitrise-io/go-utils/errorutil"
@@ -157,6 +158,12 @@ func (d deviceFinder) debugDeviceList() error {
 	return listCmd.Run()
 }
 
+// runtimeDevice is a Device together with the runtime it belongs to.
+type runtimeDevice struct {
+	Device
+	runtime DeviceRuntime
+}
+
 func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device, error) {
 	if d.list == nil {
 		return Device{}, fmt.Errorf("inconsistent state in filterDeviceList: device list should be parsed")
@@ -165,48 +172,41 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	wantedPlatform := wantedDestination.Platform
 	wantedDestination.Platform = strings.TrimSuffix(wantedDestination.Platform, " Simulator")
 
-	runtime, err := d.runtimeForPlatformVersion(wantedDestination.Platform, wantedDestination.OS)
+	runtimes, err := d.runtimesForPlatformVersion(wantedDestination.Platform, wantedDestination.OS)
 	if err != nil {
 		return Device{}, err
 	}
-	runtimeID := runtime.Identifier
 
-	devicesOfRuntime, ok := d.list.Devices[runtimeID]
-	if !ok {
-		return Device{}, fmt.Errorf("no device exists for runtime %s", runtime.Name)
+	// More than one runtime can have the same version: Xcode 27.2 ships a generic iOS 27.2 runtime and a device-specific one
+	// (iOS-27-2-iPhone19-4) supporting only the iPhone Duo, each with its own devices.
+	devices, err := d.devicesOfRuntimes(runtimes)
+	if err != nil {
+		return Device{}, err
 	}
 
 	// As the name of the device matches the device type ('iPhone 11') for factory created devices, look up device by name.
 	// If the default name is required and already created, it will use that.
-	for _, device := range devicesOfRuntime {
+	for _, device := range devices {
 		if device.Name == wantedDestination.Name {
 			if !device.IsAvailable {
-				d.logger.Warnf("device %s for %s is unavailable: %s", device.Name, runtime.Name, device.AvailabilityError)
+				d.logger.Warnf("device %s for %s is unavailable: %s", device.Name, device.runtime.Name, device.AvailabilityError)
 				continue
 			}
 
-			device.Type = d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier)
-			device.Platform = wantedPlatform
-			device.OS = runtime.Version
-			device.Arch = wantedDestination.Arch
-
-			return device, nil
+			return d.describeDevice(device, wantedPlatform, wantedDestination.Arch), nil
 		}
 	}
 
 	// Returns the first available device in case the default device name is specified, but not yet created.
+	// The devices of the generic runtime come first (see runtimesForPlatformVersion), so a device-specific runtime
+	// (iOS-27-2-iPhone19-4, iPhone Duo only) is used only as a last resort.
 	if wantedDestination.Name == defaultDeviceName {
-		for _, device := range devicesOfRuntime {
+		for _, device := range devices {
 			if !device.IsAvailable {
 				continue
 			}
 
-			device.Type = d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier)
-			device.Platform = wantedPlatform
-			device.OS = runtime.Version
-			device.Arch = wantedDestination.Arch
-
-			return device, nil
+			return d.describeDevice(device, wantedPlatform, wantedDestination.Arch), nil
 		}
 	}
 
@@ -216,11 +216,59 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 		return Device{}, err
 	}
 
-	if !runtime.isDeviceSupported(deviceTypeID) {
-		return Device{}, fmt.Errorf("runtime (%s) is incompatible with device type (%s)", runtimeID, deviceTypeID)
+	for _, runtime := range runtimes {
+		if runtime.isDeviceSupported(deviceTypeID) {
+			return Device{}, newMissingDeviceErr(wantedDestination.Name, deviceTypeID, runtime.Identifier)
+		}
 	}
 
-	return Device{}, newMissingDeviceErr(wantedDestination.Name, deviceTypeID, runtimeID)
+	return Device{}, fmt.Errorf("runtime (%s) is incompatible with device type (%s)", strings.Join(runtimeIdentifiers(runtimes), ", "), deviceTypeID)
+}
+
+// devicesOfRuntimes merges the device lists of the given runtimes, keeping the order of the runtimes.
+func (d deviceFinder) devicesOfRuntimes(runtimes []DeviceRuntime) ([]runtimeDevice, error) {
+	var (
+		devices []runtimeDevice
+		found   bool
+	)
+
+	for _, runtime := range runtimes {
+		devicesOfRuntime, ok := d.list.Devices[runtime.Identifier]
+		if !ok {
+			continue
+		}
+
+		found = true
+		for _, device := range devicesOfRuntime {
+			devices = append(devices, runtimeDevice{Device: device, runtime: runtime})
+		}
+	}
+
+	if !found {
+		return nil, fmt.Errorf("no device exists for runtime %s", strings.Join(runtimeIdentifiers(runtimes), ", "))
+	}
+
+	return devices, nil
+}
+
+// describeDevice fills the fields of a found device that are not part of the simctl output.
+func (d deviceFinder) describeDevice(device runtimeDevice, platform, arch string) Device {
+	found := device.Device
+	found.Type = d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier)
+	found.Platform = platform
+	found.OS = device.runtime.Version
+	found.Arch = arch
+
+	return found
+}
+
+func runtimeIdentifiers(runtimes []DeviceRuntime) []string {
+	identifiers := make([]string, 0, len(runtimes))
+	for _, runtime := range runtimes {
+		identifiers = append(identifiers, runtime.Identifier)
+	}
+
+	return identifiers
 }
 
 func (d deviceFinder) convertDeviceNameToDeviceTypeID(wantedDeviceName string) (string, error) {
@@ -259,7 +307,9 @@ func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Versio
 	return true
 }
 
-func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion string) (DeviceRuntime, error) {
+// runtimesForPlatformVersion returns every available runtime of the platform with the wanted major.minor version
+// (for latest: the newest major.minor version supported by the current Xcode), the generic runtime first.
+func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion string) ([]DeviceRuntime, error) {
 	var runtimesOfPlatform []DeviceRuntime
 
 	for _, runtime := range d.list.Runtimes {
@@ -295,70 +345,92 @@ func (d deviceFinder) runtimeForPlatformVersion(wantedPlatform, wantedVersion st
 
 	if len(runtimesOfPlatform) == 0 {
 		if wantedPlatform == string(IOS) {
-			return DeviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, IOSSimulator)
+			return nil, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, IOSSimulator)
 		}
 		if wantedPlatform == string(WatchOS) {
-			return DeviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, WatchOSSimulator)
+			return nil, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, WatchOSSimulator)
 		}
 		if wantedPlatform == string(TvOS) {
-			return DeviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, TvOSSimulator)
+			return nil, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, TvOSSimulator)
 		}
 		if wantedPlatform == string(VisionOS) {
-			return DeviceRuntime{}, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, VisionOSSimulator)
+			return nil, fmt.Errorf("the platform %s is unavailable. Did you mean %s?", wantedPlatform, VisionOSSimulator)
 		}
-		return DeviceRuntime{}, fmt.Errorf("no runtime installed for platform %s", wantedPlatform)
+		return nil, fmt.Errorf("no runtime installed for platform %s", wantedPlatform)
 	}
 
-	wantLatest := wantedVersion == "latest"
-	if wantLatest {
-		var (
-			latestVersion *version.Version
-			latestRuntime DeviceRuntime = runtimesOfPlatform[0]
-		)
-
-		for _, runtime := range runtimesOfPlatform {
-			runtimeVersion, err := version.NewVersion(runtime.Version)
-			if err != nil {
-				return DeviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
-			}
-
-			if !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
-				continue
-			}
-
-			if latestVersion == nil || runtimeVersion.GreaterThan(latestVersion) {
-				latestVersion = runtimeVersion
-				latestRuntime = runtime
-			}
-		}
-
-		return latestRuntime, nil
+	if wantedVersion == "latest" {
+		return d.latestRuntimes(wantedPlatform, runtimesOfPlatform)
 	}
 
 	semanticVersion, err := version.NewVersion(wantedVersion)
 	if err != nil {
-		return DeviceRuntime{}, fmt.Errorf("invalid Simulator version (%s) provided: %w", wantedVersion, err)
+		return nil, fmt.Errorf("invalid Simulator version (%s) provided: %w", wantedVersion, err)
 	}
+
+	matchingRuntimes, err := runtimesOfVersion(semanticVersion, runtimesOfPlatform)
+	if err != nil {
+		return nil, err
+	}
+	if len(matchingRuntimes) == 0 {
+		return nil, newMissingRuntimeErr(wantedPlatform, wantedVersion, runtimesOfPlatform)
+	}
+
+	return matchingRuntimes, nil
+}
+
+// latestRuntimes returns the runtimes of the newest major.minor version supported by the current Xcode.
+func (d deviceFinder) latestRuntimes(wantedPlatform string, runtimesOfPlatform []DeviceRuntime) ([]DeviceRuntime, error) {
+	var (
+		latestVersion     *version.Version
+		supportedRuntimes []DeviceRuntime
+	)
 
 	for _, runtime := range runtimesOfPlatform {
 		runtimeVersion, err := version.NewVersion(runtime.Version)
 		if err != nil {
-			return DeviceRuntime{}, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
+			return nil, fmt.Errorf("failed to parse Simulator version (%s): %w", runtime.Version, err)
 		}
 
-		runtimeSegments := runtimeVersion.Segments()
-		if len(runtimeSegments) < 2 {
-			d.logger.Warnf("no minor version found in Simulator version (%s)", runtime.Version)
+		if !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
 			continue
 		}
 
-		isEqualVersion := isEqualVersion(semanticVersion, runtimeVersion)
-		if isEqualVersion {
-			return runtime, nil
+		supportedRuntimes = append(supportedRuntimes, runtime)
+		if latestVersion == nil || runtimeVersion.GreaterThan(latestVersion) {
+			latestVersion = runtimeVersion
 		}
 	}
 
-	return DeviceRuntime{}, newMissingRuntimeErr(wantedPlatform, wantedVersion, runtimesOfPlatform)
+	if latestVersion == nil {
+		// None of the runtimes is supported by the current Xcode, fall back to the first one.
+		return runtimesOfPlatform[:1], nil
+	}
+
+	return runtimesOfVersion(latestVersion, supportedRuntimes)
+}
+
+// runtimesOfVersion returns the runtimes with the same major.minor version as the wanted one.
+// A device-specific runtime (iOS-27-2-iPhone19-4) supports a single device type, the generic one every device type
+// of the version, so the generic runtime comes first: it is preferred for the default device and for creating a missing device.
+func runtimesOfVersion(wantedVersion *version.Version, runtimes []DeviceRuntime) ([]DeviceRuntime, error) {
+	var matchingRuntimes []DeviceRuntime
+	for _, runtime := range runtimes {
+		runtimeVersion, err := version.NewVersion(runtime.Version)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse Simulator version (%s): %w", runtime.Version, err)
+		}
+
+		if isEqualVersion(wantedVersion, runtimeVersion) {
+			matchingRuntimes = append(matchingRuntimes, runtime)
+		}
+	}
+
+	slices.SortStableFunc(matchingRuntimes, func(a, b DeviceRuntime) int {
+		return len(b.SupportedDeviceTypes) - len(a.SupportedDeviceTypes)
+	})
+
+	return matchingRuntimes, nil
 }
 
 func (r DeviceRuntime) isDeviceSupported(wantedDeviceIdentifier string) bool {
