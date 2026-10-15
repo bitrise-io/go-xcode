@@ -178,14 +178,20 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	if isDeviceType {
 		supportedRuntimes := slices.DeleteFunc(slices.Clone(runtimes), func(r DeviceRuntime) bool { return !r.isDeviceSupported(deviceTypeID) })
 		if len(supportedRuntimes) == 0 {
-			var runtimeIDs []string
-			for _, r := range runtimes {
-				runtimeIDs = append(runtimeIDs, r.Identifier)
+			wantedVersion := wantedDestination.OS
+			if wantedVersion == "latest" {
+				wantedVersion = fmt.Sprintf("latest (%s)", runtimes[0].Version)
 			}
 
-			return Device{}, fmt.Errorf("runtimes (%s) are incompatible with device type (%s)", strings.Join(runtimeIDs, ", "), deviceTypeID)
+			return Device{}, fmt.Errorf("no %s %s runtime supports device type %s (checked runtimes: %s). Select a different device or OS version",
+				wantedDestination.Platform, wantedVersion, wantedDestination.Name, runtimeIDs(runtimes))
 		}
 		runtimes = supportedRuntimes
+	}
+
+	// The image never creates the default device on a device-specific runtime, so the lookup does not use them either.
+	if wantedDestination.Name == defaultDeviceName {
+		runtimes = slices.DeleteFunc(slices.Clone(runtimes), d.isDeviceSpecificRuntime)
 	}
 
 	newDevice := func(device Device, runtime DeviceRuntime) Device {
@@ -213,13 +219,8 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	}
 
 	// Returns the first available device in case the default device name is specified, but not yet created.
-	// The image never creates the default device on a device-specific runtime, so the fallback does not use them either.
 	if wantedDestination.Name == defaultDeviceName {
 		for _, runtime := range runtimes {
-			if d.isDeviceSpecificRuntime(runtime) {
-				continue
-			}
-
 			for _, device := range d.list.Devices[runtime.Identifier] {
 				if !device.IsAvailable {
 					continue
@@ -228,6 +229,8 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 				return newDevice(device, runtime), nil
 			}
 		}
+
+		return Device{}, fmt.Errorf("no available device found for %s (checked runtimes: %s)", defaultDeviceName, runtimeIDs(runtimes))
 	}
 
 	// If there is no matching device, use the device type so we can create device in a later step
@@ -243,10 +246,19 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	return Device{}, newMissingDeviceErr(wantedDestination.Name, deviceTypeID, runtime.Identifier)
 }
 
+func runtimeIDs(runtimes []DeviceRuntime) string {
+	var ids []string
+	for _, r := range runtimes {
+		ids = append(ids, r.Identifier)
+	}
+
+	return strings.Join(ids, ", ")
+}
+
 // isDeviceSpecificRuntime reports whether the runtime is a device-specific variant of an installed generic runtime.
 // For example, Xcode 27.2 Beta 3 installs iOS-27-2-iPhone19-4 (iPhone Duo only) next to the generic iOS-27-2.
 // simctl has no field for this, so the identifier is compared to the generic identifier of the same version.
-// If the generic runtime is not installed (or the identifier format changes), the runtime is not device-specific.
+// If the generic runtime is not installed or not available (or the identifier format changes), the runtime is not device-specific.
 // Keep in sync with image-build-utils roles/simulators/tasks/add_default_devices.yml.
 func (d deviceFinder) isDeviceSpecificRuntime(runtime DeviceRuntime) bool {
 	runtimeVersion, err := version.NewVersion(runtime.Version)
@@ -261,7 +273,7 @@ func (d deviceFinder) isDeviceSpecificRuntime(runtime DeviceRuntime) bool {
 		return false
 	}
 
-	return slices.ContainsFunc(d.list.Runtimes, func(r DeviceRuntime) bool { return r.Identifier == genericID })
+	return slices.ContainsFunc(d.list.Runtimes, func(r DeviceRuntime) bool { return r.IsAvailable && r.Identifier == genericID })
 }
 
 func (d deviceFinder) convertDeviceNameToDeviceTypeID(wantedDeviceName string) (string, error) {
@@ -358,27 +370,32 @@ func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion s
 		version *version.Version
 	}
 
-	var matching []runtimeWithVersion
-	if wantedVersion == "latest" {
-		var supported []runtimeWithVersion
-		for _, runtime := range runtimesOfPlatform {
-			runtimeVersion, err := version.NewVersion(runtime.Version)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse Simulator version (%s): %w", runtime.Version, err)
-			}
-
-			if isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
-				supported = append(supported, runtimeWithVersion{runtime, runtimeVersion})
-			}
+	var parsedRuntimes []runtimeWithVersion
+	for _, runtime := range runtimesOfPlatform {
+		runtimeVersion, err := version.NewVersion(runtime.Version)
+		if err != nil {
+			d.logger.Warnf("skipping runtime %s, failed to parse Simulator version (%s): %s", runtime.Identifier, runtime.Version, err)
+			continue
 		}
 
-		if len(supported) == 0 {
-			return []DeviceRuntime{runtimesOfPlatform[0]}, nil
+		parsedRuntimes = append(parsedRuntimes, runtimeWithVersion{runtime, runtimeVersion})
+	}
+
+	var matching []runtimeWithVersion
+	if wantedVersion == "latest" {
+		candidates := slices.DeleteFunc(slices.Clone(parsedRuntimes), func(r runtimeWithVersion) bool {
+			return !isRuntimeSupportedByXcode(wantedPlatform, r.version, d.xcodeVersion)
+		})
+		if len(candidates) == 0 {
+			candidates = parsedRuntimes
+		}
+		if len(candidates) == 0 {
+			return nil, newMissingRuntimeErr(wantedPlatform, wantedVersion, runtimesOfPlatform)
 		}
 
 		// The latest major.minor version, the patch version is ignored the same way as in isRuntimeSupportedByXcode.
-		latest := slices.MaxFunc(supported, func(a, b runtimeWithVersion) int { return a.version.Compare(b.version) })
-		for _, r := range supported {
+		latest := slices.MaxFunc(candidates, func(a, b runtimeWithVersion) int { return a.version.Compare(b.version) })
+		for _, r := range candidates {
 			if isEqualVersion(latest.version, r.version) {
 				matching = append(matching, r)
 			}
@@ -389,20 +406,9 @@ func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion s
 			return nil, fmt.Errorf("invalid Simulator version (%s) provided: %w", wantedVersion, err)
 		}
 
-		for _, runtime := range runtimesOfPlatform {
-			runtimeVersion, err := version.NewVersion(runtime.Version)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse Simulator version (%s): %w", runtime.Version, err)
-			}
-
-			runtimeSegments := runtimeVersion.Segments()
-			if len(runtimeSegments) < 2 {
-				d.logger.Warnf("no minor version found in Simulator version (%s)", runtime.Version)
-				continue
-			}
-
-			if isEqualVersion(semanticVersion, runtimeVersion) {
-				matching = append(matching, runtimeWithVersion{runtime, runtimeVersion})
+		for _, r := range parsedRuntimes {
+			if isEqualVersion(semanticVersion, r.version) {
+				matching = append(matching, r)
 			}
 		}
 
@@ -411,8 +417,23 @@ func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion s
 		}
 	}
 
-	// Newest patch version first, so the result does not depend on the order of the simctl output.
-	slices.SortStableFunc(matching, func(a, b runtimeWithVersion) int { return b.version.Compare(a.version) })
+	// Newest patch version first, then generic runtimes before device-specific ones,
+	// so the result does not depend on the order of the simctl output.
+	slices.SortStableFunc(matching, func(a, b runtimeWithVersion) int {
+		if c := b.version.Compare(a.version); c != 0 {
+			return c
+		}
+
+		aSpecific, bSpecific := d.isDeviceSpecificRuntime(a.runtime), d.isDeviceSpecificRuntime(b.runtime)
+		switch {
+		case aSpecific == bSpecific:
+			return 0
+		case aSpecific:
+			return 1
+		default:
+			return -1
+		}
+	})
 
 	runtimes := make([]DeviceRuntime, 0, len(matching))
 	for _, r := range matching {

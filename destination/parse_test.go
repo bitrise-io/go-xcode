@@ -8,6 +8,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/destination/testdata"
 	"github.com/bitrise-io/go-xcode/v2/mocks"
+	"github.com/bitrise-io/go-xcode/v2/xcodeversion"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -266,7 +267,65 @@ func Test_deviceFinder_deviceForDestination_DeviceSpecificRuntime(t *testing.T) 
 		}
 
 		_, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone 12 Pro Max"})
-		require.EqualError(t, err, "runtimes ("+deviceSpecificRuntimeID+", "+genericRuntimeID+") are incompatible with device type (com.apple.CoreSimulator.SimDeviceType.iPhone-12-Pro-Max)")
+		require.EqualError(t, err, "no iOS 27.2 runtime supports device type iPhone 12 Pro Max (checked runtimes: "+genericRuntimeID+", "+deviceSpecificRuntimeID+"). Select a different device or OS version")
+	})
+
+	t.Run("latest runtime is device-specific only", func(t *testing.T) {
+		// Like Xcode 27.1: the latest runtime only supports iPhone Duo, and there is no generic runtime for that version.
+		listLatestDuo := list
+		listLatestDuo.Runtimes = slices.DeleteFunc(slices.Clone(list.Runtimes), func(r DeviceRuntime) bool { return r.Identifier == genericRuntimeID })
+		d := deviceFinder{
+			logger: log.NewLogger(),
+			list:   &listLatestDuo,
+		}
+
+		_, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "latest", Name: "iPhone 17"})
+		require.EqualError(t, err, "no iOS latest (27.2) runtime supports device type iPhone 17 (checked runtimes: "+deviceSpecificRuntimeID+"). Select a different device or OS version")
+	})
+
+	t.Run("default device does not exist", func(t *testing.T) {
+		listWithoutDevices := list
+		listWithoutDevices.Devices = map[string][]Device{
+			genericRuntimeID:        {},
+			deviceSpecificRuntimeID: list.Devices[deviceSpecificRuntimeID],
+		}
+		d := deviceFinder{
+			logger: log.NewLogger(),
+			list:   &listWithoutDevices,
+		}
+
+		_, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "Bitrise iOS default"})
+		require.EqualError(t, err, "no available device found for Bitrise iOS default (checked runtimes: "+genericRuntimeID+")")
+	})
+
+	t.Run("latest when Xcode supports no runtime", func(t *testing.T) {
+		d := deviceFinder{
+			logger:       log.NewLogger(),
+			list:         &list,
+			xcodeVersion: xcodeversion.Version{Major: 26, Minor: 0},
+		}
+
+		got, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "latest", Name: "iPhone 17"})
+		require.NoError(t, err)
+		require.Equal(t, iPhone17, got)
+	})
+
+	t.Run("runtime with an invalid version is skipped", func(t *testing.T) {
+		listWithInvalid := list
+		listWithInvalid.Runtimes = append(slices.Clone(list.Runtimes), DeviceRuntime{
+			Identifier:  "com.apple.CoreSimulator.SimRuntime.iOS-invalid",
+			Platform:    "iOS",
+			Version:     "invalid",
+			IsAvailable: true,
+		})
+		d := deviceFinder{
+			logger: log.NewLogger(),
+			list:   &listWithInvalid,
+		}
+
+		got, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone 17"})
+		require.NoError(t, err)
+		require.Equal(t, iPhone17, got)
 	})
 
 	t.Run("missing device of the device-specific runtime", func(t *testing.T) {
@@ -289,10 +348,11 @@ func Test_deviceFinder_deviceForDestination_DeviceSpecificRuntime(t *testing.T) 
 }
 
 func Test_deviceFinder_isDeviceSpecificRuntime(t *testing.T) {
-	generic := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2", Platform: "iOS", Version: "27.2"}
-	deviceSpecific := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4", Platform: "iOS", Version: "27.2"}
-	deviceSpecificPatch := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4", Platform: "iOS", Version: "27.2.1"}
-	genericPatch := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-17-0", Platform: "iOS", Version: "17.0.1"}
+	generic := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2", Platform: "iOS", Version: "27.2", IsAvailable: true}
+	unavailableGeneric := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2", Platform: "iOS", Version: "27.2", IsAvailable: false}
+	deviceSpecific := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4", Platform: "iOS", Version: "27.2", IsAvailable: true}
+	deviceSpecificPatch := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4", Platform: "iOS", Version: "27.2.1", IsAvailable: true}
+	genericPatch := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-17-0", Platform: "iOS", Version: "17.0.1", IsAvailable: true}
 
 	tests := []struct {
 		name     string
@@ -304,6 +364,7 @@ func Test_deviceFinder_isDeviceSpecificRuntime(t *testing.T) {
 		{name: "device-specific runtime", runtimes: []DeviceRuntime{generic, deviceSpecific}, runtime: deviceSpecific, want: true},
 		{name: "device-specific runtime with a newer patch version", runtimes: []DeviceRuntime{generic, deviceSpecificPatch}, runtime: deviceSpecificPatch, want: true},
 		{name: "device-specific runtime without a generic runtime", runtimes: []DeviceRuntime{deviceSpecific}, runtime: deviceSpecific, want: false},
+		{name: "device-specific runtime with an unavailable generic runtime", runtimes: []DeviceRuntime{unavailableGeneric, deviceSpecific}, runtime: deviceSpecific, want: false},
 		{name: "generic runtime with a patch version", runtimes: []DeviceRuntime{genericPatch}, runtime: genericPatch, want: false},
 	}
 	for _, tt := range tests {
