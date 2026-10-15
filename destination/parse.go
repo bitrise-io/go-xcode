@@ -187,7 +187,7 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 		for _, device := range d.list.Devices[runtime.Identifier] {
 			if device.Name == wantedDestination.Name {
 				if !device.IsAvailable {
-					d.logger.Warnf("device %s for %s is unavailable: %s", device.Name, runtime.Name, device.AvailabilityError)
+					d.logger.Warnf("device %s for %s is unavailable: %s", device.Name, runtime.Identifier, device.AvailabilityError)
 					continue
 				}
 
