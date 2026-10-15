@@ -48,6 +48,13 @@ func TestPolicies(t *testing.T) {
 			accepts:    []string{"-testPlan", "-only-testing", "-skip-testing", "-only-test-configuration", "-enableCodeCoverage", "-testProductsPath", "-testLanguage"},
 		},
 		{
+			policy:     testPolicy,
+			defaults:   []string{"-collect-test-diagnostics"},
+			appendable: []string{"-arch", "-destination", "-only-test-configuration", "-only-testing", "-skip-test-configuration", "-skip-testing"},
+			rejects:    []string{"-exportArchive", "-xctestrun", "-enumerate-tests", "-json"},
+			accepts:    []string{"-testPlan", "-only-testing", "-parallel-testing-enabled", "-enableCodeCoverage"},
+		},
+		{
 			policy:  exportArchivePolicy,
 			rejects: []string{"-resolvePackageDependencies", "-showBuildSettings", "-testPlan"},
 			accepts: []string{"-exportArchive", "-allowProvisioningUpdates"},
