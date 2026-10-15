@@ -16,6 +16,12 @@ const (
 	ActionClean               = "clean"
 )
 
+var knownActions = []string{
+	ActionBuild, ActionBuildForTesting, ActionAnalyze, ActionArchive,
+	ActionTest, ActionTestWithoutBuilding, ActionDocBuild,
+	ActionInstallSrc, ActionInstall, ActionClean,
+}
+
 // Authentication is the App Store Connect API key for -allowProvisioningUpdates.
 type Authentication struct {
 	KeyPath  string
