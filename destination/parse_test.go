@@ -1,6 +1,7 @@
 package destination
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
@@ -107,4 +108,103 @@ func Test_deviceFinder_parseDeviceList(t *testing.T) {
 			require.Contains(t, gotList, device)
 		}
 	}
+}
+
+func Test_deviceFinder_deviceForDestination_DeviceSpecificRuntime(t *testing.T) {
+	var list DeviceList
+	require.NoError(t, json.Unmarshal([]byte(testdata.DeviceListWithDeviceSpecificRuntime), &list))
+
+	const (
+		genericRuntimeID        = "com.apple.CoreSimulator.SimRuntime.iOS-27-2"
+		deviceSpecificRuntimeID = "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4"
+	)
+	iPhone17 := Device{
+		Name:           "iPhone 17",
+		TypeIdentifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-17",
+		IsAvailable:    true,
+		UDID:           "FB72DF49-C0D1-4F75-ADC3-D42850028AD6",
+		State:          "Shutdown",
+		Type:           "iPhone 17",
+		Platform:       "iOS Simulator",
+		OS:             "27.2",
+	}
+
+	tests := []struct {
+		name          string
+		wantedDevice  Simulator
+		want          Device
+		wantMissingIn string
+	}{
+		{
+			name:         "existing device, latest",
+			wantedDevice: Simulator{Platform: "iOS Simulator", OS: "latest", Name: "iPhone 17"},
+			want:         iPhone17,
+		},
+		{
+			name:          "missing device is created in the generic runtime, explicit version",
+			wantedDevice:  Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone 12 Pro Max"},
+			wantMissingIn: genericRuntimeID,
+		},
+		{
+			name:          "missing device is created in the generic runtime, latest",
+			wantedDevice:  Simulator{Platform: "iOS Simulator", OS: "latest", Name: "iPhone 12 Pro Max"},
+			wantMissingIn: genericRuntimeID,
+		},
+		{
+			name:         "default device falls back to a device of the generic runtime",
+			wantedDevice: Simulator{Platform: "iOS Simulator", OS: "latest", Name: "Bitrise iOS default"},
+			want:         iPhone17,
+		},
+		{
+			name:         "existing device of the device-specific runtime",
+			wantedDevice: Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone Duo"},
+			want: Device{
+				Name:           "iPhone Duo",
+				TypeIdentifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-Duo",
+				IsAvailable:    true,
+				UDID:           "6F0E6D53-7F1B-4F0B-9C2E-1D2A4B3C5D01",
+				State:          "Shutdown",
+				Type:           "iPhone Duo",
+				Platform:       "iOS Simulator",
+				OS:             "27.2",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := deviceFinder{
+				logger: log.NewLogger(),
+				list:   &list,
+			}
+
+			got, err := d.deviceForDestination(tt.wantedDevice)
+
+			if tt.wantMissingIn != "" {
+				var missingErr *missingDeviceErr
+				require.ErrorAs(t, err, &missingErr)
+				require.Equal(t, tt.wantMissingIn, missingErr.runtimeID)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+
+	t.Run("missing device of the device-specific runtime", func(t *testing.T) {
+		listWithoutDuo := list
+		listWithoutDuo.Devices = map[string][]Device{
+			genericRuntimeID:        list.Devices[genericRuntimeID],
+			deviceSpecificRuntimeID: {},
+		}
+		d := deviceFinder{
+			logger: log.NewLogger(),
+			list:   &listWithoutDuo,
+		}
+
+		_, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone Duo"})
+
+		var missingErr *missingDeviceErr
+		require.ErrorAs(t, err, &missingErr)
+		require.Equal(t, deviceSpecificRuntimeID, missingErr.runtimeID)
+	})
 }
