@@ -174,8 +174,14 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	if err != nil {
 		return Device{}, err
 	}
-	// Prefer generic runtimes, so the result does not depend on the order of the simctl output.
+	// Prefer the newest version, then generic runtimes, so the result does not depend on the order of the simctl output.
+	// runtimesForPlatformVersion only returns runtimes with a valid version.
 	slices.SortStableFunc(runtimes, func(a, b DeviceRuntime) int {
+		aVersion, bVersion := version.Must(version.NewVersion(a.Version)), version.Must(version.NewVersion(b.Version))
+		if c := bVersion.Compare(aVersion); c != 0 {
+			return c
+		}
+
 		return cmp.Compare(supportedDeviceTypeCount(b), supportedDeviceTypeCount(a))
 	})
 
@@ -279,7 +285,8 @@ func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Versio
 }
 
 // runtimesForPlatformVersion returns all runtimes matching the platform and version.
-// The returned runtimes have the same version, but may support different device types.
+// For an explicit version, the runtimes match on major.minor, so they can have different patch versions.
+// For latest, the runtimes have the same version. In both cases they may support different device types.
 func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion string) ([]DeviceRuntime, error) {
 	var runtimesOfPlatform []DeviceRuntime
 
@@ -363,10 +370,7 @@ func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion s
 		return nil, fmt.Errorf("invalid Simulator version (%s) provided: %w", wantedVersion, err)
 	}
 
-	var (
-		matchingVersion  *version.Version
-		matchingRuntimes []DeviceRuntime
-	)
+	var matchingRuntimes []DeviceRuntime
 	for _, runtime := range runtimesOfPlatform {
 		runtimeVersion, err := version.NewVersion(runtime.Version)
 		if err != nil {
@@ -379,11 +383,7 @@ func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion s
 			continue
 		}
 
-		// The first matching runtime decides the version, other runtimes are only included if they have the exact same version.
-		if matchingVersion == nil && isEqualVersion(semanticVersion, runtimeVersion) {
-			matchingVersion = runtimeVersion
-		}
-		if matchingVersion != nil && runtimeVersion.Equal(matchingVersion) {
+		if isEqualVersion(semanticVersion, runtimeVersion) {
 			matchingRuntimes = append(matchingRuntimes, runtime)
 		}
 	}

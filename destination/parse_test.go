@@ -2,6 +2,7 @@ package destination
 
 import (
 	"encoding/json"
+	"slices"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/v2/log"
@@ -189,6 +190,34 @@ func Test_deviceFinder_deviceForDestination_DeviceSpecificRuntime(t *testing.T) 
 			require.Equal(t, tt.want, got)
 		})
 	}
+
+	t.Run("newer patch of the generic runtime", func(t *testing.T) {
+		listWithPatch := list
+		listWithPatch.Runtimes = slices.Clone(list.Runtimes)
+		for i, r := range listWithPatch.Runtimes {
+			if r.Identifier == genericRuntimeID {
+				listWithPatch.Runtimes[i].Version = "27.2.1"
+			}
+		}
+		listWithPatch.Devices = map[string][]Device{
+			genericRuntimeID:        {},
+			deviceSpecificRuntimeID: {},
+		}
+		d := deviceFinder{
+			logger: log.NewLogger(),
+			list:   &listWithPatch,
+		}
+
+		_, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone 12 Pro Max"})
+		var missingErr *missingDeviceErr
+		require.ErrorAs(t, err, &missingErr)
+		require.Equal(t, genericRuntimeID, missingErr.runtimeID)
+
+		// The device-specific runtime has an older patch version, but it is the only one that supports the device.
+		_, err = d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone Duo"})
+		require.ErrorAs(t, err, &missingErr)
+		require.Equal(t, deviceSpecificRuntimeID, missingErr.runtimeID)
+	})
 
 	t.Run("missing device of the device-specific runtime", func(t *testing.T) {
 		listWithoutDuo := list
