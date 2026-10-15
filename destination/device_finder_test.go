@@ -410,116 +410,34 @@ func Test_deviceFinder_FindDevice_MultipleRuntimesWithSameVersion(t *testing.T) 
 	}
 }
 
-func Test_deviceFinder_deviceForDestination_Xcode27EdgeCases(t *testing.T) {
-	const (
-		genericRuntimeID = "com.apple.CoreSimulator.SimRuntime.iOS-27-2"
-		duoRuntimeID     = "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4"
-		duoTypeID        = "com.apple.CoreSimulator.SimDeviceType.iPhone-Duo"
-	)
-
-	parseList := func(t *testing.T) *DeviceList {
-		var list DeviceList
-		require.NoError(t, json.Unmarshal([]byte(testdata.DeviceListXcode27), &list))
-		return &list
+func Test_deviceFinder_deviceForDestination_MissingDeviceOnDuoOnlyRuntime(t *testing.T) {
+	var list DeviceList
+	require.NoError(t, json.Unmarshal([]byte(testdata.DeviceListXcode27), &list))
+	for runtimeID, devices := range list.Devices {
+		list.Devices[runtimeID] = slices.DeleteFunc(devices, func(d Device) bool { return d.Name == "iPhone Duo" })
 	}
-	removeDevices := func(list *DeviceList, name string) {
-		for runtimeID, devices := range list.Devices {
-			list.Devices[runtimeID] = slices.DeleteFunc(devices, func(d Device) bool { return d.Name == name })
-		}
-	}
-	duoDefaultDevice := Device{Name: defaultDeviceName, TypeIdentifier: duoTypeID, IsAvailable: true, UDID: "DUO-DEFAULT", State: "Shutdown"}
-	find := func(list *DeviceList, os, name string) (Device, error) {
-		d := deviceFinder{
-			logger:       log.NewLogger(),
-			xcodeVersion: xcodeversion.Version{Major: 27, Minor: 2},
-			list:         list,
-		}
-		return d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: os, Name: name})
+	d := deviceFinder{
+		logger:       log.NewLogger(),
+		xcodeVersion: xcodeversion.Version{Major: 27, Minor: 2},
+		list:         &list,
 	}
 
-	t.Run("default device not created: falls back to the generic runtime although the Duo-only one is listed first", func(t *testing.T) {
-		list := parseList(t)
-		removeDevices(list, defaultDeviceName)
+	_, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone Duo"})
 
-		for _, os := range []string{"latest", "27.2"} {
-			got, err := find(list, os, defaultDeviceName)
-			require.NoError(t, err, os)
-			require.Equal(t, "96CF0E04-7A22-4A25-A43E-1C455DA678FF", got.UDID, os)
-			require.Equal(t, "iPhone 18 Pro", got.Type, os)
-		}
-	})
-
-	t.Run("default device not created: the Duo-only runtime is used when it is the only one", func(t *testing.T) {
-		list := parseList(t)
-		removeDevices(list, defaultDeviceName)
-
-		got, err := find(list, "27.1", defaultDeviceName)
-		require.NoError(t, err)
-		require.Equal(t, "5BC7AC73-1349-4535-BDCF-28679722AA8B", got.UDID)
-		require.Equal(t, "iPhone Duo", got.Type)
-	})
-
-	t.Run("missing iPhone Duo is created for the Duo-only runtime", func(t *testing.T) {
-		list := parseList(t)
-		removeDevices(list, "iPhone Duo")
-
-		_, err := find(list, "27.2", "iPhone Duo")
-
-		var missingErr *missingDeviceErr
-		require.ErrorAs(t, err, &missingErr)
-		require.Equal(t, duoRuntimeID, missingErr.runtimeID)
-	})
-
-	t.Run("default device created on both runtimes: the generic one wins", func(t *testing.T) {
-		list := parseList(t)
-		list.Devices[duoRuntimeID] = append(list.Devices[duoRuntimeID], duoDefaultDevice)
-
-		got, err := find(list, "27.2", defaultDeviceName)
-		require.NoError(t, err)
-		require.Equal(t, "A54C9770-D487-455C-8BA2-9BDEFE5DD4E2", got.UDID)
-	})
-
-	t.Run("default device unavailable on the generic runtime: the Duo-only one is used", func(t *testing.T) {
-		list := parseList(t)
-		for i, device := range list.Devices[genericRuntimeID] {
-			if device.Name == defaultDeviceName {
-				list.Devices[genericRuntimeID][i].IsAvailable = false
-				list.Devices[genericRuntimeID][i].AvailabilityError = "runtime profile not found"
-			}
-		}
-		list.Devices[duoRuntimeID] = append(list.Devices[duoRuntimeID], duoDefaultDevice)
-
-		got, err := find(list, "27.2", defaultDeviceName)
-		require.NoError(t, err)
-		require.Equal(t, "DUO-DEFAULT", got.UDID)
-	})
-
-	t.Run("runtime without a device list entry is skipped", func(t *testing.T) {
-		list := parseList(t)
-		delete(list.Devices, duoRuntimeID)
-
-		got, err := find(list, "27.2", "iPhone 18 Pro")
-		require.NoError(t, err)
-		require.Equal(t, "96CF0E04-7A22-4A25-A43E-1C455DA678FF", got.UDID)
-
-		delete(list.Devices, genericRuntimeID)
-		_, err = find(list, "27.2", "iPhone 18 Pro")
-		require.ErrorContains(t, err, "no device exists for runtime")
-	})
+	// The generic runtime is listed too, but only the Duo-only one supports the device type.
+	var missingErr *missingDeviceErr
+	require.ErrorAs(t, err, &missingErr)
+	require.Equal(t, "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4", missingErr.runtimeID)
 }
 
 func Test_deviceFinder_runtimesForPlatformVersion(t *testing.T) {
 	var (
-		iPhone17  = DeviceType{Name: "iPhone 17", Identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-17", ProductFamily: "iPhone"}
-		iPhone13  = DeviceType{Name: "iPhone 13", Identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-13", ProductFamily: "iPhone"}
-		iPhoneDuo = DeviceType{Name: "iPhone Duo", Identifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-Duo", ProductFamily: "iPhone"}
-
-		generic      = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2", Platform: "iOS", Version: "27.2", IsAvailable: true, Name: "iOS 27.2", SupportedDeviceTypes: []DeviceType{iPhone17, iPhone13}}
-		genericPatch = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2-1", Platform: "iOS", Version: "27.2.1", IsAvailable: true, Name: "iOS 27.2.1", SupportedDeviceTypes: []DeviceType{iPhone17, iPhone13}}
-		duoOnly      = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4", Platform: "iOS", Version: "27.2", IsAvailable: true, Name: "iOS 27.2", SupportedDeviceTypes: []DeviceType{iPhoneDuo}}
-		older        = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-6", Platform: "iOS", Version: "18.6", IsAvailable: true, Name: "iOS 18.6", SupportedDeviceTypes: []DeviceType{iPhone13}}
-		unavailable  = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-3", Platform: "iOS", Version: "27.3", IsAvailable: false, Name: "iOS 27.3", SupportedDeviceTypes: []DeviceType{iPhone17, iPhone13}}
-		watch        = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.watchOS-27-2", Platform: "watchOS", Version: "27.2", IsAvailable: true, Name: "watchOS 27.2"}
+		generic     = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2", Platform: "iOS", Version: "27.2", IsAvailable: true, Name: "iOS 27.2"}
+		duoOnly     = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4", Platform: "iOS", Version: "27.2", IsAvailable: true, Name: "iOS 27.2"}
+		patch       = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2-1", Platform: "iOS", Version: "27.2.1", IsAvailable: true, Name: "iOS 27.2.1"}
+		older       = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-18-6", Platform: "iOS", Version: "18.6", IsAvailable: true, Name: "iOS 18.6"}
+		unavailable = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-3", Platform: "iOS", Version: "27.3", IsAvailable: false, Name: "iOS 27.3"}
+		watch       = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.watchOS-27-2", Platform: "watchOS", Version: "27.2", IsAvailable: true, Name: "watchOS 27.2"}
 	)
 
 	tests := []struct {
@@ -531,16 +449,16 @@ func Test_deviceFinder_runtimesForPlatformVersion(t *testing.T) {
 		wantErr       bool
 	}{
 		{
-			name:          "latest returns every runtime of the newest major.minor version, the generic one first",
+			name:          "latest returns every runtime with the newest version",
 			runtimes:      []DeviceRuntime{older, duoOnly, unavailable, watch, generic},
 			wantedVersion: "latest",
-			want:          []DeviceRuntime{generic, duoOnly},
+			want:          []DeviceRuntime{duoOnly, generic},
 		},
 		{
-			name:          "latest groups by major.minor, ignoring the patch version",
-			runtimes:      []DeviceRuntime{duoOnly, genericPatch},
+			name:          "latest returns only the runtimes with the newest patch version",
+			runtimes:      []DeviceRuntime{duoOnly, patch, generic},
 			wantedVersion: "latest",
-			want:          []DeviceRuntime{genericPatch, duoOnly},
+			want:          []DeviceRuntime{patch},
 		},
 		{
 			name:          "latest respects the Xcode version",
@@ -557,10 +475,10 @@ func Test_deviceFinder_runtimesForPlatformVersion(t *testing.T) {
 			want:          []DeviceRuntime{duoOnly},
 		},
 		{
-			name:          "explicit version returns every runtime of the major.minor version, the generic ones first",
-			runtimes:      []DeviceRuntime{older, duoOnly, genericPatch, unavailable, watch, generic},
+			name:          "explicit version returns every runtime with a matching major.minor version",
+			runtimes:      []DeviceRuntime{older, duoOnly, patch, unavailable, watch, generic},
 			wantedVersion: "27.2",
-			want:          []DeviceRuntime{genericPatch, generic, duoOnly},
+			want:          []DeviceRuntime{duoOnly, patch, generic},
 		},
 		{
 			name:          "explicit version with a single match",
