@@ -73,8 +73,10 @@ var (
 	}
 	// On a test run, -enumerate-tests lists the tests and runs none, and the command succeeds.
 	listsTests = rejection{reason: "It makes xcodebuild list the tests instead of running them.", flags: []string{"-enumerate-tests"}}
-	// test refuses -xctestrun next to its -scheme.
+	// test refuses -xctestrun next to its -scheme; test-without-building refuses -testPlan
+	// next to its -xctestrun (the xctestrun already carries its test plan).
 	withoutBuildingOnly = rejection{reason: "It applies to test-without-building only, and xcodebuild refuses it next to -scheme.", flags: []string{"-xctestrun"}}
+	withXCTestRun       = rejection{reason: "The xctestrun already selects the test plan, and xcodebuild refuses it next to -xctestrun.", flags: []string{"-testPlan"}}
 )
 
 var (
@@ -113,5 +115,6 @@ var (
 		name:       "resolve packages",
 		rejections: []rejection{modeSwitching.except("-resolvePackageDependencies"), testOnlyRefused, testOnly},
 	}
-	testPolicy = testRunPolicy(ActionTest, listsTests, withoutBuildingOnly)
+	testPolicy                = testRunPolicy(ActionTest, listsTests, withoutBuildingOnly)
+	testWithoutBuildingPolicy = testRunPolicy(ActionTestWithoutBuilding, listsTests, withXCTestRun)
 )
