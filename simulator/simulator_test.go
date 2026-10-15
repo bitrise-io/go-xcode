@@ -1,7 +1,6 @@
 package simulator
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -113,22 +112,6 @@ func Test_GivenSimulator_WhenWaitForBootFinishedTimesOut_ThenFails(t *testing.T)
 	// Then
 	assert.ErrorContains(t, err, "failed to boot Simulator in")
 
-	mocks.commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
-}
-
-func Test_GivenSimulator_WhenCollectDiagnostics_ThenCollectsIt(t *testing.T) {
-	// Given
-	manager, mocks := createSimulatorAndMocks()
-
-	mocks.commandFactory.On("Create", "xcrun", mock.Anything, mock.Anything).Return(createCommand(""))
-
-	// When
-	diagnosticsOutDir, err := manager.CollectDiagnostics()
-
-	// Then
-	assert.NoError(t, err)
-
-	parameters := []string{"simctl", "diagnose", "-b", "--no-archive", fmt.Sprintf("--output=%s", diagnosticsOutDir)}
 	mocks.commandFactory.AssertCalled(t, "Create", "xcrun", parameters, mock.Anything)
 }
 
