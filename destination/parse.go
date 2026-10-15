@@ -1,7 +1,6 @@
 package destination
 
 import (
-	"cmp"
 	"fmt"
 	"math"
 	"os"
@@ -174,16 +173,24 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	if err != nil {
 		return Device{}, err
 	}
-	// Prefer the newest version, then generic runtimes, so the result does not depend on the order of the simctl output.
-	// runtimesForPlatformVersion only returns runtimes with a valid version.
-	slices.SortStableFunc(runtimes, func(a, b DeviceRuntime) int {
-		aVersion, bVersion := version.Must(version.NewVersion(a.Version)), version.Must(version.NewVersion(b.Version))
-		if c := bVersion.Compare(aVersion); c != 0 {
-			return c
-		}
 
-		return cmp.Compare(supportedDeviceTypeCount(b), supportedDeviceTypeCount(a))
-	})
+	deviceTypeID, deviceTypeErr := d.convertDeviceNameToDeviceTypeID(wantedDestination.Name)
+	isDeviceType := deviceTypeErr == nil
+	if isDeviceType {
+		supportedRuntimes := slices.DeleteFunc(slices.Clone(runtimes), func(r DeviceRuntime) bool { return !r.isDeviceSupported(deviceTypeID) })
+		if len(supportedRuntimes) == 0 {
+			var runtimeIDs []string
+			for _, r := range runtimes {
+				runtimeIDs = append(runtimeIDs, r.Identifier)
+			}
+
+			return Device{}, fmt.Errorf("runtimes (%s) are incompatible with device type (%s)", strings.Join(runtimeIDs, ", "), deviceTypeID)
+		}
+		runtimes = supportedRuntimes
+	} else {
+		// Devices with a custom name (like `Bitrise iOS default`) are never looked up or created on a device-specific runtime.
+		runtimes = genericRuntimes(runtimes)
+	}
 
 	newDevice := func(device Device, runtime DeviceRuntime) Device {
 		device.Type = d.convertDeviceTypeIDToDeviceName(device.TypeIdentifier)
@@ -211,27 +218,23 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 
 	// Returns the first available device in case the default device name is specified, but not yet created.
 	if wantedDestination.Name == defaultDeviceName {
-		for _, device := range d.list.Devices[runtimes[0].Identifier] {
-			if !device.IsAvailable {
-				continue
-			}
+		for _, runtime := range runtimes {
+			for _, device := range d.list.Devices[runtime.Identifier] {
+				if !device.IsAvailable {
+					continue
+				}
 
-			return newDevice(device, runtimes[0]), nil
+				return newDevice(device, runtime), nil
+			}
 		}
 	}
 
-	// If there is no matching device, look up device type so we can create device in a later step
-	deviceTypeID, err := d.convertDeviceNameToDeviceTypeID(wantedDestination.Name)
-	if err != nil {
-		return Device{}, err
+	// If there is no matching device, use the device type so we can create device in a later step
+	if !isDeviceType {
+		return Device{}, deviceTypeErr
 	}
 
-	runtimeIdx := slices.IndexFunc(runtimes, func(r DeviceRuntime) bool { return r.isDeviceSupported(deviceTypeID) })
-	if runtimeIdx == -1 {
-		return Device{}, fmt.Errorf("runtime (%s) is incompatible with device type (%s)", runtimes[0].Identifier, deviceTypeID)
-	}
-	runtime := runtimes[runtimeIdx]
-
+	runtime := runtimes[0]
 	if _, ok := d.list.Devices[runtime.Identifier]; !ok {
 		return Device{}, fmt.Errorf("no device exists for runtime %s", runtime.Name)
 	}
@@ -239,13 +242,25 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	return Device{}, newMissingDeviceErr(wantedDestination.Name, deviceTypeID, runtime.Identifier)
 }
 
-// supportedDeviceTypeCount treats an empty supportedDeviceTypes list as "supports everything", see isDeviceSupported.
-func supportedDeviceTypeCount(r DeviceRuntime) int {
-	if len(r.SupportedDeviceTypes) == 0 {
-		return math.MaxInt
+// genericRuntimes returns the runtimes that support the most device types. A device-specific runtime
+// (like iOS-27-2-iPhone19-4) supports fewer device types than the generic runtime of the same version.
+// simctl has no field for this, and the identifier format is not documented.
+// An empty supportedDeviceTypes list means that the runtime supports all device types, see isDeviceSupported.
+func genericRuntimes(runtimes []DeviceRuntime) []DeviceRuntime {
+	supportedCount := func(r DeviceRuntime) int {
+		if len(r.SupportedDeviceTypes) == 0 {
+			return math.MaxInt
+		}
+
+		return len(r.SupportedDeviceTypes)
 	}
 
-	return len(r.SupportedDeviceTypes)
+	maxCount := 0
+	for _, r := range runtimes {
+		maxCount = max(maxCount, supportedCount(r))
+	}
+
+	return slices.DeleteFunc(slices.Clone(runtimes), func(r DeviceRuntime) bool { return supportedCount(r) < maxCount })
 }
 
 func (d deviceFinder) convertDeviceNameToDeviceTypeID(wantedDeviceName string) (string, error) {
@@ -285,8 +300,8 @@ func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Versio
 }
 
 // runtimesForPlatformVersion returns all runtimes matching the platform and version.
-// For an explicit version, the runtimes match on major.minor, so they can have different patch versions.
-// For latest, the runtimes have the same version. In both cases they may support different device types.
+// The runtimes have the same major.minor version (for latest: the latest supported one), and the newest patch version is first.
+// They may support different device types.
 func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion string) ([]DeviceRuntime, error) {
 	var runtimesOfPlatform []DeviceRuntime
 
@@ -337,62 +352,73 @@ func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion s
 		return nil, fmt.Errorf("no runtime installed for platform %s", wantedPlatform)
 	}
 
-	wantLatest := wantedVersion == "latest"
-	if wantLatest {
-		var (
-			latestVersion  *version.Version
-			latestRuntimes = []DeviceRuntime{runtimesOfPlatform[0]}
-		)
+	type runtimeWithVersion struct {
+		runtime DeviceRuntime
+		version *version.Version
+	}
+
+	var matching []runtimeWithVersion
+	if wantedVersion == "latest" {
+		var supported []runtimeWithVersion
+		for _, runtime := range runtimesOfPlatform {
+			runtimeVersion, err := version.NewVersion(runtime.Version)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse Simulator version (%s): %w", runtime.Version, err)
+			}
+
+			if isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
+				supported = append(supported, runtimeWithVersion{runtime, runtimeVersion})
+			}
+		}
+
+		if len(supported) == 0 {
+			return []DeviceRuntime{runtimesOfPlatform[0]}, nil
+		}
+
+		// The latest major.minor version, the patch version is ignored the same way as in isRuntimeSupportedByXcode.
+		latest := slices.MaxFunc(supported, func(a, b runtimeWithVersion) int { return a.version.Compare(b.version) })
+		for _, r := range supported {
+			if isEqualVersion(latest.version, r.version) {
+				matching = append(matching, r)
+			}
+		}
+	} else {
+		semanticVersion, err := version.NewVersion(wantedVersion)
+		if err != nil {
+			return nil, fmt.Errorf("invalid Simulator version (%s) provided: %w", wantedVersion, err)
+		}
 
 		for _, runtime := range runtimesOfPlatform {
 			runtimeVersion, err := version.NewVersion(runtime.Version)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
+				return nil, fmt.Errorf("failed to parse Simulator version (%s): %w", runtime.Version, err)
 			}
 
-			if !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
+			runtimeSegments := runtimeVersion.Segments()
+			if len(runtimeSegments) < 2 {
+				d.logger.Warnf("no minor version found in Simulator version (%s)", runtime.Version)
 				continue
 			}
 
-			if latestVersion == nil || runtimeVersion.GreaterThan(latestVersion) {
-				latestVersion = runtimeVersion
-				latestRuntimes = []DeviceRuntime{runtime}
-			} else if runtimeVersion.Equal(latestVersion) {
-				latestRuntimes = append(latestRuntimes, runtime)
+			if isEqualVersion(semanticVersion, runtimeVersion) {
+				matching = append(matching, runtimeWithVersion{runtime, runtimeVersion})
 			}
 		}
 
-		return latestRuntimes, nil
-	}
-
-	semanticVersion, err := version.NewVersion(wantedVersion)
-	if err != nil {
-		return nil, fmt.Errorf("invalid Simulator version (%s) provided: %w", wantedVersion, err)
-	}
-
-	var matchingRuntimes []DeviceRuntime
-	for _, runtime := range runtimesOfPlatform {
-		runtimeVersion, err := version.NewVersion(runtime.Version)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse Simulator version (%s): %w", runtimeVersion, err)
-		}
-
-		runtimeSegments := runtimeVersion.Segments()
-		if len(runtimeSegments) < 2 {
-			d.logger.Warnf("no minor version found in Simulator version (%s)", runtime.Version)
-			continue
-		}
-
-		if isEqualVersion(semanticVersion, runtimeVersion) {
-			matchingRuntimes = append(matchingRuntimes, runtime)
+		if len(matching) == 0 {
+			return nil, newMissingRuntimeErr(wantedPlatform, wantedVersion, runtimesOfPlatform)
 		}
 	}
 
-	if len(matchingRuntimes) == 0 {
-		return nil, newMissingRuntimeErr(wantedPlatform, wantedVersion, runtimesOfPlatform)
+	// Newest patch version first, so the result does not depend on the order of the simctl output.
+	slices.SortStableFunc(matching, func(a, b runtimeWithVersion) int { return b.version.Compare(a.version) })
+
+	runtimes := make([]DeviceRuntime, 0, len(matching))
+	for _, r := range matching {
+		runtimes = append(runtimes, r.runtime)
 	}
 
-	return matchingRuntimes, nil
+	return runtimes, nil
 }
 
 func (r DeviceRuntime) isDeviceSupported(wantedDeviceIdentifier string) bool {

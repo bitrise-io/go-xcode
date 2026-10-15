@@ -2,6 +2,7 @@ package destination
 
 import (
 	"encoding/json"
+	"maps"
 	"slices"
 	"testing"
 
@@ -217,6 +218,75 @@ func Test_deviceFinder_deviceForDestination_DeviceSpecificRuntime(t *testing.T) 
 		_, err = d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone Duo"})
 		require.ErrorAs(t, err, &missingErr)
 		require.Equal(t, deviceSpecificRuntimeID, missingErr.runtimeID)
+	})
+
+	t.Run("newer patch of the device-specific runtime", func(t *testing.T) {
+		listWithPatch := list
+		listWithPatch.Runtimes = slices.Clone(list.Runtimes)
+		for i, r := range listWithPatch.Runtimes {
+			if r.Identifier == deviceSpecificRuntimeID {
+				listWithPatch.Runtimes[i].Version = "27.2.1"
+			}
+		}
+		d := deviceFinder{
+			logger: log.NewLogger(),
+			list:   &listWithPatch,
+		}
+
+		for _, os := range []string{"latest", "27.2"} {
+			got, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: os, Name: "iPhone 17"})
+			require.NoError(t, err)
+			require.Equal(t, iPhone17, got)
+
+			got, err = d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: os, Name: "Bitrise iOS default"})
+			require.NoError(t, err)
+			require.Equal(t, iPhone17, got)
+
+			_, err = d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: os, Name: "iPhone 12 Pro Max"})
+			var missingErr *missingDeviceErr
+			require.ErrorAs(t, err, &missingErr)
+			require.Equal(t, genericRuntimeID, missingErr.runtimeID)
+
+			got, err = d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: os, Name: "iPhone Duo"})
+			require.NoError(t, err)
+			require.Equal(t, "6F0E6D53-7F1B-4F0B-9C2E-1D2A4B3C5D01", got.UDID)
+		}
+	})
+
+	t.Run("default device on an older generic runtime", func(t *testing.T) {
+		const newerGenericRuntimeID = "com.apple.CoreSimulator.SimRuntime.iOS-27-2-1"
+		listWithPatch := list
+		newerGeneric := list.Runtimes[slices.IndexFunc(list.Runtimes, func(r DeviceRuntime) bool { return r.Identifier == genericRuntimeID })]
+		newerGeneric.Identifier = newerGenericRuntimeID
+		newerGeneric.Version = "27.2.1"
+		listWithPatch.Runtimes = append(slices.Clone(list.Runtimes), newerGeneric)
+		listWithPatch.Devices = maps.Clone(list.Devices)
+		listWithPatch.Devices[newerGenericRuntimeID] = []Device{}
+		d := deviceFinder{
+			logger: log.NewLogger(),
+			list:   &listWithPatch,
+		}
+
+		got, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "Bitrise iOS default"})
+		require.NoError(t, err)
+		require.Equal(t, iPhone17, got)
+	})
+
+	t.Run("device type not supported by any runtime", func(t *testing.T) {
+		listWithoutSupport := list
+		listWithoutSupport.Runtimes = slices.Clone(list.Runtimes)
+		for i, r := range listWithoutSupport.Runtimes {
+			listWithoutSupport.Runtimes[i].SupportedDeviceTypes = slices.DeleteFunc(slices.Clone(r.SupportedDeviceTypes), func(dt DeviceType) bool {
+				return dt.Name == "iPhone 12 Pro Max"
+			})
+		}
+		d := deviceFinder{
+			logger: log.NewLogger(),
+			list:   &listWithoutSupport,
+		}
+
+		_, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "iPhone 12 Pro Max"})
+		require.EqualError(t, err, "runtimes ("+deviceSpecificRuntimeID+", "+genericRuntimeID+") are incompatible with device type (com.apple.CoreSimulator.SimDeviceType.iPhone-12-Pro-Max)")
 	})
 
 	t.Run("missing device of the device-specific runtime", func(t *testing.T) {
