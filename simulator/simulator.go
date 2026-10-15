@@ -23,7 +23,6 @@ type Manager interface {
 	LaunchWithGUI(simulatorID string) error
 	Boot(device destination.Device) error
 	WaitForBootFinished(id string, timeout time.Duration) error
-	EnableVerboseLog(id string) error
 	CollectDiagnostics() (string, error)
 	Shutdown(id string) error
 	Erase(id string) error
@@ -158,26 +157,6 @@ func (m manager) WaitForBootFinished(id string, timeout time.Duration) error {
 			return fmt.Errorf("failed to boot Simulator in %s", timeout)
 		}
 	}
-}
-
-// EnableVerboseLog enables verbose log. Simulator needs to be booted.
-func (m manager) EnableVerboseLog(id string) error {
-	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "logverbose", id, "enable"}, &command.Opts{
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	})
-	m.logger.TPrintf("$ %s", cmd.PrintableCommandArgs())
-
-	if err := cmd.Run(); err != nil {
-		if errorutil.IsExitStatusError(err) {
-			m.logger.Warnf("Failed to enable Simulator verbose logging, command exited with code %d", err)
-			return nil
-		}
-
-		return fmt.Errorf("failed to enable Simulator verbose logging, command execution failed: %v", err)
-	}
-
-	return nil
 }
 
 // CollectDiagnostics collects Simulator diagnostics
