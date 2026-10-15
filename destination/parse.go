@@ -2,7 +2,6 @@ package destination
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"slices"
 	"strings"
@@ -187,9 +186,6 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 			return Device{}, fmt.Errorf("runtimes (%s) are incompatible with device type (%s)", strings.Join(runtimeIDs, ", "), deviceTypeID)
 		}
 		runtimes = supportedRuntimes
-	} else {
-		// Devices with a custom name (like `Bitrise iOS default`) are never looked up or created on a device-specific runtime.
-		runtimes = genericRuntimes(runtimes)
 	}
 
 	newDevice := func(device Device, runtime DeviceRuntime) Device {
@@ -217,8 +213,13 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	}
 
 	// Returns the first available device in case the default device name is specified, but not yet created.
+	// The image never creates the default device on a device-specific runtime, so the fallback does not use them either.
 	if wantedDestination.Name == defaultDeviceName {
 		for _, runtime := range runtimes {
+			if d.isDeviceSpecificRuntime(runtime) {
+				continue
+			}
+
 			for _, device := range d.list.Devices[runtime.Identifier] {
 				if !device.IsAvailable {
 					continue
@@ -242,25 +243,25 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	return Device{}, newMissingDeviceErr(wantedDestination.Name, deviceTypeID, runtime.Identifier)
 }
 
-// genericRuntimes returns the runtimes that support the most device types. A device-specific runtime
-// (like iOS-27-2-iPhone19-4) supports fewer device types than the generic runtime of the same version.
-// simctl has no field for this, and the identifier format is not documented.
-// An empty supportedDeviceTypes list means that the runtime supports all device types, see isDeviceSupported.
-func genericRuntimes(runtimes []DeviceRuntime) []DeviceRuntime {
-	supportedCount := func(r DeviceRuntime) int {
-		if len(r.SupportedDeviceTypes) == 0 {
-			return math.MaxInt
-		}
-
-		return len(r.SupportedDeviceTypes)
+// isDeviceSpecificRuntime reports whether the runtime is a device-specific variant of an installed generic runtime.
+// For example, Xcode 27.2 Beta 3 installs iOS-27-2-iPhone19-4 (iPhone Duo only) next to the generic iOS-27-2.
+// simctl has no field for this, so the identifier is compared to the generic identifier of the same version.
+// If the generic runtime is not installed (or the identifier format changes), the runtime is not device-specific.
+// Keep in sync with image-build-utils roles/simulators/tasks/add_default_devices.yml.
+func (d deviceFinder) isDeviceSpecificRuntime(runtime DeviceRuntime) bool {
+	runtimeVersion, err := version.NewVersion(runtime.Version)
+	if err != nil || runtime.Platform == "" {
+		return false
 	}
 
-	maxCount := 0
-	for _, r := range runtimes {
-		maxCount = max(maxCount, supportedCount(r))
+	// The identifier only has the major and minor version: iOS 17.0.1 is com.apple.CoreSimulator.SimRuntime.iOS-17-0.
+	segments := runtimeVersion.Segments()
+	genericID := fmt.Sprintf("com.apple.CoreSimulator.SimRuntime.%s-%d-%d", runtime.Platform, segments[0], segments[1])
+	if runtime.Identifier == genericID {
+		return false
 	}
 
-	return slices.DeleteFunc(slices.Clone(runtimes), func(r DeviceRuntime) bool { return supportedCount(r) < maxCount })
+	return slices.ContainsFunc(d.list.Runtimes, func(r DeviceRuntime) bool { return r.Identifier == genericID })
 }
 
 func (d deviceFinder) convertDeviceNameToDeviceTypeID(wantedDeviceName string) (string, error) {

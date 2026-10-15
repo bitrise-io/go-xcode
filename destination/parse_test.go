@@ -2,7 +2,6 @@ package destination
 
 import (
 	"encoding/json"
-	"maps"
 	"slices"
 	"testing"
 
@@ -253,25 +252,6 @@ func Test_deviceFinder_deviceForDestination_DeviceSpecificRuntime(t *testing.T) 
 		}
 	})
 
-	t.Run("default device on an older generic runtime", func(t *testing.T) {
-		const newerGenericRuntimeID = "com.apple.CoreSimulator.SimRuntime.iOS-27-2-1"
-		listWithPatch := list
-		newerGeneric := list.Runtimes[slices.IndexFunc(list.Runtimes, func(r DeviceRuntime) bool { return r.Identifier == genericRuntimeID })]
-		newerGeneric.Identifier = newerGenericRuntimeID
-		newerGeneric.Version = "27.2.1"
-		listWithPatch.Runtimes = append(slices.Clone(list.Runtimes), newerGeneric)
-		listWithPatch.Devices = maps.Clone(list.Devices)
-		listWithPatch.Devices[newerGenericRuntimeID] = []Device{}
-		d := deviceFinder{
-			logger: log.NewLogger(),
-			list:   &listWithPatch,
-		}
-
-		got, err := d.deviceForDestination(Simulator{Platform: "iOS Simulator", OS: "27.2", Name: "Bitrise iOS default"})
-		require.NoError(t, err)
-		require.Equal(t, iPhone17, got)
-	})
-
 	t.Run("device type not supported by any runtime", func(t *testing.T) {
 		listWithoutSupport := list
 		listWithoutSupport.Runtimes = slices.Clone(list.Runtimes)
@@ -306,4 +286,30 @@ func Test_deviceFinder_deviceForDestination_DeviceSpecificRuntime(t *testing.T) 
 		require.ErrorAs(t, err, &missingErr)
 		require.Equal(t, deviceSpecificRuntimeID, missingErr.runtimeID)
 	})
+}
+
+func Test_deviceFinder_isDeviceSpecificRuntime(t *testing.T) {
+	generic := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2", Platform: "iOS", Version: "27.2"}
+	deviceSpecific := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4", Platform: "iOS", Version: "27.2"}
+	deviceSpecificPatch := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2-iPhone19-4", Platform: "iOS", Version: "27.2.1"}
+	genericPatch := DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-17-0", Platform: "iOS", Version: "17.0.1"}
+
+	tests := []struct {
+		name     string
+		runtimes []DeviceRuntime
+		runtime  DeviceRuntime
+		want     bool
+	}{
+		{name: "generic runtime", runtimes: []DeviceRuntime{generic, deviceSpecific}, runtime: generic, want: false},
+		{name: "device-specific runtime", runtimes: []DeviceRuntime{generic, deviceSpecific}, runtime: deviceSpecific, want: true},
+		{name: "device-specific runtime with a newer patch version", runtimes: []DeviceRuntime{generic, deviceSpecificPatch}, runtime: deviceSpecificPatch, want: true},
+		{name: "device-specific runtime without a generic runtime", runtimes: []DeviceRuntime{deviceSpecific}, runtime: deviceSpecific, want: false},
+		{name: "generic runtime with a patch version", runtimes: []DeviceRuntime{genericPatch}, runtime: genericPatch, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := deviceFinder{list: &DeviceList{Runtimes: tt.runtimes}}
+			require.Equal(t, tt.want, d.isDeviceSpecificRuntime(tt.runtime))
+		})
+	}
 }
