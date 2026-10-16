@@ -300,9 +300,45 @@ func Test_deviceFinder_FindDevice_MultipleRuntimesWithSameVersion(t *testing.T) 
 		name           string
 		wantedDevice   Simulator
 		want           Device
-		wantCreateArgs []string // the missing device is expected to be created with these simctl arguments
+		xcodeVersion   xcodeversion.Version // defaults to Xcode 27.2
+		wantCreateArgs []string             // the missing device is expected to be created with these simctl arguments
 		wantErr        bool
 	}{
+		{
+			name:         "Xcode 27.1 latest: device falls back to the newest runtime supporting its type",
+			wantedDevice: Simulator{Platform: xcodeDevice, OS: "latest", Name: "iPhone 17"},
+			xcodeVersion: xcodeversion.Version{Major: 27, Minor: 1},
+			want: Device{
+				UDID: "771C13EC-32E5-48E3-A58C-CA6C3D10B1DD", State: "Shutdown", TypeIdentifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-17", IsAvailable: true,
+				Type: "iPhone 17", Platform: xcodeDevice, Name: "iPhone 17", OS: "27.0",
+			},
+		},
+		{
+			name:         "Xcode 27.1 latest: missing device is created for the newest runtime supporting its type",
+			wantedDevice: Simulator{Platform: xcodeDevice, OS: "latest", Name: "iPhone 16 Pro"},
+			xcodeVersion: xcodeversion.Version{Major: 27, Minor: 1},
+			wantCreateArgs: []string{
+				"simctl", "create", "iPhone 16 Pro",
+				"com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro",
+				"com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+			},
+			wantErr: true,
+		},
+		{
+			name:         "Xcode 27.1 latest: default device stays on the iPhone Duo-only runtime",
+			wantedDevice: Simulator{Platform: xcodeDevice, OS: "latest", Name: defaultDeviceName},
+			xcodeVersion: xcodeversion.Version{Major: 27, Minor: 1},
+			want: Device{
+				UDID: "03F49682-6BB2-4AD7-A71D-28FA34A0FB31", State: "Shutdown", TypeIdentifier: duoTypeID, IsAvailable: true,
+				Type: "iPhone Duo", Platform: xcodeDevice, Name: defaultDeviceName, OS: "27.1",
+			},
+		},
+		{
+			name:         "Xcode 27.1 latest: device type unsupported by every runtime",
+			wantedDevice: Simulator{Platform: xcodeDevice, OS: "latest", Name: "iPhone 8"},
+			xcodeVersion: xcodeversion.Version{Major: 27, Minor: 1},
+			wantErr:      true,
+		},
 		{
 			name:         "single iPhone Duo-only runtime: device created for the runtime",
 			wantedDevice: Simulator{Platform: xcodeDevice, OS: "27.1", Name: "iPhone Duo"},
@@ -387,10 +423,15 @@ func Test_deviceFinder_FindDevice_MultipleRuntimesWithSameVersion(t *testing.T) 
 				commandFactory.On("Create", "xcrun", tt.wantCreateArgs, mock.Anything).Return(createCmd)
 			}
 
+			xcodeVersion := tt.xcodeVersion
+			if xcodeVersion == (xcodeversion.Version{}) {
+				xcodeVersion = xcodeversion.Version{Major: 27, Minor: 2}
+			}
+
 			d := deviceFinder{
 				logger:         log.NewLogger(),
 				commandFactory: commandFactory,
-				xcodeVersion:   xcodeversion.Version{Major: 27, Minor: 2},
+				xcodeVersion:   xcodeVersion,
 			}
 
 			got, err := d.FindDevice(tt.wantedDevice)
@@ -480,7 +521,7 @@ func Test_deviceFinder_runtimesForPlatformVersion(t *testing.T) {
 				list:         &DeviceList{Runtimes: tt.runtimes},
 			}
 
-			got, err := d.runtimesForPlatformVersion("iOS", tt.wantedVersion)
+			got, err := d.runtimesForPlatformVersion("iOS", tt.wantedVersion, "")
 
 			if tt.wantErr {
 				require.Error(t, err)
