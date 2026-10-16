@@ -168,7 +168,7 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 
 	// More than one runtime can have the same version: Xcode 27.2 ships a generic iOS 27.2 runtime
 	// and a device-specific one (iOS-27-2-iPhone19-4) supporting only the iPhone Duo, each with its own devices.
-	runtimes, err := d.runtimesForPlatformVersion(wantedDestination.Platform, wantedDestination.OS)
+	runtimes, err := d.runtimesForPlatformVersion(wantedDestination.Platform, wantedDestination.OS, "")
 	if err != nil {
 		return Device{}, err
 	}
@@ -182,19 +182,27 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 		return device
 	}
 
-	// As the name of the device matches the device type ('iPhone 11') for factory created devices, look up device by name.
-	// If the default name is required and already created, it will use that.
-	for _, runtime := range runtimes {
-		for _, device := range d.list.Devices[runtime.Identifier] {
-			if device.Name == wantedDestination.Name {
-				if !device.IsAvailable {
-					d.logger.Warnf("device %s for %s is unavailable: %s", device.Name, runtime.Identifier, device.AvailabilityError)
-					continue
-				}
+	deviceByName := func(runtimes []DeviceRuntime) (Device, bool) {
+		for _, runtime := range runtimes {
+			for _, device := range d.list.Devices[runtime.Identifier] {
+				if device.Name == wantedDestination.Name {
+					if !device.IsAvailable {
+						d.logger.Warnf("device %s for %s is unavailable: %s", device.Name, runtime.Identifier, device.AvailabilityError)
+						continue
+					}
 
-				return newDevice(device, runtime), nil
+					return newDevice(device, runtime), true
+				}
 			}
 		}
+
+		return Device{}, false
+	}
+
+	// As the name of the device matches the device type ('iPhone 11') for factory created devices, look up device by name.
+	// If the default name is required and already created, it will use that.
+	if device, ok := deviceByName(runtimes); ok {
+		return device, nil
 	}
 
 	// Returns the first available device in case the default device name is specified, but not yet created.
@@ -216,8 +224,25 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 		return Device{}, err
 	}
 
+	// Xcode 27.1 ships iOS 27.1 only as an iPhone Duo-only runtime, so for latest fall back to
+	// the newest runtime supporting the device type when none of the newest version runtimes does.
+	isSupported := func(runtime DeviceRuntime) bool { return runtime.isDeviceSupported(deviceTypeID) }
+	if wantedDestination.OS == "latest" && !slices.ContainsFunc(runtimes, isSupported) {
+		supportingRuntimes, err := d.runtimesForPlatformVersion(wantedDestination.Platform, wantedDestination.OS, deviceTypeID)
+		if err != nil {
+			return Device{}, err
+		}
+
+		if slices.ContainsFunc(supportingRuntimes, isSupported) {
+			runtimes = supportingRuntimes
+			if device, ok := deviceByName(runtimes); ok {
+				return device, nil
+			}
+		}
+	}
+
 	for _, runtime := range runtimes {
-		if runtime.isDeviceSupported(deviceTypeID) {
+		if isSupported(runtime) {
 			return Device{}, newMissingDeviceErr(wantedDestination.Name, deviceTypeID, runtime.Identifier)
 		}
 	}
@@ -268,7 +293,8 @@ func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Versio
 
 // runtimesForPlatformVersion returns every available runtime of the platform with the wanted version
 // (major.minor, or for latest: the newest version supported by the current Xcode), in the simctl list order.
-func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion string) ([]DeviceRuntime, error) {
+// If wantedDeviceTypeID is set, latest only considers the runtimes supporting that device type.
+func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion, wantedDeviceTypeID string) ([]DeviceRuntime, error) {
 	var runtimesOfPlatform []DeviceRuntime
 
 	for _, runtime := range d.list.Runtimes {
@@ -332,6 +358,10 @@ func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion s
 			}
 
 			if !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
+				continue
+			}
+
+			if wantedDeviceTypeID != "" && !runtime.isDeviceSupported(wantedDeviceTypeID) {
 				continue
 			}
 
