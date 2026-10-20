@@ -168,7 +168,7 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 
 	// More than one runtime can have the same version: Xcode 27.2 ships a generic iOS 27.2 runtime
 	// and a device-specific one (iOS-27-2-iPhone19-4) supporting only the iPhone Duo, each with its own devices.
-	runtimes, err := d.runtimesForPlatformVersion(wantedDestination.Platform, wantedDestination.OS, "")
+	runtimes, err := d.runtimesForPlatformVersion(wantedDestination.Platform, wantedDestination.OS)
 	if err != nil {
 		return Device{}, err
 	}
@@ -228,12 +228,12 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	// the newest runtime supporting the device type when none of the newest version runtimes does.
 	isSupported := func(runtime DeviceRuntime) bool { return runtime.isDeviceSupported(deviceTypeID) }
 	if wantedDestination.OS == "latest" && !slices.ContainsFunc(runtimes, isSupported) {
-		supportingRuntimes, err := d.runtimesForPlatformVersion(wantedDestination.Platform, wantedDestination.OS, deviceTypeID)
+		supportingRuntimes, err := d.latestRuntimesSupportingDevice(wantedDestination.Platform, deviceTypeID)
 		if err != nil {
 			return Device{}, err
 		}
 
-		if slices.ContainsFunc(supportingRuntimes, isSupported) {
+		if len(supportingRuntimes) > 0 {
 			runtimes = supportingRuntimes
 			if device, ok := deviceByName(runtimes); ok {
 				return device, nil
@@ -291,10 +291,8 @@ func isEqualVersion(wantVersion *version.Version, runtimeVersion *version.Versio
 	return true
 }
 
-// runtimesForPlatformVersion returns every available runtime of the platform with the wanted version
-// (major.minor, or for latest: the newest version supported by the current Xcode), in the simctl list order.
-// If wantedDeviceTypeID is set, latest only considers the runtimes supporting that device type.
-func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion, wantedDeviceTypeID string) ([]DeviceRuntime, error) {
+// runtimesOfPlatform returns every available runtime of the platform, in the simctl list order.
+func (d deviceFinder) runtimesOfPlatform(wantedPlatform string) ([]DeviceRuntime, error) {
 	var runtimesOfPlatform []DeviceRuntime
 
 	for _, runtime := range d.list.Runtimes {
@@ -344,34 +342,68 @@ func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion, 
 		return nil, fmt.Errorf("no runtime installed for platform %s", wantedPlatform)
 	}
 
-	wantLatest := wantedVersion == "latest"
-	if wantLatest {
-		var (
-			latestVersion  *version.Version
-			latestRuntimes []DeviceRuntime
-		)
+	return runtimesOfPlatform, nil
+}
 
-		for _, runtime := range runtimesOfPlatform {
-			runtimeVersion, err := version.NewVersion(runtime.Version)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse Simulator version (%s): %w", runtime.Version, err)
-			}
+// newestXcodeSupportedRuntimes returns the runtimes with the newest version supported by the current Xcode.
+func (d deviceFinder) newestXcodeSupportedRuntimes(wantedPlatform string, runtimes []DeviceRuntime) ([]DeviceRuntime, error) {
+	var (
+		latestVersion  *version.Version
+		latestRuntimes []DeviceRuntime
+	)
 
-			if !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
-				continue
-			}
+	for _, runtime := range runtimes {
+		runtimeVersion, err := version.NewVersion(runtime.Version)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse Simulator version (%s): %w", runtime.Version, err)
+		}
 
-			if wantedDeviceTypeID != "" && !runtime.isDeviceSupported(wantedDeviceTypeID) {
-				continue
-			}
+		if !isRuntimeSupportedByXcode(wantedPlatform, runtimeVersion, d.xcodeVersion) {
+			continue
+		}
 
-			switch {
-			case latestVersion == nil || runtimeVersion.GreaterThan(latestVersion):
-				latestVersion = runtimeVersion
-				latestRuntimes = []DeviceRuntime{runtime}
-			case runtimeVersion.Equal(latestVersion):
-				latestRuntimes = append(latestRuntimes, runtime)
-			}
+		switch {
+		case latestVersion == nil || runtimeVersion.GreaterThan(latestVersion):
+			latestVersion = runtimeVersion
+			latestRuntimes = []DeviceRuntime{runtime}
+		case runtimeVersion.Equal(latestVersion):
+			latestRuntimes = append(latestRuntimes, runtime)
+		}
+	}
+
+	return latestRuntimes, nil
+}
+
+// latestRuntimesSupportingDevice returns the runtimes with the newest version supported by the current Xcode
+// among the ones supporting the device type. Returns no runtimes if there is no such runtime.
+func (d deviceFinder) latestRuntimesSupportingDevice(wantedPlatform, wantedDeviceTypeID string) ([]DeviceRuntime, error) {
+	runtimesOfPlatform, err := d.runtimesOfPlatform(wantedPlatform)
+	if err != nil {
+		return nil, err
+	}
+
+	var supportingRuntimes []DeviceRuntime
+	for _, runtime := range runtimesOfPlatform {
+		if runtime.isDeviceSupported(wantedDeviceTypeID) {
+			supportingRuntimes = append(supportingRuntimes, runtime)
+		}
+	}
+
+	return d.newestXcodeSupportedRuntimes(wantedPlatform, supportingRuntimes)
+}
+
+// runtimesForPlatformVersion returns every available runtime of the platform with the wanted version
+// (major.minor, or for latest: the newest version supported by the current Xcode), in the simctl list order.
+func (d deviceFinder) runtimesForPlatformVersion(wantedPlatform, wantedVersion string) ([]DeviceRuntime, error) {
+	runtimesOfPlatform, err := d.runtimesOfPlatform(wantedPlatform)
+	if err != nil {
+		return nil, err
+	}
+
+	if wantedVersion == "latest" {
+		latestRuntimes, err := d.newestXcodeSupportedRuntimes(wantedPlatform, runtimesOfPlatform)
+		if err != nil {
+			return nil, err
 		}
 
 		if len(latestRuntimes) == 0 {

@@ -521,11 +521,152 @@ func Test_deviceFinder_runtimesForPlatformVersion(t *testing.T) {
 				list:         &DeviceList{Runtimes: tt.runtimes},
 			}
 
-			got, err := d.runtimesForPlatformVersion("iOS", tt.wantedVersion, "")
+			got, err := d.runtimesForPlatformVersion("iOS", tt.wantedVersion)
 
 			if tt.wantErr {
 				require.Error(t, err)
 				t.Logf("Expected error: %s", err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_deviceFinder_latestRuntimesSupportingDevice(t *testing.T) {
+	const (
+		iPhoneTypeID = "com.apple.CoreSimulator.SimDeviceType.iPhone-17"
+		duoTypeID    = "com.apple.CoreSimulator.SimDeviceType.iPhone-Duo"
+	)
+	var (
+		iPhone = DeviceType{Identifier: iPhoneTypeID}
+		duo    = DeviceType{Identifier: duoTypeID}
+
+		generic272 = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-2", Platform: "iOS", Version: "27.2", IsAvailable: true, Name: "iOS 27.2", SupportedDeviceTypes: []DeviceType{iPhone, duo}}
+		duoOnly271 = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-1", Platform: "iOS", Version: "27.1", IsAvailable: true, Name: "iOS 27.1", SupportedDeviceTypes: []DeviceType{duo}}
+		generic270 = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-0", Platform: "iOS", Version: "27.0", IsAvailable: true, Name: "iOS 27.0", SupportedDeviceTypes: []DeviceType{iPhone}}
+		other270   = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-0-other", Platform: "iOS", Version: "27.0", IsAvailable: true, Name: "iOS 27.0", SupportedDeviceTypes: []DeviceType{iPhone}}
+		unavail271 = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-1-unavailable", Platform: "iOS", Version: "27.1", IsAvailable: false, Name: "iOS 27.1", SupportedDeviceTypes: []DeviceType{iPhone}}
+		watch271   = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.watchOS-27-1", Platform: "watchOS", Version: "27.1", IsAvailable: true, Name: "watchOS 27.1", SupportedDeviceTypes: []DeviceType{iPhone}}
+	)
+
+	tests := []struct {
+		name         string
+		runtimes     []DeviceRuntime
+		deviceTypeID string
+		want         []DeviceRuntime
+		wantErr      bool
+	}{
+		{
+			name:         "skips the newer runtime unsupported by Xcode and the Duo-only runtime",
+			runtimes:     []DeviceRuntime{generic272, duoOnly271, generic270},
+			deviceTypeID: iPhoneTypeID,
+			want:         []DeviceRuntime{generic270},
+		},
+		{
+			name:         "returns the newest Xcode supported runtime supporting the device type",
+			runtimes:     []DeviceRuntime{generic272, duoOnly271, generic270},
+			deviceTypeID: duoTypeID,
+			want:         []DeviceRuntime{duoOnly271},
+		},
+		{
+			name:         "no fallback if no Xcode supported runtime supports the device type",
+			runtimes:     []DeviceRuntime{generic272, duoOnly271},
+			deviceTypeID: iPhoneTypeID,
+			want:         nil,
+		},
+		{
+			name:         "returns every supporting runtime with the newest version, in the simctl list order",
+			runtimes:     []DeviceRuntime{other270, duoOnly271, generic270},
+			deviceTypeID: iPhoneTypeID,
+			want:         []DeviceRuntime{other270, generic270},
+		},
+		{
+			name:         "skips unavailable runtimes and runtimes of other platforms",
+			runtimes:     []DeviceRuntime{unavail271, watch271, generic270},
+			deviceTypeID: iPhoneTypeID,
+			want:         []DeviceRuntime{generic270},
+		},
+		{
+			name:         "no runtime of the platform",
+			runtimes:     []DeviceRuntime{watch271},
+			deviceTypeID: iPhoneTypeID,
+			wantErr:      true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := deviceFinder{
+				logger:       log.NewLogger(),
+				xcodeVersion: xcodeversion.Version{Major: 27, Minor: 1},
+				list:         &DeviceList{Runtimes: tt.runtimes},
+			}
+
+			got, err := d.latestRuntimesSupportingDevice("iOS", tt.deviceTypeID)
+
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func Test_deviceFinder_runtimesOfPlatform(t *testing.T) {
+	var (
+		iOS         = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-0", Platform: "iOS", Version: "27.0", IsAvailable: true, Name: "iOS 27.0"}
+		iOSNoField  = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-13-1", Version: "13.1", IsAvailable: true, Name: "iOS 13.1"}
+		unavailable = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.iOS-27-1", Platform: "iOS", Version: "27.1", IsAvailable: false, Name: "iOS 27.1"}
+		watch       = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.watchOS-27-0", Platform: "watchOS", Version: "27.0", IsAvailable: true, Name: "watchOS 27.0"}
+		xrOS        = DeviceRuntime{Identifier: "com.apple.CoreSimulator.SimRuntime.xrOS-27-0", Platform: "xrOS", Version: "27.0", IsAvailable: true, Name: "visionOS 27.0"}
+	)
+
+	tests := []struct {
+		name           string
+		runtimes       []DeviceRuntime
+		wantedPlatform string
+		want           []DeviceRuntime
+		wantErr        string
+	}{
+		{
+			name:           "returns the available runtimes of the platform, in the simctl list order",
+			runtimes:       []DeviceRuntime{iOSNoField, watch, unavailable, iOS},
+			wantedPlatform: "iOS",
+			want:           []DeviceRuntime{iOSNoField, iOS},
+		},
+		{
+			name:           "visionOS matches xrOS runtimes",
+			runtimes:       []DeviceRuntime{iOS, xrOS},
+			wantedPlatform: string(VisionOS),
+			want:           []DeviceRuntime{xrOS},
+		},
+		{
+			name:           "missing platform suggests the Simulator platform",
+			runtimes:       []DeviceRuntime{watch},
+			wantedPlatform: string(IOS),
+			wantErr:        "the platform iOS is unavailable. Did you mean iOS Simulator?",
+		},
+		{
+			name:           "unknown platform",
+			runtimes:       []DeviceRuntime{iOS},
+			wantedPlatform: "macOS",
+			wantErr:        "no runtime installed for platform macOS",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			d := deviceFinder{
+				logger: log.NewLogger(),
+				list:   &DeviceList{Runtimes: tt.runtimes},
+			}
+
+			got, err := d.runtimesOfPlatform(tt.wantedPlatform)
+
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
 			} else {
 				require.NoError(t, err)
 			}
