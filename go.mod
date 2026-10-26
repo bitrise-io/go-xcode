@@ -14,13 +14,13 @@ require (
 	github.com/bitrise-io/go-utils v1.0.13
 	github.com/bitrise-io/go-utils/v2 v2.0.0-alpha.39
 	github.com/bitrise-io/go-xcode v1.3.3
-	github.com/fullsailor/pkcs7 v0.0.0-20190404230743-d7302db945fa
 	github.com/globocom/go-buffer/v2 v2.0.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-querystring v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.7.7
 	github.com/hashicorp/go-version v1.6.0
 	github.com/ryanuber/go-glob v1.0.0
+	github.com/smallstep/pkcs7 v0.2.3
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/oauth2 v0.24.0
 	golang.org/x/text v0.21.0
