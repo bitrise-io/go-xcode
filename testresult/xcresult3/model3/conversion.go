@@ -280,9 +280,11 @@ func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase,
 	var results []TestResult
 	for i, argument := range arguments {
 		results = append(results, argumentResult(argument.runs, retryMode))
+		if !retryMode {
+			continue
+		}
 
-		// An argument that ran fewer times keeps its last outcome in the later attempts, without adding time,
-		// so the last attempt carries every argument's final outcome.
+		// In retry mode, the last attempt must carry every argument's final outcome.
 		carried := argument.runs[len(argument.runs)-1]
 		carried.Duration = ""
 		for len(arguments[i].runs) < attemptCount {
@@ -325,6 +327,9 @@ func mergeArgumentAttempt(testNode TestNode, arguments []argumentRuns, index int
 	var results []TestResult
 
 	for _, argument := range arguments {
+		if index >= len(argument.runs) {
+			continue
+		}
 		attempt := argument.runs[index]
 
 		msg, msgWarnings := extractFailureMessage(attempt)

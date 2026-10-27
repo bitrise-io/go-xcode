@@ -406,7 +406,7 @@ func TestConversion_repetitions(t *testing.T) {
 			},
 		},
 		{
-			name: "argument without repetitions joins the first attempt",
+			name: "retried test carries an argument without repetitions into every attempt",
 			testCase: TestNode{
 				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "6s",
 				Children: []TestNode{
@@ -472,6 +472,31 @@ func TestConversion_repetitions(t *testing.T) {
 				Retries: []TestCase{
 					testCase(TestResultFailed, 3*time.Second, ".shirts: shirts first\n.dresses: dresses first\n"),
 					testCase(TestResultFailed, 2*time.Second, ".shirts: shirts second\n"),
+					testCase(TestResultPassed, time.Second, ""),
+				},
+			},
+		},
+		{
+			name: "argument without repetitions joins only the first run of a test run a fixed number of times",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "6s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultPassed, "",
+						repetition("Repetition 1", TestResultPassed, "1s", ""),
+						repetition("Repetition 2", TestResultPassed, "1s", ""),
+						repetition("Repetition 3", TestResultPassed, "1s", ""),
+					),
+					{
+						Type: TestNodeTypeArguments, Name: ".dresses", Result: TestResultFailed, Duration: "4s",
+						Children: []TestNode{{Type: TestNodeTypeFailureMessage, Name: "dresses failed"}},
+					},
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultFailed, 6*time.Second, ".dresses: dresses failed\n"),
+				Retries: []TestCase{
+					testCase(TestResultFailed, 4*time.Second, ".dresses: dresses failed\n"),
+					testCase(TestResultPassed, time.Second, ""),
 					testCase(TestResultPassed, time.Second, ""),
 				},
 			},
