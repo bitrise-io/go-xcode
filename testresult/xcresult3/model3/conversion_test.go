@@ -426,6 +426,29 @@ func TestConversion_repetitions(t *testing.T) {
 			},
 		},
 		{
+			name: "failed argument without repetitions fails the retried test",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "6s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultFailed, "",
+						repetition("First Run", TestResultFailed, "1s", "shirts failed"),
+						repetition("Retry 1", TestResultPassed, "1s", ""),
+					),
+					{
+						Type: TestNodeTypeArguments, Name: ".dresses", Result: TestResultFailed, Duration: "4s",
+						Children: []TestNode{{Type: TestNodeTypeFailureMessage, Name: "dresses failed"}},
+					},
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultFailed, 6*time.Second, ".dresses: dresses failed\n"),
+				Retries: []TestCase{
+					testCase(TestResultFailed, 4*time.Second, ".shirts: shirts failed\n.dresses: dresses failed\n"),
+					testCase(TestResultFailed, time.Second, ".dresses: dresses failed\n"),
+				},
+			},
+		},
+		{
 			name: "arguments retried a different number of times",
 			testCase: TestNode{
 				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "9s",
@@ -449,6 +472,26 @@ func TestConversion_repetitions(t *testing.T) {
 				Retries: []TestCase{
 					testCase(TestResultFailed, 3*time.Second, ".shirts: shirts first\n.dresses: dresses first\n"),
 					testCase(TestResultFailed, 2*time.Second, ".shirts: shirts second\n"),
+					testCase(TestResultPassed, time.Second, ""),
+				},
+			},
+		},
+		{
+			name: "attempt with passed and skipped arguments is passed",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultPassed, Duration: "2s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultPassed, "",
+						repetition("Repetition 1", TestResultPassed, "1s", ""),
+					),
+					arguments(".dresses", TestResultSkipped, "",
+						repetition("Repetition 1", TestResultSkipped, "1s", ""),
+					),
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultPassed, 2*time.Second, ""),
+				Retries: []TestCase{
 					testCase(TestResultPassed, time.Second, ""),
 				},
 			},

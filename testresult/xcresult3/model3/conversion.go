@@ -11,6 +11,11 @@ import (
 // comes from running a test a fixed number of times, where every run counts.
 const retryRepetitionPrefix = "Retry "
 
+type argumentRuns struct {
+	name     string
+	attempts []TestNode
+}
+
 // Convert converts TestData into a TestSummary and a list of warnings.
 func Convert(data *TestData) (*TestSummary, []string, error) {
 	var warnings []string
@@ -98,11 +103,12 @@ func extractTestCases(nodes []TestNode, fallbackName string) ([]TestCaseWithRetr
 		}
 		warnings = append(warnings, retryWarnings...)
 
-		argumentRetries, retryMode, argumentWarnings := extractArgumentRetries(testCaseNode, fallbackName)
+		argumentRetries, argumentsResult, argumentWarnings := extractArgumentRetries(testCaseNode, fallbackName)
 		warnings = append(warnings, argumentWarnings...)
 		if len(argumentRetries) > 0 {
 			retries = argumentRetries
-			testCase.Result = parametrizedResult(argumentRetries, retryMode)
+			// The test case's own result can stay failed after a retry passes.
+			testCase.Result = argumentsResult
 		}
 
 		testCases = append(testCases, TestCaseWithRetries{
@@ -234,9 +240,8 @@ func extractRetries(testNode TestNode, fallbackName string) ([]TestCase, []strin
 	return retries, warnings, nil
 }
 
-// extractArgumentRetries merges the arguments' repetitions into one attempt per run index.
-func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase, bool, []string) {
-	var attemptsByArgument [][]TestNode
+func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase, TestResult, []string) {
+	var arguments []argumentRuns
 	hasRepetitions := false
 	retryMode := false
 
@@ -253,8 +258,6 @@ func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase,
 			if strings.HasPrefix(repetition.Name, retryRepetitionPrefix) {
 				retryMode = true
 			}
-			// Labels the attempt's failure message with the argument.
-			repetition.Name = argument.Name
 			attempts = append(attempts, repetition)
 		}
 
@@ -263,45 +266,76 @@ func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase,
 		} else {
 			attempts = []TestNode{argument}
 		}
-		attemptsByArgument = append(attemptsByArgument, attempts)
+		arguments = append(arguments, argumentRuns{name: argument.Name, attempts: attempts})
 	}
 
 	if !hasRepetitions {
-		return nil, false, nil
+		return nil, "", nil
 	}
 
 	attemptCount := 0
-	for _, attempts := range attemptsByArgument {
-		attemptCount = max(attemptCount, len(attempts))
+	for _, argument := range arguments {
+		attemptCount = max(attemptCount, len(argument.attempts))
+	}
+
+	var results []TestResult
+	for i, argument := range arguments {
+		results = append(results, argumentResult(argument.attempts, retryMode))
+
+		// An argument that ran fewer times keeps its last outcome in the later attempts, without adding time,
+		// so the last attempt carries every argument's final outcome.
+		carried := argument.attempts[len(argument.attempts)-1]
+		carried.Duration = ""
+		for len(arguments[i].attempts) < attemptCount {
+			arguments[i].attempts = append(arguments[i].attempts, carried)
+		}
 	}
 
 	var retries []TestCase
 	var warnings []string
 	for i := range attemptCount {
-		var attempt []TestNode
-		for _, attempts := range attemptsByArgument {
-			if i < len(attempts) {
-				attempt = append(attempt, attempts[i])
-			}
-		}
-
-		retry, attemptWarnings := mergeArgumentAttempt(testNode, attempt, fallbackName)
+		retry, attemptWarnings := mergeArgumentAttempt(testNode, arguments, i, fallbackName)
 		warnings = append(warnings, attemptWarnings...)
 		retries = append(retries, retry)
 	}
 
-	return retries, retryMode, warnings
+	return retries, mergeResults(results), warnings
 }
 
-func mergeArgumentAttempt(testNode TestNode, attempt []TestNode, fallbackName string) (TestCase, []string) {
-	message, warnings := extractFailureMessageFromChildren(attempt)
+func argumentResult(attempts []TestNode, retryMode bool) TestResult {
+	last := attempts[len(attempts)-1].Result
+	if retryMode {
+		return last
+	}
 
+	failed := slices.ContainsFunc(attempts, func(attempt TestNode) bool {
+		return attempt.Result == TestResultFailed
+	})
+	if failed {
+		return TestResultFailed
+	}
+
+	return last
+}
+
+func mergeArgumentAttempt(testNode TestNode, arguments []argumentRuns, index int, fallbackName string) (TestCase, []string) {
+	var message string
+	var warnings []string
 	// Arguments run in parallel, so the slowest one is the time of the attempt.
 	var duration time.Duration
 	var results []TestResult
-	for _, node := range attempt {
-		duration = max(duration, extractDuration(node.Duration))
-		results = append(results, node.Result)
+
+	for _, argument := range arguments {
+		attempt := argument.attempts[index]
+
+		msg, msgWarnings := extractFailureMessage(attempt)
+		warnings = append(warnings, msgWarnings...)
+		if msg != "" {
+			message += fmt.Sprintf("%s: %s\n", argument.name, msg)
+		}
+
+		duration = max(duration, extractDuration(attempt.Duration))
+		results = append(results, attempt.Result)
 	}
 
 	return TestCase{
@@ -326,21 +360,4 @@ func mergeResults(results []TestResult) TestResult {
 	}
 
 	return results[0]
-}
-
-// parametrizedResult replaces the test case's own result, which can stay failed after a retry passes.
-func parametrizedResult(retries []TestCase, retryMode bool) TestResult {
-	last := retries[len(retries)-1].Result
-	if retryMode {
-		return last
-	}
-
-	failed := slices.ContainsFunc(retries, func(retry TestCase) bool {
-		return retry.Result == TestResultFailed
-	})
-	if failed {
-		return TestResultFailed
-	}
-
-	return last
 }
