@@ -7,8 +7,7 @@ import (
 	"time"
 )
 
-// retryRepetitionPrefix names the repetitions of a retry-on-failure run. Any other repetition name
-// comes from running a test a fixed number of times, where every run counts.
+// Repetitions named otherwise come from running a test a fixed number of times, where every run counts.
 const retryRepetitionPrefix = "Retry "
 
 type argumentRuns struct {
