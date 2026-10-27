@@ -31,3 +31,10 @@ func Archive(params ArchiveParams) (Command, error) {
 
 	return assemble(opts, params.AdditionalOptions, archivePolicy, params.Validation)
 }
+
+var archivePolicy = actionPolicy{
+	name:       ActionArchive,
+	rejections: []rejection{modeSwitching, testOnlyRefused, testOnly},
+	defaults:   []string{"-destination"},
+	appendable: []string{"-arch"},
+}

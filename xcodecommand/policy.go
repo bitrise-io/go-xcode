@@ -73,48 +73,9 @@ var (
 	}
 	// On a test run, -enumerate-tests lists the tests and runs none, and the command succeeds.
 	listsTests = rejection{reason: "It makes xcodebuild list the tests instead of running them.", flags: []string{"-enumerate-tests"}}
-	// test refuses -xctestrun next to its -scheme; test-without-building refuses -testPlan
-	// next to its -xctestrun (the xctestrun already carries its test plan).
+	// xcodebuild refuses -xctestrun next to -project, -workspace or -scheme, which test and
+	// build-for-testing always pass; test-without-building passes -xctestrun, which already
+	// names the tests to run, so it refuses those flags and -testPlan in turn.
 	withoutBuildingOnly = rejection{reason: "It applies to test-without-building only, and xcodebuild refuses it next to -scheme.", flags: []string{"-xctestrun"}}
-	withXCTestRun       = rejection{reason: "The xctestrun already selects the test plan, and xcodebuild refuses it next to -xctestrun.", flags: []string{"-testPlan"}}
-)
-
-var (
-	// The build family: a step's -destination is a fallback the user's replaces, -arch
-	// is repeatable.
-	archivePolicy = actionPolicy{
-		name:       ActionArchive,
-		rejections: []rejection{modeSwitching, testOnlyRefused, testOnly},
-		defaults:   []string{"-destination"},
-		appendable: []string{"-arch"},
-	}
-	buildPolicy = actionPolicy{
-		name:       ActionBuild,
-		rejections: []rejection{modeSwitching, testOnlyRefused, testOnly},
-		defaults:   []string{"-destination"},
-		appendable: []string{"-arch"},
-	}
-	analyzePolicy = actionPolicy{
-		name:       ActionAnalyze,
-		rejections: []rejection{modeSwitching, testOnlyRefused, testOnly},
-		defaults:   []string{"-destination", "-resultBundlePath"},
-		appendable: []string{"-arch"},
-	}
-	// build-for-testing takes the test selection flags, which it bakes into the xctestrun.
-	buildForTestingPolicy = actionPolicy{
-		name:       ActionBuildForTesting,
-		rejections: []rejection{modeSwitching},
-		defaults:   []string{"-destination"},
-		appendable: []string{"-arch"},
-	}
-	exportArchivePolicy = actionPolicy{
-		name:       "export archive",
-		rejections: []rejection{modeSwitching.except("-exportArchive"), testOnlyRefused, testOnly},
-	}
-	resolvePackagesPolicy = actionPolicy{
-		name:       "resolve packages",
-		rejections: []rejection{modeSwitching.except("-resolvePackageDependencies"), testOnlyRefused, testOnly},
-	}
-	testPolicy                = testRunPolicy(ActionTest, listsTests, withoutBuildingOnly)
-	testWithoutBuildingPolicy = testRunPolicy(ActionTestWithoutBuilding, listsTests, withXCTestRun)
+	withXCTestRun       = rejection{reason: "The xctestrun already names what to test, and xcodebuild refuses it next to -xctestrun.", flags: []string{"-testPlan", "-scheme", "-project", "-workspace"}}
 )

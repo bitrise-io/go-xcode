@@ -1,6 +1,7 @@
 package xcodecommand
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -49,18 +50,18 @@ func TestMerge(t *testing.T) {
 		{
 			name: "options with a new key are appended in the order given",
 			user: Options{{Kind: Switch, Name: "-quiet"}, {Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}},
-			want: append(without("", 0), "-quiet", "-sdk", "iphoneos"),
+			want: append(slices.Clone(base), "-quiet", "-sdk", "iphoneos"),
 		},
 		{
 			name:       "a repeated value option is passed through for xcodebuild to refuse, and reported",
 			user:       Options{{Kind: ValueOption, Name: "-configuration", Value: "Debug"}},
-			want:       append(without("", 0), "-configuration", "Debug"),
+			want:       append(slices.Clone(base), "-configuration", "Debug"),
 			collisions: []collision{{repeated, Option{Kind: ValueOption, Name: "-configuration", Value: "Release"}, Options{{Kind: ValueOption, Name: "-configuration", Value: "Debug"}}}},
 		},
 		{
 			name:       "a repeated owned path is passed through the same way",
 			user:       Options{{Kind: ValueOption, Name: "-xcconfig", Value: "mine.xcconfig"}},
-			want:       append(without("", 0), "-xcconfig", "mine.xcconfig"),
+			want:       append(slices.Clone(base), "-xcconfig", "mine.xcconfig"),
 			collisions: []collision{{repeated, Option{Kind: ValueOption, Name: "-xcconfig", Value: "/tmp/temp.xcconfig"}, Options{{Kind: ValueOption, Name: "-xcconfig", Value: "mine.xcconfig"}}}},
 		},
 		{
@@ -98,13 +99,13 @@ func TestMerge(t *testing.T) {
 		{
 			name:       "a value option repeated with the same value is still left for xcodebuild to refuse",
 			user:       Options{{Kind: ValueOption, Name: "-scheme", Value: "App"}},
-			want:       append(without("", 0), "-scheme", "App"),
+			want:       append(slices.Clone(base), "-scheme", "App"),
 			collisions: []collision{{repeated, Option{Kind: ValueOption, Name: "-scheme", Value: "App"}, Options{{Kind: ValueOption, Name: "-scheme", Value: "App"}}}},
 		},
 		{
 			name: "actions and unknown tokens are appended, never merged",
 			user: Options{{Kind: Action, Name: "clean"}, {Kind: Unknown, Name: "-scheme"}},
-			want: append(without("", 0), "clean", "-scheme"),
+			want: append(slices.Clone(base), "clean", "-scheme"),
 		},
 	}
 	for _, tt := range tests {

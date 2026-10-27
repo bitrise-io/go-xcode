@@ -1,5 +1,10 @@
 package xcodecommand
 
+import (
+	"fmt"
+	"path/filepath"
+)
+
 // ResolvePackagesParams describes an `xcodebuild -resolvePackageDependencies` invocation.
 // Zero-valued fields are omitted; a workspace needs a scheme.
 type ResolvePackagesParams struct {
@@ -16,6 +21,10 @@ type ResolvePackagesParams struct {
 // and mode-switching flags, anything unparseable) are left out, and the Command reports no
 // diagnostics: the main command reports those options, once.
 func ResolvePackages(params ResolvePackagesParams) (Command, error) {
+	if filepath.Ext(filepath.Clean(params.ProjectPath)) == xcworkspaceExtension && params.Scheme == "" {
+		// xcodebuild: "If you specify a workspace then you must also specify a scheme."
+		return Command{}, fmt.Errorf("resolving the packages of workspace %s needs a scheme", params.ProjectPath)
+	}
 	opts := containerOptions(params.ProjectPath)
 	opts = appendValue(opts, "-scheme", params.Scheme)
 	opts = appendValue(opts, "-configuration", params.Configuration)
@@ -29,4 +38,9 @@ func ResolvePackages(params ResolvePackagesParams) (Command, error) {
 	merged, _ := merge(opts, user, resolvePackagesPolicy)
 
 	return Command{args: merged.Args()}, nil
+}
+
+var resolvePackagesPolicy = actionPolicy{
+	name:       "resolve packages",
+	rejections: []rejection{modeSwitching.except("-resolvePackageDependencies"), testOnlyRefused, testOnly},
 }

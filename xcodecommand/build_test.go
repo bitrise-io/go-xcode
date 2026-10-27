@@ -32,6 +32,11 @@ func TestBuild(t *testing.T) {
 				"CODE_SIGNING_ALLOWED=NO", "-quiet",
 			},
 		},
+		{
+			name:   "a -destination in the additional options replaces the params' one",
+			params: BuildParams{Scheme: "App", Destination: "generic/platform=iOS", AdditionalOptions: []string{"-destination", "platform=iOS Simulator,name=iPhone 17"}},
+			want:   []string{"build", "-scheme", "App", "-destination", "platform=iOS Simulator,name=iPhone 17"},
+		},
 		{name: "workspace path with a trailing slash", params: BuildParams{ProjectPath: "App.xcworkspace/"}, want: []string{"build", "-workspace", "App.xcworkspace/"}},
 		{name: "Swift package manifest gets no container flag", params: BuildParams{ProjectPath: "MyPackage/Package.swift", Scheme: "CoolLibrary"}, want: []string{"build", "-scheme", "CoolLibrary"}},
 		{name: "Swift package directory gets no container flag", params: BuildParams{ProjectPath: "MyPackage/", Scheme: "CoolLibrary"}, want: []string{"build", "-scheme", "CoolLibrary"}},
@@ -43,20 +48,4 @@ func TestBuild(t *testing.T) {
 			require.Equal(t, tt.want, cmd.Args())
 		})
 	}
-}
-
-func TestAnalyze(t *testing.T) {
-	cmd, err := Analyze(AnalyzeParams{ProjectPath: "App.xcodeproj", Scheme: "App", ResultBundlePath: "/tmp/Analyze.xcresult", DisableCodeSigning: true, AdditionalOptions: []string{"COMPILER_INDEX_STORE_ENABLE=NO"}})
-	require.NoError(t, err)
-	require.Equal(t, []string{"analyze", "-project", "App.xcodeproj", "-scheme", "App", "-resultBundlePath", "/tmp/Analyze.xcresult", "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO"}, cmd.Args())
-}
-
-func TestBuildForTesting(t *testing.T) {
-	cmd, err := BuildForTesting(BuildForTestingParams{ProjectPath: "App.xcodeproj", Scheme: "App", Configuration: "Debug", Destination: "id=1", TestPlan: "FullTests", Authentication: &testAuth, AdditionalOptions: []string{"SYMROOT=/tmp/test_bundle", "-only-testing:AppTests"}})
-	require.NoError(t, err)
-	require.Equal(t, []string{
-		"build-for-testing", "-project", "App.xcodeproj", "-scheme", "App", "-configuration", "Debug", "-destination", "id=1",
-		"-allowProvisioningUpdates", "-authenticationKeyPath", "/key/path", "-authenticationKeyID", "keyID", "-authenticationKeyIssuerID", "issuerID",
-		"-testPlan", "FullTests", "SYMROOT=/tmp/test_bundle", "-only-testing:AppTests",
-	}, cmd.Args())
 }

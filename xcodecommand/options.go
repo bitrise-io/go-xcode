@@ -191,9 +191,9 @@ func parseFlag(args []string) (opt Option, consumed int, why issue) {
 	//   -only-testing:Suite/test=1                -> name -only-testing, value Suite/test=1
 	//   -only-testing:Pulley ManagerTests         -> name -only-testing, value Pulley ManagerTests
 	//   -quiet                                    -> name -quiet, no value
-	name, value := flag, ""
-	if sep := strings.IndexAny(flag, "=:"); sep > 0 {
-		name, value = flag[:sep], flag[sep+1:]
+	name, sep, value := flag, byte(0), ""
+	if i := strings.IndexAny(flag, "=:"); i > 0 {
+		name, sep, value = flag[:i], flag[i], flag[i+1:]
 	}
 	if strings.ContainsAny(name, " \t") {
 		// "-sdk macosx" quoted as one argument: xcodebuild refuses it
@@ -205,10 +205,10 @@ func parseFlag(args []string) (opt Option, consumed int, why issue) {
 	}
 
 	switch {
-	case len(name) < len(flag) && flag[len(name)] == '=':
+	case sep == '=':
 		// -UseModernBuildSystem=NO (an empty value is fine: -IDEFoo=)
 		return Option{Kind: UserDefault, Name: name, Value: value}, 1, noIssue
-	case len(name) < len(flag):
+	case sep == ':':
 		// -only-testing:AppTests; "-only-testing:" alone names no test
 		if value == "" {
 			return Option{}, 0, colonWithoutValue

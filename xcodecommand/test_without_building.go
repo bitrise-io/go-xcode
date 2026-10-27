@@ -37,3 +37,5 @@ func TestWithoutBuilding(params TestWithoutBuildingParams) (Command, error) {
 
 	return assemble(opts, params.AdditionalOptions, testWithoutBuildingPolicy, params.Validation)
 }
+
+var testWithoutBuildingPolicy = testRunPolicy(ActionTestWithoutBuilding, listsTests, withXCTestRun)

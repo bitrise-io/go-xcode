@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"unicode"
 
 	shellquote "github.com/kballard/go-shellquote"
 )
@@ -133,8 +134,9 @@ func lintPolicy(user Options, policy actionPolicy) []Diagnostic {
 // stepInput is a flag a Step input sets: passed in the additional options instead, it is
 // reported so the user reaches for the input.
 type stepInput struct {
-	hint     string
-	commands []string // the commands whose Steps have the input; empty means all
+	hint      string
+	commands  []string // the commands whose Steps have the input; empty means all
+	satisfied []string // value flags that, all set by the user too, make the flag work without the input
 }
 
 var testRunCommands = []string{ActionTest, ActionTestWithoutBuilding}
@@ -142,7 +144,10 @@ var testRunCommands = []string{ActionTest, ActionTestWithoutBuilding}
 const testRepetitionHint = "is set by the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead."
 
 var stepInputFlags = map[string]stepInput{
-	"-allowProvisioningUpdates": {hint: "cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead."},
+	"-allowProvisioningUpdates": {
+		hint:      "cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead.",
+		satisfied: []string{"-authenticationKeyPath", "-authenticationKeyID", "-authenticationKeyIssuerID"},
+	},
 	// xcode-test and xcode-test-without-building render these from their inputs.
 	"-test-iterations":                  {hint: testRepetitionHint, commands: testRunCommands},
 	"-retry-tests-on-failure":           {hint: testRepetitionHint, commands: testRunCommands},
@@ -157,12 +162,26 @@ func lintStepInputs(derived, user Options, command string) []Diagnostic {
 	for _, o := range user {
 		input, ok := stepInputFlags[o.Key()]
 		if !ok || (len(input.commands) > 0 && !slices.Contains(input.commands, command)) ||
-			slices.ContainsFunc(derived, func(d Option) bool { return d.Key() == o.Key() }) {
+			slices.ContainsFunc(derived, func(d Option) bool { return d.Key() == o.Key() }) ||
+			setsAll(user, input.satisfied) {
 			continue
 		}
 		diagnostics = append(diagnostics, Diagnostic{Kind: PreferStepInput, Message: fmt.Sprintf("%q %s", o, input.hint)})
 	}
 	return diagnostics
+}
+
+// setsAll says whether opts gives every one of the value flags a value; false for none.
+func setsAll(opts Options, flags []string) bool {
+	if len(flags) == 0 {
+		return false
+	}
+	for _, flag := range flags {
+		if !slices.ContainsFunc(opts, func(o Option) bool { return o.Kind == ValueOption && o.Name == flag && o.Value != "" }) {
+			return false
+		}
+	}
+	return true
 }
 
 // lintShadows reports a user "-flag=value" next to a derived "-flag value". It is not a
@@ -199,6 +218,13 @@ func lintCollisions(collisions []collision) []Diagnostic {
 		case redundant:
 			diagnostics = append(diagnostics, Diagnostic{Kind: RedundantOption, Message: fmt.Sprintf("%q is already set by the Step. Remove it.", c.derived)})
 		case overridden:
+			if c.derived.Kind == Switch {
+				if u := slices.IndexFunc(c.user, func(o Option) bool { return o.Kind != Switch }); u >= 0 {
+					// "-allowProvisioningUpdates YES": the switch takes no value, so YES is a build action
+					diagnostics = append(diagnostics, Diagnostic{Kind: MalformedOption, Message: fmt.Sprintf("%q gives a value to %s, which takes none. xcodebuild reads %q as a build action and fails. Use %s instead.", c.user[u], c.derived, c.user[u].Value, c.derived)})
+					continue
+				}
+			}
 			diagnostics = append(diagnostics, Diagnostic{Kind: Override, Message: fmt.Sprintf("%q replaces the Step's default %q.", c.user.join(), c.derived)})
 		case repeated:
 			diagnostics = append(diagnostics, Diagnostic{Kind: RepeatedOption, Message: fmt.Sprintf("%q repeats %q, which the Step sets. xcodebuild refuses a repeated option. Remove it, or change the Step input instead.", c.user.join(), c.derived)})
@@ -221,7 +247,11 @@ func shellQuoted(value string) string {
 // unquoteFlag turns "-destination 'generic/platform=iOS'" (one argument) into the form the
 // user meant: the flag, then the value quoted on its own.
 func unquoteFlag(arg string) string {
-	flag, value, _ := strings.Cut(arg, " ")
+	flag, value := arg, ""
+	if i := strings.IndexFunc(arg, unicode.IsSpace); i >= 0 {
+		// "-sdk\tmacosx" splits like "-sdk macosx": the parser takes any whitespace
+		flag, value = arg[:i], arg[i:]
+	}
 	value = strings.Trim(strings.TrimSpace(value), "'\"")
 	return flag + " " + shellQuoted(value)
 }

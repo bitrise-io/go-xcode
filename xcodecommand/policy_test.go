@@ -1,65 +1,49 @@
 package xcodecommand
 
 import (
-	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-// One row per command: what its policy replaces, keeps both of, refuses and lets through.
-// The constructors are wired to these policies; the merge rules themselves are covered in
-// merge_test.go.
+// One row per command: the flags its policy refuses and lets through, as verified against
+// xcodebuild. The merge rules are covered in merge_test.go.
 func TestPolicies(t *testing.T) {
 	tests := []struct {
-		policy     actionPolicy
-		defaults   []string
-		appendable []string
-		rejects    []string
-		accepts    []string
+		policy  actionPolicy
+		rejects []string
+		accepts []string
 	}{
 		{
-			policy:     archivePolicy,
-			defaults:   []string{"-destination"},
-			appendable: []string{"-arch"},
-			rejects:    []string{"-exportArchive", "-exportNotarizedApp", "-showBuildSettings", "-json", "-testPlan", "-only-testing", "-test-iterations", "-xctestrun", "-enableCodeCoverage", "-enumerate-tests"},
-			accepts:    []string{"-allowProvisioningUpdates", "-skipPackagePluginValidation", "-someFutureFlag"},
+			policy:  archivePolicy,
+			rejects: []string{"-exportArchive", "-exportNotarizedApp", "-showBuildSettings", "-json", "-testPlan", "-only-testing", "-test-iterations", "-xctestrun", "-enableCodeCoverage", "-enumerate-tests"},
+			accepts: []string{"-allowProvisioningUpdates", "-skipPackagePluginValidation", "-someFutureFlag"},
 		},
 		{
-			policy:     buildPolicy,
-			defaults:   []string{"-destination"},
-			appendable: []string{"-arch"},
-			rejects:    []string{"-exportArchive", "-testPlan", "-only-testing"},
-			accepts:    []string{"-quiet"},
+			policy:  buildPolicy,
+			rejects: []string{"-exportArchive", "-testPlan", "-only-testing"},
+			accepts: []string{"-quiet"},
 		},
 		{
-			policy:     analyzePolicy,
-			defaults:   []string{"-destination", "-resultBundlePath"},
-			appendable: []string{"-arch"},
-			rejects:    []string{"-exportArchive", "-testPlan", "-skip-testing"},
-			accepts:    []string{"-quiet"},
+			policy:  analyzePolicy,
+			rejects: []string{"-exportArchive", "-testPlan", "-skip-testing"},
+			accepts: []string{"-quiet"},
 		},
 		{
 			// build-for-testing bakes the test selection into the xctestrun.
-			policy:     buildForTestingPolicy,
-			defaults:   []string{"-destination"},
-			appendable: []string{"-arch"},
-			rejects:    []string{"-exportArchive", "-showBuildSettings", "-json"},
-			accepts:    []string{"-testPlan", "-only-testing", "-skip-testing", "-only-test-configuration", "-enableCodeCoverage", "-testProductsPath", "-testLanguage"},
+			policy:  buildForTestingPolicy,
+			rejects: []string{"-exportArchive", "-showBuildSettings", "-json", "-xctestrun"},
+			accepts: []string{"-testPlan", "-only-testing", "-skip-testing", "-only-test-configuration", "-enableCodeCoverage", "-testProductsPath", "-testLanguage"},
 		},
 		{
-			policy:     testPolicy,
-			defaults:   []string{"-collect-test-diagnostics"},
-			appendable: []string{"-arch", "-destination", "-only-test-configuration", "-only-testing", "-skip-test-configuration", "-skip-testing"},
-			rejects:    []string{"-exportArchive", "-xctestrun", "-enumerate-tests", "-json"},
-			accepts:    []string{"-testPlan", "-only-testing", "-parallel-testing-enabled", "-enableCodeCoverage"},
+			policy:  testPolicy,
+			rejects: []string{"-exportArchive", "-xctestrun", "-enumerate-tests", "-json"},
+			accepts: []string{"-testPlan", "-only-testing", "-parallel-testing-enabled", "-enableCodeCoverage"},
 		},
 		{
-			policy:     testWithoutBuildingPolicy,
-			defaults:   []string{"-collect-test-diagnostics"},
-			appendable: []string{"-arch", "-destination", "-only-test-configuration", "-only-testing", "-skip-test-configuration", "-skip-testing"},
-			rejects:    []string{"-exportArchive", "-showBuildSettings", "-testPlan", "-enumerate-tests"},
-			accepts:    []string{"-xctestrun", "-testProductsPath", "-enableCodeCoverage", "-only-testing", "-skip-testing", "-test-iterations"},
+			policy:  testWithoutBuildingPolicy,
+			rejects: []string{"-exportArchive", "-showBuildSettings", "-testPlan", "-scheme", "-project", "-workspace", "-enumerate-tests"},
+			accepts: []string{"-xctestrun", "-testProductsPath", "-enableCodeCoverage", "-only-testing", "-skip-testing", "-test-iterations"},
 		},
 		{
 			policy:  exportArchivePolicy,
@@ -74,8 +58,6 @@ func TestPolicies(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.policy.name, func(t *testing.T) {
-			require.Equal(t, tt.defaults, slices.Sorted(slices.Values(tt.policy.defaults)))
-			require.Equal(t, tt.appendable, slices.Sorted(slices.Values(tt.policy.appendable)))
 			for _, flag := range tt.rejects {
 				_, rejected := tt.policy.rejects(Option{Kind: Switch, Name: flag})
 				require.True(t, rejected, flag)

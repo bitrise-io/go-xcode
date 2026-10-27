@@ -14,8 +14,8 @@ func TestResolvePackages(t *testing.T) {
 	}{
 		{
 			name:   "workspace",
-			params: ResolvePackagesParams{ProjectPath: "test.xcworkspace"},
-			want:   []string{"-workspace", "test.xcworkspace", "-resolvePackageDependencies"},
+			params: ResolvePackagesParams{ProjectPath: "test.xcworkspace", Scheme: "Test"},
+			want:   []string{"-workspace", "test.xcworkspace", "-scheme", "Test", "-resolvePackageDependencies"},
 		},
 		{
 			name:   "project",
@@ -41,4 +41,9 @@ func TestResolvePackages(t *testing.T) {
 			require.Empty(t, cmd.Diagnostics(), "the main command reports the options, once")
 		})
 	}
+}
+
+func TestResolvePackages_WorkspaceNeedsScheme(t *testing.T) {
+	_, err := ResolvePackages(ResolvePackagesParams{ProjectPath: "test.xcworkspace"})
+	require.EqualError(t, err, "resolving the packages of workspace test.xcworkspace needs a scheme")
 }

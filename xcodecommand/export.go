@@ -21,3 +21,8 @@ func ExportArchive(params ExportArchiveParams) (Command, error) {
 
 	return assemble(opts, params.AdditionalOptions, exportArchivePolicy, params.Validation)
 }
+
+var exportArchivePolicy = actionPolicy{
+	name:       "export archive",
+	rejections: []rejection{modeSwitching.except("-exportArchive"), testOnlyRefused, testOnly},
+}

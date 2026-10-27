@@ -150,6 +150,22 @@ func TestDiagnosticMessages(t *testing.T) {
 			},
 		},
 		{
+			name:   "-allowProvisioningUpdates with the user's own API key flags",
+			user:   []string{"-allowProvisioningUpdates", "-authenticationKeyPath", "/key.p8", "-authenticationKeyID", "ID", "-authenticationKeyIssuerID", "ISSUER"},
+			policy: archivePolicy,
+		},
+		{
+			name: "a value given to the Step's switch",
+			user: []string{"-allowProvisioningUpdates", "YES"},
+			derived: Options{
+				{Kind: Switch, Name: "-allowProvisioningUpdates"},
+			},
+			policy: archivePolicy,
+			want: []string{
+				`"-allowProvisioningUpdates YES" gives a value to -allowProvisioningUpdates, which takes none. xcodebuild reads "YES" as a build action and fails. Use -allowProvisioningUpdates instead.`,
+			},
+		},
+		{
 			name: "merge",
 			user: []string{"-destination", "generic/platform=tvOS", "-allowProvisioningUpdates", "-xcconfig", "mine.xcconfig", "-collect-test-diagnostics=on-failure"},
 			derived: Options{
@@ -215,4 +231,5 @@ func TestShellQuoted(t *testing.T) {
 	}
 	require.Equal(t, `-destination 'platform=iOS Simulator,name=iPhone 15'`, unquoteFlag("-destination 'platform=iOS Simulator,name=iPhone 15'"))
 	require.Equal(t, "-sdk macosx", unquoteFlag("-sdk  macosx"))
+	require.Equal(t, "-sdk macosx", unquoteFlag("-sdk\tmacosx"))
 }

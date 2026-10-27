@@ -48,9 +48,9 @@ func TestTest(t *testing.T) {
 			},
 			want: []string{
 				"-project", "App.xcodeproj", "-scheme", "App", "clean", "test", "-destination", "id=SIM",
-				"-testPlan", "Full", "-xcconfig", "/tmp/temp.xcconfig",
-				"-resultBundlePath", "/tmp/Test.xcresult",
+				"-testPlan", "Full", "-resultBundlePath", "/tmp/Test.xcresult",
 				"-retry-tests-on-failure", "-test-iterations", "3", "-test-repetition-relaunch-enabled", "YES",
+				"-xcconfig", "/tmp/temp.xcconfig",
 				"-only-testing:AppTests", "-skip-testing:TestTarget1/TestClass1", "-skip-testing:TestTarget2",
 				"-collect-test-diagnostics", "never", "-quiet",
 			},
