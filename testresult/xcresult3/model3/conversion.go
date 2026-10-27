@@ -11,8 +11,8 @@ import (
 const retryRepetitionPrefix = "Retry "
 
 type argumentRuns struct {
-	name     string
-	attempts []TestNode
+	name string
+	runs []TestNode
 }
 
 // Convert converts TestData into a TestSummary and a list of warnings.
@@ -249,7 +249,7 @@ func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase,
 			continue
 		}
 
-		var attempts []TestNode
+		var runs []TestNode
 		for _, repetition := range argument.Children {
 			if repetition.Type != TestNodeTypeRepetition {
 				continue
@@ -257,15 +257,15 @@ func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase,
 			if strings.HasPrefix(repetition.Name, retryRepetitionPrefix) {
 				retryMode = true
 			}
-			attempts = append(attempts, repetition)
+			runs = append(runs, repetition)
 		}
 
-		if len(attempts) > 0 {
+		if len(runs) > 0 {
 			hasRepetitions = true
 		} else {
-			attempts = []TestNode{argument}
+			runs = []TestNode{argument}
 		}
-		arguments = append(arguments, argumentRuns{name: argument.Name, attempts: attempts})
+		arguments = append(arguments, argumentRuns{name: argument.Name, runs: runs})
 	}
 
 	if !hasRepetitions {
@@ -274,19 +274,19 @@ func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase,
 
 	attemptCount := 0
 	for _, argument := range arguments {
-		attemptCount = max(attemptCount, len(argument.attempts))
+		attemptCount = max(attemptCount, len(argument.runs))
 	}
 
 	var results []TestResult
 	for i, argument := range arguments {
-		results = append(results, argumentResult(argument.attempts, retryMode))
+		results = append(results, argumentResult(argument.runs, retryMode))
 
 		// An argument that ran fewer times keeps its last outcome in the later attempts, without adding time,
 		// so the last attempt carries every argument's final outcome.
-		carried := argument.attempts[len(argument.attempts)-1]
+		carried := argument.runs[len(argument.runs)-1]
 		carried.Duration = ""
-		for len(arguments[i].attempts) < attemptCount {
-			arguments[i].attempts = append(arguments[i].attempts, carried)
+		for len(arguments[i].runs) < attemptCount {
+			arguments[i].runs = append(arguments[i].runs, carried)
 		}
 	}
 
@@ -301,14 +301,14 @@ func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase,
 	return retries, mergeResults(results), warnings
 }
 
-func argumentResult(attempts []TestNode, retryMode bool) TestResult {
-	last := attempts[len(attempts)-1].Result
+func argumentResult(runs []TestNode, retryMode bool) TestResult {
+	last := runs[len(runs)-1].Result
 	if retryMode {
 		return last
 	}
 
-	failed := slices.ContainsFunc(attempts, func(attempt TestNode) bool {
-		return attempt.Result == TestResultFailed
+	failed := slices.ContainsFunc(runs, func(run TestNode) bool {
+		return run.Result == TestResultFailed
 	})
 	if failed {
 		return TestResultFailed
@@ -325,7 +325,7 @@ func mergeArgumentAttempt(testNode TestNode, arguments []argumentRuns, index int
 	var results []TestResult
 
 	for _, argument := range arguments {
-		attempt := argument.attempts[index]
+		attempt := argument.runs[index]
 
 		msg, msgWarnings := extractFailureMessage(attempt)
 		warnings = append(warnings, msgWarnings...)
