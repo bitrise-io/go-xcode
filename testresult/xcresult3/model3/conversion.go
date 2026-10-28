@@ -119,6 +119,87 @@ func extractTestCases(nodes []TestNode, fallbackName string) ([]TestCaseWithRetr
 	return testCases, warnings, nil
 }
 
+func extractDuration(text string) time.Duration {
+	// Duration is in the format "123.456789s", "123,456789s" or "4m 34s", so we need to do some normalization. We
+	// need to replace the comma with a dot and remove the space to be able to parse it with time.ParseDuration.
+	normalized := strings.ReplaceAll(text, ",", ".")
+	normalized = strings.ReplaceAll(normalized, " ", "")
+
+	duration, err := time.ParseDuration(normalized)
+	if err != nil {
+		return 0
+	}
+
+	return duration
+}
+
+func extractFailureMessageFromChildren(nodes []TestNode) (string, []string) {
+	var warnings []string
+	failureMessage := ""
+
+	for _, node := range nodes {
+		msg, wrns := extractFailureMessage(node)
+		if msg != "" {
+			failureMessage += fmt.Sprintf("%s: %s\n", node.Name, msg)
+		}
+		if wrns != nil {
+			warnings = append(warnings, wrns...)
+		}
+	}
+
+	return failureMessage, warnings
+}
+
+func extractFailureMessage(testNode TestNode) (string, []string) {
+	childrenCount := len(testNode.Children)
+	if childrenCount == 0 {
+		return "", nil
+	}
+
+	lastChild := testNode.Children[childrenCount-1]
+	if lastChild.Type == TestNodeTypeRepetition {
+		return extractFailureMessage(lastChild)
+	}
+	if lastChild.Type == TestNodeTypeTestPlanConfig || lastChild.Type == TestNodeTypeArguments {
+		return extractFailureMessageFromChildren(testNode.Children)
+	}
+
+	var warnings []string
+	failureMessage := ""
+
+	for _, child := range testNode.Children {
+		if child.Type == TestNodeTypeFailureMessage {
+			// The failure message appears in the Name field and not in the Details field.
+			if child.Name == "" {
+				warnings = append(warnings, fmt.Sprintf("'%s' type has empty name field", child.Type))
+			}
+			if child.Details != "" {
+				warnings = append(warnings, fmt.Sprintf("'%s' type has unexpected details field", child.Type))
+			}
+
+			failureMessage += child.Name
+		}
+	}
+
+	return failureMessage, warnings
+}
+
+func extractRetries(testNode TestNode, fallbackName string) ([]TestCase, []string, error) {
+	var retries []TestCase
+	var warnings []string
+
+	for _, child := range testNode.Children {
+		if child.Type == TestNodeTypeRepetition {
+			// Use the parent test node's identifier, instead of the repetition's identifier (1, 2, ...).
+			retry, testCaseWarnings := extractTestCase(child, testNode.Identifier, testNode.Name, fallbackName)
+			warnings = append(warnings, testCaseWarnings...)
+			retries = append(retries, retry)
+		}
+	}
+
+	return retries, warnings, nil
+}
+
 func extractTestCase(testNode TestNode, customNodeIdentifier, customName, fallbackClassName string) (TestCase, []string) {
 	var warnings []string
 
@@ -156,87 +237,6 @@ func extractClassName(nodeIdentifier, fallbackClassName string) string {
 	}
 
 	return className
-}
-
-func extractFailureMessage(testNode TestNode) (string, []string) {
-	childrenCount := len(testNode.Children)
-	if childrenCount == 0 {
-		return "", nil
-	}
-
-	lastChild := testNode.Children[childrenCount-1]
-	if lastChild.Type == TestNodeTypeRepetition {
-		return extractFailureMessage(lastChild)
-	}
-	if lastChild.Type == TestNodeTypeTestPlanConfig || lastChild.Type == TestNodeTypeArguments {
-		return extractFailureMessageFromChildren(testNode.Children)
-	}
-
-	var warnings []string
-	failureMessage := ""
-
-	for _, child := range testNode.Children {
-		if child.Type == TestNodeTypeFailureMessage {
-			// The failure message appears in the Name field and not in the Details field.
-			if child.Name == "" {
-				warnings = append(warnings, fmt.Sprintf("'%s' type has empty name field", child.Type))
-			}
-			if child.Details != "" {
-				warnings = append(warnings, fmt.Sprintf("'%s' type has unexpected details field", child.Type))
-			}
-
-			failureMessage += child.Name
-		}
-	}
-
-	return failureMessage, warnings
-}
-
-func extractFailureMessageFromChildren(nodes []TestNode) (string, []string) {
-	var warnings []string
-	failureMessage := ""
-
-	for _, node := range nodes {
-		msg, wrns := extractFailureMessage(node)
-		if msg != "" {
-			failureMessage += fmt.Sprintf("%s: %s\n", node.Name, msg)
-		}
-		if wrns != nil {
-			warnings = append(warnings, wrns...)
-		}
-	}
-
-	return failureMessage, warnings
-}
-
-func extractDuration(text string) time.Duration {
-	// Duration is in the format "123.456789s", "123,456789s" or "4m 34s", so we need to do some normalization. We
-	// need to replace the comma with a dot and remove the space to be able to parse it with time.ParseDuration.
-	normalized := strings.ReplaceAll(text, ",", ".")
-	normalized = strings.ReplaceAll(normalized, " ", "")
-
-	duration, err := time.ParseDuration(normalized)
-	if err != nil {
-		return 0
-	}
-
-	return duration
-}
-
-func extractRetries(testNode TestNode, fallbackName string) ([]TestCase, []string, error) {
-	var retries []TestCase
-	var warnings []string
-
-	for _, child := range testNode.Children {
-		if child.Type == TestNodeTypeRepetition {
-			// Use the parent test node's identifier, instead of the repetition's identifier (1, 2, ...).
-			retry, testCaseWarnings := extractTestCase(child, testNode.Identifier, testNode.Name, fallbackName)
-			warnings = append(warnings, testCaseWarnings...)
-			retries = append(retries, retry)
-		}
-	}
-
-	return retries, warnings, nil
 }
 
 func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase, TestResult, []string) {
