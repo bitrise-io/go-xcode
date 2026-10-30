@@ -1,3 +1,4 @@
+// Package xcworkspace reads Xcode workspace bundles (.xcworkspace).
 package xcworkspace
 
 import (
@@ -6,124 +7,229 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bitrise-io/go-utils/fileutil"
-	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/xcodebuild"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 )
 
-const (
-	// XCWorkspaceExtension ...
-	XCWorkspaceExtension = ".xcworkspace"
-)
+// XCWorkspaceExtension is the file extension of an Xcode workspace bundle.
+const XCWorkspaceExtension = ".xcworkspace"
 
-// Workspace represents an Xcode workspace
+const contentsFileName = "contents.xcworkspacedata"
+
+// IsWorkspace reports whether the path has the .xcworkspace extension.
+func IsWorkspace(pth string) bool {
+	return filepath.Ext(pth) == XCWorkspaceExtension
+}
+
+// BuildSettingsProvider resolves the effective build settings of a scheme.
+type BuildSettingsProvider interface {
+	SchemeBuildSettings(workspacePath, scheme, configuration string, extraArgs ...string) (serialized.Object, error)
+}
+
+// Factory opens Xcode workspaces with a fixed set of dependencies.
+type Factory struct {
+	logger           log.Logger
+	buildSettings    BuildSettingsProvider
+	fileManager      fileutil.FileManager
+	plistFileHandler plistutil.FileHandler
+	pathModifier     pathutil.PathModifier
+	pathChecker      pathutil.PathChecker
+	userProvider     xcodeproj.UserProvider
+	projectFactory   xcodeproj.Factory
+	schemeFactory    xcscheme.Factory
+}
+
+// NewFactory returns a Factory that injects the given collaborators into every workspace it opens.
+// projectFactory opens the projects a workspace references.
+func NewFactory(
+	logger log.Logger,
+	buildSettings BuildSettingsProvider,
+	fileManager fileutil.FileManager,
+	plistFileHandler plistutil.FileHandler,
+	pathModifier pathutil.PathModifier,
+	pathChecker pathutil.PathChecker,
+	userProvider xcodeproj.UserProvider,
+	projectFactory xcodeproj.Factory,
+) Factory {
+	return Factory{
+		logger:           logger,
+		buildSettings:    buildSettings,
+		fileManager:      fileManager,
+		plistFileHandler: plistFileHandler,
+		pathModifier:     pathModifier,
+		pathChecker:      pathChecker,
+		userProvider:     userProvider,
+		projectFactory:   projectFactory,
+		schemeFactory:    xcscheme.NewFactory(fileManager),
+	}
+}
+
+// Open reads the workspace at pth.
+func (f Factory) Open(pth string) (*Workspace, error) {
+	absPth, err := f.pathModifier.AbsPath(pth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to expand path (%s): %w", pth, err)
+	}
+
+	contentsPth := filepath.Join(absPth, contentsFileName)
+
+	file, err := f.fileManager.Open(contentsPth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %s: %w", contentsPth, err)
+	}
+	defer func() {
+		_ = file.Close()
+	}()
+
+	var contents contents
+	if err := xml.NewDecoder(file).Decode(&contents); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal %s: %w", contentsPth, err)
+	}
+
+	return &Workspace{
+		Name:             strings.TrimSuffix(filepath.Base(absPth), filepath.Ext(absPth)),
+		Path:             absPth,
+		fileRefs:         contents.FileRefs,
+		groups:           contents.Groups,
+		logger:           f.logger,
+		buildSettings:    f.buildSettings,
+		fileManager:      f.fileManager,
+		plistFileHandler: f.plistFileHandler,
+		pathModifier:     f.pathModifier,
+		pathChecker:      f.pathChecker,
+		userProvider:     f.userProvider,
+		projectFactory:   f.projectFactory,
+		schemeFactory:    f.schemeFactory,
+	}, nil
+}
+
+// Workspace is a parsed Xcode workspace.
 type Workspace struct {
-	FileRefs []FileRef `xml:"FileRef"`
-	Groups   []Group   `xml:"Group"`
-
 	Name string
 	Path string
+
+	fileRefs []FileRef
+	groups   []Group
+
+	logger           log.Logger
+	buildSettings    BuildSettingsProvider
+	fileManager      fileutil.FileManager
+	plistFileHandler plistutil.FileHandler
+	pathModifier     pathutil.PathModifier
+	pathChecker      pathutil.PathChecker
+	userProvider     xcodeproj.UserProvider
+	projectFactory   xcodeproj.Factory
+	schemeFactory    xcscheme.Factory
 }
 
-// Open ...
-func Open(pth string) (Workspace, error) {
-	contentsPth := filepath.Join(pth, "contents.xcworkspacedata")
-	b, err := fileutil.ReadBytesFromFile(contentsPth)
-	if err != nil {
-		return Workspace{}, err
-	}
-
-	var workspace Workspace
-	if err := xml.Unmarshal(b, &workspace); err != nil {
-		return Workspace{}, fmt.Errorf("failed to unmarshal workspace file: %s, error: %s", pth, err)
-	}
-
-	workspace.Name = strings.TrimSuffix(filepath.Base(pth), filepath.Ext(pth))
-	workspace.Path = pth
-
-	return workspace, nil
+// FileLocations returns the absolute paths of the files the workspace references: the top-level
+// ones first, then each group's, where a group's own files precede those of its subgroups.
+func (w *Workspace) FileLocations() ([]string, error) {
+	return w.fileLocations(w.fileRefs, w.groups, filepath.Dir(w.Path))
 }
 
-// SchemeBuildSettings ...
-func (w Workspace) SchemeBuildSettings(scheme, configuration string, customOptions ...string) (serialized.Object, error) {
-	log.TDebugf("Fetching %s scheme build settings", scheme)
+func (w *Workspace) fileLocations(fileRefs []FileRef, groups []Group, groupDir string) ([]string, error) {
+	var locations []string
 
-	commandModel := xcodebuild.NewShowBuildSettingsCommand(w.Path)
-	commandModel.SetScheme(scheme)
-	commandModel.SetConfiguration(configuration)
-	commandModel.SetCustomOptions(customOptions)
-
-	object, err := commandModel.RunAndReturnSettings()
-
-	log.TDebugf("Fetched %s scheme build settings", scheme)
-
-	return object, err
-}
-
-// SchemeCodeSignEntitlements returns the code sign entitlements for a scheme and configuration
-func (w Workspace) SchemeCodeSignEntitlements(scheme, configuration string, customOptions ...string) (serialized.Object, error) {
-	buildSettings, err := w.SchemeBuildSettings(scheme, configuration, customOptions...)
-	if err != nil {
-		return nil, err
-	}
-
-	entitlementsPath, err := buildSettings.String("CODE_SIGN_ENTITLEMENTS")
-	if err != nil {
-		return nil, err
-	}
-
-	if pathutil.IsRelativePath(entitlementsPath) {
-		entitlementsPath = filepath.Join(filepath.Dir(w.Path), entitlementsPath)
-	}
-
-	entitlements, _, err := xcodeproj.ReadPlistFile(entitlementsPath)
-	if err != nil {
-		return nil, err
-	}
-
-	log.TDebugf("Fetched %s scheme code sign entitlements", scheme)
-	return entitlements, nil
-}
-
-// FileLocations ...
-func (w Workspace) FileLocations() ([]string, error) {
-	var fileLocations []string
-
-	for _, fileRef := range w.FileRefs {
-		pth, err := fileRef.AbsPath(filepath.Dir(w.Path))
+	for _, fileRef := range fileRefs {
+		pth, err := w.absPath(fileRef.Location, groupDir)
 		if err != nil {
 			return nil, err
 		}
 
-		fileLocations = append(fileLocations, pth)
+		locations = append(locations, pth)
 	}
 
-	for _, group := range w.Groups {
-		groupFileLocations, err := group.FileLocations(filepath.Dir(w.Path))
+	for _, group := range groups {
+		subgroupDir, err := w.absPath(group.Location, groupDir)
 		if err != nil {
 			return nil, err
 		}
 
-		fileLocations = append(fileLocations, groupFileLocations...)
+		groupLocations, err := w.fileLocations(group.FileRefs, group.Groups, subgroupDir)
+		if err != nil {
+			return nil, err
+		}
+
+		locations = append(locations, groupLocations...)
 	}
 
-	return fileLocations, nil
+	return locations, nil
 }
 
-// ProjectFileLocations ...
-func (w Workspace) ProjectFileLocations() ([]string, error) {
+// absPath resolves a file reference or group location found in the group at groupDir.
+func (w *Workspace) absPath(location, groupDir string) (string, error) {
+	refType, pth, err := parseLocation(location)
+	if err != nil {
+		return "", err
+	}
+
+	switch refType {
+	case GroupFileRefType:
+		pth = filepath.Join(groupDir, pth)
+	case ContainerFileRefType:
+		pth = filepath.Join(filepath.Dir(w.Path), pth)
+	case AbsoluteFileRefType:
+	}
+
+	return w.pathModifier.AbsPath(pth)
+}
+
+// ProjectFileLocations returns the absolute paths of the projects the workspace references, in
+// FileLocations order.
+func (w *Workspace) ProjectFileLocations() ([]string, error) {
+	locations, err := w.FileLocations()
+	if err != nil {
+		return nil, err
+	}
+
 	var projectLocations []string
-	fileLocations, err := w.FileLocations()
-	if err != nil {
-		return nil, err
-	}
-	for _, fileLocation := range fileLocations {
-		if xcodeproj.IsXcodeProj(fileLocation) {
-			projectLocations = append(projectLocations, fileLocation)
+	for _, location := range locations {
+		if xcodeproj.IsXcodeProj(location) {
+			projectLocations = append(projectLocations, location)
 		}
 	}
+
 	return projectLocations, nil
+}
+
+// Projects opens the projects the workspace references, in ProjectFileLocations order. A referenced
+// project missing from disk is skipped, as Xcode opens the workspace without it.
+func (w *Workspace) Projects() ([]*xcodeproj.XcodeProj, error) {
+	locations, err := w.ProjectFileLocations()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project locations from workspace: %w", err)
+	}
+
+	var projects []*xcodeproj.XcodeProj
+	for _, location := range locations {
+		exists, err := w.pathChecker.IsPathExists(location)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check if project (%s) exists: %w", location, err)
+		}
+		if !exists {
+			w.logger.TDebugf("Skipping missing project: %s", location)
+			continue
+		}
+
+		project, err := w.projectFactory.Open(location)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open project (%s): %w", location, err)
+		}
+
+		projects = append(projects, project)
+	}
+
+	return projects, nil
+}
+
+// SchemeBuildSettings returns the scheme's effective build settings, resolved by xcodebuild within
+// the workspace.
+func (w *Workspace) SchemeBuildSettings(scheme, configuration string, extraArgs ...string) (serialized.Object, error) {
+	return w.buildSettings.SchemeBuildSettings(w.Path, scheme, configuration, extraArgs...)
 }

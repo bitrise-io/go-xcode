@@ -1,0 +1,114 @@
+package xcworkspace_tests
+
+import (
+	"path/filepath"
+	"testing"
+
+	"github.com/bitrise-io/go-utils/v2/command"
+	"github.com/bitrise-io/go-utils/v2/env"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-xcode/v2/_integration_tests"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/xcodebuild"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/text/unicode/norm"
+)
+
+// The sample workspace references one project next to it and one through nested groups.
+const xcodeProjectTestRepoURL = "https://github.com/bitrise-samples/xcode-project-test.git"
+
+func TestWorkspace_Schemes(t *testing.T) {
+	dir := _integration_tests.GetRepository(t, xcodeProjectTestRepoURL, "master")
+	workspace, err := newFactory().Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
+	require.NoError(t, err)
+
+	projectPaths, err := workspace.ProjectFileLocations()
+	require.NoError(t, err)
+	assert.Equal(t, []string{
+		filepath.Join(dir, "XcodeProj.xcodeproj"),
+		filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"),
+	}, projectPaths)
+
+	schemes, err := workspace.Schemes()
+	require.NoError(t, err)
+	require.Len(t, schemes, 3)
+
+	assert.Equal(t, []string{"WorkspaceScheme"}, schemeNames(schemes[workspace.Path]))
+	assert.Equal(t, []string{"Gdańsk", "ProjectScheme", "ProjectTodayExtensionScheme"}, normalised(schemeNames(schemes[filepath.Join(dir, "XcodeProj.xcodeproj")])))
+	assert.Equal(t, []string{
+		"SubProjectScheme",
+		"SubProjectTestScheme",
+		"SubProjectWatchKitApp (Notification) Scheme",
+		"SubProjectWatchKitAppScheme",
+	}, schemeNames(schemes[filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj")]))
+}
+
+func TestWorkspace_Scheme(t *testing.T) {
+	dir := _integration_tests.GetRepository(t, xcodeProjectTestRepoURL, "master")
+	workspace, err := newFactory().Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
+	require.NoError(t, err)
+
+	scheme, container, err := workspace.Scheme("SubProjectWatchKitApp (Notification) Scheme")
+	require.NoError(t, err)
+	assert.Equal(t, filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"), container)
+	assert.Equal(t, "SubProjectWatchKitApp (Notification) Scheme", scheme.Name)
+
+	// Gdańsk as High Sierra (precomposed ń) and Mojave (decomposed ń) represent it.
+	for _, name := range []string{"Gdańsk", "Gdańsk"} {
+		scheme, container, err := workspace.Scheme(name)
+		require.NoError(t, err)
+		assert.Equal(t, filepath.Join(dir, "XcodeProj.xcodeproj"), container)
+		assert.Equal(t, norm.NFC.String(name), norm.NFC.String(scheme.Name))
+	}
+
+	_, container, err = workspace.Scheme("Not Exist Scheme")
+	assert.EqualError(t, err, "scheme Not Exist Scheme not found in XcodeProj")
+	assert.Equal(t, "", container)
+}
+
+func TestWorkspace_SchemeBuildSettings(t *testing.T) {
+	dir := _integration_tests.GetRepository(t, xcodeProjectTestRepoURL, "master")
+	workspace, err := newFactory().Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
+	require.NoError(t, err)
+
+	settings, err := workspace.SchemeBuildSettings("ProjectScheme", "Release")
+	require.NoError(t, err)
+
+	bundleID, ok := settings.String("PRODUCT_BUNDLE_IDENTIFIER")
+	require.True(t, ok)
+	assert.NotEmpty(t, bundleID)
+}
+
+func newFactory() xcworkspace.Factory {
+	logger := log.NewLogger()
+	buildSettings := xcodebuild.NewShowBuildSettingsProvider(command.NewFactory(env.NewRepository()), logger)
+	fileManager := fileutil.NewFileManager()
+	plistFileHandler := plistutil.NewFileHandler(fileManager)
+	pathModifier := pathutil.NewPathModifier()
+	userProvider := xcodeproj.NewUserProvider()
+	projectFactory := xcodeproj.NewFactory(logger, buildSettings, fileManager, plistFileHandler, pathModifier, pathutil.NewPathProvider(), userProvider, xcodeproj.NewDirCreator())
+
+	return xcworkspace.NewFactory(logger, buildSettings, fileManager, plistFileHandler, pathModifier, pathutil.NewPathChecker(), userProvider, projectFactory)
+}
+
+func schemeNames(schemes []xcscheme.Scheme) []string {
+	var names []string
+	for _, scheme := range schemes {
+		names = append(names, scheme.Name)
+	}
+	return names
+}
+
+func normalised(names []string) []string {
+	var out []string
+	for _, name := range names {
+		out = append(out, norm.NFC.String(name))
+	}
+	return out
+}

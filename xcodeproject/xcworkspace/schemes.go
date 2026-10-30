@@ -4,198 +4,149 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 
-	"github.com/bitrise-io/go-utils/log"
-	"github.com/bitrise-io/go-utils/pathutil"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 	"golang.org/x/text/unicode/norm"
-	"howett.net/plist"
+
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 )
 
-// Schemes returns the schemes considered by Xcode, when opening the given workspace.
-// The considered schemes are the workspace shared schemes, the workspace user schemes (for the current user)
-// and the embedded project's schemes (XcodeProj.SchemesWithAutocreateEnabled).
-func (w Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
-	log.TDebugf("Searching schemes in workspace: %s", w.Path)
+const (
+	xcschemeExtension           = ".xcscheme"
+	autocreateSchemesSettingKey = "IDEWorkspaceSharedSettings_AutocreateContextsIfNeeded"
+)
 
-	schemesByContainer := map[string][]xcscheme.Scheme{}
+// containerSchemes are the schemes one container, the workspace or a project, holds.
+type containerSchemes struct {
+	path    string
+	schemes []xcscheme.Scheme
+}
 
-	sharedSchemes, err := w.sharedSchemes()
+// Schemes returns the schemes Xcode considers when opening the workspace, keyed by the path of the
+// container that holds them: the workspace's own shared and user schemes under the workspace path,
+// and each referenced project's schemes under that project's path. A project without schemes gets
+// Xcode's default ones when the workspace's "Autocreate schemes" option is on.
+func (w *Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
+	containers, err := w.schemesByContainer()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read shared schemes: %w", err)
+		return nil, err
 	}
 
-	userSchemes, err := w.userSchemes()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read user schemes: %w", err)
-	}
-
-	workspaceSchemes := append(sharedSchemes, userSchemes...)
-
-	log.TDebugf("%d scheme(s) found", len(workspaceSchemes))
-	if len(workspaceSchemes) > 0 {
-		schemesByContainer[w.Path] = workspaceSchemes
-	}
-
-	// project schemes
-	projectLocations, err := w.ProjectFileLocations()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get project locations from workspace: %w", err)
-	}
-
-	isAutocreateSchemesEnabled, err := w.isAutocreateSchemesEnabled()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read the workspace autocreate scheme option: %w", err)
-	}
-
-	for _, projectLocation := range projectLocations {
-		if exist, err := pathutil.IsPathExists(projectLocation); err != nil {
-			return nil, fmt.Errorf("failed to check if project (%s) exists: %w", projectLocation, err)
-		} else if !exist {
-			// at this point we are interested the schemes visible for the workspace
-			continue
-		}
-
-		project, err := xcodeproj.Open(projectLocation)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open project (%s): %w", projectLocation, err)
-		}
-
-		projectSchemes, err := project.SchemesWithAutocreateEnabled(isAutocreateSchemesEnabled)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read project (%s) schemes: %w", projectLocation, err)
-		}
-
-		if len(projectSchemes) > 0 {
-			schemesByContainer[project.Path] = projectSchemes
-		}
+	schemesByContainer := make(map[string][]xcscheme.Scheme, len(containers))
+	for _, container := range containers {
+		schemesByContainer[container.path] = container.schemes
 	}
 
 	return schemesByContainer, nil
 }
 
-// Scheme returns the scheme by name, and it's container's absolute path.
-func (w Workspace) Scheme(name string) (*xcscheme.Scheme, string, error) {
-	schemesByContainer, err := w.Schemes()
+// Scheme returns the scheme with the given name and the path of the container that holds it. The
+// workspace's own schemes are searched first, then each project's in ProjectFileLocations order.
+// Names are compared after Unicode normalisation.
+func (w *Workspace) Scheme(name string) (xcscheme.Scheme, string, error) {
+	containers, err := w.schemesByContainer()
 	if err != nil {
-		return nil, "", err
+		return xcscheme.Scheme{}, "", err
 	}
 
-	normName := norm.NFC.String(name)
-	for container, schemes := range schemesByContainer {
-		for _, scheme := range schemes {
-			if norm.NFC.String(scheme.Name) == normName {
-				return &scheme, container, nil
+	normalisedName := norm.NFC.String(name)
+	for _, container := range containers {
+		for _, scheme := range container.schemes {
+			if norm.NFC.String(scheme.Name) == normalisedName {
+				return scheme, container.path, nil
 			}
 		}
 	}
 
-	return nil, "", xcscheme.NotFoundError{Scheme: name, Container: w.Name}
+	return xcscheme.Scheme{}, "", xcscheme.NotFoundError{Scheme: name, Container: w.Name}
 }
 
-func (w Workspace) sharedSchemes() ([]xcscheme.Scheme, error) {
-	sharedSchemeFilePaths, err := w.sharedSchemeFilePaths()
+// schemesByContainer lists the containers holding at least one scheme, the workspace first.
+func (w *Workspace) schemesByContainer() ([]containerSchemes, error) {
+	w.logger.TDebugf("Searching schemes in workspace: %s", w.Path)
+
+	var containers []containerSchemes
+
+	schemes, err := w.visibleSchemes()
 	if err != nil {
 		return nil, err
 	}
 
-	var sharedSchemes []xcscheme.Scheme
-	for _, pth := range sharedSchemeFilePaths {
-		scheme, err := xcscheme.Open(pth)
-		if err != nil {
-			return nil, err
-		}
-
-		sharedSchemes = append(sharedSchemes, scheme)
+	w.logger.TDebugf("%d scheme(s) found", len(schemes))
+	if len(schemes) > 0 {
+		containers = append(containers, containerSchemes{path: w.Path, schemes: schemes})
 	}
 
-	return sharedSchemes, nil
+	projects, err := w.Projects()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(projects) == 0 {
+		return containers, nil
+	}
+
+	// Read lazily: a workspace without projects never depends on this file.
+	autocreate, err := w.isAutocreateSchemesEnabled()
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the workspace autocreate scheme option: %w", err)
+	}
+
+	for _, project := range projects {
+		schemes, err := project.SchemesWithAutocreateOverride(autocreate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read project (%s) schemes: %w", project.Path, err)
+		}
+
+		if len(schemes) > 0 {
+			containers = append(containers, containerSchemes{path: project.Path, schemes: schemes})
+		}
+	}
+
+	return containers, nil
 }
 
-func (w Workspace) sharedSchemeFilePaths() ([]string, error) {
+// visibleSchemes returns the workspace's shared schemes, then the current user's.
+func (w *Workspace) visibleSchemes() ([]xcscheme.Scheme, error) {
+	shared, err := w.readSchemes(w.sharedSchemesDir())
+	if err != nil {
+		return nil, fmt.Errorf("failed to read shared schemes: %w", err)
+	}
+	for i := range shared {
+		shared[i].IsShared = true
+	}
+
+	userDir, err := w.userSchemesDir()
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := w.readSchemes(userDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read user schemes: %w", err)
+	}
+
+	return append(shared, user...), nil
+}
+
+func (w *Workspace) sharedSchemesDir() string {
 	// <workspace_name>.xcworkspace/xcshareddata/xcschemes/<scheme_name>.xcscheme
-	sharedSchemesDir := filepath.Join(w.Path, "xcshareddata", "xcschemes")
-	return listSchemeFilePaths(sharedSchemesDir)
+	return filepath.Join(w.Path, "xcshareddata", "xcschemes")
 }
 
-func (w Workspace) userSchemes() ([]xcscheme.Scheme, error) {
-	userSchemeFilePaths, err := w.userSchemeFilePaths()
-	if err != nil {
-		return nil, err
-	}
-
-	var userSchemes []xcscheme.Scheme
-	for _, pth := range userSchemeFilePaths {
-		scheme, err := xcscheme.Open(pth)
-		if err != nil {
-			return nil, err
-		}
-
-		userSchemes = append(userSchemes, scheme)
-	}
-
-	return userSchemes, nil
-}
-
-func (w Workspace) userSchemeFilePaths() ([]string, error) {
+func (w *Workspace) userSchemesDir() (string, error) {
 	// <workspace_name>.xcworkspace/xcuserdata/<current_user>.xcuserdatad/xcschemes/<scheme_name>.xcscheme
-	userSchemesDir, err := w.userSchemesDir()
+	username, err := w.userProvider.CurrentUserName()
 	if err != nil {
-		return nil, err
+		return "", fmt.Errorf("failed to get the current user: %w", err)
 	}
-	return listSchemeFilePaths(userSchemesDir)
-}
-
-func (w Workspace) userSchemesDir() (string, error) {
-	// <workspace_name>.xcworkspace/xcuserdata/<current_user>.xcuserdatad/xcschemes/
-	currentUser, err := user.Current()
-	if err != nil {
-		return "", err
-	}
-
-	username := currentUser.Username
 
 	return filepath.Join(w.Path, "xcuserdata", username+".xcuserdatad", "xcschemes"), nil
 }
 
-func (w Workspace) isAutocreateSchemesEnabled() (bool, error) {
-	// <workspace_name>.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
-	shareddataDir := filepath.Join(w.Path, "xcshareddata")
-	workspaceSettingsPth := filepath.Join(shareddataDir, "WorkspaceSettings.xcsettings")
-
-	workspaceSettingsContent, err := os.ReadFile(workspaceSettingsPth)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			// By default 'Autocreate Schemes' is enabled
-			return true, nil
-		}
-
-		return false, err
-	}
-
-	var settings serialized.Object
-	if _, err := plist.Unmarshal(workspaceSettingsContent, &settings); err != nil {
-		return false, fmt.Errorf("failed to unmarshall settings: %w", err)
-	}
-
-	autoCreate, err := settings.Bool("IDEWorkspaceSharedSettings_AutocreateContextsIfNeeded")
-	if err != nil {
-		if serialized.IsKeyNotFoundError(err) {
-			// By default 'Autocreate Schemes' is enabled
-			return true, nil
-		}
-		return false, err
-	}
-
-	return autoCreate, nil
-}
-
-func listSchemeFilePaths(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
+func (w *Workspace) readSchemes(dir string) ([]xcscheme.Scheme, error) {
+	names, err := w.fileManager.ReadDirEntryNames(dir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
@@ -203,13 +154,45 @@ func listSchemeFilePaths(dir string) ([]string, error) {
 		return nil, err
 	}
 
-	var schemeFilePaths []string
-	for _, entry := range entries {
-		baseName := entry.Name()
-		if filepath.Ext(baseName) == ".xcscheme" {
-			schemeFilePaths = append(schemeFilePaths, filepath.Join(dir, baseName))
+	var schemes []xcscheme.Scheme
+	for _, name := range names {
+		if filepath.Ext(name) != xcschemeExtension {
+			continue
 		}
+
+		scheme, err := w.schemeFactory.Open(filepath.Join(dir, name))
+		if err != nil {
+			return nil, err
+		}
+
+		schemes = append(schemes, scheme)
 	}
 
-	return schemeFilePaths, nil
+	return schemes, nil
+}
+
+// isAutocreateSchemesEnabled defaults to true when the settings file or the key is missing.
+func (w *Workspace) isAutocreateSchemesEnabled() (bool, error) {
+	// <workspace_name>.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
+	pth := filepath.Join(w.Path, "xcshareddata", "WorkspaceSettings.xcsettings")
+
+	data, _, err := w.plistFileHandler.Read(pth)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return true, nil
+		}
+		return false, err
+	}
+	settings := serialized.Object(data)
+
+	if !settings.Has(autocreateSchemesSettingKey) {
+		return true, nil
+	}
+
+	autocreate, ok := settings.Bool(autocreateSchemesSettingKey)
+	if !ok {
+		return false, fmt.Errorf("%s is not a boolean", autocreateSchemesSettingKey)
+	}
+
+	return autocreate, nil
 }
