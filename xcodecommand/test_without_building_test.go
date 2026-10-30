@@ -90,14 +90,14 @@ func TestTestWithoutBuilding_XCTestRunOrScheme(t *testing.T) {
 	require.EqualError(t, err, "test-without-building needs an xctestrun or a scheme")
 }
 
-func TestTestWithoutBuilding_Rejections(t *testing.T) {
-	// Each form rejects the other's flags: the xctestrun form a -scheme or a
-	// -testProductsPath, the scheme form an -xctestrun.
+// The other form's flags (-scheme or -testProductsPath next to -xctestrun, -xctestrun next
+// to -scheme) get no line: xcodebuild refuses them with its own message.
+func TestTestWithoutBuilding_OtherFormsFlagsGetNoLine(t *testing.T) {
 	cmd, err := TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "a.xctestrun", AdditionalOptions: additional("-scheme", "App", "-testProductsPath", "App.xctestproducts")})
 	require.NoError(t, err)
-	require.Equal(t, []DiagnosticKind{RejectedOption, RejectedOption}, kinds(cmd.Diagnostics()))
+	require.Empty(t, cmd.Diagnostics())
 
 	cmd, err = TestWithoutBuilding(TestWithoutBuildingParams{ProjectPath: "App.xcodeproj", Scheme: "App", AdditionalOptions: additional("-xctestrun", "a.xctestrun")})
 	require.NoError(t, err)
-	require.Equal(t, []DiagnosticKind{RejectedOption}, kinds(cmd.Diagnostics()))
+	require.Empty(t, cmd.Diagnostics())
 }
