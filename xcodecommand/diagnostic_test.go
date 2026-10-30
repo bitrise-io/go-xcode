@@ -19,13 +19,15 @@ func TestOptions_Diagnostics(t *testing.T) {
 	require.Equal(t, []string{"-skipMacroValidation", "-destination", "-destination generic/platform=iOS", "-ENABLE_BITCODE=NO"}, opts.Args())
 }
 
-func TestDiagnosticKind_Informational(t *testing.T) {
-	for kind, want := range map[DiagnosticKind]bool{
-		MalformedOption: false, RejectedOption: false, ActionInOptions: false, SuspiciousUserDefault: false,
-		RepeatedOption: false, PreferStepInput: false, Override: true, RedundantOption: true,
-	} {
-		require.Equal(t, want, kind.Informational(), "kind %d", kind)
+// A finding is informational when the command line does what the user meant; the parser's
+// never are. A step logs informational findings at info level, the rest as warnings.
+func TestDiagnostic_Informational(t *testing.T) {
+	for _, d := range additional("-destination generic/platform=iOS", "-ENABLE_BITCODE=NO", "-derivedDataPath", "-quiet").Diagnostics() {
+		require.False(t, d.Informational, d.Message)
 	}
+	require.True(t, report(Override, Option{}, "").Informational)
+	require.True(t, report(RedundantOption, Option{}, "").Informational)
+	require.False(t, report(PreferStepInput, Option{}, "").Informational)
 }
 
 // Every message is pinned here, one per finding.
