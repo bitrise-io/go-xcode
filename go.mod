@@ -2,6 +2,8 @@ module github.com/bitrise-io/go-xcode/v2
 
 go 1.23
 
+toolchain go1.23.2
+
 require (
 	cloud.google.com/go/secretmanager v1.14.3
 	cloud.google.com/go/storage v1.50.0
@@ -21,6 +23,7 @@ require (
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/smallstep/pkcs7 v0.2.3
 	github.com/stretchr/testify v1.10.0
+	github.com/tailscale/hujson v0.0.0-20250605163823-992244df8c5a
 	golang.org/x/oauth2 v0.24.0
 	golang.org/x/text v0.21.0
 	google.golang.org/api v0.214.0
