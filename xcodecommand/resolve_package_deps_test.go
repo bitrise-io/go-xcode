@@ -8,9 +8,10 @@ import (
 
 func TestResolvePackages(t *testing.T) {
 	tests := []struct {
-		name   string
-		params ResolvePackagesParams
-		want   []string
+		name     string
+		params   ResolvePackagesParams
+		want     []string
+		wantNote string // the one informational line about what was left out
 	}{
 		{
 			name:   "workspace",
@@ -28,9 +29,17 @@ func TestResolvePackages(t *testing.T) {
 			want:   []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "-skipPackagePluginValidation", "-clonedSourcePackagesDirPath", "/tmp/spm"},
 		},
 		{
-			name:   "options that do not apply to resolution are left out, for the main command to report",
+			name:   "options that do not apply to resolution are left out, and one note says so",
 			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: additional("clean", "archive", "-test-iterations", "2", "-exportArchive", "Distribution", "-skipMacroValidation", "FOO=1", "-allowProvisioningUpdates")},
 			want:   []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "-skipMacroValidation", "FOO=1", "-allowProvisioningUpdates"},
+			// "-exportArchive Distribution": an unknown flag takes the bare word after it as its value
+			wantNote: `"clean", "archive", "-test-iterations 2", "-exportArchive Distribution" left out of package resolution; the Step's main command gets them.`,
+		},
+		{
+			name:     "one option left out",
+			params:   ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: additional("-quiet", "clean")},
+			want:     []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "-quiet"},
+			wantNote: `"clean" left out of package resolution; the Step's main command gets it.`,
 		},
 	}
 	for _, tt := range tests {
@@ -38,7 +47,13 @@ func TestResolvePackages(t *testing.T) {
 			cmd, err := ResolvePackages(tt.params)
 			require.NoError(t, err)
 			require.Equal(t, tt.want, cmd.Args())
-			require.Empty(t, cmd.Diagnostics(), "the main command reports the options, once")
+			if tt.wantNote == "" {
+				require.Empty(t, cmd.Diagnostics())
+				return
+			}
+			require.Equal(t, []string{tt.wantNote}, messages(cmd.Diagnostics()))
+			require.True(t, cmd.Diagnostics()[0].Informational, "the main command reports what is wrong; this is a note")
+			require.Equal(t, LeftOut, cmd.Diagnostics()[0].Kind)
 		})
 	}
 }
