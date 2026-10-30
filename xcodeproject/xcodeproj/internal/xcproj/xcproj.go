@@ -11,12 +11,14 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
+// The target kinds. A target written without a kind is native.
 const (
-	// The target kinds. A target written without a kind is native.
 	TargetKindNative              = "native"
 	TargetKindAggregate           = "aggregate"
 	TargetKindExternalBuildSystem = "external-build-system"
+)
 
+const (
 	localTargetDependencyKind = "localTarget"
 
 	// productTypePrefix is left out of a product type written as product-type. A product type
