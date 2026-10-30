@@ -140,10 +140,29 @@ func TestWorkspace_FileLocations_referenceTypes(t *testing.T) {
 	}, locations, "container: paths and relative absolute: paths are relative to the workspace's directory even inside a group")
 }
 
+// Modelled on tuist/XcodeProj's Fixtures/Workspace.xcworkspace, which references the Simulator app
+// from the Developer directory next to its projects.
+func TestWorkspace_FileLocations_locationsOutsideTheWorkspaceAreLeftOut(t *testing.T) {
+	dir := t.TempDir()
+	workspace := openWorkspace(t, writeWorkspace(t, dir, "Refs", `<?xml version="1.0" encoding="UTF-8"?>
+<Workspace version = "1.0">
+   <FileRef location = "developer:Applications/Simulator.app"></FileRef>
+   <FileRef location = "self:"></FileRef>
+   <Group location = "developer:Library" name = "Library">
+      <FileRef location = "group:Frameworks/Frameworks.xcodeproj"></FileRef>
+   </Group>
+   <FileRef location = "group:App.xcodeproj"></FileRef>
+</Workspace>`))
+
+	locations, err := workspace.FileLocations()
+	require.NoError(t, err)
+	assert.Equal(t, []string{filepath.Join(dir, "App.xcodeproj")}, locations)
+}
+
 func TestWorkspace_FileLocations_unknownReferenceType(t *testing.T) {
 	workspace := openWorkspace(t, writeWorkspace(t, t.TempDir(), "Refs", `<?xml version="1.0" encoding="UTF-8"?>
 <Workspace version = "1.0">
-   <FileRef location = "self:"></FileRef>
+   <FileRef location = "bogus:Something"></FileRef>
 </Workspace>`))
 
 	_, err := workspace.FileLocations()

@@ -22,6 +22,10 @@ const (
 	GroupFileRefType FileRefType = "group"
 	// ContainerFileRefType is relative to the workspace's directory, whichever group it is in.
 	ContainerFileRefType FileRefType = "container"
+	// DeveloperFileRefType is relative to the Xcode Developer directory.
+	DeveloperFileRefType FileRefType = "developer"
+	// SelfFileRefType is the project an embedded project.xcworkspace belongs to.
+	SelfFileRefType FileRefType = "self"
 )
 
 // TypeAndPath splits the reference's location, such as "group:App.xcodeproj", into its type and path.
@@ -36,7 +40,7 @@ func parseLocation(location string) (FileRefType, string, error) {
 	}
 
 	switch FileRefType(refType) {
-	case AbsoluteFileRefType, GroupFileRefType, ContainerFileRefType:
+	case AbsoluteFileRefType, GroupFileRefType, ContainerFileRefType, DeveloperFileRefType, SelfFileRefType:
 		return FileRefType(refType), pth, nil
 	default:
 		return "", "", fmt.Errorf("unknown file reference type: %s, value: %s", refType, pth)

@@ -17,7 +17,9 @@ func TestFileRef_TypeAndPath(t *testing.T) {
 		{location: "group:../SubProjectTests/Info.plist", wantType: GroupFileRefType, wantPath: "../SubProjectTests/Info.plist"},
 		{location: "container:App.xcodeproj", wantType: ContainerFileRefType, wantPath: "App.xcodeproj"},
 		{location: "absolute:/opt/Pods/Pods.xcodeproj", wantType: AbsoluteFileRefType, wantPath: "/opt/Pods/Pods.xcodeproj"},
-		{location: "self:", wantErr: "unknown file reference type"},
+		{location: "developer:Applications/Simulator.app", wantType: DeveloperFileRefType, wantPath: "Applications/Simulator.app"},
+		{location: "self:", wantType: SelfFileRefType, wantPath: ""},
+		{location: "bogus:Something", wantErr: "unknown file reference type"},
 		{location: "App.xcodeproj", wantErr: "unknown file reference location"},
 	}
 	for _, tt := range tests {

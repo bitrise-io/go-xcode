@@ -130,7 +130,9 @@ func (w *Workspace) SchemeBuildSettings(scheme, configuration string, customOpti
 }
 
 // FileLocations returns the absolute paths of the files the workspace references: the top-level
-// ones first, then each group's, where a group's own files precede those of its subgroups.
+// ones first, then each group's, where a group's own files precede those of its subgroups. Files
+// outside the workspace's own tree, developer: and self: locations, are left out, as xcodebuild
+// ignores them when listing schemes.
 func (w *Workspace) FileLocations() ([]string, error) {
 	return w.fileLocations(w.FileRefs, w.Groups, filepath.Dir(w.Path))
 }
@@ -139,18 +141,24 @@ func (w *Workspace) fileLocations(fileRefs []FileRef, groups []Group, groupDir s
 	var locations []string
 
 	for _, fileRef := range fileRefs {
-		pth, err := w.absPath(fileRef.Location, groupDir)
+		pth, ok, err := w.absPath(fileRef.Location, groupDir)
 		if err != nil {
 			return nil, err
+		}
+		if !ok {
+			continue
 		}
 
 		locations = append(locations, pth)
 	}
 
 	for _, group := range groups {
-		subgroupDir, err := w.absPath(group.Location, groupDir)
+		subgroupDir, ok, err := w.absPath(group.Location, groupDir)
 		if err != nil {
 			return nil, err
+		}
+		if !ok {
+			continue
 		}
 
 		groupLocations, err := w.fileLocations(group.FileRefs, group.Groups, subgroupDir)
@@ -164,11 +172,12 @@ func (w *Workspace) fileLocations(fileRefs []FileRef, groups []Group, groupDir s
 	return locations, nil
 }
 
-// absPath resolves a file reference or group location found in the group at groupDir.
-func (w *Workspace) absPath(location, groupDir string) (string, error) {
+// absPath resolves a file reference or group location found in the group at groupDir. ok is false
+// for a developer: or self: location, which lies outside the workspace's own tree.
+func (w *Workspace) absPath(location, groupDir string) (pth string, ok bool, err error) {
 	refType, pth, err := parseLocation(location)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	switch refType {
@@ -180,9 +189,17 @@ func (w *Workspace) absPath(location, groupDir string) (string, error) {
 		if !filepath.IsAbs(pth) {
 			pth = filepath.Join(filepath.Dir(w.Path), pth)
 		}
+	case DeveloperFileRefType, SelfFileRefType:
+		w.logger.TDebugf("Skipping %s location outside the workspace: %s", refType, location)
+		return "", false, nil
 	}
 
-	return w.pathModifier.AbsPath(pth)
+	pth, err = w.pathModifier.AbsPath(pth)
+	if err != nil {
+		return "", false, err
+	}
+
+	return pth, true, nil
 }
 
 // ProjectFileLocations ...
