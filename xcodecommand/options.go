@@ -24,7 +24,8 @@ const (
 	Unknown                  // fits no form; Name holds it verbatim
 )
 
-// issue says why an argument was kept as Unknown; Options.Diagnostics turns it into a message.
+// issue says why an argument was kept as Unknown, or what is off about a parsed one;
+// Options.Diagnostics turns it into a message.
 type issue int
 
 const (
@@ -34,7 +35,8 @@ const (
 	quotedFlag                // "-sdk macosx": xcodebuild refuses it
 	invalidFlag               // "-", "-=x"
 	colonWithoutValue         // "-only-testing:"
-	missingValue              // "-destination" as the last argument
+	missingValue              // "-destination" as the last argument, or -destination before a flag
+	flagAsValue               // "-derivedDataPath -quiet": the value flag took the next flag as its value
 	bareWord                  // "Distribution" from an unquoted CODE_SIGN_IDENTITY=Apple Distribution
 )
 
@@ -228,10 +230,15 @@ func parseFlag(args []string) (opt Option, consumed int, why issue) {
 		return Option{Kind: ColonOption, Name: name, Value: value}, 1, noIssue
 	case slices.Contains(freeFormValueFlags, flag):
 		// -destination platform=iOS Simulator,name=iPhone 15: the next argument is the value
-		// even though it looks like a build setting; "-destination -quiet" has none, as
-		// xcodebuild says: "option 'Destination' requires an argument"
-		if len(args) < 2 || strings.HasPrefix(args[1], "-") {
+		// even though it looks like a build setting. A flag is taken as the value too, as
+		// xcodebuild does ("-derivedDataPath -quiet" writes derived data to ./-quiet and
+		// drops the switch); only -destination checks its argument and refuses a flag
+		// ("option 'Destination' requires an argument"). Verified on Xcode 26.5 and 27.0.
+		if len(args) < 2 || (flag == "-destination" && strings.HasPrefix(args[1], "-")) {
 			return Option{}, 0, missingValue
+		}
+		if strings.HasPrefix(args[1], "-") {
+			return Option{Kind: ValueOption, Name: flag, Value: args[1], issue: flagAsValue}, 2, noIssue
 		}
 		return Option{Kind: ValueOption, Name: flag, Value: args[1]}, 2, noIssue
 	case len(args) > 1 && looksLikeValue(args[1]):
