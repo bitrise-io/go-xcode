@@ -116,6 +116,26 @@ func TestWorkspace_FileLocations(t *testing.T) {
 	}, locations, "top-level files first, then each group's own files before its subgroups'")
 }
 
+func TestWorkspace_FileLocations_referenceTypes(t *testing.T) {
+	dir := t.TempDir()
+	workspace := openWorkspace(t, writeWorkspace(t, dir, "Refs", `<?xml version="1.0" encoding="UTF-8"?>
+<Workspace version = "1.0">
+   <Group location = "group:Modules" name = "Modules">
+      <FileRef location = "group:Feature/Feature.xcodeproj"></FileRef>
+      <FileRef location = "container:Shared/Shared.xcodeproj"></FileRef>
+      <FileRef location = "absolute:/opt/Pods/Pods.xcodeproj"></FileRef>
+   </Group>
+</Workspace>`))
+
+	locations, err := workspace.FileLocations()
+	require.NoError(t, err)
+	assert.Equal(t, []string{
+		filepath.Join(dir, "Modules/Feature/Feature.xcodeproj"),
+		filepath.Join(dir, "Shared/Shared.xcodeproj"),
+		"/opt/Pods/Pods.xcodeproj",
+	}, locations, "container: paths are relative to the workspace's directory even inside a group")
+}
+
 func TestWorkspace_FileLocations_unknownReferenceType(t *testing.T) {
 	workspace := openWorkspace(t, writeWorkspace(t, t.TempDir(), "Refs", `<?xml version="1.0" encoding="UTF-8"?>
 <Workspace version = "1.0">

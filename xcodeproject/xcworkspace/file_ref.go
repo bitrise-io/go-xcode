@@ -19,7 +19,7 @@ const (
 	// GroupFileRefType is relative to the enclosing group, or to the workspace's directory at the
 	// top level.
 	GroupFileRefType FileRefType = "group"
-	// ContainerFileRefType is relative to the workspace's directory.
+	// ContainerFileRefType is relative to the workspace's directory, whichever group it is in.
 	ContainerFileRefType FileRefType = "container"
 )
 

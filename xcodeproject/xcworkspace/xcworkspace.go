@@ -169,8 +169,12 @@ func (w *Workspace) absPath(location, groupDir string) (string, error) {
 		return "", err
 	}
 
-	if refType != AbsoluteFileRefType {
+	switch refType {
+	case GroupFileRefType:
 		pth = filepath.Join(groupDir, pth)
+	case ContainerFileRefType:
+		pth = filepath.Join(filepath.Dir(w.Path), pth)
+	case AbsoluteFileRefType:
 	}
 
 	return w.pathModifier.AbsPath(pth)
