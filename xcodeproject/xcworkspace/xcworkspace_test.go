@@ -4,15 +4,31 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-utils/v2/pathutil"
+	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	"github.com/bitrise-io/go-xcode/xcodeproject/testhelper"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcscheme"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/unicode/norm"
 )
 
+func testFactory() Factory {
+	logger := log.NewLogger()
+	fileManager := fileutil.NewFileManager()
+	plistFileHandler := plistutil.NewFileHandler(fileManager)
+	pathModifier := pathutil.NewPathModifier()
+	userProvider := xcodeproj.NewUserProvider()
+	projectFactory := xcodeproj.NewFactory(logger, nil, fileManager, plistFileHandler, pathModifier, nil, userProvider, xcodeproj.NewDirCreator())
+
+	return NewFactory(logger, nil, fileManager, plistFileHandler, pathModifier, pathutil.NewPathChecker(), userProvider, projectFactory)
+}
+
 func TestScheme(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-samples/xcode-project-test.git")
-	workspace, err := Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
+	workspace, err := testFactory().Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
 	require.NoError(t, err)
 
 	{
@@ -50,7 +66,7 @@ func TestScheme(t *testing.T) {
 
 func TestSchemes(t *testing.T) {
 	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-samples/xcode-project-test.git")
-	workspace, err := Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
+	workspace, err := testFactory().Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
 	require.NoError(t, err)
 
 	schemesByContainer, err := workspace.Schemes()
@@ -92,7 +108,7 @@ func TestWorkspaceFileLocations(t *testing.T) {
 	workspaceContentsPth := testhelper.CreateTmpFile(t, "contents.xcworkspacedata", workspaceContentsContent)
 	workspacePth := filepath.Dir(workspaceContentsPth)
 
-	workspace, err := Open(workspacePth)
+	workspace, err := testFactory().Open(workspacePth)
 	require.NoError(t, err)
 
 	workspaceDir := filepath.Dir(workspacePth)
@@ -117,7 +133,7 @@ func TestWorkspaceProjectFileLocations(t *testing.T) {
 	workspaceContentsPth := testhelper.CreateTmpFile(t, "contents.xcworkspacedata", workspaceContentsContent)
 	workspacePth := filepath.Dir(workspaceContentsPth)
 
-	workspace, err := Open(workspacePth)
+	workspace, err := testFactory().Open(workspacePth)
 	require.NoError(t, err)
 
 	workspaceDir := filepath.Dir(workspacePth)
@@ -134,7 +150,7 @@ func TestOpen(t *testing.T) {
 	workspaceContentsPth := testhelper.CreateTmpFile(t, "contents.xcworkspacedata", workspaceContentsContent)
 	workspacePth := filepath.Dir(workspaceContentsPth)
 
-	workspace, err := Open(workspacePth)
+	workspace, err := testFactory().Open(workspacePth)
 	require.NoError(t, err)
 
 	require.Equal(t, filepath.Base(workspacePth), workspace.Name)
