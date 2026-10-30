@@ -14,7 +14,8 @@ type FileRef struct {
 type FileRefType string
 
 const (
-	// AbsoluteFileRefType is an absolute path.
+	// AbsoluteFileRefType is an absolute path, or a relative one that xcodebuild takes relative to
+	// the workspace's directory.
 	AbsoluteFileRefType FileRefType = "absolute"
 	// GroupFileRefType is relative to the enclosing group, or to the workspace's directory at the
 	// top level.

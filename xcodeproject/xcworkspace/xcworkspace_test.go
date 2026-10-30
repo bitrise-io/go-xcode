@@ -126,6 +126,7 @@ func TestWorkspace_FileLocations_referenceTypes(t *testing.T) {
       <FileRef location = "group:Feature/Feature.xcodeproj"></FileRef>
       <FileRef location = "container:Shared/Shared.xcodeproj"></FileRef>
       <FileRef location = "absolute:/opt/Pods/Pods.xcodeproj"></FileRef>
+      <FileRef location = "absolute:Demo/Demo.xcodeproj"></FileRef>
    </Group>
 </Workspace>`))
 
@@ -135,7 +136,8 @@ func TestWorkspace_FileLocations_referenceTypes(t *testing.T) {
 		filepath.Join(dir, "Modules/Feature/Feature.xcodeproj"),
 		filepath.Join(dir, "Shared/Shared.xcodeproj"),
 		"/opt/Pods/Pods.xcodeproj",
-	}, locations, "container: paths are relative to the workspace's directory even inside a group")
+		filepath.Join(dir, "Demo/Demo.xcodeproj"),
+	}, locations, "container: paths and relative absolute: paths are relative to the workspace's directory even inside a group")
 }
 
 func TestWorkspace_FileLocations_unknownReferenceType(t *testing.T) {

@@ -174,9 +174,12 @@ func (w *Workspace) absPath(location, groupDir string) (string, error) {
 	switch refType {
 	case GroupFileRefType:
 		pth = filepath.Join(groupDir, pth)
-	case ContainerFileRefType:
-		pth = filepath.Join(filepath.Dir(w.Path), pth)
-	case AbsoluteFileRefType:
+	case ContainerFileRefType, AbsoluteFileRefType:
+		// An absolute: location can hold a relative path, which xcodebuild resolves against the
+		// workspace directory, like a container: one.
+		if !filepath.IsAbs(pth) {
+			pth = filepath.Join(filepath.Dir(w.Path), pth)
+		}
 	}
 
 	return w.pathModifier.AbsPath(pth)
