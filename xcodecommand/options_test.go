@@ -114,9 +114,14 @@ func TestParse(t *testing.T) {
 			want: Options{{Kind: Unknown, Name: "-destination", issue: missingValue}},
 		},
 		{
-			name: "a flag is not the value of a free-form value flag",
+			name: "-destination refuses a flag as its value",
 			args: []string{"-destination", "-quiet"},
 			want: Options{{Kind: Unknown, Name: "-destination", issue: missingValue}, {Kind: Switch, Name: "-quiet"}},
+		},
+		{
+			name: "any other value flag takes a following flag as its value, as xcodebuild does",
+			args: []string{"-derivedDataPath", "-quiet", "-scheme", "-skipMacroValidation"},
+			want: Options{{Kind: ValueOption, Name: "-derivedDataPath", Value: "-quiet", issue: flagAsValue}, {Kind: ValueOption, Name: "-scheme", Value: "-skipMacroValidation", issue: flagAsValue}},
 		},
 		{
 			name: "installhdrs and installapi are build actions, not a switch's value",
