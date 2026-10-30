@@ -61,7 +61,7 @@ func (opts Options) Diagnostics() []Diagnostic {
 	var diagnostics []Diagnostic
 	for _, o := range opts {
 		switch {
-		case o.Kind == UserDefault && strings.IndexFunc(o.Name, unicode.IsSpace) >= 0:
+		case o.Kind == UserDefault && quotedFlag(o.Name):
 			// "-destination generic/platform=iOS" as one argument: a user default named
 			// "destination generic/platform", which xcodebuild ignores
 			diagnostics = append(diagnostics, report(SuspiciousUserDefault, o, "%q is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so it has no effect. Use %s to apply it, or remove it.", o, unquoteFlag(o.String())))
@@ -100,7 +100,16 @@ func lint(merged Options, policy actionPolicy) []Diagnostic {
 // rejects.
 func (p actionPolicy) refusal(o Option) (Diagnostic, bool) {
 	if o.Kind == Action {
-		return report(ActionInOptions, o, "%q is a build action. The Step sets the actions itself. Remove it.", o.Name), true
+		// xcodebuild performs the actions in the order given, so the user's runs after the
+		// command's own (verified on Xcode 26.5: "archive … clean" archives, then cleans).
+		if o.Name != ActionClean {
+			return report(ActionInOptions, o, "%q is a build action. xcodebuild runs it after the Step's %s. Remove it.", o.Name, p.name), true
+		}
+		fix := "Remove it."
+		if input, ok := cleanInputs[p.name]; ok {
+			fix = fmt.Sprintf("Remove it and set the %s input instead.", input)
+		}
+		return report(ActionInOptions, o, "%q is a build action. xcodebuild runs it after the Step's %s, so nothing is cleaned first. %s", o.Name, p.name, fix), true
 	}
 	if r, rejected := p.rejects(o); rejected {
 		return report(RejectedOption, o, "%q does not work with %s. %s Remove it.", o, p.name, r.reason), true
@@ -122,6 +131,15 @@ type stepInput struct {
 // appliesTo says whether the command's Step has the input.
 func (in stepInput) appliesTo(command string) bool {
 	return len(in.commands) == 0 || slices.Contains(in.commands, command)
+}
+
+// cleanInputs names, per command, the Step input that runs clean before its action. The
+// other Steps have none.
+var cleanInputs = map[string]string{
+	ActionArchive: "perform_clean_action", // xcode-archive
+	ActionBuild:   "perform_clean_action", // xcode-build-for-simulator
+	ActionTest:    "perform_clean_action", // xcode-test
+	ActionAnalyze: "is_clean_build",       // xcode-analyze
 }
 
 var testRunCommands = []string{ActionTest, ActionTestWithoutBuilding}
@@ -223,7 +241,8 @@ func (g flagGroup) findings(all Options, policy actionPolicy) []Diagnostic {
 	// "-flag=value": xcodebuild reads it as a user default and ignores it. A switch in the
 	// group, the Step's or the user's, says the flag takes no value; otherwise the message
 	// names the value the build uses instead: the Step's copy while it is on the command
-	// line, else the user's own, unless the policy rejects it.
+	// line, else the user's own, unless the policy rejects it. One with the same value
+	// makes the "=" form redundant, and the line a note.
 	sw, isSwitch := g.all().last(func(o Option) bool { return o.Kind == Switch })
 	applied, found := g.step.last(func(o Option) bool { return o.Kind == ValueOption && !o.dropped })
 	if !found {
@@ -234,6 +253,9 @@ func (g flagGroup) findings(all Options, policy actionPolicy) []Diagnostic {
 		case isSwitch:
 			// -allowProvisioningUpdates=YES next to the Step's -allowProvisioningUpdates; -quiet -quiet=YES
 			diagnostics = append(diagnostics, report(SuspiciousUserDefault, u, "%q gives a value to %s, which takes none, so xcodebuild reads it as a user default and ignores it.%s Remove it.", u, sw.Name, alreadySet(sw)))
+		case found && applied.Value == u.Value:
+			// -destination=generic/platform=iOS next to the Step's default of that value
+			diagnostics = append(diagnostics, report(RedundantOption, u, ignoredUserDefault+"and %s %q already has that value. Remove it.", u, whose(applied), applied))
 		case found && applied.user:
 			// -destination generic/platform=tvOS -destination=generic/platform=watchOS
 			diagnostics = append(diagnostics, report(SuspiciousUserDefault, u, ignoredUserDefault+"and uses your %q instead. Change that one to %s %s to apply it, or remove it.", u, applied, u.Name, shellQuoted(u.Value)))
@@ -265,6 +287,14 @@ func (g flagGroup) findings(all Options, policy actionPolicy) []Diagnostic {
 		}
 	}
 	return diagnostics
+}
+
+// whose says who set o, for a message: "your" or "the Step's".
+func whose(o Option) string {
+	if o.user {
+		return "your"
+	}
+	return "the Step's"
 }
 
 // alreadySet says who set the switch sw, for a message about a value given to it; nothing
@@ -318,6 +348,14 @@ func (opts Options) quoted() string {
 // of the split in ParseOptions.
 func shellQuoted(value string) string {
 	return shellquote.Join(value)
+}
+
+// quotedFlag says whether a user default's name is a flag followed by whitespace: the
+// "-destination generic/platform" of "-destination generic/platform=iOS" written as one
+// argument. "- =0" names no flag, so there is nothing to correct and it gets no line.
+func quotedFlag(name string) bool {
+	i := strings.IndexFunc(name, unicode.IsSpace)
+	return i >= 0 && flagNamePattern.MatchString(name[:i])
 }
 
 // unquoteFlag turns "-destination 'generic/platform=iOS'" (one argument) into the form the

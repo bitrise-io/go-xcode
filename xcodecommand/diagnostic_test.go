@@ -103,6 +103,13 @@ func TestCommand_Diagnostics(t *testing.T) {
 			// reported in derived-flag order
 			wantKinds: []DiagnosticKind{Override, RedundantOption},
 		},
+		{
+			// The ignored "=" form asks for the value the default already has: a note, not a warning.
+			name:      "a default repeated with = and the same value is informational",
+			params:    ArchiveParams{Destination: "generic/platform=iOS", AdditionalOptions: additional("-destination=generic/platform=iOS")},
+			wantArgs:  []string{"archive", "-project", "App.xcodeproj", "-destination", "generic/platform=iOS", "-destination=generic/platform=iOS"},
+			wantKinds: []DiagnosticKind{RedundantOption},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -130,9 +137,10 @@ func TestDiagnosticMessages(t *testing.T) {
 	}{
 		{
 			// "", "-sdk macosx", "-=x", "-only-testing:", "Distribution" and the lone -destination
-			// get no line: xcodebuild refuses them with its own message.
+			// get no line: xcodebuild refuses them with its own message. "- =0" is a user default
+			// that names no flag: xcodebuild ignores it, and there is nothing to correct.
 			name:   "parser",
-			user:   []string{"", "-destination 'platform=iOS Simulator,name=iPhone 15'", "-sdk macosx", "-=x", "-only-testing:", "Distribution", "-ENABLE_BITCODE=NO", "-destination", "-derivedDataPath", "-quiet"},
+			user:   []string{"", "-destination 'platform=iOS Simulator,name=iPhone 15'", "-sdk macosx", "-=x", "- =0", "-only-testing:", "Distribution", "-ENABLE_BITCODE=NO", "-destination", "-derivedDataPath", "-quiet"},
 			policy: archivePolicy,
 			want: []string{
 				`"-destination 'platform=iOS Simulator,name=iPhone 15'" is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so it has no effect. Use -destination 'platform=iOS Simulator,name=iPhone 15' to apply it, or remove it.`,
@@ -147,8 +155,34 @@ func TestDiagnosticMessages(t *testing.T) {
 			want: []string{
 				`"-exportArchive" does not work with archive. It switches xcodebuild to another task instead. Remove it.`,
 				`"-test-iterations 2" does not work with archive. It applies to test actions only, and xcodebuild ignores it here. Remove it.`,
-				`"clean" is a build action. The Step sets the actions itself. Remove it.`,
+				`"clean" is a build action. xcodebuild runs it after the Step's archive, so nothing is cleaned first. Remove it and set the perform_clean_action input instead.`,
 				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead. See https://docs.bitrise.io/en/code-signing/ios-code-signing/managing-ios-code-signing-files---automatic-provisioning.html`,
+			},
+		},
+		{
+			// xcodebuild performs the actions in the order given. xcode-build-for-test has no
+			// clean input to point at.
+			name:   "actions in the options run after the command's own",
+			user:   []string{"clean", "build"},
+			policy: buildForTestingPolicy,
+			want: []string{
+				`"clean" is a build action. xcodebuild runs it after the Step's build-for-testing, so nothing is cleaned first. Remove it.`,
+				`"build" is a build action. xcodebuild runs it after the Step's build-for-testing. Remove it.`,
+			},
+		},
+		{
+			// The "=" form is ignored, but the value in effect is the one it asks for: a note.
+			name: "a value option written with = that repeats the value in effect",
+			user: []string{"-destination=generic/platform=iOS", "-xcconfig=/tmp/temp.xcconfig", "-sdk", "iphoneos", "-sdk=iphoneos"},
+			derived: Options{
+				{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"},
+				{Kind: ValueOption, Name: "-xcconfig", Value: "/tmp/temp.xcconfig"},
+			},
+			policy: actionPolicy{name: "archive", defaults: []string{"-destination"}},
+			want: []string{
+				`"-destination=generic/platform=iOS" is written with "=". xcodebuild reads it as a user default and ignores it, and the Step's "-destination generic/platform=iOS" already has that value. Remove it.`,
+				`"-xcconfig=/tmp/temp.xcconfig" is written with "=". xcodebuild reads it as a user default and ignores it, and the Step's "-xcconfig /tmp/temp.xcconfig" already has that value. Remove it.`,
+				`"-sdk=iphoneos" is written with "=". xcodebuild reads it as a user default and ignores it, and your "-sdk iphoneos" already has that value. Remove it.`,
 			},
 		},
 		{
