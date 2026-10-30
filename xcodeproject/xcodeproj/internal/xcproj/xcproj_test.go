@@ -38,7 +38,8 @@ func TestDecode_xcodeOutput(t *testing.T) {
 	assert.Equal(t, "sample-apps-ios-json-xcproj", app.Name)
 	assert.Equal(t, TargetKindNative, app.Kind)
 	assert.Equal(t, "com.apple.product-type.application", app.ProductType)
-	assert.Equal(t, "Products/sample-apps-ios-json-xcproj.app", app.Product)
+	assert.Equal(t, []string{"Products", "sample-apps-ios-json-xcproj.app"}, app.Product)
+	assert.Empty(t, app.ProductID)
 	assert.Empty(t, app.TestHostTarget)
 	assert.Empty(t, app.Dependencies)
 
@@ -128,6 +129,36 @@ func TestDecode(t *testing.T) {
 			},
 		},
 		{
+			name:    "product written as name path components",
+			content: `{"targets": [{"name": "App", "id": "A1", "product": ["Products", {"name": "Apps/iOS"}, "App.app"]}]}`,
+			want: Project{
+				Configurations: []Configuration{},
+				BuildSettings:  serialized.Object{},
+				Targets: []Target{{
+					ID:            "A1",
+					Name:          "App",
+					Kind:          TargetKindNative,
+					Product:       []string{"Products", "Apps/iOS", "App.app"},
+					BuildSettings: serialized.Object{},
+				}},
+			},
+		},
+		{
+			name:    "product written as an object ID",
+			content: `{"targets": [{"name": "App", "id": "A1", "product": "id:B2"}]}`,
+			want: Project{
+				Configurations: []Configuration{},
+				BuildSettings:  serialized.Object{},
+				Targets: []Target{{
+					ID:            "A1",
+					Name:          "App",
+					Kind:          TargetKindNative,
+					ProductID:     "B2",
+					BuildSettings: serialized.Object{},
+				}},
+			},
+		},
+		{
 			name:    "comments",
 			content: "// header\n{\n  /* block */ \"default-configuration\": \"Debug\", // trailing\n}",
 			want: Project{
@@ -165,6 +196,11 @@ func TestDecode(t *testing.T) {
 		{
 			name:    "wrong value type",
 			content: `{"targets": {}}`,
+			wantErr: "failed to decode project.xcproj",
+		},
+		{
+			name:    "product of the wrong type",
+			content: `{"targets": [{"name": "App", "id": "A1", "product": 1}]}`,
 			wantErr: "failed to decode project.xcproj",
 		},
 	}

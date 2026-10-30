@@ -5,6 +5,7 @@ package xcproj
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/tailscale/hujson"
 
@@ -24,6 +25,8 @@ const (
 	// productTypePrefix is left out of a product type written as product-type. A product type
 	// without it is written whole as full-product-type.
 	productTypePrefix = "com.apple.product-type."
+
+	groupTreeIDPrefix = "id:"
 )
 
 // Project is the part of project.xcproj that go-xcode reads.
@@ -53,7 +56,11 @@ type Target struct {
 
 	// ProductType is the full pbxproj product type, such as com.apple.product-type.application.
 	ProductType string
-	Product     string
+
+	// Product is the product's name path in the group tree, such as [Products App.app].
+	Product []string
+	// ProductID is set in place of Product when the name path would be ambiguous.
+	ProductID string
 
 	// TestHostTarget is the name of the app target a test target runs in.
 	TestHostTarget string
@@ -80,15 +87,27 @@ type rawConfiguration struct {
 }
 
 type rawTarget struct {
-	ID              string            `json:"id"`
-	Name            string            `json:"name"`
-	Kind            string            `json:"kind"`
-	ProductType     string            `json:"product-type"`
-	FullProductType string            `json:"full-product-type"`
-	Product         string            `json:"product"`
-	TestHostTarget  string            `json:"test-host-target"`
-	Dependencies    []rawDependency   `json:"dependencies"`
-	BuildSettings   serialized.Object `json:"build-settings"`
+	ID              string                `json:"id"`
+	Name            string                `json:"name"`
+	Kind            string                `json:"kind"`
+	ProductType     string                `json:"product-type"`
+	FullProductType string                `json:"full-product-type"`
+	Product         rawGroupTreeReference `json:"product"`
+	TestHostTarget  string                `json:"test-host-target"`
+	Dependencies    []rawDependency       `json:"dependencies"`
+	BuildSettings   serialized.Object     `json:"build-settings"`
+}
+
+// rawGroupTreeReference is written as an id:-prefixed object ID, a /-joined name path, or, when
+// a name contains /, an array of names.
+type rawGroupTreeReference struct {
+	ID       string
+	NamePath []string
+}
+
+// rawNamePathComponent is written as an object only when the name contains /.
+type rawNamePathComponent struct {
+	Name string `json:"name"`
 }
 
 // rawDependency is written as a bare target name unless it carries platform filters or points
@@ -132,6 +151,39 @@ func (d *rawDependency) UnmarshalJSON(data []byte) error {
 
 	type dependencyObject rawDependency
 	return json.Unmarshal(data, (*dependencyObject)(d))
+}
+
+// UnmarshalJSON accepts a string or an array of name path components.
+func (r *rawGroupTreeReference) UnmarshalJSON(data []byte) error {
+	var reference string
+	if err := json.Unmarshal(data, &reference); err == nil {
+		if id, ok := strings.CutPrefix(reference, groupTreeIDPrefix); ok {
+			r.ID = id
+		} else if reference != "" {
+			r.NamePath = strings.Split(reference, "/")
+		}
+		return nil
+	}
+
+	var components []rawNamePathComponent
+	if err := json.Unmarshal(data, &components); err != nil {
+		return err
+	}
+	r.NamePath = make([]string, 0, len(components))
+	for _, component := range components {
+		r.NamePath = append(r.NamePath, component.Name)
+	}
+	return nil
+}
+
+// UnmarshalJSON accepts a bare name or an object.
+func (c *rawNamePathComponent) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, &c.Name); err == nil {
+		return nil
+	}
+
+	type componentObject rawNamePathComponent
+	return json.Unmarshal(data, (*componentObject)(c))
 }
 
 func (r rawProject) project() (Project, error) {
@@ -198,7 +250,8 @@ func (r rawTarget) target() (Target, error) {
 		Name:           r.Name,
 		Kind:           kind,
 		ProductType:    productType,
-		Product:        r.Product,
+		Product:        r.Product.NamePath,
+		ProductID:      r.Product.ID,
 		TestHostTarget: r.TestHostTarget,
 		Dependencies:   dependencies,
 		BuildSettings:  nonNil(r.BuildSettings),
