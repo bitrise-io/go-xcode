@@ -33,6 +33,11 @@ func TestDiagnostic_Informational(t *testing.T) {
 	}
 	require.Equal(t, []DiagnosticKind{ActionInOptions, Override, RedundantOption}, kinds(cmd.Diagnostics()))
 	require.Equal(t, []bool{false, true, true}, informational)
+
+	cmd, err = Archive(ArchiveParams{ProjectPath: "App.xcodeproj", AdditionalOptions: additional("-allowProvisioningUpdates")})
+	require.NoError(t, err)
+	require.Equal(t, []DiagnosticKind{PreferStepInput}, kinds(cmd.Diagnostics()))
+	require.False(t, cmd.Diagnostics()[0].Informational, "the signing hint is a warning")
 }
 
 // A command reports what its policy refuses and what became of each option next to its
@@ -146,7 +151,7 @@ func TestDiagnosticMessages(t *testing.T) {
 				{Kind: ValueOption, Name: "-xcconfig", Value: "/tmp/temp.xcconfig"},
 				{Kind: ValueOption, Name: "-collect-test-diagnostics", Value: "never"},
 			},
-			policy: actionPolicy{name: "archive", defaults: []string{"-destination"}},
+			policy: actionPolicy{name: "archive", defaults: []string{"-destination", "-collect-test-diagnostics"}},
 			want: []string{
 				`"-destination generic/platform=tvOS" replaces the Step's default "-destination generic/platform=iOS".`,
 				`"-allowProvisioningUpdates" is already set by the Step. Remove it.`,
@@ -163,14 +168,39 @@ func TestDiagnosticMessages(t *testing.T) {
 			},
 		},
 		{
-			// "-allowProvisioningUpdates YES" and "-allowProvisioningUpdates:YES" get no line: xcodebuild
-			// refuses them (an unknown build action, an invalid option).
-			name:    "a value given to the Step's switch, in each form",
-			user:    []string{"-allowProvisioningUpdates", "YES", "-allowProvisioningUpdates:YES", "-allowProvisioningUpdates=YES"},
+			name:    "a value given to the Step's switch with =",
+			user:    []string{"-allowProvisioningUpdates=YES"},
 			derived: Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}},
 			policy:  archivePolicy,
 			want: []string{
 				`"-allowProvisioningUpdates=YES" gives a value to -allowProvisioningUpdates, which takes none, so xcodebuild reads it as a user default and ignores it. The Step already sets -allowProvisioningUpdates. Remove it.`,
+			},
+		},
+		{
+			// The repeat is refused by xcodebuild, so the "=" form's fix cannot be "use -xcconfig other".
+			name:    "a value option the Step owns, repeated and written with =",
+			user:    []string{"-xcconfig", "mine.xcconfig", "-xcconfig=other.xcconfig"},
+			derived: Options{{Kind: ValueOption, Name: "-xcconfig", Value: "/tmp/temp.xcconfig"}},
+			policy:  archivePolicy,
+			want: []string{
+				`"-xcconfig=other.xcconfig" is written with "=". xcodebuild reads it as a user default and ignores it, and uses the Step's "-xcconfig /tmp/temp.xcconfig" instead. Remove it, or change the Step input.`,
+			},
+		},
+		{
+			// The user's -test-iterations is rejected on archive, so nothing "uses" it; the = form gets no line of its own.
+			name:   "a rejected flag written with = next to its rejected copy",
+			user:   []string{"-test-iterations", "2", "-test-iterations=3"},
+			policy: archivePolicy,
+			want: []string{
+				`"-test-iterations 2" does not work with archive. It applies to test actions only, and xcodebuild ignores it here. Remove it.`,
+			},
+		},
+		{
+			name:   "a lone -allowProvisioningUpdates, repeated or given a value",
+			user:   []string{"-allowProvisioningUpdates", "-allowProvisioningUpdates", "-allowProvisioningUpdates", "YES"},
+			policy: archivePolicy,
+			want: []string{
+				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead. See https://docs.bitrise.io/en/code-signing/ios-code-signing/managing-ios-code-signing-files---automatic-provisioning.html`,
 			},
 		},
 		{
@@ -189,7 +219,7 @@ func TestDiagnosticMessages(t *testing.T) {
 			want: []string{
 				`"-destination generic/platform=tvOS" replaces the Step's default "-destination generic/platform=iOS".`,
 				`"-destination=generic/platform=watchOS" is written with "=". xcodebuild reads it as a user default and ignores it, and uses your "-destination generic/platform=tvOS" instead. Change that one to -destination generic/platform=watchOS to apply it, or remove it.`,
-				`"-xcconfig=mine.xcconfig" is written with "=". xcodebuild reads it as a user default and ignores it, and uses the Step's "-xcconfig /tmp/temp.xcconfig" instead. Use -xcconfig mine.xcconfig to apply it, or remove it.`,
+				`"-xcconfig=mine.xcconfig" is written with "=". xcodebuild reads it as a user default and ignores it, and uses the Step's "-xcconfig /tmp/temp.xcconfig" instead. Remove it, or change the Step input.`,
 				`"-scheme=App" is written with "=". xcodebuild reads it as a user default and ignores it, so it has no effect. Use -scheme App to apply it, or remove it.`,
 				`"-quiet=YES" gives a value to -quiet, which takes none, so xcodebuild reads it as a user default and ignores it. -quiet is already set. Remove it.`,
 			},
