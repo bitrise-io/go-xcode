@@ -17,13 +17,56 @@ const (
 	autocreateSchemesSettingKey = "IDEWorkspaceSharedSettings_AutocreateContextsIfNeeded"
 )
 
-// Schemes returns the schemes considered by Xcode, when opening the given workspace.
-// The considered schemes are the workspace shared schemes, the workspace user schemes (for the current user)
-// and the embedded project's schemes (XcodeProj.SchemesWithAutocreateOverride).
+// containerSchemes are the schemes one container, the workspace or a project, holds.
+type containerSchemes struct {
+	path    string
+	schemes []xcscheme.Scheme
+}
+
+// Schemes returns the schemes Xcode considers when opening the workspace, keyed by the path of the
+// container that holds them: the workspace's own shared and user schemes under the workspace path,
+// and each referenced project's schemes under that project's path. A project without schemes gets
+// Xcode's default ones when the workspace's "Autocreate schemes" option is on.
 func (w *Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
+	containers, err := w.schemesByContainer()
+	if err != nil {
+		return nil, err
+	}
+
+	schemesByContainer := make(map[string][]xcscheme.Scheme, len(containers))
+	for _, container := range containers {
+		schemesByContainer[container.path] = container.schemes
+	}
+
+	return schemesByContainer, nil
+}
+
+// Scheme returns the scheme with the given name and the path of the container that holds it. The
+// workspace's own schemes are searched first, then each project's in ProjectFileLocations order.
+// Names are compared after Unicode normalisation.
+func (w *Workspace) Scheme(name string) (xcscheme.Scheme, string, error) {
+	containers, err := w.schemesByContainer()
+	if err != nil {
+		return xcscheme.Scheme{}, "", err
+	}
+
+	normalisedName := norm.NFC.String(name)
+	for _, container := range containers {
+		for _, scheme := range container.schemes {
+			if norm.NFC.String(scheme.Name) == normalisedName {
+				return scheme, container.path, nil
+			}
+		}
+	}
+
+	return xcscheme.Scheme{}, "", xcscheme.NotFoundError{Scheme: name, Container: w.Name}
+}
+
+// schemesByContainer lists the containers holding at least one scheme, the workspace first.
+func (w *Workspace) schemesByContainer() ([]containerSchemes, error) {
 	w.logger.TDebugf("Searching schemes in workspace: %s", w.Path)
 
-	schemesByContainer := map[string][]xcscheme.Scheme{}
+	var containers []containerSchemes
 
 	sharedSchemes, err := w.sharedSchemes()
 	if err != nil {
@@ -39,7 +82,7 @@ func (w *Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
 
 	w.logger.TDebugf("%d scheme(s) found", len(workspaceSchemes))
 	if len(workspaceSchemes) > 0 {
-		schemesByContainer[w.Path] = workspaceSchemes
+		containers = append(containers, containerSchemes{path: w.Path, schemes: workspaceSchemes})
 	}
 
 	// project schemes
@@ -72,30 +115,11 @@ func (w *Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
 		}
 
 		if len(projectSchemes) > 0 {
-			schemesByContainer[project.Path] = projectSchemes
+			containers = append(containers, containerSchemes{path: project.Path, schemes: projectSchemes})
 		}
 	}
 
-	return schemesByContainer, nil
-}
-
-// Scheme returns the scheme by name, and it's container's absolute path.
-func (w *Workspace) Scheme(name string) (*xcscheme.Scheme, string, error) {
-	schemesByContainer, err := w.Schemes()
-	if err != nil {
-		return nil, "", err
-	}
-
-	normName := norm.NFC.String(name)
-	for container, schemes := range schemesByContainer {
-		for _, scheme := range schemes {
-			if norm.NFC.String(scheme.Name) == normName {
-				return &scheme, container, nil
-			}
-		}
-	}
-
-	return nil, "", xcscheme.NotFoundError{Scheme: name, Container: w.Name}
+	return containers, nil
 }
 
 func (w *Workspace) sharedSchemes() ([]xcscheme.Scheme, error) {

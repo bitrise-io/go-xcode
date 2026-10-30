@@ -155,8 +155,18 @@ func TestWorkspace_Scheme(t *testing.T) {
 	assert.Equal(t, subProjectPath, container)
 	assert.Equal(t, "Gdańsk", norm.NFC.String(scheme.Name), "the precomposed name finds the decomposed file")
 
-	scheme, _, err = workspace.Scheme("Missing")
+	_, _, err = workspace.Scheme("Missing")
 	assert.True(t, xcscheme.IsNotFoundError(err))
 	assert.ErrorContains(t, err, "Missing")
-	assert.Nil(t, scheme)
+}
+
+func TestWorkspace_Scheme_workspaceSchemesComeFirst(t *testing.T) {
+	dir := t.TempDir()
+	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+	writeProject(t, filepath.Join(dir, "XcodeProj.xcodeproj"))
+	writeFile(t, sharedSchemePath(workspace.Path, "App"), minimalSchemeXML)
+
+	_, container, err := workspace.Scheme("App")
+	require.NoError(t, err)
+	assert.Equal(t, workspace.Path, container, "the workspace's App wins over the project's autocreated App")
 }
