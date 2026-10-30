@@ -1,6 +1,7 @@
 package xcworkspace_tests
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -111,6 +112,81 @@ func TestWorkspace_SchemeBuildSettings(t *testing.T) {
 	bundleID, ok := settings.String("PRODUCT_BUNDLE_IDENTIFIER")
 	require.True(t, ok)
 	assert.NotEmpty(t, bundleID)
+}
+
+const (
+	// A CocoaPods layout: the app project and Pods/Pods.xcodeproj, both group: references.
+	cocoaPodsSampleRepoURL = "https://github.com/bitrise-io/sample-apps-ios-workspace-swift.git"
+	// A workspace holding a single top-level container: reference.
+	containerSampleRepoURL = "https://github.com/bitrise-io/sample-swift-project-with-parallel-ui-test.git"
+)
+
+func TestWorkspace_cocoaPodsLayout(t *testing.T) {
+	dir := _integration_tests.GetRepository(t, cocoaPodsSampleRepoURL, "master")
+	workspace, err := newFactory().Open(filepath.Join(dir, "sample-apps-ios-workspace-swift.xcworkspace"))
+	require.NoError(t, err)
+
+	appProjectPath := filepath.Join(dir, "sample-apps-ios-workspace-swift.xcodeproj")
+	projectPaths, err := workspace.ProjectFileLocations()
+	require.NoError(t, err)
+	assert.Equal(t, []string{appProjectPath, filepath.Join(dir, "Pods/Pods.xcodeproj")}, projectPaths)
+
+	scheme, container, err := workspace.Scheme("sample-apps-ios-workspace-swift")
+	require.NoError(t, err)
+	assert.Equal(t, appProjectPath, container)
+	assert.True(t, scheme.IsShared)
+
+	assert.ElementsMatch(t, xcodebuildSchemes(t, workspace.Path), allSchemeNames(t, workspace),
+		"the Pods project has no scheme files, so its schemes are autocreated the way xcodebuild does")
+}
+
+func TestWorkspace_containerReference(t *testing.T) {
+	dir := _integration_tests.GetRepository(t, containerSampleRepoURL, "master")
+	workspace, err := newFactory().Open(filepath.Join(dir, "BullsEye.xcworkspace"))
+	require.NoError(t, err)
+
+	projectPath := filepath.Join(dir, "BullsEye.xcodeproj")
+	projectPaths, err := workspace.ProjectFileLocations()
+	require.NoError(t, err)
+	assert.Equal(t, []string{projectPath}, projectPaths)
+
+	_, container, err := workspace.Scheme("BullsEye")
+	require.NoError(t, err)
+	assert.Equal(t, projectPath, container)
+
+	assert.ElementsMatch(t, xcodebuildSchemes(t, workspace.Path), allSchemeNames(t, workspace))
+}
+
+// xcodebuildSchemes returns the schemes xcodebuild -list reports for the workspace.
+func xcodebuildSchemes(t *testing.T, workspacePath string) []string {
+	t.Helper()
+
+	cmd := command.NewFactory(env.NewRepository()).Create("xcodebuild", []string{"-workspace", workspacePath, "-list", "-json"}, nil)
+	out, err := cmd.RunAndReturnTrimmedOutput()
+	require.NoError(t, err, out)
+
+	var list struct {
+		Workspace struct {
+			Schemes []string `json:"schemes"`
+		} `json:"workspace"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(out), &list), out)
+
+	return normalised(list.Workspace.Schemes)
+}
+
+// allSchemeNames flattens Schemes() over its containers.
+func allSchemeNames(t *testing.T, workspace *xcworkspace.Workspace) []string {
+	t.Helper()
+
+	schemes, err := workspace.Schemes()
+	require.NoError(t, err)
+
+	var names []string
+	for _, containerSchemes := range schemes {
+		names = append(names, normalised(schemeNames(containerSchemes))...)
+	}
+	return names
 }
 
 func newFactory() xcworkspace.Factory {
