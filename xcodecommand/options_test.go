@@ -101,34 +101,28 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name:  "bare word is kept verbatim and reported",
-			args:  []string{"-sdk", "iphoneos", "PRODUCT_NAME=My", "App"},
-			want:  Options{{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}, {Kind: BuildSetting, Name: "PRODUCT_NAME", Value: "My"}, {Kind: Unknown, Name: "App", issue: bareWord}},
-			diags: []DiagnosticKind{MalformedOption},
-		},
-		{
-			name:  "empty argument is kept verbatim and reported",
-			args:  []string{""},
-			want:  Options{{Kind: Unknown, Name: "", issue: emptyArgument}},
-			diags: []DiagnosticKind{MalformedOption},
-		},
-		{
-			name:  "free-form value flag without a value is reported",
-			args:  []string{"-destination"},
-			want:  Options{{Kind: Unknown, Name: "-destination", issue: missingValue}},
-			diags: []DiagnosticKind{MalformedOption},
-		},
-		{
-			name:  "a flag is not the value of a free-form value flag",
-			args:  []string{"-destination", "-quiet"},
-			want:  Options{{Kind: Unknown, Name: "-destination", issue: missingValue}, {Kind: Switch, Name: "-quiet"}},
-			diags: []DiagnosticKind{MalformedOption},
-		},
-		{
 			name:  "any other value flag takes a following flag as its value, as xcodebuild does",
 			args:  []string{"-derivedDataPath", "-quiet", "-scheme", "-skipMacroValidation"},
-			want:  Options{{Kind: ValueOption, Name: "-derivedDataPath", Value: "-quiet", issue: flagAsValue}, {Kind: ValueOption, Name: "-scheme", Value: "-skipMacroValidation", issue: flagAsValue}},
-			diags: []DiagnosticKind{MalformedOption, MalformedOption},
+			want:  Options{{Kind: ValueOption, Name: "-derivedDataPath", Value: "-quiet", tookFlag: true}, {Kind: ValueOption, Name: "-scheme", Value: "-skipMacroValidation", tookFlag: true}},
+			diags: []DiagnosticKind{MissingValue, MissingValue},
+		},
+		{
+			// "" from an unset env var, a bare word from an unquoted value, a value flag as the last
+			// argument or -destination before a flag, a flag quoted with a value without "=", a lone
+			// dash, an empty colon value: xcodebuild refuses each, and the parser keeps it verbatim.
+			name: "what xcodebuild refuses is kept verbatim as Unknown",
+			args: []string{"", "App", "-destination", "-quiet", "-sdk macosx", "-sdk\nmacosx", "-sdk\u00a0macosx", "-", "-only-testing:", "-derivedDataPath"},
+			want: Options{
+				{Kind: Unknown, Name: ""}, {Kind: Unknown, Name: "App"},
+				{Kind: Unknown, Name: "-destination"}, {Kind: Switch, Name: "-quiet"},
+				{Kind: Unknown, Name: "-sdk macosx"}, {Kind: Unknown, Name: "-sdk\nmacosx"}, {Kind: Unknown, Name: "-sdk\u00a0macosx"},
+				{Kind: Unknown, Name: "-"}, {Kind: Unknown, Name: "-only-testing:"}, {Kind: Unknown, Name: "-derivedDataPath"},
+			},
+		},
+		{
+			name: "-=x is a user default with an empty name, which xcodebuild accepts",
+			args: []string{"-=x"},
+			want: Options{{Kind: UserDefault, Name: "-", Value: "x"}},
 		},
 		{
 			name: "installhdrs and installapi are build actions, not a switch's value",
@@ -136,16 +130,15 @@ func TestParse(t *testing.T) {
 			want: Options{{Kind: Switch, Name: "-quiet"}, {Kind: Action, Name: "installhdrs"}, {Kind: Action, Name: "installapi"}},
 		},
 		{
-			name:  "flag and value quoted together, value with '=': xcodebuild ignores it as a user default",
-			args:  []string{"-destination generic/platform=iOS", "-destination 'platform=iOS'"},
-			want:  Options{{Kind: Unknown, Name: "-destination generic/platform=iOS", issue: quotedFlagWithValue}, {Kind: Unknown, Name: "-destination 'platform=iOS'", issue: quotedFlagWithValue}},
-			diags: []DiagnosticKind{SuspiciousUserDefault, SuspiciousUserDefault},
-		},
-		{
-			name:  "flag and value quoted together, no '=': xcodebuild refuses it",
-			args:  []string{"-sdk macosx", "-quiet foo"},
-			want:  Options{{Kind: Unknown, Name: "-sdk macosx", issue: quotedFlag}, {Kind: Unknown, Name: "-quiet foo", issue: quotedFlag}},
-			diags: []DiagnosticKind{MalformedOption, MalformedOption},
+			name: "flag and value quoted together, value with '=': xcodebuild ignores it as a user default",
+			args: []string{"-destination generic/platform=iOS", "-destination 'platform=iOS'", "-destination\vgeneric/platform=iOS", "-destination\u00a0generic/platform=iOS"},
+			want: Options{
+				{Kind: UserDefault, Name: "-destination generic/platform", Value: "iOS"},
+				{Kind: UserDefault, Name: "-destination 'platform", Value: "iOS'"},
+				{Kind: UserDefault, Name: "-destination\vgeneric/platform", Value: "iOS"},
+				{Kind: UserDefault, Name: "-destination\u00a0generic/platform", Value: "iOS"},
+			},
+			diags: []DiagnosticKind{SuspiciousUserDefault, SuspiciousUserDefault, SuspiciousUserDefault, SuspiciousUserDefault},
 		},
 		{
 			name: "values may contain spaces",
@@ -164,12 +157,6 @@ func TestParse(t *testing.T) {
 				{Kind: ValueOption, Name: "-derivedDataPath", Value: "build"},
 				{Kind: ValueOption, Name: "-clonedSourcePackagesDirPath", Value: "test"},
 			},
-		},
-		{
-			name:  "lone dash, empty user default name and empty colon value are reported",
-			args:  []string{"-", "-=x", "-only-testing:"},
-			want:  Options{{Kind: Unknown, Name: "-", issue: invalidFlag}, {Kind: Unknown, Name: "-=x", issue: invalidFlag}, {Kind: Unknown, Name: "-only-testing:", issue: colonWithoutValue}},
-			diags: []DiagnosticKind{MalformedOption, MalformedOption, MalformedOption},
 		},
 	}
 	for _, tt := range tests {

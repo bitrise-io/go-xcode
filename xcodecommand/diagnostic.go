@@ -17,27 +17,24 @@ type DiagnosticKind int
 
 // Diagnostic kinds.
 const (
-	MalformedOption       DiagnosticKind = iota // an argument xcodebuild reads differently than meant: unparsable, or a value flag that took the next flag
-	RejectedOption                              // switches xcodebuild's mode or belongs to another action
+	MissingValue          DiagnosticKind = iota // a value flag with no value; xcodebuild takes the next flag as its value
+	RejectedOption                              // a mode switch, or a flag of another action; xcodebuild ignores it here
 	ActionInOptions                             // a build action; the command owns its action list
-	SuspiciousUserDefault                       // -NAME=value that looks like a build setting; xcodebuild ignores it silently
-	RepeatedOption                              // a value option set by the command and again by the user; xcodebuild refuses it
-	PreferStepInput                             // a flag that only works with what the step's inputs provide; use the input
+	SuspiciousUserDefault                       // a -name=value xcodebuild reads as a user default and ignores: a build setting with a dash, a flag quoted with its value, a flag written with "="
+	PreferStepInput                             // a flag a Step input renders; use the input
 	Override                                    // informational: a default or build setting yielded to the user's
 	RedundantOption                             // informational: identical to what the command already sets
 )
 
-// Informational says whether the kind is a note rather than a problem: the command line
-// does what the user meant. A step logs the rest as warnings, or fails on them.
-func (k DiagnosticKind) Informational() bool {
-	return k == Override || k == RedundantOption
-}
-
-// Diagnostic is one finding about the additional options, for the step log.
+// Diagnostic is one finding about the additional options, for the step log. It is
+// informational when the command line does what the user meant: a note. Otherwise
+// xcodebuild accepts the option and does something other than meant: a warning. What
+// xcodebuild refuses is not reported; the build fails on it with xcodebuild's message.
 type Diagnostic struct {
-	Kind    DiagnosticKind
-	Option  Option // the user's option the finding is about
-	Message string
+	Kind          DiagnosticKind
+	Option        Option // the user's option the finding is about
+	Message       string
+	Informational bool
 }
 
 func (d Diagnostic) String() string {
@@ -46,27 +43,28 @@ func (d Diagnostic) String() string {
 
 // report is a Diagnostic about o with a formatted message.
 func report(kind DiagnosticKind, o Option, format string, args ...any) Diagnostic {
-	return Diagnostic{Kind: kind, Option: o, Message: fmt.Sprintf(format, args...)}
+	return Diagnostic{Kind: kind, Option: o, Message: fmt.Sprintf(format, args...), Informational: kind == Override || kind == RedundantOption}
 }
 
 // -ENABLE_BITCODE, -MARKETING_VERSION: a build setting typed with a dash, which
 // xcodebuild accepts as a user default and silently ignores. Not -IDEFoo.
 var upperCaseFlag = regexp.MustCompile(`^-[A-Z][A-Z0-9_]*$`)
 
-// Diagnostics reports what the parser could not read and what xcodebuild would silently
-// ignore, each with its fix. A step logs these when it reads its inputs, before its first
-// xcodebuild call.
+// Diagnostics reports what xcodebuild silently does with an option other than what the user
+// meant, each with its fix. An argument xcodebuild refuses gets no line: the build fails on
+// it with xcodebuild's own message. A step logs these when it reads its inputs, before its
+// first xcodebuild call.
 func (opts Options) Diagnostics() []Diagnostic {
 	var diagnostics []Diagnostic
 	for _, o := range opts {
 		switch {
-		case o.Kind == Unknown && o.issue == quotedFlagWithValue:
-			diagnostics = append(diagnostics, report(SuspiciousUserDefault, o, "%q is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so it has no effect. Use %s to apply it, or remove it.", o.Name, unquoteFlag(o.Name)))
-		case o.Kind == ValueOption && o.issue == flagAsValue:
+		case o.Kind == UserDefault && strings.IndexFunc(o.Name, unicode.IsSpace) >= 0:
+			// "-destination generic/platform=iOS" as one argument: a user default named
+			// "destination generic/platform", which xcodebuild ignores
+			diagnostics = append(diagnostics, report(SuspiciousUserDefault, o, "%q is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so it has no effect. Use %s to apply it, or remove it.", o, unquoteFlag(o.String())))
+		case o.tookFlag:
 			// -derivedDataPath -quiet: xcodebuild takes -quiet as the path and the switch is lost
-			diagnostics = append(diagnostics, report(MalformedOption, o, "%q has no value, so xcodebuild takes %q as its value and that flag does not apply. Add a value, or remove it.", o.Name, o.Value))
-		case o.Kind == Unknown:
-			diagnostics = append(diagnostics, report(MalformedOption, o, "%q %s", o.Name, malformedMessage(o)))
+			diagnostics = append(diagnostics, report(MissingValue, o, "%q has no value, so xcodebuild takes %q as its value and that flag does not apply. Add a value, or remove it.", o.Name, o.Value))
 		case o.Kind == UserDefault && upperCaseFlag.MatchString(o.Name):
 			// -ENABLE_BITCODE=NO: the user meant ENABLE_BITCODE=NO
 			setting := o.Name[1:] + "=" + shellQuoted(o.Value)
@@ -74,23 +72,6 @@ func (opts Options) Diagnostics() []Diagnostic {
 		}
 	}
 	return diagnostics
-}
-
-func malformedMessage(o Option) string {
-	switch o.issue {
-	case emptyArgument:
-		return "is empty. xcodebuild treats it as an unknown build action. Remove it."
-	case quotedFlag:
-		return fmt.Sprintf("is a flag quoted together with its value. xcodebuild refuses it. Use %s instead.", unquoteFlag(o.Name))
-	case invalidFlag:
-		return "is not a valid flag. xcodebuild refuses it. Remove it."
-	case colonWithoutValue:
-		return "has no value after the colon. xcodebuild refuses it. Add the value, or remove it."
-	case missingValue:
-		return "has no value. xcodebuild refuses it. Add one, or remove it."
-	default:
-		return `is not a flag, a NAME=value build setting or a build action. xcodebuild treats it as an unknown build action. Quote a value with spaces, for example CODE_SIGN_IDENTITY="Apple Distribution", or remove it.`
-	}
 }
 
 // shellQuoted renders a value as it has to be written in xcodebuild_options: the inverse
