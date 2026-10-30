@@ -127,3 +127,56 @@ func TestFactory_Scheme(t *testing.T) {
 	_, err = testFactory().Scheme(workspacePath, "Missing")
 	assert.True(t, xcscheme.IsNotFoundError(err))
 }
+
+func TestContainer_Projects(t *testing.T) {
+	dir := t.TempDir()
+	projectPath := writeProject(t, dir, "App")
+	workspacePath := writeWorkspace(t, dir)
+
+	container, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+	projects, err := container.Projects()
+	require.NoError(t, err)
+	require.Len(t, projects, 1, "a project is its own only project")
+	assert.Equal(t, projectPath, projects[0].Path)
+
+	container, err = testFactory().Open(workspacePath)
+	require.NoError(t, err)
+	projects, err = container.Projects()
+	require.NoError(t, err)
+	require.Len(t, projects, 1)
+	assert.Equal(t, projectPath, projects[0].Path)
+
+	again, err := container.Projects()
+	require.NoError(t, err)
+	assert.Same(t, projects[0], again[0], "listed once, kept")
+}
+
+func TestContainer_Project(t *testing.T) {
+	dir := t.TempDir()
+	projectPath := writeProject(t, dir, "App")
+	libraryPath := writeProject(t, dir, "Library")
+	container, err := testFactory().Open(writeWorkspace(t, dir))
+	require.NoError(t, err)
+
+	projects, err := container.Projects()
+	require.NoError(t, err)
+
+	project, err := container.Project(projectPath)
+	require.NoError(t, err)
+	assert.Same(t, projects[0], project, "a referenced project is the one Projects opened")
+
+	library, err := container.Project(libraryPath)
+	require.NoError(t, err)
+	assert.Equal(t, libraryPath, library.Path, "a project the workspace does not reference is opened on demand")
+	libraryAgain, err := container.Project(libraryPath)
+	require.NoError(t, err)
+	assert.Same(t, library, libraryAgain, "and kept")
+
+	projects, err = container.Projects()
+	require.NoError(t, err)
+	assert.Len(t, projects, 1, "Projects stays what the bundle references")
+
+	_, err = container.Project(filepath.Join(dir, "Missing.xcodeproj"))
+	assert.ErrorIs(t, err, os.ErrNotExist)
+}

@@ -3,6 +3,8 @@
 package xcodeproject
 
 import (
+	"path/filepath"
+
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace"
@@ -21,12 +23,25 @@ type Container interface {
 	Schemes() ([]xcscheme.Scheme, error)
 	// Scheme returns the named scheme, with the bundle holding it in ContainerPath.
 	Scheme(name string) (xcscheme.Scheme, error)
+	// Projects returns the projects the bundle references, in file order: a project is its own
+	// only project, a workspace lists the projects it references, those missing from disk left
+	// out. They are opened once and kept.
+	Projects() ([]*xcodeproj.XcodeProj, error)
+	// Project returns the project at bundlePath, an absolute .xcodeproj path: one of Projects, or
+	// another the bundle leads to, such as a sub-project a scheme builds, opened and kept on
+	// first use.
+	Project(bundlePath string) (*xcodeproj.XcodeProj, error)
 }
 
-// container is the Container over either a project or a workspace.
+// container is the Container over either a project or a workspace, keeping the projects it opened.
 type container struct {
-	project   *xcodeproj.XcodeProj   // the opened project, nil for a workspace
-	workspace *xcworkspace.Workspace // the opened workspace, nil for a project
+	project        *xcodeproj.XcodeProj   // the opened project, nil for a workspace
+	workspace      *xcworkspace.Workspace // the opened workspace, nil for a project
+	projectFactory xcodeproj.Factory
+
+	projects       []*xcodeproj.XcodeProj // Projects, once listed
+	projectsListed bool
+	projectsByPath map[string]*xcodeproj.XcodeProj
 }
 
 func (c *container) Path() string {
@@ -55,4 +70,53 @@ func (c *container) Scheme(name string) (xcscheme.Scheme, error) {
 		return c.workspace.Scheme(name)
 	}
 	return c.project.Scheme(name)
+}
+
+func (c *container) Projects() ([]*xcodeproj.XcodeProj, error) {
+	if c.projectsListed {
+		return c.projects, nil
+	}
+
+	var projects []*xcodeproj.XcodeProj
+	if c.workspace != nil {
+		var err error
+		projects, err = c.workspace.Projects()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		projects = []*xcodeproj.XcodeProj{c.project}
+	}
+
+	for _, project := range projects {
+		c.keep(project)
+	}
+	c.projects, c.projectsListed = projects, true
+
+	return projects, nil
+}
+
+func (c *container) Project(bundlePath string) (*xcodeproj.XcodeProj, error) {
+	if _, err := c.Projects(); err != nil {
+		return nil, err
+	}
+
+	if project, ok := c.projectsByPath[filepath.Clean(bundlePath)]; ok {
+		return project, nil
+	}
+
+	project, err := c.projectFactory.Open(bundlePath)
+	if err != nil {
+		return nil, err
+	}
+	c.keep(project)
+
+	return project, nil
+}
+
+func (c *container) keep(project *xcodeproj.XcodeProj) {
+	if c.projectsByPath == nil {
+		c.projectsByPath = map[string]*xcodeproj.XcodeProj{}
+	}
+	c.projectsByPath[filepath.Clean(project.Path)] = project
 }

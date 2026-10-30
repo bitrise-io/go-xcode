@@ -30,13 +30,13 @@ func (f Factory) Open(pth string) (Container, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &container{project: project}, nil
+		return &container{project: project, projectFactory: f.project}, nil
 	case xcworkspace.IsWorkspace(pth):
 		workspace, err := f.workspace.Open(pth)
 		if err != nil {
 			return nil, err
 		}
-		return &container{workspace: workspace}, nil
+		return &container{workspace: workspace, projectFactory: f.project}, nil
 	default:
 		return nil, fmt.Errorf("%s is neither an Xcode project (%s) nor a workspace (%s)", pth, xcodeproj.XcodeProjExtension, xcworkspace.XCWorkspaceExtension)
 	}
