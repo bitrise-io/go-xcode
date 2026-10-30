@@ -100,7 +100,7 @@ var (
 	// Not generic/platform=iOS: "/" is not a setting name, that is a -destination value.
 	buildSettingPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*=`)
 	// -quiet, -only-testing, -test-repetition-relaunch-enabled, -UseModernBuildSystem;
-	// not "-", "-=x" or "-destination generic/platform=iOS" quoted as one argument.
+	// not "-" or "-:x", nor "-sdk macosx" quoted as one argument.
 	flagNamePattern = regexp.MustCompile(`^-[A-Za-z0-9][A-Za-z0-9_.-]*$`)
 )
 
@@ -124,7 +124,7 @@ var freeFormValueFlags = []string{
 // rules, as the steps always have (quotes group a value that contains spaces), and reads
 // the arguments as xcodebuild does. Only a quoting error fails: whatever fits no form is
 // kept verbatim as Unknown, so the command line stays as the user wrote it and xcodebuild
-// refuses it with its own message; Options.Diagnostics says why.
+// refuses it with its own message.
 func ParseOptions(input string) (Options, error) {
 	args, err := shellquote.Split(input)
 	if err != nil {
