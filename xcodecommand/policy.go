@@ -60,7 +60,8 @@ var (
 	// Test flags xcodebuild accepts and ignores outside a test action (verified on archive,
 	// Xcode 26.5 and 27.0). The test flags it refuses there (-testPlan, -enableCodeCoverage,
 	// -testLanguage, -testRegion, -testProductsPath: "only supported when testing"; -xctestrun
-	// next to -scheme) need no line: the build fails on them with xcodebuild's own message.
+	// next to -scheme, and -scheme, -project, -workspace or -testProductsPath next to
+	// -xctestrun) need no line: the build fails on them with xcodebuild's own message.
 	testOnly = rejection{
 		reason: "It applies to test actions only, and xcodebuild ignores it here.",
 		flags: []string{
