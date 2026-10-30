@@ -113,16 +113,35 @@ func (p actionPolicy) refusal(o Option) (Diagnostic, bool) {
 type stepInput struct {
 	hint          string
 	kind          Kind     // the form the flag takes; a copy in another form is one xcodebuild refuses
+	commands      []string // the commands whose Steps have the input; empty means all
+	otherwise     string   // the hint for a command whose Step lacks the input; empty means no line
 	satisfied     []string // value flags that, all set by the user too, make the flag work without the input
 	informational bool     // the flag works as given; the input is only the tidier place for it
 }
 
+// appliesTo says whether the command's Step has the input.
+func (in stepInput) appliesTo(command string) bool {
+	return len(in.commands) == 0 || slices.Contains(in.commands, command)
+}
+
+var testRunCommands = []string{ActionTest, ActionTestWithoutBuilding}
+
+const testRepetitionHint = "belongs to the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead."
+
 var stepInputFlags = map[string]stepInput{
 	"-allowProvisioningUpdates": {
 		kind:      Switch,
+		commands:  []string{ActionArchive, ActionBuild, ActionBuildForTesting},
+		otherwise: "cannot update provisioning profiles on its own: on CI, xcodebuild has no Apple credentials. Remove it.",
 		hint:      "cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead. See https://docs.bitrise.io/en/code-signing/ios-code-signing/managing-ios-code-signing-files---automatic-provisioning.html",
 		satisfied: []string{"-authenticationKeyPath", "-authenticationKeyID", "-authenticationKeyIssuerID"},
 	},
+	// xcode-test and xcode-test-without-building render these from their inputs. Passed in
+	// the options they work the same, so the hint is a note.
+	"-test-iterations":                  {kind: ValueOption, hint: testRepetitionHint, commands: testRunCommands, informational: true},
+	"-retry-tests-on-failure":           {kind: Switch, hint: testRepetitionHint, commands: testRunCommands, informational: true},
+	"-run-tests-until-failure":          {kind: Switch, hint: testRepetitionHint, commands: testRunCommands, informational: true},
+	"-test-repetition-relaunch-enabled": {kind: ValueOption, hint: testRepetitionHint, commands: testRunCommands, informational: true},
 }
 
 // setsAll says whether opts gives every one of the value flags a value. It is false for
@@ -231,11 +250,16 @@ func (g flagGroup) findings(all Options, policy actionPolicy) []Diagnostic {
 	}
 
 	// A flag a Step input renders, passed here instead: -allowProvisioningUpdates without the
-	// Step's API key flags, or the user's own. One line, for the user's first copy in the
-	// form the flag takes; "-allowProvisioningUpdates YES" is one xcodebuild refuses.
+	// Step's API key flags, or the user's own. One line, for the user's copy in the form the
+	// flag takes; "-allowProvisioningUpdates YES" is one xcodebuild refuses. A command whose
+	// Step lacks the input gets the hint's otherwise text, if it has one.
 	if in, ok := stepInputFlags[g.name]; ok && len(g.step) == 0 && !setsAll(all, in.satisfied) {
-		if u, found := g.user.last(func(o Option) bool { return o.Kind == in.kind }); found {
-			d := report(PreferStepInput, u, "%q %s", u, in.hint)
+		hint := in.hint
+		if !in.appliesTo(policy.name) {
+			hint = in.otherwise
+		}
+		if u, found := g.user.last(func(o Option) bool { return o.Kind == in.kind }); found && hint != "" {
+			d := report(PreferStepInput, u, "%q %s", u, hint)
 			d.Informational = in.informational
 			diagnostics = append(diagnostics, d)
 		}

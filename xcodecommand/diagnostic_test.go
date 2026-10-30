@@ -34,6 +34,13 @@ func TestDiagnostic_Informational(t *testing.T) {
 	require.Equal(t, []DiagnosticKind{ActionInOptions, Override, RedundantOption}, kinds(cmd.Diagnostics()))
 	require.Equal(t, []bool{false, true, true}, informational)
 
+	// The repetition flags work as given; the hint at the inputs is a note.
+	cmd, err = Test(TestParams{ProjectPath: "App.xcodeproj", AdditionalOptions: additional("-test-iterations", "2", "-allowProvisioningUpdates")})
+	require.NoError(t, err)
+	require.Equal(t, []DiagnosticKind{PreferStepInput, PreferStepInput}, kinds(cmd.Diagnostics()))
+	require.True(t, cmd.Diagnostics()[0].Informational)
+	require.False(t, cmd.Diagnostics()[1].Informational)
+
 	cmd, err = Archive(ArchiveParams{ProjectPath: "App.xcodeproj", AdditionalOptions: additional("-allowProvisioningUpdates")})
 	require.NoError(t, err)
 	require.Equal(t, []DiagnosticKind{PreferStepInput}, kinds(cmd.Diagnostics()))
@@ -81,6 +88,13 @@ func TestCommand_Diagnostics(t *testing.T) {
 			params:    ArchiveParams{AdditionalOptions: additional("-allowProvisioningUpdates")},
 			wantArgs:  []string{"archive", "-project", "App.xcodeproj", "-allowProvisioningUpdates"},
 			wantKinds: []DiagnosticKind{PreferStepInput},
+		},
+		{
+			// archive has no test repetition inputs: the flag is reported as test-only instead.
+			name:      "a test repetition flag on archive is test-only, not a Step input",
+			params:    ArchiveParams{AdditionalOptions: additional("-retry-tests-on-failure")},
+			wantArgs:  []string{"archive", "-project", "App.xcodeproj", "-retry-tests-on-failure"},
+			wantKinds: []DiagnosticKind{RejectedOption},
 		},
 		{
 			name:     "a redundant switch and a replaced default are informational",
@@ -135,6 +149,24 @@ func TestDiagnosticMessages(t *testing.T) {
 				`"-test-iterations 2" does not work with archive. It applies to test actions only, and xcodebuild ignores it here. Remove it.`,
 				`"clean" is a build action. The Step sets the actions itself. Remove it.`,
 				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead. See https://docs.bitrise.io/en/code-signing/ios-code-signing/managing-ios-code-signing-files---automatic-provisioning.html`,
+			},
+		},
+		{
+			// xcode-test has no signing input to point at, so the hint says what the switch does here.
+			name:   "a lone -allowProvisioningUpdates on a test run",
+			user:   []string{"-allowProvisioningUpdates"},
+			policy: testPolicy,
+			want: []string{
+				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own: on CI, xcodebuild has no Apple credentials. Remove it.`,
+			},
+		},
+		{
+			name:   "test repetition flags point at the Step's inputs on test runs",
+			user:   []string{"-test-iterations", "2", "-retry-tests-on-failure"},
+			policy: testPolicy,
+			want: []string{
+				`"-test-iterations 2" belongs to the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead.`,
+				`"-retry-tests-on-failure" belongs to the Step's test repetition inputs (test_repetition_mode, maximum_test_repetitions, relaunch_tests_for_each_repetition). Remove it and set those inputs instead.`,
 			},
 		},
 		{
