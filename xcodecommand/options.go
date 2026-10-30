@@ -21,17 +21,7 @@ const (
 	UserDefault              // -UseModernBuildSystem=YES
 	BuildSetting             // CODE_SIGNING_ALLOWED=NO
 	Action                   // clean, build, archive, ...
-	Unknown                  // fits no form; Name holds it verbatim
-)
-
-// issue marks what xcodebuild does with a parsed option other than what the user meant;
-// the diagnostics name it. An argument xcodebuild refuses is kept as Unknown without one:
-// xcodebuild fails on it with its own message.
-type issue int
-
-const (
-	noIssue     issue = iota
-	flagAsValue       // "-derivedDataPath -quiet": the value flag took the next flag as its value
+	Unknown                  // fits no form; Name holds it verbatim, and xcodebuild fails on it with its own message
 )
 
 // Option is one xcodebuild argument, parsed from user input or derived from params.
@@ -39,7 +29,7 @@ type Option struct {
 	Kind  Kind
 	Name  string
 	Value string
-	issue issue // what xcodebuild does with it other than meant, if anything
+	tookFlag bool // a value flag that took the next flag as its value, as xcodebuild does
 }
 
 // key identifies the option when merging: the flag, the build setting name or the
@@ -204,7 +194,7 @@ func parseFlag(args []string) (Option, int) {
 		case len(args) < 2 || (flag == "-destination" && strings.HasPrefix(args[1], "-")):
 			return unknown, 1
 		case strings.HasPrefix(args[1], "-"):
-			return Option{Kind: ValueOption, Name: flag, Value: args[1], issue: flagAsValue}, 2
+			return Option{Kind: ValueOption, Name: flag, Value: args[1], tookFlag: true}, 2
 		}
 		return Option{Kind: ValueOption, Name: flag, Value: args[1]}, 2
 	case len(args) > 1 && looksLikeValue(args[1]):
