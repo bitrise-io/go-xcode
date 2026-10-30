@@ -11,8 +11,7 @@ type BuildParams struct {
 	DisableCodeSigning bool // CODE_SIGNING_ALLOWED=NO
 	Clean              bool // run clean first
 	Authentication     *Authentication
-	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
-	Validation         Validation
+	AdditionalOptions  Options // the step's xcodebuild_options, from ParseOptions
 }
 
 // Build renders params into a build Command.
@@ -29,7 +28,7 @@ func Build(params BuildParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions, buildPolicy, params.Validation)
+	return assemble(opts, params.AdditionalOptions, buildPolicy)
 }
 
 func appendCodeSigningAllowed(opts Options, disable bool) Options {

@@ -32,7 +32,7 @@ func TestArchive(t *testing.T) {
 		{
 			// The step's -destination is a default: the user's replaces it.
 			name:   "a user -destination replaces the step's default",
-			params: ArchiveParams{Destination: "generic/platform=iOS", AdditionalOptions: []string{"-destination", "generic/platform=tvOS"}},
+			params: ArchiveParams{Destination: "generic/platform=iOS", AdditionalOptions: additional("-destination", "generic/platform=tvOS")},
 			want:   []string{"archive", "-destination", "generic/platform=tvOS"},
 		},
 		{
@@ -45,7 +45,7 @@ func TestArchive(t *testing.T) {
 				ArchivePath:       "/tmp/App.xcarchive",
 				Clean:             true,
 				Authentication:    &testAuth,
-				AdditionalOptions: []string{"-destination", "generic/platform=iOS", "-skipPackagePluginValidation"},
+				AdditionalOptions: additional("-destination", "generic/platform=iOS", "-skipPackagePluginValidation"),
 			},
 			want: []string{
 				"clean", "archive",

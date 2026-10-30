@@ -7,15 +7,24 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodecommand"
 )
 
-// ExampleArchive is the call site steps-xcode-archive ends up with. Inputs the step only
-// sometimes has (the API key, the xcconfig path) are assigned as-is: a nil pointer or empty
-// string leaves the flag out. The step's default destination is a field; when the user's
-// xcodebuild_options also carry -destination, the merge drops the default and reports it.
+// ExampleArchive is the call site steps-xcode-archive ends up with. The step parses its
+// xcodebuild_options once, when it reads its inputs, and logs what the parser finds there.
+// Inputs the step only sometimes has (the API key, the xcconfig path) are assigned as-is: a
+// nil pointer or empty string leaves the flag out. The step's default destination is a
+// field; when the user's options also carry -destination, the merge drops the default and
+// the command reports it.
 func ExampleArchive() {
+	userOptions, err := xcodecommand.ParseOptions("-destination 'generic/platform=iOS Simulator' -quiet")
+	if err != nil {
+		fmt.Println("error:", err)
+		return
+	}
+	for _, d := range userOptions.Diagnostics() {
+		fmt.Println("warning:", d)
+	}
+
 	var apiKey *xcodecommand.Authentication // nil when the step runs without an API key
 	xcconfigPath := "/tmp/temp.xcconfig"    // "" when the step has no xcconfig content
-	userOptions := []string{"-destination", "generic/platform=iOS Simulator", "-quiet"}
-
 	cmd, err := xcodecommand.Archive(xcodecommand.ArchiveParams{
 		ProjectPath:       "App.xcworkspace",
 		Scheme:            "App",

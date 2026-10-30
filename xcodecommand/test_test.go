@@ -44,7 +44,7 @@ func TestTest(t *testing.T) {
 				OnlyTesting:                    []string{"AppTests"},
 				SkipTesting:                    []string{"TestTarget1/TestClass1", "TestTarget2"},
 				CollectTestDiagnostics:         "never",
-				AdditionalOptions:              []string{"-quiet"},
+				AdditionalOptions:              additional("-quiet"),
 			},
 			want: []string{
 				"-project", "App.xcodeproj", "-scheme", "App", "clean", "test", "-destination", "id=SIM",

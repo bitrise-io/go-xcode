@@ -38,10 +38,10 @@ func TestMerge(t *testing.T) {
 	}
 
 	tests := []struct {
-		name       string
-		user       Options
-		want       []string
-		collisions []collision
+		name    string
+		user    Options
+		want    []string
+		dropped []string // the Step's options left off the command line
 	}{
 		{
 			name: "no user options leaves the derived options untouched",
@@ -53,16 +53,14 @@ func TestMerge(t *testing.T) {
 			want: append(slices.Clone(base), "-quiet", "-sdk", "iphoneos"),
 		},
 		{
-			name:       "a repeated value option is passed through for xcodebuild to refuse, and reported",
-			user:       Options{{Kind: ValueOption, Name: "-configuration", Value: "Debug"}},
-			want:       append(slices.Clone(base), "-configuration", "Debug"),
-			collisions: []collision{{repeated, Option{Kind: ValueOption, Name: "-configuration", Value: "Release"}, Options{{Kind: ValueOption, Name: "-configuration", Value: "Debug"}}}},
+			name: "a repeated value option is passed through for xcodebuild to refuse",
+			user: Options{{Kind: ValueOption, Name: "-configuration", Value: "Debug"}},
+			want: append(slices.Clone(base), "-configuration", "Debug"),
 		},
 		{
-			name:       "a repeated owned path is passed through the same way",
-			user:       Options{{Kind: ValueOption, Name: "-xcconfig", Value: "mine.xcconfig"}},
-			want:       append(slices.Clone(base), "-xcconfig", "mine.xcconfig"),
-			collisions: []collision{{repeated, Option{Kind: ValueOption, Name: "-xcconfig", Value: "/tmp/temp.xcconfig"}, Options{{Kind: ValueOption, Name: "-xcconfig", Value: "mine.xcconfig"}}}},
+			name: "a repeated owned path is passed through the same way",
+			user: Options{{Kind: ValueOption, Name: "-xcconfig", Value: "mine.xcconfig"}},
+			want: append(slices.Clone(base), "-xcconfig", "mine.xcconfig"),
 		},
 		{
 			name: "several user destinations replace the default as a group and all survive",
@@ -73,40 +71,36 @@ func TestMerge(t *testing.T) {
 			want: append(without("-destination", 2),
 				"-destination", "platform=iOS Simulator,name=iPhone 15",
 				"-destination", "platform=iOS Simulator,name=iPad Air"),
-			collisions: []collision{{overridden, Option{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"}, Options{
-				{Kind: ValueOption, Name: "-destination", Value: "platform=iOS Simulator,name=iPhone 15"},
-				{Kind: ValueOption, Name: "-destination", Value: "platform=iOS Simulator,name=iPad Air"},
-			}}},
+			dropped: []string{"-destination generic/platform=iOS"},
 		},
 		{
-			name:       "a repeated build setting yields to the user's, as xcodebuild takes the last value",
-			user:       Options{{Kind: BuildSetting, Name: "CODE_SIGNING_ALLOWED", Value: "YES"}},
-			want:       append(without("CODE_SIGNING_ALLOWED=NO", 1), "CODE_SIGNING_ALLOWED=YES"),
-			collisions: []collision{{overridden, Option{Kind: BuildSetting, Name: "CODE_SIGNING_ALLOWED", Value: "NO"}, Options{{Kind: BuildSetting, Name: "CODE_SIGNING_ALLOWED", Value: "YES"}}}},
+			name:    "a repeated build setting yields to the user's, as xcodebuild takes the last value",
+			user:    Options{{Kind: BuildSetting, Name: "CODE_SIGNING_ALLOWED", Value: "YES"}},
+			want:    append(without("CODE_SIGNING_ALLOWED=NO", 1), "CODE_SIGNING_ALLOWED=YES"),
+			dropped: []string{"CODE_SIGNING_ALLOWED=NO"},
 		},
 		{
-			name:       "a repeated switch is dropped and reported as redundant",
-			user:       Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}},
-			want:       append(without("-allowProvisioningUpdates", 1), "-allowProvisioningUpdates"),
-			collisions: []collision{{redundant, Option{Kind: Switch, Name: "-allowProvisioningUpdates"}, Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}}}},
+			name:    "a repeated switch yields, so it is sent once",
+			user:    Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}},
+			want:    append(without("-allowProvisioningUpdates", 1), "-allowProvisioningUpdates"),
+			dropped: []string{"-allowProvisioningUpdates"},
 		},
 		{
-			name:       "a switch the user repeats on top of the step's is still redundant",
-			user:       Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}, {Kind: Switch, Name: "-allowProvisioningUpdates"}},
-			want:       append(without("-allowProvisioningUpdates", 1), "-allowProvisioningUpdates", "-allowProvisioningUpdates"),
-			collisions: []collision{{redundant, Option{Kind: Switch, Name: "-allowProvisioningUpdates"}, Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}, {Kind: Switch, Name: "-allowProvisioningUpdates"}}}},
+			name:    "a switch the user repeats on top of the step's yields the same way",
+			user:    Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}, {Kind: Switch, Name: "-allowProvisioningUpdates"}},
+			want:    append(without("-allowProvisioningUpdates", 1), "-allowProvisioningUpdates", "-allowProvisioningUpdates"),
+			dropped: []string{"-allowProvisioningUpdates"},
 		},
 		{
-			name:       "a default repeated with the same value is redundant, not an override",
-			user:       Options{{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"}},
-			want:       append(without("-destination", 2), "-destination", "generic/platform=iOS"),
-			collisions: []collision{{redundant, Option{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"}, Options{{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"}}}},
+			name:    "a default repeated with the same value yields too",
+			user:    Options{{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"}},
+			want:    append(without("-destination", 2), "-destination", "generic/platform=iOS"),
+			dropped: []string{"-destination generic/platform=iOS"},
 		},
 		{
-			name:       "a value option repeated with the same value is still left for xcodebuild to refuse",
-			user:       Options{{Kind: ValueOption, Name: "-scheme", Value: "App"}},
-			want:       append(slices.Clone(base), "-scheme", "App"),
-			collisions: []collision{{repeated, Option{Kind: ValueOption, Name: "-scheme", Value: "App"}, Options{{Kind: ValueOption, Name: "-scheme", Value: "App"}}}},
+			name: "a value option repeated with the same value is still left for xcodebuild to refuse",
+			user: Options{{Kind: ValueOption, Name: "-scheme", Value: "App"}},
+			want: append(slices.Clone(base), "-scheme", "App"),
 		},
 		{
 			name: "actions and unknown tokens are appended, never merged",
@@ -116,11 +110,22 @@ func TestMerge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, collisions := merge(derived, tt.user, policy)
+			got := merge(derived, tt.user, policy)
 			require.Equal(t, tt.want, got.Args())
-			require.Equal(t, tt.collisions, collisions)
+			require.Equal(t, tt.dropped, dropped(got))
 		})
 	}
+}
+
+// dropped renders the options the merge left off the command line.
+func dropped(opts Options) []string {
+	var out []string
+	for _, o := range opts {
+		if o.dropped {
+			out = append(out, o.String())
+		}
+	}
+	return out
 }
 
 func TestMerge_appendableKeepsDerivedEntries(t *testing.T) {
@@ -131,17 +136,17 @@ func TestMerge_appendableKeepsDerivedEntries(t *testing.T) {
 	}
 	user := Options{{Kind: ColonOption, Name: "-skip-testing", Value: "AppTests/Manual"}}
 
-	got, collisions := merge(derived, user, actionPolicy{name: "test", appendable: []string{"-skip-testing"}})
+	got := merge(derived, user, actionPolicy{name: "test", appendable: []string{"-skip-testing"}})
 	require.Equal(t, []string{"test", "-skip-testing:AppTests/Flaky", "-skip-testing:AppTests/Slow", "-skip-testing:AppTests/Manual"}, got.Args())
-	require.Empty(t, collisions)
+	require.Empty(t, dropped(got))
 }
 
-func TestMerge_userDefaultDoesNotCollideWithAFlag(t *testing.T) {
+func TestMerge_userDefaultDoesNotReplaceAFlag(t *testing.T) {
 	derived := Options{{Kind: ValueOption, Name: "-collect-test-diagnostics", Value: "never"}}
 	user := Options{{Kind: UserDefault, Name: "-collect-test-diagnostics", Value: "on-failure"}}
 
-	got, collisions := merge(derived, user, actionPolicy{name: "test", defaults: []string{"-collect-test-diagnostics"}})
+	got := merge(derived, user, actionPolicy{name: "test", defaults: []string{"-collect-test-diagnostics"}})
 
 	require.Equal(t, []string{"-collect-test-diagnostics", "never", "-collect-test-diagnostics=on-failure"}, got.Args(), "the step's flag stays; xcodebuild ignores the = form")
-	require.Empty(t, collisions, "a user default keys as -flag=, so it is not a collision; lint reports it")
+	require.Empty(t, dropped(got), "a user default keys as -flag=, so it never replaces the flag; lint reports it")
 }

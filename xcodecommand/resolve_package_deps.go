@@ -11,7 +11,7 @@ type ResolvePackagesParams struct {
 	ProjectPath       string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme            string
 	Configuration     string
-	AdditionalOptions []string // the step's xcodebuild_options, shell-split, as given to its main command
+	AdditionalOptions Options // the step's xcodebuild_options, from ParseOptions, as given to its main command
 }
 
 // ResolvePackages renders params into a package resolution Command; run it with a Runner.
@@ -32,13 +32,12 @@ func ResolvePackages(params ResolvePackagesParams) (Command, error) {
 	opts = append(opts, Option{Kind: Switch, Name: "-resolvePackageDependencies"})
 
 	// clean archive -test-iterations 2 -skipMacroValidation FOO=1 -> -skipMacroValidation FOO=1
-	user := ParseAdditionalOptions(params.AdditionalOptions).Filter(func(o Option) bool {
+	user := params.AdditionalOptions.Filter(func(o Option) bool {
 		_, rejected := resolvePackagesPolicy.rejects(o)
 		return o.Kind != Action && o.Kind != Unknown && !rejected
 	})
-	merged, _ := merge(opts, user, resolvePackagesPolicy)
 
-	return Command{args: merged.Args()}, nil
+	return Command{args: merge(opts, user, resolvePackagesPolicy).Args()}, nil
 }
 
 var resolvePackagesPolicy = actionPolicy{

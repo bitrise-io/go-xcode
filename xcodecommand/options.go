@@ -40,15 +40,17 @@ const (
 
 // Option is one xcodebuild argument, parsed from user input or derived from params.
 type Option struct {
-	Kind  Kind
-	Name  string
-	Value string
-	issue issue // why an Unknown option was not parsed
+	Kind    Kind
+	Name    string
+	Value   string
+	issue   issue // why an Unknown option was not parsed
+	user    bool  // from xcodebuild_options; the zero value is the Step's own
+	dropped bool  // the merge left it off the command line: the user set it too
 }
 
-// Key identifies the option when merging: the flag, the build setting name or the
+// key identifies the option when merging: the flag, the build setting name or the
 // action. A user default keys as "-name=", so -flag=value never collides with -flag value.
-func (o Option) Key() string {
+func (o Option) key() string {
 	if o.Kind == UserDefault {
 		return o.Name + "="
 	}
@@ -78,13 +80,21 @@ func (o Option) args() []string {
 // Options is an ordered list of xcodebuild arguments.
 type Options []Option
 
-// Args renders the options as xcodebuild arguments.
+// Args renders the options as xcodebuild arguments, without the ones the merge dropped.
 func (opts Options) Args() []string {
 	var args []string
 	for _, o := range opts {
-		args = append(args, o.args()...)
+		if !o.dropped {
+			args = append(args, o.args()...)
+		}
 	}
 	return args
+}
+
+// sets says whether a flag or build setting with the key is among the options. Actions
+// and unparsed arguments never replace a derived flag.
+func (opts Options) sets(key string) bool {
+	return slices.ContainsFunc(opts, func(o Option) bool { return o.Kind != Action && o.Kind != Unknown && o.key() == key })
 }
 
 // Filter returns the options for which keep is true, in order.
@@ -129,21 +139,21 @@ var freeFormValueFlags = []string{
 	"-resultStreamPath", "-localizationPath", "-importPath", "-codesizeProfileOutputDir", "-test-enumeration-output-path",
 }
 
-// SplitAdditionalOptions splits the xcodebuild_options input into arguments with POSIX
-// shell rules, as the steps always have: quotes group a value that contains spaces.
-func SplitAdditionalOptions(input string) ([]string, error) {
+// ParseOptions reads the xcodebuild_options input. It splits the input with POSIX shell
+// rules, as the steps always have (quotes group a value that contains spaces), and reads
+// the arguments as xcodebuild does. Only a quoting error fails: whatever fits no form is
+// kept verbatim as Unknown, so the command line stays as the user wrote it and xcodebuild
+// refuses it with its own message; Options.Diagnostics says why.
+func ParseOptions(input string) (Options, error) {
 	args, err := shellquote.Split(input)
 	if err != nil {
 		return nil, fmt.Errorf("xcodebuild_options %q cannot be split like a shell command line: %w", input, err)
 	}
-	return args, nil
+	return parse(args), nil
 }
 
-// ParseAdditionalOptions turns shell-split xcodebuild arguments into typed Options.
-// Whatever fits no form is kept verbatim as Unknown, so the command line stays as the
-// user wrote it and xcodebuild refuses it with its own message; Options.Diagnostics
-// says why.
-func ParseAdditionalOptions(args []string) Options {
+// parse turns shell-split arguments into typed Options, marked as the user's.
+func parse(args []string) Options {
 	var opts Options
 
 	for i := 0; i < len(args); i++ {
@@ -180,6 +190,9 @@ func ParseAdditionalOptions(args []string) Options {
 		}
 	}
 
+	for i := range opts {
+		opts[i].user = true
+	}
 	return opts
 }
 

@@ -19,8 +19,7 @@ type TestWithoutBuildingParams struct {
 	OnlyTesting                    []string // -only-testing:<id>; user entries are added
 	SkipTesting                    []string // -skip-testing:<id>; user entries are added
 	CollectTestDiagnostics         string   // a default: a user -collect-test-diagnostics replaces it
-	AdditionalOptions              []string // the step's xcodebuild_options, shell-split
-	Validation                     Validation
+	AdditionalOptions              Options  // the step's xcodebuild_options, from ParseOptions
 }
 
 // TestWithoutBuilding renders params into a test-without-building Command.
@@ -59,7 +58,7 @@ func TestWithoutBuilding(params TestWithoutBuildingParams) (Command, error) {
 	}
 	opts = append(opts, run...)
 
-	return assemble(opts, params.AdditionalOptions, policy, params.Validation)
+	return assemble(opts, params.AdditionalOptions, policy)
 }
 
 var (

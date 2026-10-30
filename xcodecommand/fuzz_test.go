@@ -4,12 +4,14 @@ import (
 	"strings"
 	"testing"
 
+	shellquote "github.com/kballard/go-shellquote"
 	"github.com/stretchr/testify/require"
 )
 
 // FuzzAdditionalOptions feeds arbitrary input through the parser, its diagnostics and every
-// constructor: none may panic, and parsing must round-trip to the arguments it was given.
-// `go test -run=^$ -fuzz=FuzzAdditionalOptions ./xcodecommand/` explores beyond the seeds.
+// builder: none may panic, parsing must round-trip to the arguments it was given, and no
+// builder may fail on its options. `go test -run=^$ -fuzz=FuzzAdditionalOptions ./xcodecommand/`
+// explores beyond the seeds.
 func FuzzAdditionalOptions(f *testing.F) {
 	for _, seed := range []string{
 		"", " ", "-", "-=x", "-only-testing:", "-destination", "-quiet",
@@ -21,11 +23,14 @@ func FuzzAdditionalOptions(f *testing.F) {
 	}
 	f.Fuzz(func(t *testing.T, input string) {
 		variants := [][]string{strings.Fields(input), {input}}
-		if split, err := SplitAdditionalOptions(input); err == nil {
+		if split, err := shellquote.Split(input); err == nil {
 			variants = append(variants, split)
+			parsed, err := ParseOptions(input)
+			require.NoError(t, err)
+			require.Equal(t, parse(split), parsed, "ParseOptions is the shell split, then parse")
 		}
 		for _, args := range variants {
-			opts := ParseAdditionalOptions(args)
+			opts := parse(args)
 			if len(args) == 0 {
 				require.Empty(t, opts.Args())
 			} else {
@@ -33,25 +38,20 @@ func FuzzAdditionalOptions(f *testing.F) {
 			}
 			_ = opts.Diagnostics()
 
-			for _, validation := range []Validation{Warn, Fail} {
-				// The params are valid, so only the additional options can fail a constructor, and
-				// only under Fail: Warn reports them and still builds the command.
-				errs := []error{
-					errOf(Archive(ArchiveParams{ProjectPath: "App.xcodeproj", Destination: "generic/platform=iOS", Authentication: &testAuth, AdditionalOptions: args, Validation: validation})),
-					errOf(Build(BuildParams{ProjectPath: "App.xcworkspace", Configuration: "Debug", AdditionalOptions: args, Validation: validation})),
-					errOf(Analyze(AnalyzeParams{ProjectPath: "App.xcodeproj", ResultBundlePath: "/tmp/r.xcresult", AdditionalOptions: args, Validation: validation})),
-					errOf(BuildForTesting(BuildForTestingParams{ProjectPath: "App.xcodeproj", AdditionalOptions: args, Validation: validation})),
-					errOf(Test(TestParams{ProjectPath: "App.xcodeproj", Destination: "id=SIM", CollectTestDiagnostics: "never", SkipTesting: []string{"AppTests/Flaky"}, AdditionalOptions: args, Validation: validation})),
-					errOf(TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "/tmp/App.xctestrun", Destination: "id=SIM", AdditionalOptions: args, Validation: validation})),
-					errOf(TestWithoutBuilding(TestWithoutBuildingParams{ProjectPath: "App.xcworkspace", Scheme: "App", Destination: "id=SIM", AdditionalOptions: args, Validation: validation})),
-					errOf(ExportArchive(ExportArchiveParams{ArchivePath: "/tmp/App.xcarchive", ExportPath: "/tmp/out", ExportOptionsPlist: "/tmp/o.plist", AdditionalOptions: args, Validation: validation})),
-					errOf(ResolvePackages(ResolvePackagesParams{ProjectPath: "App.xcodeproj", AdditionalOptions: args})),
-				}
-				if validation == Warn {
-					for _, err := range errs {
-						require.NoError(t, err)
-					}
-				}
+			// The params are valid, so only the additional options could fail a builder, and
+			// none may: every option passes through and is reported instead.
+			for _, err := range []error{
+				errOf(Archive(ArchiveParams{ProjectPath: "App.xcodeproj", Destination: "generic/platform=iOS", Authentication: &testAuth, AdditionalOptions: opts})),
+				errOf(Build(BuildParams{ProjectPath: "App.xcworkspace", Configuration: "Debug", AdditionalOptions: opts})),
+				errOf(Analyze(AnalyzeParams{ProjectPath: "App.xcodeproj", ResultBundlePath: "/tmp/r.xcresult", AdditionalOptions: opts})),
+				errOf(BuildForTesting(BuildForTestingParams{ProjectPath: "App.xcodeproj", AdditionalOptions: opts})),
+				errOf(Test(TestParams{ProjectPath: "App.xcodeproj", Destination: "id=SIM", CollectTestDiagnostics: "never", SkipTesting: []string{"AppTests/Flaky"}, AdditionalOptions: opts})),
+				errOf(TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "/tmp/App.xctestrun", Destination: "id=SIM", AdditionalOptions: opts})),
+				errOf(TestWithoutBuilding(TestWithoutBuildingParams{ProjectPath: "App.xcworkspace", Scheme: "App", Destination: "id=SIM", AdditionalOptions: opts})),
+				errOf(ExportArchive(ExportArchiveParams{ArchivePath: "/tmp/App.xcarchive", ExportPath: "/tmp/out", ExportOptionsPlist: "/tmp/o.plist", AdditionalOptions: opts})),
+				errOf(ResolvePackages(ResolvePackagesParams{ProjectPath: "App.xcodeproj", AdditionalOptions: opts})),
+			} {
+				require.NoError(t, err)
 			}
 		}
 	})

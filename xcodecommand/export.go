@@ -7,8 +7,7 @@ type ExportArchiveParams struct {
 	ExportPath         string
 	ExportOptionsPlist string
 	Authentication     *Authentication
-	AdditionalOptions  []string // the step's xcodebuild_options, shell-split
-	Validation         Validation
+	AdditionalOptions  Options // the step's xcodebuild_options, from ParseOptions
 }
 
 // ExportArchive renders params into an export Command.
@@ -19,7 +18,7 @@ func ExportArchive(params ExportArchiveParams) (Command, error) {
 	opts = appendValue(opts, "-exportOptionsPlist", params.ExportOptionsPlist)
 	opts = appendAuthentication(opts, params.Authentication)
 
-	return assemble(opts, params.AdditionalOptions, exportArchivePolicy, params.Validation)
+	return assemble(opts, params.AdditionalOptions, exportArchivePolicy)
 }
 
 var exportArchivePolicy = actionPolicy{

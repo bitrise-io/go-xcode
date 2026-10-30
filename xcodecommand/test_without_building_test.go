@@ -29,7 +29,7 @@ func TestTestWithoutBuilding(t *testing.T) {
 				OnlyTesting:                    []string{"AppTests/Login", "AppUITests"},
 				SkipTesting:                    []string{"AppTests/Login/testSlow"},
 				CollectTestDiagnostics:         "on-failure",
-				AdditionalOptions:              []string{"-parallel-testing-enabled", "NO"},
+				AdditionalOptions:              additional("-parallel-testing-enabled", "NO"),
 			},
 			want: []string{
 				"test-without-building", "-xctestrun", "/tmp/App_iphonesimulator.xctestrun", "-destination", "id=SIM",
@@ -48,7 +48,7 @@ func TestTestWithoutBuilding(t *testing.T) {
 				XCTestRun:         "a.xctestrun",
 				OnlyTesting:       []string{"AppTests"},
 				SkipTesting:       []string{"AppTests/Flaky"},
-				AdditionalOptions: []string{"-only-testing:AppUITests", "-skip-testing:AppTests/Slow", "-only-test-configuration", "Debug", "-skip-test-configuration", "Release"},
+				AdditionalOptions: additional("-only-testing:AppUITests", "-skip-testing:AppTests/Slow", "-only-test-configuration", "Debug", "-skip-test-configuration", "Release"),
 			},
 			want: []string{
 				"test-without-building", "-xctestrun", "a.xctestrun",
@@ -93,14 +93,11 @@ func TestTestWithoutBuilding_XCTestRunOrScheme(t *testing.T) {
 func TestTestWithoutBuilding_Rejections(t *testing.T) {
 	// Each form rejects the other's flags: the xctestrun form a -scheme or a
 	// -testProductsPath, the scheme form an -xctestrun.
-	cmd, err := TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "a.xctestrun", AdditionalOptions: []string{"-scheme", "App", "-testProductsPath", "App.xctestproducts"}})
+	cmd, err := TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "a.xctestrun", AdditionalOptions: additional("-scheme", "App", "-testProductsPath", "App.xctestproducts")})
 	require.NoError(t, err)
 	require.Equal(t, []DiagnosticKind{RejectedOption, RejectedOption}, kinds(cmd.Diagnostics()))
 
-	cmd, err = TestWithoutBuilding(TestWithoutBuildingParams{ProjectPath: "App.xcodeproj", Scheme: "App", AdditionalOptions: []string{"-xctestrun", "a.xctestrun"}})
+	cmd, err = TestWithoutBuilding(TestWithoutBuildingParams{ProjectPath: "App.xcodeproj", Scheme: "App", AdditionalOptions: additional("-xctestrun", "a.xctestrun")})
 	require.NoError(t, err)
 	require.Equal(t, []DiagnosticKind{RejectedOption}, kinds(cmd.Diagnostics()))
-
-	_, err = TestWithoutBuilding(TestWithoutBuildingParams{ProjectPath: "App.xcodeproj", Scheme: "App", AdditionalOptions: []string{"-xctestrun", "a.xctestrun"}, Validation: Fail})
-	require.Error(t, err)
 }

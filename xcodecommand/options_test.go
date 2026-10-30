@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestParseAdditionalOptions(t *testing.T) {
+func TestParse(t *testing.T) {
 	tests := []struct {
 		name  string
 		args  []string
@@ -168,7 +168,10 @@ func TestParseAdditionalOptions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ParseAdditionalOptions(tt.args)
+			for i := range tt.want {
+				tt.want[i].user = true // parse marks what it returns as the user's
+			}
+			got := parse(tt.args)
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.args, got.Args(), "parsing must round-trip")
 
@@ -186,7 +189,7 @@ func TestParseAdditionalOptions(t *testing.T) {
 func TestOptions_Filter(t *testing.T) {
 	spmFlags := []string{"-skipPackagePluginValidation", "-skipMacroValidation", "-skipPackageUpdates",
 		"-disableAutomaticPackageResolution", "-onlyUsePackageVersionsFromResolvedFile", "-clonedSourcePackagesDirPath"}
-	opts := ParseAdditionalOptions([]string{
+	opts := parse([]string{
 		"-destination", "generic/platform=iOS",
 		"-skipPackagePluginValidation",
 		"-clonedSourcePackagesDirPath", "/tmp/spm",
@@ -204,22 +207,29 @@ func TestOptions_Filter(t *testing.T) {
 	}, kept.Args(), "the destination value generic/platform=iOS is not mistaken for a build setting")
 }
 
-func TestOption_Key(t *testing.T) {
-	require.Equal(t, "-quiet", Option{Kind: Switch, Name: "-quiet"}.Key())
-	require.Equal(t, "-sdk", Option{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}.Key())
-	require.Equal(t, "-sdk=", Option{Kind: UserDefault, Name: "-sdk", Value: "iphoneos"}.Key(), "a user default never collides with the flag of the same name")
-	require.Equal(t, "ARCHS", Option{Kind: BuildSetting, Name: "ARCHS", Value: "arm64"}.Key())
+func TestOption_key(t *testing.T) {
+	require.Equal(t, "-quiet", Option{Kind: Switch, Name: "-quiet"}.key())
+	require.Equal(t, "-sdk", Option{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}.key())
+	require.Equal(t, "-sdk=", Option{Kind: UserDefault, Name: "-sdk", Value: "iphoneos"}.key(), "a user default never collides with the flag of the same name")
+	require.Equal(t, "ARCHS", Option{Kind: BuildSetting, Name: "ARCHS", Value: "arm64"}.key())
 }
 
-func TestSplitAdditionalOptions(t *testing.T) {
-	args, err := SplitAdditionalOptions(`-destination "platform=iOS Simulator,name=iPhone 15" -only-testing:'App Tests/Login' CODE_SIGN_IDENTITY=Apple\ Distribution`)
+// ParseOptions splits the input with POSIX shell rules, then parses; only a quoting error
+// fails.
+func TestParseOptions(t *testing.T) {
+	opts, err := ParseOptions(`-destination "platform=iOS Simulator,name=iPhone 15" -only-testing:'App Tests/Login' CODE_SIGN_IDENTITY=Apple\ Distribution`)
 	require.NoError(t, err)
-	require.Equal(t, []string{"-destination", "platform=iOS Simulator,name=iPhone 15", "-only-testing:App Tests/Login", "CODE_SIGN_IDENTITY=Apple Distribution"}, args)
+	require.Equal(t, []string{"-destination", "platform=iOS Simulator,name=iPhone 15", "-only-testing:App Tests/Login", "CODE_SIGN_IDENTITY=Apple Distribution"}, opts.Args())
 
-	args, err = SplitAdditionalOptions("")
+	opts, err = ParseOptions("")
 	require.NoError(t, err)
-	require.Empty(t, args)
+	require.Empty(t, opts)
 
-	_, err = SplitAdditionalOptions(`-destination "platform=iOS`)
+	_, err = ParseOptions(`-destination "platform=iOS`)
 	require.EqualError(t, err, `xcodebuild_options "-destination \"platform=iOS" cannot be split like a shell command line: Unterminated double-quoted string`)
+}
+
+// additional is a test's xcodebuild_options, already shell-split.
+func additional(args ...string) Options {
+	return parse(args)
 }

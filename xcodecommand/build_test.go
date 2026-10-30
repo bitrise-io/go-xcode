@@ -24,7 +24,7 @@ func TestBuild(t *testing.T) {
 		{name: "clean first", params: BuildParams{Clean: true, Scheme: "App"}, want: []string{"clean", "build", "-scheme", "App"}},
 		{
 			name:   "everything",
-			params: BuildParams{ProjectPath: "App.xcworkspace", Scheme: "App", Configuration: "Debug", Destination: "id=1", XCConfigPath: "t.xcconfig", SDK: "iphoneos", DisableCodeSigning: true, Authentication: &testAuth, AdditionalOptions: []string{"-quiet"}},
+			params: BuildParams{ProjectPath: "App.xcworkspace", Scheme: "App", Configuration: "Debug", Destination: "id=1", XCConfigPath: "t.xcconfig", SDK: "iphoneos", DisableCodeSigning: true, Authentication: &testAuth, AdditionalOptions: additional("-quiet")},
 			want: []string{
 				"build", "-workspace", "App.xcworkspace", "-scheme", "App", "-configuration", "Debug", "-destination", "id=1",
 				"-xcconfig", "t.xcconfig", "-sdk", "iphoneos",
@@ -35,7 +35,7 @@ func TestBuild(t *testing.T) {
 		{
 			// The params' -destination is a default: the user's replaces it.
 			name:   "a -destination in the additional options replaces the params' one",
-			params: BuildParams{Scheme: "App", Destination: "generic/platform=iOS", AdditionalOptions: []string{"-destination", "platform=iOS Simulator,name=iPhone 17"}},
+			params: BuildParams{Scheme: "App", Destination: "generic/platform=iOS", AdditionalOptions: additional("-destination", "platform=iOS Simulator,name=iPhone 17")},
 			want:   []string{"build", "-scheme", "App", "-destination", "platform=iOS Simulator,name=iPhone 17"},
 		},
 		{name: "workspace path with a trailing slash", params: BuildParams{ProjectPath: "App.xcworkspace/"}, want: []string{"build", "-workspace", "App.xcworkspace/"}},
