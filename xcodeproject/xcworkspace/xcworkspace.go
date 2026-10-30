@@ -227,22 +227,37 @@ func (w *Workspace) Projects() ([]*xcodeproj.XcodeProj, error) {
 
 	var projects []*xcodeproj.XcodeProj
 	for _, location := range locations {
-		exists, err := w.pathChecker.IsPathExists(location)
+		project, ok, err := w.openProject(location)
 		if err != nil {
-			return nil, fmt.Errorf("failed to check if project (%s) exists: %w", location, err)
+			return nil, err
 		}
-		if !exists {
-			w.logger.TDebugf("Skipping missing project: %s", location)
+		if !ok {
 			continue
-		}
-
-		project, err := w.projectFactory.Open(location)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open project (%s): %w", location, err)
 		}
 
 		projects = append(projects, project)
 	}
 
 	return projects, nil
+}
+
+// openProject opens the referenced project at location. ok is false when the project is missing from
+// disk, which xcodebuild -list skips too, but which usually means a generated project was not
+// generated, so it is worth a warning.
+func (w *Workspace) openProject(location string) (project *xcodeproj.XcodeProj, ok bool, err error) {
+	exists, err := w.pathChecker.IsPathExists(location)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to check if project (%s) exists: %w", location, err)
+	}
+	if !exists {
+		w.logger.Warnf("The workspace references a project that is missing, so its schemes are not available: %s. Generate it before this step (for CocoaPods, run pod install) or fix the reference in contents.xcworkspacedata.", location)
+		return nil, false, nil
+	}
+
+	project, err = w.projectFactory.Open(location)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to open project (%s): %w", location, err)
+	}
+
+	return project, true, nil
 }
