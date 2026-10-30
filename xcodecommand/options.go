@@ -24,19 +24,14 @@ const (
 	Unknown                  // fits no form; Name holds it verbatim
 )
 
-// issue says why an argument was kept as Unknown, or what is off about a parsed one.
+// issue marks what xcodebuild does with a parsed option other than what the user meant;
+// the diagnostics name it. An argument xcodebuild refuses is kept as Unknown without one:
+// xcodebuild fails on it with its own message.
 type issue int
 
 const (
-	noIssue             issue = iota
-	emptyArgument             // "" from an env var that expanded to nothing
-	quotedFlagWithValue       // "-destination generic/platform=iOS": xcodebuild takes it as a user default
-	quotedFlag                // "-sdk macosx": xcodebuild refuses it
-	invalidFlag               // "-", "-=x"
-	colonWithoutValue         // "-only-testing:"
-	missingValue              // "-destination" as the last argument, or -destination before a flag
-	flagAsValue               // "-derivedDataPath -quiet": the value flag took the next flag as its value
-	bareWord                  // "Distribution" from an unquoted CODE_SIGN_IDENTITY=Apple Distribution
+	noIssue     issue = iota
+	flagAsValue       // "-derivedDataPath -quiet": the value flag took the next flag as its value
 )
 
 // Option is one xcodebuild argument, parsed from user input or derived from params.
@@ -44,7 +39,7 @@ type Option struct {
 	Kind    Kind
 	Name    string
 	Value   string
-	issue   issue // why an Unknown option was not parsed
+	issue   issue // what xcodebuild does with it other than meant, if anything
 	dropped bool  // the merge left it off the command line: the user set it too
 }
 
@@ -116,11 +111,6 @@ var (
 	// -quiet, -only-testing, -test-repetition-relaunch-enabled, -UseModernBuildSystem;
 	// not "-", "-=x" or "-destination generic/platform=iOS" quoted as one argument.
 	flagNamePattern = regexp.MustCompile(`^-[A-Za-z0-9][A-Za-z0-9_.-]*$`)
-	// "-destination generic/platform=iOS" as one argument: a flag, whitespace, then a value
-	// containing "=". xcodebuild reads the whole thing as a user default and ignores it.
-	// The class is unicode.IsSpace (RE2's \s is ASCII only); xcodebuild treats a tab, a
-	// newline or a no-break space like a space here.
-	flagQuotedWithValue = regexp.MustCompile(`^-[A-Za-z0-9][A-Za-z0-9_.-]*[\s\v\x{85}\p{Z}]+[^=:\s\v\x{85}\p{Z}][^=]*=`)
 )
 
 // freeFormValueFlags always take the next argument: their value may look like a build
@@ -152,29 +142,16 @@ func ParseOptions(input string) (Options, error) {
 	return parse(args), nil
 }
 
-// parse turns shell-split arguments into typed Options.
+// parse turns shell-split arguments into typed Options. Whatever fits no form is kept
+// verbatim as Unknown, so the command line stays as the user wrote it.
 func parse(args []string) Options {
 	var opts Options
-
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
-
 		switch {
-		case strings.TrimSpace(arg) == "":
-			// "" (an env var that expanded to nothing): xcodebuild sees an unknown build action
-			opts = append(opts, Option{Kind: Unknown, Name: arg, issue: emptyArgument})
-		case strings.HasPrefix(arg, "-") && flagQuotedWithValue.MatchString(arg):
-			// "-destination generic/platform=iOS" as one argument: xcodebuild reads it as a user
-			// default named "destination generic/platform" and ignores it; the step's own
-			// -destination wins. Kept verbatim, as xcodebuild takes it.
-			opts = append(opts, Option{Kind: Unknown, Name: arg, issue: quotedFlagWithValue})
 		case strings.HasPrefix(arg, "-"):
 			// -quiet | -destination id=SIM | -only-testing:AppTests | -UseModernBuildSystem=NO
-			opt, consumed, why := parseFlag(args[i:])
-			if why != noIssue {
-				opts = append(opts, Option{Kind: Unknown, Name: arg, issue: why})
-				continue
-			}
+			opt, consumed := parseFlag(args[i:])
 			opts = append(opts, opt)
 			i += consumed - 1 // a flag with a value used two arguments
 		case buildSettingPattern.MatchString(arg):
@@ -185,18 +162,19 @@ func parse(args []string) Options {
 			// clean
 			opts = append(opts, Option{Kind: Action, Name: arg})
 		default:
-			// "Distribution" from an unquoted CODE_SIGN_IDENTITY=Apple Distribution
-			opts = append(opts, Option{Kind: Unknown, Name: arg, issue: bareWord})
+			// "" from an env var that expanded to nothing, "Distribution" from an unquoted
+			// CODE_SIGN_IDENTITY=Apple Distribution: xcodebuild fails on an unknown build action
+			opts = append(opts, Option{Kind: Unknown, Name: arg})
 		}
 	}
-
 	return opts
 }
 
-// parseFlag classifies args[0] (a "-" argument) and reports how many arguments it used;
-// an issue other than noIssue means it is malformed.
-func parseFlag(args []string) (opt Option, consumed int, why issue) {
+// parseFlag classifies args[0] (a "-" argument) and reports how many arguments it used.
+// What xcodebuild refuses comes back as Unknown.
+func parseFlag(args []string) (Option, int) {
 	flag := args[0]
+	unknown := Option{Kind: Unknown, Name: flag}
 
 	// The first of "=" and ":" splits name from value; values may contain spaces:
 	//   -UseModernBuildSystem=NO                  -> name -UseModernBuildSystem, value NO
@@ -208,44 +186,42 @@ func parseFlag(args []string) (opt Option, consumed int, why issue) {
 	if i := strings.IndexAny(flag, "=:"); i > 0 {
 		name, sep, value = flag[:i], flag[i], flag[i+1:]
 	}
-	if strings.IndexFunc(name, unicode.IsSpace) >= 0 {
-		// "-sdk macosx" quoted as one argument, with any whitespace: xcodebuild refuses it
-		return Option{}, 0, quotedFlag
-	}
-	if !flagNamePattern.MatchString(name) {
-		// "-", "-=x"
-		return Option{}, 0, invalidFlag
-	}
 
 	switch {
 	case sep == '=':
-		// -UseModernBuildSystem=NO (an empty value is fine: -IDEFoo=)
-		return Option{Kind: UserDefault, Name: name, Value: value}, 1, noIssue
+		// -UseModernBuildSystem=NO (an empty value is fine: -IDEFoo=). "-destination
+		// generic/platform=iOS" quoted as one argument lands here too: xcodebuild reads it as
+		// a user default named "destination generic/platform" and ignores it.
+		return Option{Kind: UserDefault, Name: name, Value: value}, 1
+	case strings.IndexFunc(name, unicode.IsSpace) >= 0 || !flagNamePattern.MatchString(name):
+		// "-sdk macosx" quoted as one argument, "-", "-:x": xcodebuild refuses it
+		return unknown, 1
 	case sep == ':':
-		// -only-testing:AppTests; "-only-testing:" alone names no test
+		// -only-testing:AppTests; "-only-testing:" alone names no test, and xcodebuild refuses it
 		if value == "" {
-			return Option{}, 0, colonWithoutValue
+			return unknown, 1
 		}
-		return Option{Kind: ColonOption, Name: name, Value: value}, 1, noIssue
+		return Option{Kind: ColonOption, Name: name, Value: value}, 1
 	case slices.Contains(freeFormValueFlags, flag):
 		// -destination platform=iOS Simulator,name=iPhone 15: the next argument is the value
 		// even though it looks like a build setting. A flag is taken as the value too, as
 		// xcodebuild does ("-derivedDataPath -quiet" writes derived data to ./-quiet and
-		// drops the switch); only -destination checks its argument and refuses a flag
-		// ("option 'Destination' requires an argument"). Verified on Xcode 26.5 and 27.0.
-		if len(args) < 2 || (flag == "-destination" && strings.HasPrefix(args[1], "-")) {
-			return Option{}, 0, missingValue
+		// drops the switch). Only -destination checks its argument and refuses a flag, and
+		// every flag refuses to be the last argument ("requires an argument"). Verified on
+		// Xcode 26.5 and 27.0.
+		switch {
+		case len(args) < 2 || (flag == "-destination" && strings.HasPrefix(args[1], "-")):
+			return unknown, 1
+		case strings.HasPrefix(args[1], "-"):
+			return Option{Kind: ValueOption, Name: flag, Value: args[1], issue: flagAsValue}, 2
 		}
-		if strings.HasPrefix(args[1], "-") {
-			return Option{Kind: ValueOption, Name: flag, Value: args[1], issue: flagAsValue}, 2, noIssue
-		}
-		return Option{Kind: ValueOption, Name: flag, Value: args[1]}, 2, noIssue
+		return Option{Kind: ValueOption, Name: flag, Value: args[1]}, 2
 	case len(args) > 1 && looksLikeValue(args[1]):
 		// -packageAuthorizationProvider netrc: a bare word after a flag is its value
-		return Option{Kind: ValueOption, Name: flag, Value: args[1]}, 2, noIssue
+		return Option{Kind: ValueOption, Name: flag, Value: args[1]}, 2
 	default:
 		// -quiet, -skipMacroValidation -quiet, -verbose ARCHS=arm64, -parallelizeTargets clean
-		return Option{Kind: Switch, Name: flag}, 1, noIssue
+		return Option{Kind: Switch, Name: flag}, 1
 	}
 }
 
