@@ -43,9 +43,18 @@ func ExampleArchive() {
 
 	fmt.Println(strings.Join(cmd.Args(), " "))
 	for _, d := range cmd.Diagnostics() {
-		fmt.Println("warning:", d)
+		fmt.Println(level(d), d)
 	}
 	// Output:
 	// clean archive -workspace App.xcworkspace -scheme App -configuration Release -xcconfig /tmp/temp.xcconfig -archivePath /tmp/App.xcarchive -destination generic/platform=iOS Simulator -quiet
-	// warning: "-destination generic/platform=iOS Simulator" replaces the Step's default "-destination generic/platform=iOS".
+	// info: "-destination generic/platform=iOS Simulator" replaces the Step's default "-destination generic/platform=iOS".
+}
+
+// level is the log level a step gives a finding: informational ones are notes, the rest
+// warn that xcodebuild does something other than what the option says.
+func level(d xcodecommand.Diagnostic) string {
+	if d.Informational {
+		return "info:"
+	}
+	return "warning:"
 }
