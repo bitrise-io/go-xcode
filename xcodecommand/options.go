@@ -21,21 +21,7 @@ const (
 	UserDefault              // -UseModernBuildSystem=YES
 	BuildSetting             // CODE_SIGNING_ALLOWED=NO
 	Action                   // clean, build, archive, ...
-	Unknown                  // fits no form; Name holds it verbatim
-)
-
-// issue says why an argument was kept as Unknown; Options.Diagnostics turns it into a message.
-type issue int
-
-const (
-	noIssue             issue = iota
-	emptyArgument             // "" from an env var that expanded to nothing
-	quotedFlagWithValue       // "-destination generic/platform=iOS": xcodebuild takes it as a user default
-	quotedFlag                // "-sdk macosx": xcodebuild refuses it
-	invalidFlag               // "-", "-=x"
-	colonWithoutValue         // "-only-testing:"
-	missingValue              // "-destination" as the last argument
-	bareWord                  // "Distribution" from an unquoted CODE_SIGN_IDENTITY=Apple Distribution
+	Unknown                  // fits no form; Name holds it verbatim, and xcodebuild fails on it with its own message
 )
 
 // Option is one xcodebuild argument, parsed from user input or derived from params.
