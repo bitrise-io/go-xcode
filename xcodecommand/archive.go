@@ -33,5 +33,5 @@ func Archive(params ArchiveParams) (Command, error) {
 
 var archivePolicy = actionPolicy{
 	name:       ActionArchive,
-	rejections: []rejection{modeSwitching, testOnlyRefused, testOnly},
+	rejections: []rejection{modeSwitching, silentLog, testOnly},
 }
