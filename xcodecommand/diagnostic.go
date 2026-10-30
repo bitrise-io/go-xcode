@@ -53,20 +53,21 @@ func report(kind DiagnosticKind, o Option, format string, args ...any) Diagnosti
 // xcodebuild accepts as a user default and silently ignores. Not -IDEFoo.
 var upperCaseFlag = regexp.MustCompile(`^-[A-Z][A-Z0-9_]*$`)
 
-// Diagnostics reports what the parser could not read and what xcodebuild would silently
-// ignore, each with its fix. A step logs these when it reads its inputs, before its first
-// xcodebuild call.
+// Diagnostics reports what xcodebuild silently does with an option other than what the user
+// meant, each with its fix. An argument xcodebuild refuses gets no line: the build fails on
+// it with xcodebuild's own message. A step logs these when it reads its inputs, before its
+// first xcodebuild call.
 func (opts Options) Diagnostics() []Diagnostic {
 	var diagnostics []Diagnostic
 	for _, o := range opts {
 		switch {
-		case o.Kind == Unknown && o.issue == quotedFlagWithValue:
-			diagnostics = append(diagnostics, report(SuspiciousUserDefault, o, "%q is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so it has no effect. Use %s to apply it, or remove it.", o.Name, unquoteFlag(o.Name)))
+		case o.Kind == UserDefault && strings.IndexFunc(o.Name, unicode.IsSpace) >= 0:
+			// "-destination generic/platform=iOS" as one argument: a user default named
+			// "destination generic/platform", which xcodebuild ignores
+			diagnostics = append(diagnostics, report(SuspiciousUserDefault, o, "%q is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so it has no effect. Use %s to apply it, or remove it.", o, unquoteFlag(o.String())))
 		case o.Kind == ValueOption && o.issue == flagAsValue:
 			// -derivedDataPath -quiet: xcodebuild takes -quiet as the path and the switch is lost
 			diagnostics = append(diagnostics, report(MalformedOption, o, "%q has no value, so xcodebuild takes %q as its value and that flag does not apply. Add a value, or remove it.", o.Name, o.Value))
-		case o.Kind == Unknown:
-			diagnostics = append(diagnostics, report(MalformedOption, o, "%q %s", o.Name, malformedMessage(o)))
 		case o.Kind == UserDefault && upperCaseFlag.MatchString(o.Name):
 			// -ENABLE_BITCODE=NO: the user meant ENABLE_BITCODE=NO
 			setting := o.Name[1:] + "=" + shellQuoted(o.Value)
@@ -74,23 +75,6 @@ func (opts Options) Diagnostics() []Diagnostic {
 		}
 	}
 	return diagnostics
-}
-
-func malformedMessage(o Option) string {
-	switch o.issue {
-	case emptyArgument:
-		return "is empty. xcodebuild treats it as an unknown build action. Remove it."
-	case quotedFlag:
-		return fmt.Sprintf("is a flag quoted together with its value. xcodebuild refuses it. Use %s instead.", unquoteFlag(o.Name))
-	case invalidFlag:
-		return "is not a valid flag. xcodebuild refuses it. Remove it."
-	case colonWithoutValue:
-		return "has no value after the colon. xcodebuild refuses it. Add the value, or remove it."
-	case missingValue:
-		return "has no value. xcodebuild refuses it. Add one, or remove it."
-	default:
-		return `is not a flag, a NAME=value build setting or a build action. xcodebuild treats it as an unknown build action. Quote a value with spaces, for example CODE_SIGN_IDENTITY="Apple Distribution", or remove it.`
-	}
 }
 
 // shellQuoted renders a value as it has to be written in xcodebuild_options: the inverse

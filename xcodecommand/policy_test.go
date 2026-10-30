@@ -7,7 +7,9 @@ import (
 )
 
 // One row per command: the flags its policy refuses and lets through, as verified against
-// xcodebuild. The merge rules are covered in merge_test.go.
+// xcodebuild. A flag xcodebuild refuses by itself (-testPlan on archive, -xctestrun next to
+// -scheme) passes: the build fails on it with xcodebuild's message. The merge rules are
+// covered in merge_test.go.
 func TestPolicies(t *testing.T) {
 	tests := []struct {
 		policy  actionPolicy
@@ -16,29 +18,29 @@ func TestPolicies(t *testing.T) {
 	}{
 		{
 			policy:  archivePolicy,
-			rejects: []string{"-exportArchive", "-exportNotarizedApp", "-showBuildSettings", "-json", "-testPlan", "-only-testing", "-test-iterations", "-xctestrun", "-enableCodeCoverage", "-enumerate-tests"},
-			accepts: []string{"-allowProvisioningUpdates", "-skipPackagePluginValidation", "-someFutureFlag"},
+			rejects: []string{"-exportArchive", "-exportNotarizedApp", "-showBuildSettings", "-json", "-only-testing", "-test-iterations", "-enumerate-tests"},
+			accepts: []string{"-allowProvisioningUpdates", "-skipPackagePluginValidation", "-someFutureFlag", "-testPlan", "-xctestrun", "-enableCodeCoverage"},
 		},
 		{
 			policy:  buildPolicy,
-			rejects: []string{"-exportArchive", "-testPlan", "-only-testing"},
-			accepts: []string{"-quiet"},
+			rejects: []string{"-exportArchive", "-json", "-only-testing"},
+			accepts: []string{"-quiet", "-testPlan"},
 		},
 		{
 			policy:  analyzePolicy,
-			rejects: []string{"-exportArchive", "-testPlan", "-skip-testing"},
-			accepts: []string{"-quiet"},
+			rejects: []string{"-exportArchive", "-json", "-skip-testing"},
+			accepts: []string{"-quiet", "-testPlan"},
 		},
 		{
 			// build-for-testing bakes the test selection into the xctestrun.
 			policy:  buildForTestingPolicy,
-			rejects: []string{"-exportArchive", "-showBuildSettings", "-json", "-xctestrun"},
-			accepts: []string{"-testPlan", "-only-testing", "-skip-testing", "-only-test-configuration", "-enableCodeCoverage", "-testProductsPath", "-testLanguage"},
+			rejects: []string{"-exportArchive", "-showBuildSettings", "-json"},
+			accepts: []string{"-testPlan", "-only-testing", "-skip-testing", "-only-test-configuration", "-enableCodeCoverage", "-testProductsPath", "-testLanguage", "-xctestrun"},
 		},
 		{
 			policy:  exportArchivePolicy,
-			rejects: []string{"-resolvePackageDependencies", "-showBuildSettings", "-testPlan"},
-			accepts: []string{"-exportArchive", "-allowProvisioningUpdates"},
+			rejects: []string{"-resolvePackageDependencies", "-showBuildSettings", "-only-testing"},
+			accepts: []string{"-exportArchive", "-allowProvisioningUpdates", "-testPlan"},
 		},
 		{
 			policy:  resolvePackagesPolicy,
