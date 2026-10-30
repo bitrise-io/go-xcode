@@ -132,7 +132,7 @@ func TestDiagnosticMessages(t *testing.T) {
 				`"-test-iterations 2" does not work with archive. It applies to test actions only, and xcodebuild ignores it here. Remove it.`,
 				`"-testPlan Full" does not work with archive. It applies to test actions only, and xcodebuild refuses it here. Remove it.`,
 				`"clean" is a build action. The Step sets the actions itself. Remove it.`,
-				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead.`,
+				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead. See https://docs.bitrise.io/en/code-signing/ios-code-signing/managing-ios-code-signing-files---automatic-provisioning.html`,
 			},
 		},
 		{
