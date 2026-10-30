@@ -143,11 +143,7 @@ func TestWorkspace_Scheme(t *testing.T) {
 	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
 	projectPath := filepath.Join(dir, "XcodeProj.xcodeproj")
 	writeProject(t, projectPath)
-	subProjectPath := filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj")
-	writeProject(t, subProjectPath)
 	writeFile(t, sharedSchemePath(workspace.Path, "Shared"), minimalSchemeXML)
-	// Gdańsk with a decomposed ń, as older macOS versions stored file names.
-	writeFile(t, sharedSchemePath(subProjectPath, "Gdańsk"), minimalSchemeXML)
 
 	scheme, container, err := workspace.Scheme("Shared")
 	require.NoError(t, err)
@@ -159,14 +155,31 @@ func TestWorkspace_Scheme(t *testing.T) {
 	assert.Equal(t, projectPath, container, "an autocreated scheme belongs to its project")
 	assert.Equal(t, "App", scheme.Name)
 
-	scheme, container, err = workspace.Scheme("Gdańsk")
-	require.NoError(t, err)
-	assert.Equal(t, subProjectPath, container)
-	assert.Equal(t, "Gdańsk", norm.NFC.String(scheme.Name), "the precomposed name finds the decomposed file")
-
 	_, _, err = workspace.Scheme("Missing")
 	assert.True(t, xcscheme.IsNotFoundError(err))
 	assert.ErrorContains(t, err, "Missing")
+}
+
+// Scheme names are compared after Unicode normalisation: HFS+ stored file names decomposed
+// (Gdańsk) while a user types the precomposed form (Gdańsk), and the two must match
+// either way round.
+func TestWorkspace_Scheme_unicodeNormalisation(t *testing.T) {
+	dir := t.TempDir()
+	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+	projectPath := filepath.Join(dir, "XcodeProj.xcodeproj")
+	writeProject(t, projectPath)
+	writeFile(t, sharedSchemePath(projectPath, "Gdańsk"), minimalSchemeXML)
+	writeFile(t, sharedSchemePath(workspace.Path, "Kraków"), minimalSchemeXML)
+
+	scheme, container, err := workspace.Scheme("Gdańsk")
+	require.NoError(t, err)
+	assert.Equal(t, projectPath, container)
+	assert.Equal(t, "Gdańsk", norm.NFC.String(scheme.Name), "the precomposed name finds the decomposed file")
+
+	scheme, container, err = workspace.Scheme("Kraków")
+	require.NoError(t, err)
+	assert.Equal(t, workspace.Path, container)
+	assert.Equal(t, "Kraków", norm.NFC.String(scheme.Name), "the decomposed name finds the precomposed file")
 }
 
 func TestWorkspace_Scheme_workspaceSchemesComeFirst(t *testing.T) {
