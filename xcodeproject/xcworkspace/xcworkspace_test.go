@@ -11,6 +11,7 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
+	xcodeprojmocks "github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/mocks"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,11 +19,11 @@ import (
 
 const testUserName = "bitrise"
 
-// staticUser is a UserProvider with a fixed user name.
-type staticUser string
-
-func (u staticUser) CurrentUserName() (string, error) {
-	return string(u), nil
+// userProvider is a UserProvider that always names the given user.
+func userProvider(t *testing.T, name string) *xcodeprojmocks.UserProvider {
+	provider := xcodeprojmocks.NewUserProvider(t)
+	provider.On("CurrentUserName").Return(name, nil).Maybe()
+	return provider
 }
 
 func testFactory(buildSettings BuildSettingsProvider, user xcodeproj.UserProvider) Factory {
@@ -59,7 +60,7 @@ func writeProject(t *testing.T, pth string) {
 
 func openWorkspace(t *testing.T, pth string) *Workspace {
 	t.Helper()
-	workspace, err := testFactory(nil, staticUser(testUserName)).Open(pth)
+	workspace, err := testFactory(nil, userProvider(t, testUserName)).Open(pth)
 	require.NoError(t, err)
 	return workspace
 }
@@ -73,7 +74,7 @@ func TestIsWorkspace(t *testing.T) {
 func TestFactory_Open(t *testing.T) {
 	workspacePath := writeWorkspace(t, t.TempDir(), "XcodeProj", nestedContents)
 
-	workspace, err := testFactory(nil, staticUser(testUserName)).Open(workspacePath)
+	workspace, err := testFactory(nil, userProvider(t, testUserName)).Open(workspacePath)
 	require.NoError(t, err)
 
 	assert.Equal(t, "XcodeProj", workspace.Name)
@@ -85,14 +86,14 @@ func TestFactory_Open(t *testing.T) {
 }
 
 func TestFactory_Open_missingWorkspace(t *testing.T) {
-	_, err := testFactory(nil, staticUser(testUserName)).Open(filepath.Join(t.TempDir(), "Missing.xcworkspace"))
+	_, err := testFactory(nil, userProvider(t, testUserName)).Open(filepath.Join(t.TempDir(), "Missing.xcworkspace"))
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 
 func TestFactory_Open_malformedContents(t *testing.T) {
 	workspacePath := writeWorkspace(t, t.TempDir(), "Broken", "<Workspace")
 
-	_, err := testFactory(nil, staticUser(testUserName)).Open(workspacePath)
+	_, err := testFactory(nil, userProvider(t, testUserName)).Open(workspacePath)
 	assert.ErrorContains(t, err, "failed to unmarshal")
 }
 
@@ -186,7 +187,7 @@ func TestWorkspace_SchemeBuildSettings(t *testing.T) {
 	provider.On("SchemeBuildSettings", workspacePath, "App", "Release", []string{"-sdk", "iphoneos"}).
 		Return(serialized.Object{"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.app"}, nil)
 
-	workspace, err := testFactory(provider, staticUser(testUserName)).Open(workspacePath)
+	workspace, err := testFactory(provider, userProvider(t, testUserName)).Open(workspacePath)
 	require.NoError(t, err)
 
 	settings, err := workspace.SchemeBuildSettings("App", "Release", "-sdk", "iphoneos")

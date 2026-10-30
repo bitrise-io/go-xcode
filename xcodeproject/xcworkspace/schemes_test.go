@@ -77,7 +77,7 @@ func TestWorkspace_Schemes(t *testing.T) {
 
 func TestWorkspace_Schemes_otherUsersSchemesAreNotVisible(t *testing.T) {
 	workspacePath := writeWorkspace(t, t.TempDir(), "XcodeProj", emptyContents)
-	workspace, err := testFactory(nil, staticUser("someone-else")).Open(workspacePath)
+	workspace, err := testFactory(nil, userProvider(t, "someone-else")).Open(workspacePath)
 	require.NoError(t, err)
 	writeFile(t, sharedSchemePath(workspace.Path, "Shared"), minimalSchemeXML)
 	writeFile(t, userSchemesPath(workspace, "Mine.xcscheme"), minimalSchemeXML)
