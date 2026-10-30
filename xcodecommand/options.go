@@ -30,6 +30,7 @@ type Option struct {
 	Name     string
 	Value    string
 	tookFlag bool // a value flag that took the next flag as its value, as xcodebuild does
+	user     bool // from xcodebuild_options, marked by the merge; the zero value is the Step's own
 	dropped  bool // the merge left it off the command line: the user set it too
 }
 
@@ -157,6 +158,7 @@ func parse(args []string) Options {
 			opts = append(opts, Option{Kind: Unknown, Name: arg})
 		}
 	}
+
 	return opts
 }
 

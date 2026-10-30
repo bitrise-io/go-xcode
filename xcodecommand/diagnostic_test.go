@@ -25,33 +25,211 @@ func TestDiagnostic_Informational(t *testing.T) {
 	for _, d := range additional("-destination generic/platform=iOS", "-ENABLE_BITCODE=NO", "-derivedDataPath", "-quiet").Diagnostics() {
 		require.False(t, d.Informational, d.Message)
 	}
-	require.True(t, report(Override, Option{}, "").Informational)
-	require.True(t, report(RedundantOption, Option{}, "").Informational)
-	require.False(t, report(PreferStepInput, Option{}, "").Informational)
+	cmd, err := Archive(ArchiveParams{ProjectPath: "App.xcodeproj", Destination: "generic/platform=iOS", Authentication: &testAuth, AdditionalOptions: additional("clean", "-allowProvisioningUpdates", "-destination", "id=SIM")})
+	require.NoError(t, err)
+	var informational []bool
+	for _, d := range cmd.Diagnostics() {
+		informational = append(informational, d.Informational)
+	}
+	require.Equal(t, []DiagnosticKind{ActionInOptions, Override, RedundantOption}, kinds(cmd.Diagnostics()))
+	require.Equal(t, []bool{false, true, true}, informational)
+
+	cmd, err = Archive(ArchiveParams{ProjectPath: "App.xcodeproj", AdditionalOptions: additional("-allowProvisioningUpdates")})
+	require.NoError(t, err)
+	require.Equal(t, []DiagnosticKind{PreferStepInput}, kinds(cmd.Diagnostics()))
+	require.False(t, cmd.Diagnostics()[0].Informational, "the signing hint is a warning")
 }
 
-// Every message is pinned here, one per finding.
+// A command reports what its policy refuses and what became of each option next to its
+// own, and never repeats the parser's findings; every option passes through. The rows are
+// production xcodebuild_options seen on xcode-archive; the message texts are pinned in
+// TestDiagnosticMessages.
+func TestCommand_Diagnostics(t *testing.T) {
+	tests := []struct {
+		name      string
+		params    ArchiveParams
+		wantArgs  []string
+		wantKinds []DiagnosticKind
+	}{
+		{
+			name:      "actions in the options",
+			params:    ArchiveParams{AdditionalOptions: additional("clean", "archive")},
+			wantArgs:  []string{"archive", "-project", "App.xcodeproj", "clean", "archive"},
+			wantKinds: []DiagnosticKind{ActionInOptions, ActionInOptions},
+		},
+		{
+			name:      "test-only flags",
+			params:    ArchiveParams{AdditionalOptions: additional("-test-iterations", "2", "-retry-tests-on-failure")},
+			wantArgs:  []string{"archive", "-project", "App.xcodeproj", "-test-iterations", "2", "-retry-tests-on-failure"},
+			wantKinds: []DiagnosticKind{RejectedOption, RejectedOption},
+		},
+		{
+			name:     "the parser's findings are not repeated",
+			params:   ArchiveParams{AdditionalOptions: additional("-skipMacroValidation", "-destination", "-destination generic/platform=iOS", "-ENABLE_BITCODE=NO")},
+			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-skipMacroValidation", "-destination", "-destination generic/platform=iOS", "-ENABLE_BITCODE=NO"},
+		},
+		{
+			// xcodebuild refuses the repeat ("may only be provided once") and a test flag outside
+			// a test action ("only supported when testing"): the build fails with its message, no line.
+			name:     "what xcodebuild refuses gets no line",
+			params:   ArchiveParams{XCConfigPath: "/tmp/temp.xcconfig", AdditionalOptions: additional("-xcconfig", "mine.xcconfig", "-testPlan", "Full")},
+			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-xcconfig", "/tmp/temp.xcconfig", "-xcconfig", "mine.xcconfig", "-testPlan", "Full"},
+		},
+		{
+			// -allowProvisioningUpdates only works with the API key flags the step adds.
+			name:      "lone -allowProvisioningUpdates points at the step input",
+			params:    ArchiveParams{AdditionalOptions: additional("-allowProvisioningUpdates")},
+			wantArgs:  []string{"archive", "-project", "App.xcodeproj", "-allowProvisioningUpdates"},
+			wantKinds: []DiagnosticKind{PreferStepInput},
+		},
+		{
+			name:     "a redundant switch and a replaced default are informational",
+			params:   ArchiveParams{Destination: "generic/platform=iOS", Authentication: &testAuth, AdditionalOptions: additional("-allowProvisioningUpdates", "-destination", "id=SIM")},
+			wantArgs: []string{"archive", "-project", "App.xcodeproj", "-authenticationKeyPath", "/key/path", "-authenticationKeyID", "keyID", "-authenticationKeyIssuerID", "issuerID", "-allowProvisioningUpdates", "-destination", "id=SIM"},
+			// reported in derived-flag order
+			wantKinds: []DiagnosticKind{Override, RedundantOption},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			params := tt.params
+			params.ProjectPath = "App.xcodeproj"
+
+			cmd, err := Archive(params)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantArgs, cmd.Args())
+			require.Equal(t, tt.wantKinds, kinds(cmd.Diagnostics()))
+		})
+	}
+}
+
+// Every message is pinned here, one per finding. Each row is the log a step prints for the
+// user options: the parser's findings, then the command's, with the user options merged
+// over the derived ones the way assemble does.
 func TestDiagnosticMessages(t *testing.T) {
 	tests := []struct {
-		name string
-		user []string
-		want []string
+		name    string
+		user    []string
+		derived Options
+		policy  actionPolicy
+		want    []string
 	}{
 		{
 			// "", "-sdk macosx", "-=x", "-only-testing:", "Distribution" and the lone -destination
 			// get no line: xcodebuild refuses them with its own message.
-			name: "parser",
-			user: []string{"", "-destination 'platform=iOS Simulator,name=iPhone 15'", "-sdk macosx", "-=x", "-only-testing:", "Distribution", "-ENABLE_BITCODE=NO", "-destination", "-derivedDataPath", "-quiet"},
+			name:   "parser",
+			user:   []string{"", "-destination 'platform=iOS Simulator,name=iPhone 15'", "-sdk macosx", "-=x", "-only-testing:", "Distribution", "-ENABLE_BITCODE=NO", "-destination", "-derivedDataPath", "-quiet"},
+			policy: archivePolicy,
 			want: []string{
 				`"-destination 'platform=iOS Simulator,name=iPhone 15'" is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so it has no effect. Use -destination 'platform=iOS Simulator,name=iPhone 15' to apply it, or remove it.`,
 				`"-ENABLE_BITCODE=NO" looks like the build setting ENABLE_BITCODE=NO with a leading dash. xcodebuild reads it as a user default and ignores it, so it has no effect. Use ENABLE_BITCODE=NO to apply it, or remove it.`,
 				`"-derivedDataPath" has no value, so xcodebuild takes "-quiet" as its value and that flag does not apply. Add a value, or remove it.`,
 			},
 		},
+		{
+			name:   "policy and step input",
+			user:   []string{"-exportArchive", "-test-iterations", "2", "-testPlan", "Full", "clean", "-allowProvisioningUpdates"},
+			policy: archivePolicy,
+			want: []string{
+				`"-exportArchive" does not work with archive. It switches xcodebuild to another task instead. Remove it.`,
+				`"-test-iterations 2" does not work with archive. It applies to test actions only, and xcodebuild ignores it here. Remove it.`,
+				`"clean" is a build action. The Step sets the actions itself. Remove it.`,
+				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead. See https://docs.bitrise.io/en/code-signing/ios-code-signing/managing-ios-code-signing-files---automatic-provisioning.html`,
+			},
+		},
+		{
+			name:   "-allowProvisioningUpdates with the user's own API key flags",
+			user:   []string{"-allowProvisioningUpdates", "-authenticationKeyPath", "/key.p8", "-authenticationKeyID", "ID", "-authenticationKeyIssuerID", "ISSUER"},
+			policy: archivePolicy,
+		},
+		{
+			name: "merge",
+			user: []string{"-destination", "generic/platform=tvOS", "-allowProvisioningUpdates", "-xcconfig", "mine.xcconfig", "-collect-test-diagnostics=on-failure"},
+			derived: Options{
+				{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"},
+				{Kind: Switch, Name: "-allowProvisioningUpdates"},
+				{Kind: ValueOption, Name: "-xcconfig", Value: "/tmp/temp.xcconfig"},
+				{Kind: ValueOption, Name: "-collect-test-diagnostics", Value: "never"},
+			},
+			policy: actionPolicy{name: "archive", defaults: []string{"-destination", "-collect-test-diagnostics"}},
+			want: []string{
+				`"-destination generic/platform=tvOS" replaces the Step's default "-destination generic/platform=iOS".`,
+				`"-allowProvisioningUpdates" is already set by the Step. Remove it.`,
+				`"-collect-test-diagnostics=on-failure" is written with "=". xcodebuild reads it as a user default and ignores it, and uses the Step's "-collect-test-diagnostics never" instead. Use -collect-test-diagnostics on-failure to apply it, or remove it.`,
+			},
+		},
+		{
+			name:    "a switch the user repeats on top of the Step's is redundant, not an override",
+			user:    []string{"-allowProvisioningUpdates", "-allowProvisioningUpdates"},
+			derived: Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}},
+			policy:  archivePolicy,
+			want: []string{
+				`"-allowProvisioningUpdates" is already set by the Step. Remove it.`,
+			},
+		},
+		{
+			name:    "a value given to the Step's switch with =",
+			user:    []string{"-allowProvisioningUpdates=YES"},
+			derived: Options{{Kind: Switch, Name: "-allowProvisioningUpdates"}},
+			policy:  archivePolicy,
+			want: []string{
+				`"-allowProvisioningUpdates=YES" gives a value to -allowProvisioningUpdates, which takes none, so xcodebuild reads it as a user default and ignores it. The Step already sets -allowProvisioningUpdates. Remove it.`,
+			},
+		},
+		{
+			// The repeat is refused by xcodebuild, so the "=" form's fix cannot be "use -xcconfig other".
+			name:    "a value option the Step owns, repeated and written with =",
+			user:    []string{"-xcconfig", "mine.xcconfig", "-xcconfig=other.xcconfig"},
+			derived: Options{{Kind: ValueOption, Name: "-xcconfig", Value: "/tmp/temp.xcconfig"}},
+			policy:  archivePolicy,
+			want: []string{
+				`"-xcconfig=other.xcconfig" is written with "=". xcodebuild reads it as a user default and ignores it, and uses the Step's "-xcconfig /tmp/temp.xcconfig" instead. Remove it, or change the Step input.`,
+			},
+		},
+		{
+			// The user's -test-iterations is rejected on archive, so nothing "uses" it; the = form gets no line of its own.
+			name:   "a rejected flag written with = next to its rejected copy",
+			user:   []string{"-test-iterations", "2", "-test-iterations=3"},
+			policy: archivePolicy,
+			want: []string{
+				`"-test-iterations 2" does not work with archive. It applies to test actions only, and xcodebuild ignores it here. Remove it.`,
+			},
+		},
+		{
+			name:   "a lone -allowProvisioningUpdates, repeated or given a value",
+			user:   []string{"-allowProvisioningUpdates", "-allowProvisioningUpdates", "-allowProvisioningUpdates", "YES"},
+			policy: archivePolicy,
+			want: []string{
+				`"-allowProvisioningUpdates" cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead. See https://docs.bitrise.io/en/code-signing/ios-code-signing/managing-ios-code-signing-files---automatic-provisioning.html`,
+			},
+		},
+		{
+			name:   "a value given to the user's own switch in a form xcodebuild refuses gets no line",
+			user:   []string{"-quiet", "-quiet:YES", "-quiet", "YES"},
+			policy: archivePolicy,
+		},
+		{
+			name: "a value option written with = is checked against what the build uses",
+			user: []string{"-destination", "generic/platform=tvOS", "-destination=generic/platform=watchOS", "-xcconfig=mine.xcconfig", "-scheme=App", "-quiet", "-quiet=YES"},
+			derived: Options{
+				{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"},
+				{Kind: ValueOption, Name: "-xcconfig", Value: "/tmp/temp.xcconfig"},
+			},
+			policy: actionPolicy{name: "archive", defaults: []string{"-destination"}},
+			want: []string{
+				`"-destination generic/platform=tvOS" replaces the Step's default "-destination generic/platform=iOS".`,
+				`"-destination=generic/platform=watchOS" is written with "=". xcodebuild reads it as a user default and ignores it, and uses your "-destination generic/platform=tvOS" instead. Change that one to -destination generic/platform=watchOS to apply it, or remove it.`,
+				`"-xcconfig=mine.xcconfig" is written with "=". xcodebuild reads it as a user default and ignores it, and uses the Step's "-xcconfig /tmp/temp.xcconfig" instead. Remove it, or change the Step input.`,
+				`"-scheme=App" is written with "=". xcodebuild reads it as a user default and ignores it, so it has no effect. Use -scheme App to apply it, or remove it.`,
+				`"-quiet=YES" gives a value to -quiet, which takes none, so xcodebuild reads it as a user default and ignores it. -quiet is already set. Remove it.`,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, messages(additional(tt.user...).Diagnostics()))
+			user := additional(tt.user...)
+			got := append(user.Diagnostics(), lint(merge(tt.derived, user, tt.policy), tt.policy)...)
+			require.Equal(t, tt.want, messages(got))
 		})
 	}
 }
