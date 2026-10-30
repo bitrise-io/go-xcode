@@ -44,12 +44,22 @@ func schemeNames(schemes []xcscheme.Scheme) []string {
 	return names
 }
 
-func namesByContainer(schemes map[string][]xcscheme.Scheme) map[string][]string {
-	names := map[string][]string{}
-	for container, containerSchemes := range schemes {
-		names[container] = schemeNames(containerSchemes)
+// namedContainer is a run of schemes of one container, reduced to what the assertions compare.
+type namedContainer struct {
+	path  string
+	names []string
+}
+
+// namedContainers groups consecutive schemes by ContainerPath.
+func namedContainers(schemes []xcscheme.Scheme) []namedContainer {
+	var named []namedContainer
+	for _, scheme := range schemes {
+		if n := len(named); n == 0 || named[n-1].path != scheme.ContainerPath {
+			named = append(named, namedContainer{path: scheme.ContainerPath})
+		}
+		named[len(named)-1].names = append(named[len(named)-1].names, scheme.Name)
 	}
-	return names
+	return named
 }
 
 func TestWorkspace_Schemes(t *testing.T) {
@@ -64,15 +74,15 @@ func TestWorkspace_Schemes(t *testing.T) {
 	schemes, err := workspace.Schemes()
 	require.NoError(t, err)
 
-	require.Equal(t, map[string][]string{
-		workspace.Path: {"Shared", "Mine"},
-		projectPath:    {"App"},
-	}, namesByContainer(schemes), "shared schemes come before user schemes, non-.xcscheme files are ignored, a project without schemes gets the autocreated ones, the missing SubProject.xcodeproj is left out")
+	require.Equal(t, []namedContainer{
+		{path: workspace.Path, names: []string{"Shared", "Mine"}},
+		{path: projectPath, names: []string{"App"}},
+	}, namedContainers(schemes), "the workspace comes first with shared before user schemes, non-.xcscheme files are ignored, a project without schemes gets the autocreated ones, the missing SubProject.xcodeproj is left out")
 
-	assert.Equal(t, sharedSchemePath(workspace.Path, "Shared"), schemes[workspace.Path][0].Path)
-	assert.True(t, schemes[workspace.Path][0].IsShared)
-	assert.False(t, schemes[workspace.Path][1].IsShared)
-	assert.True(t, schemes[projectPath][0].IsShared, "autocreated schemes count as shared")
+	assert.Equal(t, sharedSchemePath(workspace.Path, "Shared"), schemes[0].Path)
+	assert.True(t, schemes[0].IsShared)
+	assert.False(t, schemes[1].IsShared)
+	assert.True(t, schemes[2].IsShared, "autocreated schemes count as shared")
 }
 
 func TestWorkspace_Schemes_otherUsersSchemesAreNotVisible(t *testing.T) {
@@ -84,7 +94,7 @@ func TestWorkspace_Schemes_otherUsersSchemesAreNotVisible(t *testing.T) {
 
 	schemes, err := workspace.Schemes()
 	require.NoError(t, err)
-	assert.Equal(t, map[string][]string{workspace.Path: {"Shared"}}, namesByContainer(schemes))
+	assert.Equal(t, []namedContainer{{path: workspace.Path, names: []string{"Shared"}}}, namedContainers(schemes))
 }
 
 func TestWorkspace_Schemes_autocreateOff(t *testing.T) {
@@ -108,7 +118,7 @@ func TestWorkspace_Schemes_autocreateOffKeepsExistingProjectSchemes(t *testing.T
 
 	schemes, err := workspace.Schemes()
 	require.NoError(t, err)
-	assert.Equal(t, map[string][]string{projectPath: {"ProjectScheme"}}, namesByContainer(schemes))
+	assert.Equal(t, []namedContainer{{path: projectPath, names: []string{"ProjectScheme"}}}, namedContainers(schemes))
 }
 
 func TestWorkspace_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
@@ -145,17 +155,17 @@ func TestWorkspace_Scheme(t *testing.T) {
 	writeProject(t, projectPath)
 	writeFile(t, sharedSchemePath(workspace.Path, "Shared"), minimalSchemeXML)
 
-	scheme, container, err := workspace.Scheme("Shared")
+	scheme, err := workspace.Scheme("Shared")
 	require.NoError(t, err)
-	assert.Equal(t, workspace.Path, container)
+	assert.Equal(t, workspace.Path, scheme.ContainerPath)
 	assert.Equal(t, "Shared", scheme.Name)
 
-	scheme, container, err = workspace.Scheme("App")
+	scheme, err = workspace.Scheme("App")
 	require.NoError(t, err)
-	assert.Equal(t, projectPath, container, "an autocreated scheme belongs to its project")
+	assert.Equal(t, projectPath, scheme.ContainerPath, "an autocreated scheme belongs to its project")
 	assert.Equal(t, "App", scheme.Name)
 
-	_, _, err = workspace.Scheme("Missing")
+	_, err = workspace.Scheme("Missing")
 	assert.True(t, xcscheme.IsNotFoundError(err))
 	assert.ErrorContains(t, err, "Missing")
 }
@@ -171,14 +181,14 @@ func TestWorkspace_Scheme_unicodeNormalisation(t *testing.T) {
 	writeFile(t, sharedSchemePath(projectPath, "Gdańsk"), minimalSchemeXML)
 	writeFile(t, sharedSchemePath(workspace.Path, "Kraków"), minimalSchemeXML)
 
-	scheme, container, err := workspace.Scheme("Gdańsk")
+	scheme, err := workspace.Scheme("Gdańsk")
 	require.NoError(t, err)
-	assert.Equal(t, projectPath, container)
+	assert.Equal(t, projectPath, scheme.ContainerPath)
 	assert.Equal(t, "Gdańsk", norm.NFC.String(scheme.Name), "the precomposed name finds the decomposed file")
 
-	scheme, container, err = workspace.Scheme("Kraków")
+	scheme, err = workspace.Scheme("Kraków")
 	require.NoError(t, err)
-	assert.Equal(t, workspace.Path, container)
+	assert.Equal(t, workspace.Path, scheme.ContainerPath)
 	assert.Equal(t, "Kraków", norm.NFC.String(scheme.Name), "the decomposed name finds the precomposed file")
 }
 
@@ -188,9 +198,9 @@ func TestWorkspace_Scheme_stopsAtTheFirstMatch(t *testing.T) {
 	writeFile(t, sharedSchemePath(workspace.Path, "App"), minimalSchemeXML)
 	writeFile(t, filepath.Join(dir, "XcodeProj.xcodeproj", "project.pbxproj"), "not a project")
 
-	_, container, err := workspace.Scheme("App")
+	scheme, err := workspace.Scheme("App")
 	require.NoError(t, err, "the project after the match is never opened")
-	assert.Equal(t, workspace.Path, container)
+	assert.Equal(t, workspace.Path, scheme.ContainerPath)
 
 	_, err = workspace.Schemes()
 	assert.ErrorContains(t, err, "failed to open project", "listing everything still reaches it")
@@ -202,7 +212,7 @@ func TestWorkspace_Scheme_workspaceSchemesComeFirst(t *testing.T) {
 	writeProject(t, filepath.Join(dir, "XcodeProj.xcodeproj"))
 	writeFile(t, sharedSchemePath(workspace.Path, "App"), minimalSchemeXML)
 
-	_, container, err := workspace.Scheme("App")
+	scheme, err := workspace.Scheme("App")
 	require.NoError(t, err)
-	assert.Equal(t, workspace.Path, container, "the workspace's App wins over the project's autocreated App")
+	assert.Equal(t, workspace.Path, scheme.ContainerPath, "the workspace's App wins over the project's autocreated App")
 }

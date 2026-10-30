@@ -39,16 +39,20 @@ func TestWorkspace_Schemes(t *testing.T) {
 
 	schemes, err := workspace.Schemes()
 	require.NoError(t, err)
-	require.Len(t, schemes, 3)
-
-	assert.Equal(t, []string{"WorkspaceScheme"}, schemeNames(schemes[workspace.Path]))
-	assert.Equal(t, []string{"Gdańsk", "ProjectScheme", "ProjectTodayExtensionScheme"}, normalised(schemeNames(schemes[filepath.Join(dir, "XcodeProj.xcodeproj")])))
-	assert.Equal(t, []string{
+	require.Equal(t, []string{
+		"WorkspaceScheme",
+		"Gdańsk",
+		"ProjectScheme",
+		"ProjectTodayExtensionScheme",
 		"SubProjectScheme",
 		"SubProjectTestScheme",
 		"SubProjectWatchKitApp (Notification) Scheme",
 		"SubProjectWatchKitAppScheme",
-	}, schemeNames(schemes[filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj")]))
+	}, normalised(schemeNames(schemes)), "the workspace's own scheme first, then its projects' in file order")
+
+	assert.Equal(t, workspace.Path, schemes[0].ContainerPath)
+	assert.Equal(t, filepath.Join(dir, "XcodeProj.xcodeproj"), schemes[1].ContainerPath)
+	assert.Equal(t, filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"), schemes[4].ContainerPath)
 }
 
 // Checked against xcodebuild 26.5: with a referenced project removed, -list exits 0 and lists only the
@@ -70,11 +74,11 @@ func TestWorkspace_Schemes_missingProject(t *testing.T) {
 
 	schemes, err := workspace.Schemes()
 	require.NoError(t, err)
-	require.Len(t, schemes, 2)
-	assert.Equal(t, []string{"WorkspaceScheme"}, schemeNames(schemes[workspace.Path]))
-	assert.Equal(t, []string{"Gda\u0144sk", "ProjectScheme", "ProjectTodayExtensionScheme"}, normalised(schemeNames(schemes[filepath.Join(dir, "XcodeProj.xcodeproj")])))
+	assert.Equal(t, []string{"WorkspaceScheme", "Gda\u0144sk", "ProjectScheme", "ProjectTodayExtensionScheme"}, normalised(schemeNames(schemes)))
+	assert.Equal(t, workspace.Path, schemes[0].ContainerPath)
+	assert.Equal(t, filepath.Join(dir, "XcodeProj.xcodeproj"), schemes[1].ContainerPath)
 
-	_, _, err = workspace.Scheme("SubProjectScheme")
+	_, err = workspace.Scheme("SubProjectScheme")
 	assert.True(t, xcscheme.IsNotFoundError(err))
 }
 
@@ -83,22 +87,21 @@ func TestWorkspace_Scheme(t *testing.T) {
 	workspace, err := newFactory().Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
 	require.NoError(t, err)
 
-	scheme, container, err := workspace.Scheme("SubProjectWatchKitApp (Notification) Scheme")
+	scheme, err := workspace.Scheme("SubProjectWatchKitApp (Notification) Scheme")
 	require.NoError(t, err)
-	assert.Equal(t, filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"), container)
+	assert.Equal(t, filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"), scheme.ContainerPath)
 	assert.Equal(t, "SubProjectWatchKitApp (Notification) Scheme", scheme.Name)
 
 	// Gdańsk as High Sierra (precomposed ń) and Mojave (decomposed ń) represent it.
 	for _, name := range []string{"Gdańsk", "Gdańsk"} {
-		scheme, container, err := workspace.Scheme(name)
+		scheme, err := workspace.Scheme(name)
 		require.NoError(t, err)
-		assert.Equal(t, filepath.Join(dir, "XcodeProj.xcodeproj"), container)
+		assert.Equal(t, filepath.Join(dir, "XcodeProj.xcodeproj"), scheme.ContainerPath)
 		assert.Equal(t, norm.NFC.String(name), norm.NFC.String(scheme.Name))
 	}
 
-	_, container, err = workspace.Scheme("Not Exist Scheme")
+	_, err = workspace.Scheme("Not Exist Scheme")
 	assert.EqualError(t, err, "scheme Not Exist Scheme not found in XcodeProj")
-	assert.Equal(t, "", container)
 }
 
 func TestWorkspace_SchemeBuildSettings(t *testing.T) {
@@ -131,9 +134,9 @@ func TestWorkspace_cocoaPodsLayout(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{appProjectPath, filepath.Join(dir, "Pods/Pods.xcodeproj")}, projectPaths)
 
-	scheme, container, err := workspace.Scheme("sample-apps-ios-workspace-swift")
+	scheme, err := workspace.Scheme("sample-apps-ios-workspace-swift")
 	require.NoError(t, err)
-	assert.Equal(t, appProjectPath, container)
+	assert.Equal(t, appProjectPath, scheme.ContainerPath)
 	assert.True(t, scheme.IsShared)
 
 	assert.ElementsMatch(t, xcodebuildSchemes(t, workspace.Path), allSchemeNames(t, workspace),
@@ -150,9 +153,9 @@ func TestWorkspace_containerReference(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{projectPath}, projectPaths)
 
-	_, container, err := workspace.Scheme("BullsEye")
+	scheme, err := workspace.Scheme("BullsEye")
 	require.NoError(t, err)
-	assert.Equal(t, projectPath, container)
+	assert.Equal(t, projectPath, scheme.ContainerPath)
 
 	assert.ElementsMatch(t, xcodebuildSchemes(t, workspace.Path), allSchemeNames(t, workspace))
 }
@@ -182,11 +185,7 @@ func allSchemeNames(t *testing.T, workspace *xcworkspace.Workspace) []string {
 	schemes, err := workspace.Schemes()
 	require.NoError(t, err)
 
-	var names []string
-	for _, containerSchemes := range schemes {
-		names = append(names, normalised(schemeNames(containerSchemes))...)
-	}
-	return names
+	return normalised(schemeNames(schemes))
 }
 
 func newFactory() xcworkspace.Factory {
