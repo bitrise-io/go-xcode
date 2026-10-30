@@ -1,34 +1,36 @@
 package xcworkspace
 
 import (
-	"encoding/xml"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestFileRef(t *testing.T) {
-	var fileRef FileRef
-	require.NoError(t, xml.Unmarshal([]byte(fileRefContent), &fileRef))
-
-	require.Equal(t, "group:../SubProjectTests/Info.plist", fileRef.Location)
-
-	{
-		refType, pth, err := fileRef.TypeAndPath()
-		require.NoError(t, err)
-		require.Equal(t, "../SubProjectTests/Info.plist", pth)
-		require.Equal(t, GroupFileRefType, refType)
+func TestFileRef_TypeAndPath(t *testing.T) {
+	tests := []struct {
+		location string
+		wantType FileRefType
+		wantPath string
+		wantErr  string
+	}{
+		{location: "group:../SubProjectTests/Info.plist", wantType: GroupFileRefType, wantPath: "../SubProjectTests/Info.plist"},
+		{location: "container:App.xcodeproj", wantType: ContainerFileRefType, wantPath: "App.xcodeproj"},
+		{location: "absolute:/opt/Pods/Pods.xcodeproj", wantType: AbsoluteFileRefType, wantPath: "/opt/Pods/Pods.xcodeproj"},
+		{location: "self:", wantErr: "unknown file reference type"},
+		{location: "App.xcodeproj", wantErr: "unknown file reference location"},
 	}
+	for _, tt := range tests {
+		t.Run(tt.location, func(t *testing.T) {
+			refType, pth, err := FileRef{Location: tt.location}.TypeAndPath()
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, err, tt.wantErr)
+				return
+			}
 
-	{
-		dir := "/workspace_dir/group"
-		pth, err := fileRef.AbsPath(dir)
-		require.NoError(t, err)
-		require.Equal(t, "/workspace_dir/SubProjectTests/Info.plist", pth)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantType, refType)
+			assert.Equal(t, tt.wantPath, pth)
+		})
 	}
-
 }
-
-const fileRefContent = `<FileRef
-	location = "group:../SubProjectTests/Info.plist">
-</FileRef>`

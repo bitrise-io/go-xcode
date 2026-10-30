@@ -77,6 +77,7 @@ type Workspace struct {
 	buildSettings    BuildSettingsProvider
 	fileManager      fileutil.FileManager
 	plistFileHandler plistutil.FileHandler
+	pathModifier     pathutil.PathModifier
 	pathChecker      pathutil.PathChecker
 	userProvider     xcodeproj.UserProvider
 	projectFactory   xcodeproj.Factory
@@ -111,6 +112,7 @@ func (f Factory) Open(pth string) (*Workspace, error) {
 	workspace.buildSettings = f.buildSettings
 	workspace.fileManager = f.fileManager
 	workspace.plistFileHandler = f.plistFileHandler
+	workspace.pathModifier = f.pathModifier
 	workspace.pathChecker = f.pathChecker
 	workspace.userProvider = f.userProvider
 	workspace.projectFactory = f.projectFactory
@@ -125,29 +127,53 @@ func (w *Workspace) SchemeBuildSettings(scheme, configuration string, customOpti
 	return w.buildSettings.SchemeBuildSettings(w.Path, scheme, configuration, customOptions...)
 }
 
-// FileLocations ...
+// FileLocations returns the absolute paths of the files the workspace references: the top-level
+// ones first, then each group's, where a group's own files precede those of its subgroups.
 func (w *Workspace) FileLocations() ([]string, error) {
-	var fileLocations []string
+	return w.fileLocations(w.FileRefs, w.Groups, filepath.Dir(w.Path))
+}
 
-	for _, fileRef := range w.FileRefs {
-		pth, err := fileRef.AbsPath(filepath.Dir(w.Path))
+func (w *Workspace) fileLocations(fileRefs []FileRef, groups []Group, groupDir string) ([]string, error) {
+	var locations []string
+
+	for _, fileRef := range fileRefs {
+		pth, err := w.absPath(fileRef.Location, groupDir)
 		if err != nil {
 			return nil, err
 		}
 
-		fileLocations = append(fileLocations, pth)
+		locations = append(locations, pth)
 	}
 
-	for _, group := range w.Groups {
-		groupFileLocations, err := group.FileLocations(filepath.Dir(w.Path))
+	for _, group := range groups {
+		subgroupDir, err := w.absPath(group.Location, groupDir)
 		if err != nil {
 			return nil, err
 		}
 
-		fileLocations = append(fileLocations, groupFileLocations...)
+		groupLocations, err := w.fileLocations(group.FileRefs, group.Groups, subgroupDir)
+		if err != nil {
+			return nil, err
+		}
+
+		locations = append(locations, groupLocations...)
 	}
 
-	return fileLocations, nil
+	return locations, nil
+}
+
+// absPath resolves a file reference or group location found in the group at groupDir.
+func (w *Workspace) absPath(location, groupDir string) (string, error) {
+	refType, pth, err := parseLocation(location)
+	if err != nil {
+		return "", err
+	}
+
+	if refType != AbsoluteFileRefType {
+		pth = filepath.Join(groupDir, pth)
+	}
+
+	return w.pathModifier.AbsPath(pth)
 }
 
 // ProjectFileLocations ...

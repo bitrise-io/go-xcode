@@ -2,60 +2,42 @@ package xcworkspace
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
-
-	"github.com/bitrise-io/go-utils/pathutil"
 )
 
-// FileRef ...
+// FileRef is a file the workspace references, such as a project.
 type FileRef struct {
 	Location string `xml:"location,attr"`
 }
 
-// FileRefType ...
+// FileRefType says what a location's path is relative to.
 type FileRefType string
 
-// Known FileRefTypes
 const (
-	AbsoluteFileRefType  FileRefType = "absolute"
-	GroupFileRefType     FileRefType = "group"
+	// AbsoluteFileRefType is an absolute path.
+	AbsoluteFileRefType FileRefType = "absolute"
+	// GroupFileRefType is relative to the enclosing group, or to the workspace's directory at the
+	// top level.
+	GroupFileRefType FileRefType = "group"
+	// ContainerFileRefType is relative to the workspace's directory.
 	ContainerFileRefType FileRefType = "container"
 )
 
-// TypeAndPath ...
+// TypeAndPath splits the reference's location, such as "group:App.xcodeproj", into its type and path.
 func (f FileRef) TypeAndPath() (FileRefType, string, error) {
-	s := strings.Split(f.Location, ":")
-	if len(s) != 2 {
-		return "", "", fmt.Errorf("unknown file reference location (%s)", f.Location)
-	}
-
-	switch s[0] {
-	case "absolute":
-		return AbsoluteFileRefType, s[1], nil
-	case "group":
-		return GroupFileRefType, s[1], nil
-	case "container":
-		return ContainerFileRefType, s[1], nil
-	default:
-		return "", "", fmt.Errorf("unknown file reference type: %s, value: %s", s[0], s[1])
-	}
+	return parseLocation(f.Location)
 }
 
-// AbsPath ...
-func (f FileRef) AbsPath(dir string) (string, error) {
-	t, pth, err := f.TypeAndPath()
-	if err != nil {
-		return "", err
+func parseLocation(location string) (FileRefType, string, error) {
+	refType, pth, found := strings.Cut(location, ":")
+	if !found {
+		return "", "", fmt.Errorf("unknown file reference location (%s)", location)
 	}
 
-	var absPth string
-	switch t {
-	case AbsoluteFileRefType:
-		absPth = pth
-	case GroupFileRefType, ContainerFileRefType:
-		absPth = filepath.Join(dir, pth)
+	switch FileRefType(refType) {
+	case AbsoluteFileRefType, GroupFileRefType, ContainerFileRefType:
+		return FileRefType(refType), pth, nil
+	default:
+		return "", "", fmt.Errorf("unknown file reference type: %s, value: %s", refType, pth)
 	}
-
-	return pathutil.AbsPath(absPth)
 }
