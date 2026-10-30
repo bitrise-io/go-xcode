@@ -24,12 +24,12 @@ func TestResolvePackages(t *testing.T) {
 		},
 		{
 			name:   "user options pass through verbatim, as in v1",
-			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: []string{"clean", "archive", "-skipMacroValidation"}},
+			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: additional("clean", "archive", "-skipMacroValidation")},
 			want:   []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "clean", "archive", "-skipMacroValidation"},
 		},
 		{
 			name:   "user options pass through, including the SPM flags xcode-archive forwards",
-			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: []string{"-skipPackagePluginValidation", "-clonedSourcePackagesDirPath", "/tmp/spm"}},
+			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: additional("-skipPackagePluginValidation", "-clonedSourcePackagesDirPath", "/tmp/spm")},
 			want:   []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "-skipPackagePluginValidation", "-clonedSourcePackagesDirPath", "/tmp/spm"},
 		},
 	}
