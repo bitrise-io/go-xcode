@@ -121,6 +121,15 @@ func TestWorkspace_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
 	assert.ErrorContains(t, err, "not a boolean")
 }
 
+func TestWorkspace_Schemes_settingsNotReadWithoutProjects(t *testing.T) {
+	workspace := openWorkspace(t, writeWorkspace(t, t.TempDir(), "XcodeProj", emptyContents))
+	writeFile(t, filepath.Join(workspace.Path, "xcshareddata", "WorkspaceSettings.xcsettings"), "not a plist")
+
+	schemes, err := workspace.Schemes()
+	require.NoError(t, err)
+	assert.Empty(t, schemes)
+}
+
 func TestWorkspace_Schemes_malformedSchemeFile(t *testing.T) {
 	workspace := openWorkspace(t, writeWorkspace(t, t.TempDir(), "XcodeProj", emptyContents))
 	writeFile(t, sharedSchemePath(workspace.Path, "Broken"), "<Scheme")

@@ -90,6 +90,11 @@ func (w *Workspace) schemesByContainer() ([]containerSchemes, error) {
 		return nil, err
 	}
 
+	if len(projects) == 0 {
+		return containers, nil
+	}
+
+	// Read lazily: a workspace without projects never depends on this file.
 	isAutocreateSchemesEnabled, err := w.isAutocreateSchemesEnabled()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read the workspace autocreate scheme option: %w", err)
