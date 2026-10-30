@@ -101,30 +101,28 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name: "bare word is kept verbatim",
-			args: []string{"-sdk", "iphoneos", "PRODUCT_NAME=My", "App"},
-			want: Options{{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}, {Kind: BuildSetting, Name: "PRODUCT_NAME", Value: "My"}, {Kind: Unknown, Name: "App"}},
-		},
-		{
-			name: "empty argument is kept verbatim",
-			args: []string{""},
-			want: Options{{Kind: Unknown, Name: ""}},
-		},
-		{
-			name: "free-form value flag as the last argument is kept verbatim",
-			args: []string{"-destination"},
-			want: Options{{Kind: Unknown, Name: "-destination"}},
-		},
-		{
-			name: "-destination refuses a flag as its value",
-			args: []string{"-destination", "-quiet"},
-			want: Options{{Kind: Unknown, Name: "-destination"}, {Kind: Switch, Name: "-quiet"}},
-		},
-		{
 			name:  "any other value flag takes a following flag as its value, as xcodebuild does",
 			args:  []string{"-derivedDataPath", "-quiet", "-scheme", "-skipMacroValidation"},
-			want:  Options{{Kind: ValueOption, Name: "-derivedDataPath", Value: "-quiet", issue: flagAsValue}, {Kind: ValueOption, Name: "-scheme", Value: "-skipMacroValidation", issue: flagAsValue}},
+			want:  Options{{Kind: ValueOption, Name: "-derivedDataPath", Value: "-quiet", tookFlag: true}, {Kind: ValueOption, Name: "-scheme", Value: "-skipMacroValidation", tookFlag: true}},
 			diags: []DiagnosticKind{MissingValue, MissingValue},
+		},
+		{
+			// "" from an unset env var, a bare word from an unquoted value, a value flag as the last
+			// argument or -destination before a flag, a flag quoted with a value without "=", a lone
+			// dash, an empty colon value: xcodebuild refuses each, and the parser keeps it verbatim.
+			name: "what xcodebuild refuses is kept verbatim as Unknown",
+			args: []string{"", "App", "-destination", "-quiet", "-sdk macosx", "-sdk\nmacosx", "-sdk\u00a0macosx", "-", "-only-testing:", "-derivedDataPath"},
+			want: Options{
+				{Kind: Unknown, Name: ""}, {Kind: Unknown, Name: "App"},
+				{Kind: Unknown, Name: "-destination"}, {Kind: Switch, Name: "-quiet"},
+				{Kind: Unknown, Name: "-sdk macosx"}, {Kind: Unknown, Name: "-sdk\nmacosx"}, {Kind: Unknown, Name: "-sdk\u00a0macosx"},
+				{Kind: Unknown, Name: "-"}, {Kind: Unknown, Name: "-only-testing:"}, {Kind: Unknown, Name: "-derivedDataPath"},
+			},
+		},
+		{
+			name: "-=x is a user default with an empty name, which xcodebuild accepts",
+			args: []string{"-=x"},
+			want: Options{{Kind: UserDefault, Name: "-", Value: "x"}},
 		},
 		{
 			name: "installhdrs and installapi are build actions, not a switch's value",
@@ -143,16 +141,6 @@ func TestParse(t *testing.T) {
 			diags: []DiagnosticKind{SuspiciousUserDefault, SuspiciousUserDefault, SuspiciousUserDefault, SuspiciousUserDefault},
 		},
 		{
-			name: "flag and value quoted together, no '=': xcodebuild refuses it",
-			args: []string{"-sdk macosx", "-quiet foo", "-sdk\nmacosx", "-sdk\u00a0macosx"},
-			want: Options{
-				{Kind: Unknown, Name: "-sdk macosx"},
-				{Kind: Unknown, Name: "-quiet foo"},
-				{Kind: Unknown, Name: "-sdk\nmacosx"},
-				{Kind: Unknown, Name: "-sdk\u00a0macosx"},
-			},
-		},
-		{
 			name: "values may contain spaces",
 			args: []string{"-only-testing:Pulley ManagerTests", "-PROVISIONING_PROFILE_SPECIFIER=match AppStore com.example", "-destination", "platform=iOS Simulator,name=iPhone 15"},
 			want: Options{
@@ -169,11 +157,6 @@ func TestParse(t *testing.T) {
 				{Kind: ValueOption, Name: "-derivedDataPath", Value: "build"},
 				{Kind: ValueOption, Name: "-clonedSourcePackagesDirPath", Value: "test"},
 			},
-		},
-		{
-			name: "a lone dash and an empty colon value are kept verbatim; -=x is a user default",
-			args: []string{"-", "-=x", "-only-testing:"},
-			want: Options{{Kind: Unknown, Name: "-"}, {Kind: UserDefault, Name: "-", Value: "x"}, {Kind: Unknown, Name: "-only-testing:"}},
 		},
 	}
 	for _, tt := range tests {

@@ -62,7 +62,7 @@ func (opts Options) Diagnostics() []Diagnostic {
 			// "-destination generic/platform=iOS" as one argument: a user default named
 			// "destination generic/platform", which xcodebuild ignores
 			diagnostics = append(diagnostics, report(SuspiciousUserDefault, o, "%q is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so it has no effect. Use %s to apply it, or remove it.", o, unquoteFlag(o.String())))
-		case o.Kind == ValueOption && o.issue == flagAsValue:
+		case o.tookFlag:
 			// -derivedDataPath -quiet: xcodebuild takes -quiet as the path and the switch is lost
 			diagnostics = append(diagnostics, report(MissingValue, o, "%q has no value, so xcodebuild takes %q as its value and that flag does not apply. Add a value, or remove it.", o.Name, o.Value))
 		case o.Kind == UserDefault && upperCaseFlag.MatchString(o.Name):
