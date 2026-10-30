@@ -138,6 +138,28 @@ func TestWorkspace_ProjectFileLocations(t *testing.T) {
 	}, locations)
 }
 
+func TestWorkspace_Projects(t *testing.T) {
+	dir := t.TempDir()
+	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+	subProjectPath := filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj")
+	writeProject(t, subProjectPath)
+
+	projects, err := workspace.Projects()
+	require.NoError(t, err)
+
+	require.Len(t, projects, 1, "the missing XcodeProj.xcodeproj is skipped")
+	assert.Equal(t, subProjectPath, projects[0].Path)
+}
+
+func TestWorkspace_Projects_malformedProject(t *testing.T) {
+	dir := t.TempDir()
+	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+	writeFile(t, filepath.Join(dir, "XcodeProj.xcodeproj", "project.pbxproj"), "not a project")
+
+	_, err := workspace.Projects()
+	assert.ErrorContains(t, err, "failed to open project")
+}
+
 func TestWorkspace_SchemeBuildSettings(t *testing.T) {
 	workspacePath := writeWorkspace(t, t.TempDir(), "App", emptyContents)
 	provider := mocks.NewBuildSettingsProvider(t)

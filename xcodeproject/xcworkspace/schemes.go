@@ -85,10 +85,9 @@ func (w *Workspace) schemesByContainer() ([]containerSchemes, error) {
 		containers = append(containers, containerSchemes{path: w.Path, schemes: workspaceSchemes})
 	}
 
-	// project schemes
-	projectLocations, err := w.ProjectFileLocations()
+	projects, err := w.Projects()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get project locations from workspace: %w", err)
+		return nil, err
 	}
 
 	isAutocreateSchemesEnabled, err := w.isAutocreateSchemesEnabled()
@@ -96,22 +95,10 @@ func (w *Workspace) schemesByContainer() ([]containerSchemes, error) {
 		return nil, fmt.Errorf("failed to read the workspace autocreate scheme option: %w", err)
 	}
 
-	for _, projectLocation := range projectLocations {
-		if exist, err := w.pathChecker.IsPathExists(projectLocation); err != nil {
-			return nil, fmt.Errorf("failed to check if project (%s) exists: %w", projectLocation, err)
-		} else if !exist {
-			// at this point we are interested the schemes visible for the workspace
-			continue
-		}
-
-		project, err := w.projectFactory.Open(projectLocation)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open project (%s): %w", projectLocation, err)
-		}
-
+	for _, project := range projects {
 		projectSchemes, err := project.SchemesWithAutocreateOverride(isAutocreateSchemesEnabled)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read project (%s) schemes: %w", projectLocation, err)
+			return nil, fmt.Errorf("failed to read project (%s) schemes: %w", project.Path, err)
 		}
 
 		if len(projectSchemes) > 0 {

@@ -164,3 +164,33 @@ func (w *Workspace) ProjectFileLocations() ([]string, error) {
 	}
 	return projectLocations, nil
 }
+
+// Projects opens the projects the workspace references, in ProjectFileLocations order. A referenced
+// project missing from disk is skipped, as Xcode opens the workspace without it.
+func (w *Workspace) Projects() ([]*xcodeproj.XcodeProj, error) {
+	locations, err := w.ProjectFileLocations()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project locations from workspace: %w", err)
+	}
+
+	var projects []*xcodeproj.XcodeProj
+	for _, location := range locations {
+		exists, err := w.pathChecker.IsPathExists(location)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check if project (%s) exists: %w", location, err)
+		}
+		if !exists {
+			w.logger.TDebugf("Skipping missing project: %s", location)
+			continue
+		}
+
+		project, err := w.projectFactory.Open(location)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open project (%s): %w", location, err)
+		}
+
+		projects = append(projects, project)
+	}
+
+	return projects, nil
+}
