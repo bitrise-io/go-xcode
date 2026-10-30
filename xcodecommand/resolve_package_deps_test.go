@@ -33,13 +33,13 @@ func TestResolvePackages(t *testing.T) {
 			params: ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: additional("clean", "archive", "-test-iterations", "2", "-exportArchive", "Distribution", "-skipMacroValidation", "FOO=1", "-allowProvisioningUpdates")},
 			want:   []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "-skipMacroValidation", "FOO=1", "-allowProvisioningUpdates"},
 			// "-exportArchive Distribution": an unknown flag takes the bare word after it as its value
-			wantNote: `"clean", "archive", "-test-iterations 2", "-exportArchive Distribution" left out of package resolution; the Step's main command gets them.`,
+			wantNote: `"clean", "archive", "-test-iterations 2", "-exportArchive Distribution" left out of package resolution; the Step's main command gets the full xcodebuild_options.`,
 		},
 		{
 			name:     "one option left out",
 			params:   ResolvePackagesParams{ProjectPath: "test.xcodeproj", AdditionalOptions: additional("-quiet", "clean")},
 			want:     []string{"-project", "test.xcodeproj", "-resolvePackageDependencies", "-quiet"},
-			wantNote: `"clean" left out of package resolution; the Step's main command gets it.`,
+			wantNote: `"clean" left out of package resolution; the Step's main command gets the full xcodebuild_options.`,
 		},
 	}
 	for _, tt := range tests {
