@@ -44,7 +44,7 @@ func TestXcodeProj_simpleObjc(t *testing.T) {
 	_, err = project.TargetCodeSignEntitlements(target.Name, "Release")
 	assert.ErrorIs(t, err, xcodeproj.ErrCodeSignEntitlementsNotFound)
 
-	scheme, _, err := project.Scheme("ios-simple-objc")
+	scheme, err := project.Scheme("ios-simple-objc")
 	require.NoError(t, err)
 	assert.True(t, scheme.IsShared)
 

@@ -94,6 +94,7 @@ func TestXcodeProj_Schemes_sharedAndUserSchemes(t *testing.T) {
 	assert.True(t, schemes[0].IsShared)
 	assert.False(t, schemes[1].IsShared)
 	assert.Equal(t, sharedSchemePath(project, "Shared"), schemes[0].Path)
+	assert.Equal(t, project.Path, schemes[0].ContainerPath)
 }
 
 func TestXcodeProj_Schemes_otherUsersSchemesAreNotVisible(t *testing.T) {
@@ -115,6 +116,7 @@ func TestXcodeProj_Schemes_autocreatedByDefault(t *testing.T) {
 	require.Equal(t, []string{"XcodeProj", "TodayExtension"}, schemeNames(schemes))
 	for _, scheme := range schemes {
 		assert.True(t, scheme.IsShared, "generated schemes are marked shared")
+		assert.Equal(t, project.Path, scheme.ContainerPath)
 	}
 
 	app := schemes[0]
@@ -218,14 +220,14 @@ func TestXcodeProj_Scheme(t *testing.T) {
 
 	t.Run("found, matching regardless of Unicode normalisation", func(t *testing.T) {
 		// Looked up with a precomposed é.
-		scheme, container, err := project.Scheme("Café")
+		scheme, err := project.Scheme("Café")
 		require.NoError(t, err)
 		assert.Equal(t, "Café", scheme.Name)
-		assert.Equal(t, project.Path, container)
+		assert.Equal(t, project.Path, scheme.ContainerPath)
 	})
 
 	t.Run("unknown name", func(t *testing.T) {
-		_, _, err := project.Scheme("Nope")
+		_, err := project.Scheme("Nope")
 		var notFound xcscheme.NotFoundError
 		require.ErrorAs(t, err, &notFound)
 		assert.Equal(t, "Nope", notFound.Scheme)
