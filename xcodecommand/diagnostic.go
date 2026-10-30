@@ -18,7 +18,7 @@ type DiagnosticKind int
 
 // Diagnostic kinds.
 const (
-	MalformedOption       DiagnosticKind = iota // unclassifiable argument, passed through; xcodebuild rejects it
+	MalformedOption       DiagnosticKind = iota // an argument xcodebuild reads differently than meant: unparsable, or a value flag that took the next flag
 	RejectedOption                              // switches xcodebuild's mode or belongs to another action
 	ActionInOptions                             // a build action; the command owns its action list
 	SuspiciousUserDefault                       // -NAME=value that looks like a build setting; xcodebuild ignores it silently
@@ -63,6 +63,9 @@ func (opts Options) Diagnostics() []Diagnostic {
 		switch {
 		case o.Kind == Unknown && o.issue == quotedFlagWithValue:
 			diagnostics = append(diagnostics, report(SuspiciousUserDefault, o, "%q is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so it has no effect. Use %s to apply it, or remove it.", o.Name, unquoteFlag(o.Name)))
+		case o.Kind == ValueOption && o.issue == flagAsValue:
+			// -derivedDataPath -quiet: xcodebuild takes -quiet as the path and the switch is lost
+			diagnostics = append(diagnostics, report(MalformedOption, o, "%q has no value, so xcodebuild takes %q as its value and that flag does not apply. Add a value, or remove it.", o.Name, o.Value))
 		case o.Kind == Unknown:
 			diagnostics = append(diagnostics, report(MalformedOption, o, "%q %s", o.Name, malformedMessage(o)))
 		case o.Kind == UserDefault && upperCaseFlag.MatchString(o.Name):
