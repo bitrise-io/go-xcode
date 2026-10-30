@@ -161,9 +161,6 @@ func TestParse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			for i := range tt.want {
-				tt.want[i].user = true // parse marks what it returns as the user's
-			}
 			got := parse(tt.args)
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.args, got.Args(), "parsing must round-trip")
