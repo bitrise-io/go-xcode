@@ -17,10 +17,7 @@ func TestGroup_unmarshal(t *testing.T) {
    <FileRef location = "group:SubProject/SubProject.xcodeproj"></FileRef>
 </Group>`), &group))
 
-	refType, pth, err := group.TypeAndPath()
-	require.NoError(t, err)
-	assert.Equal(t, GroupFileRefType, refType)
-	assert.Equal(t, "Group", pth)
+	assert.Equal(t, "group:Group", group.Location)
 
 	require.Len(t, group.FileRefs, 1)
 	assert.Equal(t, "group:SubProject/SubProject.xcodeproj", group.FileRefs[0].Location)

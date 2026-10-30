@@ -7,8 +7,3 @@ type Group struct {
 	FileRefs []FileRef `xml:"FileRef"`
 	Groups   []Group   `xml:"Group"`
 }
-
-// TypeAndPath splits the group's location, such as "group:Modules", into its type and path.
-func (g Group) TypeAndPath() (FileRefType, string, error) {
-	return parseLocation(g.Location)
-}
