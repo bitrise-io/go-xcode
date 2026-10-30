@@ -26,9 +26,9 @@ const (
 
 // Option is one xcodebuild argument, parsed from user input or derived from params.
 type Option struct {
-	Kind  Kind
-	Name  string
-	Value string
+	Kind     Kind
+	Name     string
+	Value    string
 	tookFlag bool // a value flag that took the next flag as its value, as xcodebuild does
 }
 
