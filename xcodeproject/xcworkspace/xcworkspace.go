@@ -130,9 +130,9 @@ func (w *Workspace) SchemeBuildSettings(scheme, configuration string, customOpti
 }
 
 // FileLocations returns the absolute paths of the files the workspace references: the top-level
-// ones first, then each group's, where a group's own files precede those of its subgroups. Files
-// outside the workspace's own tree, developer: and self: locations, are left out, as xcodebuild
-// ignores them when listing schemes.
+// ones first, then each group's, where a group's own files precede those of its subgroups. A
+// developer: location is left out, as it points into the Xcode Developer directory; a self: one
+// resolves to the project an embedded project.xcworkspace belongs to and is left out elsewhere.
 func (w *Workspace) FileLocations() ([]string, error) {
 	return w.fileLocations(w.FileRefs, w.Groups, filepath.Dir(w.Path))
 }
@@ -173,7 +173,9 @@ func (w *Workspace) fileLocations(fileRefs []FileRef, groups []Group, groupDir s
 }
 
 // absPath resolves a file reference or group location found in the group at groupDir. ok is false
-// for a developer: or self: location, which lies outside the workspace's own tree.
+// for a location the file list leaves out: a developer: one, which points into the Xcode Developer
+// directory, where no project a build targets lives, or a self: one in a workspace that is not
+// embedded in a project, where xcodebuild ignores it too.
 func (w *Workspace) absPath(location, groupDir string) (pth string, ok bool, err error) {
 	refType, pth, err := parseLocation(location)
 	if err != nil {
@@ -189,8 +191,15 @@ func (w *Workspace) absPath(location, groupDir string) (pth string, ok bool, err
 		if !filepath.IsAbs(pth) {
 			pth = filepath.Join(filepath.Dir(w.Path), pth)
 		}
-	case DeveloperFileRefType, SelfFileRefType:
-		w.logger.TDebugf("Skipping %s location outside the workspace: %s", refType, location)
+	case SelfFileRefType:
+		project, embedded := w.embeddingProject()
+		if !embedded {
+			w.logger.TDebugf("Skipping self: location of a workspace not embedded in a project: %s", location)
+			return "", false, nil
+		}
+		pth = project
+	case DeveloperFileRefType:
+		w.logger.TDebugf("Skipping location in the Developer directory: %s", location)
 		return "", false, nil
 	}
 
@@ -200,6 +209,17 @@ func (w *Workspace) absPath(location, groupDir string) (pth string, ok bool, err
 	}
 
 	return pth, true, nil
+}
+
+// embeddingProject returns the project the workspace belongs to when it is the project's own
+// <name>.xcodeproj/project.xcworkspace, which Xcode writes with a single self: reference.
+func (w *Workspace) embeddingProject() (string, bool) {
+	parent := filepath.Dir(w.Path)
+	if !xcodeproj.IsXcodeProj(parent) {
+		return "", false
+	}
+
+	return parent, true
 }
 
 // ProjectFileLocations ...

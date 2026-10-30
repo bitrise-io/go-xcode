@@ -159,6 +159,26 @@ func TestWorkspace_FileLocations_locationsOutsideTheWorkspaceAreLeftOut(t *testi
 	assert.Equal(t, []string{filepath.Join(dir, "App.xcodeproj")}, locations)
 }
 
+// Xcode writes <name>.xcodeproj/project.xcworkspace with a single self: reference to the project,
+// and xcodebuild -list on that workspace reports the project's schemes.
+func TestWorkspace_embeddedInProject(t *testing.T) {
+	dir := t.TempDir()
+	projectPath := filepath.Join(dir, "App.xcodeproj")
+	writeProject(t, projectPath)
+	workspace := openWorkspace(t, writeWorkspace(t, projectPath, "project", `<?xml version="1.0" encoding="UTF-8"?>
+<Workspace version = "1.0">
+   <FileRef location = "self:App.xcodeproj"></FileRef>
+</Workspace>`))
+
+	locations, err := workspace.ProjectFileLocations()
+	require.NoError(t, err)
+	assert.Equal(t, []string{projectPath}, locations)
+
+	_, container, err := workspace.Scheme("App")
+	require.NoError(t, err)
+	assert.Equal(t, projectPath, container, "the project's autocreated scheme")
+}
+
 func TestWorkspace_FileLocations_unknownReferenceType(t *testing.T) {
 	workspace := openWorkspace(t, writeWorkspace(t, t.TempDir(), "Refs", `<?xml version="1.0" encoding="UTF-8"?>
 <Workspace version = "1.0">

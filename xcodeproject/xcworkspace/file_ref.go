@@ -22,7 +22,8 @@ const (
 	GroupFileRefType FileRefType = "group"
 	// ContainerFileRefType is relative to the workspace's directory, whichever group it is in.
 	ContainerFileRefType FileRefType = "container"
-	// DeveloperFileRefType is relative to the Xcode Developer directory.
+	// DeveloperFileRefType is relative to the Xcode Developer directory, where no project a build
+	// targets lives.
 	DeveloperFileRefType FileRefType = "developer"
 	// SelfFileRefType is the project an embedded project.xcworkspace belongs to.
 	SelfFileRefType FileRefType = "self"
