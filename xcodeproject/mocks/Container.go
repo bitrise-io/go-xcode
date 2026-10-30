@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -120,6 +121,123 @@ func (_c *Container_Path_Call) Return(s string) *Container_Path_Call {
 }
 
 func (_c *Container_Path_Call) RunAndReturn(run func() string) *Container_Path_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Project provides a mock function for the type Container
+func (_mock *Container) Project(bundlePath string) (*xcodeproj.XcodeProj, error) {
+	ret := _mock.Called(bundlePath)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Project")
+	}
+
+	var r0 *xcodeproj.XcodeProj
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string) (*xcodeproj.XcodeProj, error)); ok {
+		return returnFunc(bundlePath)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) *xcodeproj.XcodeProj); ok {
+		r0 = returnFunc(bundlePath)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*xcodeproj.XcodeProj)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
+		r1 = returnFunc(bundlePath)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// Container_Project_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Project'
+type Container_Project_Call struct {
+	*mock.Call
+}
+
+// Project is a helper method to define mock.On call
+//   - bundlePath string
+func (_e *Container_Expecter) Project(bundlePath interface{}) *Container_Project_Call {
+	return &Container_Project_Call{Call: _e.mock.On("Project", bundlePath)}
+}
+
+func (_c *Container_Project_Call) Run(run func(bundlePath string)) *Container_Project_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *Container_Project_Call) Return(xcodeProj *xcodeproj.XcodeProj, err error) *Container_Project_Call {
+	_c.Call.Return(xcodeProj, err)
+	return _c
+}
+
+func (_c *Container_Project_Call) RunAndReturn(run func(bundlePath string) (*xcodeproj.XcodeProj, error)) *Container_Project_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Projects provides a mock function for the type Container
+func (_mock *Container) Projects() ([]*xcodeproj.XcodeProj, error) {
+	ret := _mock.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for Projects")
+	}
+
+	var r0 []*xcodeproj.XcodeProj
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func() ([]*xcodeproj.XcodeProj, error)); ok {
+		return returnFunc()
+	}
+	if returnFunc, ok := ret.Get(0).(func() []*xcodeproj.XcodeProj); ok {
+		r0 = returnFunc()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*xcodeproj.XcodeProj)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func() error); ok {
+		r1 = returnFunc()
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// Container_Projects_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Projects'
+type Container_Projects_Call struct {
+	*mock.Call
+}
+
+// Projects is a helper method to define mock.On call
+func (_e *Container_Expecter) Projects() *Container_Projects_Call {
+	return &Container_Projects_Call{Call: _e.mock.On("Projects")}
+}
+
+func (_c *Container_Projects_Call) Run(run func()) *Container_Projects_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run()
+	})
+	return _c
+}
+
+func (_c *Container_Projects_Call) Return(xcodeProjs []*xcodeproj.XcodeProj, err error) *Container_Projects_Call {
+	_c.Call.Return(xcodeProjs, err)
+	return _c
+}
+
+func (_c *Container_Projects_Call) RunAndReturn(run func() ([]*xcodeproj.XcodeProj, error)) *Container_Projects_Call {
 	_c.Call.Return(run)
 	return _c
 }
