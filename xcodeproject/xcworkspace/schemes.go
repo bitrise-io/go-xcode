@@ -28,90 +28,104 @@ type containerSchemes struct {
 // and each referenced project's schemes under that project's path. A project without schemes gets
 // Xcode's default ones when the workspace's "Autocreate schemes" option is on.
 func (w *Workspace) Schemes() (map[string][]xcscheme.Scheme, error) {
-	containers, err := w.schemesByContainer()
+	schemesByContainer := map[string][]xcscheme.Scheme{}
+	err := w.visitSchemeContainers(func(container containerSchemes) bool {
+		schemesByContainer[container.path] = container.schemes
+		return false
+	})
 	if err != nil {
 		return nil, err
-	}
-
-	schemesByContainer := make(map[string][]xcscheme.Scheme, len(containers))
-	for _, container := range containers {
-		schemesByContainer[container.path] = container.schemes
 	}
 
 	return schemesByContainer, nil
 }
 
 // Scheme returns the scheme with the given name and the path of the container that holds it. The
-// workspace's own schemes are searched first, then each project's in ProjectFileLocations order.
-// Names are compared after Unicode normalisation.
+// workspace's own schemes are searched first, then each project's in ProjectFileLocations order,
+// and the search stops at the first container holding the name, so the projects after it are not
+// opened. Names are compared after Unicode normalisation.
 func (w *Workspace) Scheme(name string) (xcscheme.Scheme, string, error) {
-	containers, err := w.schemesByContainer()
+	normalisedName := norm.NFC.String(name)
+
+	var found xcscheme.Scheme
+	var containerPath string
+	err := w.visitSchemeContainers(func(container containerSchemes) bool {
+		for _, scheme := range container.schemes {
+			if norm.NFC.String(scheme.Name) == normalisedName {
+				found, containerPath = scheme, container.path
+				return true
+			}
+		}
+		return false
+	})
 	if err != nil {
 		return xcscheme.Scheme{}, "", err
 	}
-
-	normalisedName := norm.NFC.String(name)
-	for _, container := range containers {
-		for _, scheme := range container.schemes {
-			if norm.NFC.String(scheme.Name) == normalisedName {
-				return scheme, container.path, nil
-			}
-		}
+	if containerPath == "" {
+		return xcscheme.Scheme{}, "", xcscheme.NotFoundError{Scheme: name, Container: w.Name}
 	}
 
-	return xcscheme.Scheme{}, "", xcscheme.NotFoundError{Scheme: name, Container: w.Name}
+	return found, containerPath, nil
 }
 
-// schemesByContainer lists the containers holding at least one scheme, the workspace first.
-func (w *Workspace) schemesByContainer() ([]containerSchemes, error) {
+// visitSchemeContainers calls visit with each container holding at least one scheme, the workspace
+// first and then each referenced project in ProjectFileLocations order, until visit returns true.
+// Projects are opened one at a time, so a visit that stops early leaves the rest unread.
+func (w *Workspace) visitSchemeContainers(visit func(containerSchemes) bool) error {
 	w.logger.TDebugf("Searching schemes in workspace: %s", w.Path)
-
-	var containers []containerSchemes
 
 	sharedSchemes, err := w.sharedSchemes()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read shared schemes: %w", err)
+		return fmt.Errorf("failed to read shared schemes: %w", err)
 	}
 
 	userSchemes, err := w.userSchemes()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read user schemes: %w", err)
+		return fmt.Errorf("failed to read user schemes: %w", err)
 	}
 
 	workspaceSchemes := append(sharedSchemes, userSchemes...)
 
 	w.logger.TDebugf("%d scheme(s) found", len(workspaceSchemes))
-	if len(workspaceSchemes) > 0 {
-		containers = append(containers, containerSchemes{path: w.Path, schemes: workspaceSchemes})
+	if len(workspaceSchemes) > 0 && visit(containerSchemes{path: w.Path, schemes: workspaceSchemes}) {
+		return nil
 	}
 
-	projects, err := w.Projects()
+	locations, err := w.ProjectFileLocations()
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to get project locations from workspace: %w", err)
 	}
 
-	if len(projects) == 0 {
-		return containers, nil
-	}
-
-	// Read lazily: a workspace without projects never depends on this file.
-	isAutocreateSchemesEnabled, err := w.isAutocreateSchemesEnabled()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read the workspace autocreate scheme option: %w", err)
-	}
-
-	for _, project := range projects {
-		projectSchemes, err := project.SchemesWithAutocreateOverride(isAutocreateSchemesEnabled)
+	// Read lazily: only a project without schemes of its own depends on this file.
+	var autocreate *bool
+	for _, location := range locations {
+		project, ok, err := w.openProject(location)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read project (%s) schemes: %w", project.Path, err)
+			return err
+		}
+		if !ok {
+			continue
 		}
 
-		if len(projectSchemes) > 0 {
-			containers = append(containers, containerSchemes{path: project.Path, schemes: projectSchemes})
+		if autocreate == nil {
+			enabled, err := w.isAutocreateSchemesEnabled()
+			if err != nil {
+				return fmt.Errorf("failed to read the workspace autocreate scheme option: %w", err)
+			}
+			autocreate = &enabled
+		}
+
+		schemes, err := project.SchemesWithAutocreateOverride(*autocreate)
+		if err != nil {
+			return fmt.Errorf("failed to read project (%s) schemes: %w", project.Path, err)
+		}
+
+		if len(schemes) > 0 && visit(containerSchemes{path: project.Path, schemes: schemes}) {
+			return nil
 		}
 	}
 
-	return containers, nil
+	return nil
 }
 
 func (w *Workspace) sharedSchemes() ([]xcscheme.Scheme, error) {

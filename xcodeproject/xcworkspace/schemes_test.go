@@ -182,6 +182,20 @@ func TestWorkspace_Scheme_unicodeNormalisation(t *testing.T) {
 	assert.Equal(t, "Kraków", norm.NFC.String(scheme.Name), "the decomposed name finds the precomposed file")
 }
 
+func TestWorkspace_Scheme_stopsAtTheFirstMatch(t *testing.T) {
+	dir := t.TempDir()
+	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+	writeFile(t, sharedSchemePath(workspace.Path, "App"), minimalSchemeXML)
+	writeFile(t, filepath.Join(dir, "XcodeProj.xcodeproj", "project.pbxproj"), "not a project")
+
+	_, container, err := workspace.Scheme("App")
+	require.NoError(t, err, "the project after the match is never opened")
+	assert.Equal(t, workspace.Path, container)
+
+	_, err = workspace.Schemes()
+	assert.ErrorContains(t, err, "failed to open project", "listing everything still reaches it")
+}
+
 func TestWorkspace_Scheme_workspaceSchemesComeFirst(t *testing.T) {
 	dir := t.TempDir()
 	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
