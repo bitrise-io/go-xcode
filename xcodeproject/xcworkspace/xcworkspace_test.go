@@ -1,6 +1,7 @@
 package xcworkspace
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -8,165 +9,160 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
-	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
-	"github.com/bitrise-io/go-xcode/xcodeproject/testhelper"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace/mocks"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/text/unicode/norm"
 )
 
-func testFactory() Factory {
+const testUserName = "bitrise"
+
+// staticUser is a UserProvider with a fixed user name.
+type staticUser string
+
+func (u staticUser) CurrentUserName() (string, error) {
+	return string(u), nil
+}
+
+func testFactory(buildSettings BuildSettingsProvider, user xcodeproj.UserProvider) Factory {
 	logger := log.NewLogger()
 	fileManager := fileutil.NewFileManager()
 	plistFileHandler := plistutil.NewFileHandler(fileManager)
 	pathModifier := pathutil.NewPathModifier()
-	userProvider := xcodeproj.NewUserProvider()
-	projectFactory := xcodeproj.NewFactory(logger, nil, fileManager, plistFileHandler, pathModifier, nil, userProvider, xcodeproj.NewDirCreator())
+	projectFactory := xcodeproj.NewFactory(logger, nil, fileManager, plistFileHandler, pathModifier, nil, user, xcodeproj.NewDirCreator())
 
-	return NewFactory(logger, nil, fileManager, plistFileHandler, pathModifier, pathutil.NewPathChecker(), userProvider, projectFactory)
+	return NewFactory(logger, buildSettings, fileManager, plistFileHandler, pathModifier, pathutil.NewPathChecker(), user, projectFactory)
 }
 
-func TestScheme(t *testing.T) {
-	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-samples/xcode-project-test.git")
-	workspace, err := testFactory().Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
-	require.NoError(t, err)
-
-	{
-		scheme, container, err := workspace.Scheme("SubProjectWatchKitApp (Notification) Scheme")
-		require.NoError(t, err)
-		require.Equal(t, filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"), container)
-		require.Equal(t, "SubProjectWatchKitApp (Notification) Scheme", scheme.Name)
-	}
-
-	{
-		scheme, container, err := workspace.Scheme("Not Exist Scheme")
-		require.EqualError(t, err, "scheme Not Exist Scheme not found in XcodeProj")
-		require.Equal(t, "", container)
-		require.Equal(t, (*xcscheme.Scheme)(nil), scheme)
-	}
-
-	{
-		// Gdańsk represented in High Sierra
-		b := []byte{71, 100, 97, 197, 132, 115, 107}
-		scheme, container, err := workspace.Scheme(string(b))
-		require.NoError(t, err)
-		require.Equal(t, filepath.Join(dir, "XcodeProj.xcodeproj"), container)
-		require.Equal(t, norm.NFC.String(string(b)), norm.NFC.String(scheme.Name))
-	}
-
-	{
-		// Gdańsk represented in Mojave
-		b := []byte{71, 100, 97, 110, 204, 129, 115, 107}
-		scheme, container, err := workspace.Scheme(string(b))
-		require.NoError(t, err)
-		require.Equal(t, filepath.Join(dir, "XcodeProj.xcodeproj"), container)
-		require.Equal(t, norm.NFC.String(string(b)), norm.NFC.String(scheme.Name))
-	}
+func writeFile(t *testing.T, pth, content string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(filepath.Dir(pth), 0755))
+	require.NoError(t, os.WriteFile(pth, []byte(content), 0644))
 }
 
-func TestSchemes(t *testing.T) {
-	dir := testhelper.GitCloneIntoTmpDir(t, "https://github.com/bitrise-samples/xcode-project-test.git")
-	workspace, err := testFactory().Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
-	require.NoError(t, err)
-
-	schemesByContainer, err := workspace.Schemes()
-	require.NoError(t, err)
-	require.Equal(t, 3, len(schemesByContainer))
-
-	{
-		schemes := schemesByContainer[filepath.Join(dir, "XcodeProj.xcworkspace")]
-		require.Equal(t, 1, len(schemes))
-		require.Equal(t, "WorkspaceScheme", schemes[0].Name)
-	}
-
-	{
-		schemes := schemesByContainer[filepath.Join(dir, "XcodeProj.xcodeproj")]
-		require.Equal(t, 3, len(schemes))
-
-		// Gdańsk represented in High Sierra
-		b := []byte{71, 100, 97, 197, 132, 115, 107}
-		require.Equal(t, norm.NFC.String(string(b)), norm.NFC.String(schemes[0].Name))
-		require.Equal(t, "ProjectScheme", schemes[1].Name)
-
-		// Gdańsk represented in Mojave
-		b = []byte{71, 100, 97, 110, 204, 129, 115, 107}
-		require.Equal(t, norm.NFC.String(string(b)), norm.NFC.String(schemes[0].Name))
-		require.Equal(t, "ProjectScheme", schemes[1].Name)
-	}
-
-	{
-		schemes := schemesByContainer[filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj")]
-		require.Equal(t, 4, len(schemes))
-		require.Equal(t, "SubProjectScheme", schemes[0].Name)
-		require.Equal(t, "SubProjectTestScheme", schemes[1].Name)
-		require.Equal(t, "SubProjectWatchKitApp (Notification) Scheme", schemes[2].Name)
-		require.Equal(t, "SubProjectWatchKitAppScheme", schemes[3].Name)
-	}
+// writeWorkspace creates <dir>/<name>.xcworkspace with the given contents and returns its path.
+func writeWorkspace(t *testing.T, dir, name, contents string) string {
+	t.Helper()
+	pth := filepath.Join(dir, name+XCWorkspaceExtension)
+	writeFile(t, filepath.Join(pth, contentsFileName), contents)
+	return pth
 }
 
-func TestWorkspaceFileLocations(t *testing.T) {
-	workspaceContentsPth := testhelper.CreateTmpFile(t, "contents.xcworkspacedata", workspaceContentsContent)
-	workspacePth := filepath.Dir(workspaceContentsPth)
-
-	workspace, err := testFactory().Open(workspacePth)
+// writeProject creates the project at pth from the minimal fixture, which has one app target, App.
+func writeProject(t *testing.T, pth string) {
+	t.Helper()
+	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
 	require.NoError(t, err)
-
-	workspaceDir := filepath.Dir(workspacePth)
-
-	fileLocations, err := workspace.FileLocations()
-	require.NoError(t, err)
-	require.Equal(t, []string{
-		filepath.Join(workspaceDir, "XcodeProj.xcodeproj"),
-		filepath.Join(workspaceDir, "Group/SubProject/SubProject.xcodeproj"),
-		filepath.Join(workspaceDir, "Group/SubProject/SubProjectTests/Info.plist"),
-		filepath.Join(workspaceDir, "Group/SubProject/SubProject/ViewController.swift"),
-		filepath.Join(workspaceDir, "Group/SubProject/SubProject/AppDelegate.swift"),
-		filepath.Join(workspaceDir, "Group/SubProject/SubProject/Info.plist"),
-		filepath.Join(workspaceDir, "Group/SubProject/SubProject/Assets.xcassets/Contents.json"),
-		filepath.Join(workspaceDir, "Group/SubProject/SubProject/Assets.xcassets/AppIcon.appiconset/Contents.json"),
-		filepath.Join(workspaceDir, "Group/SubProject/SubProject/Base.lproj/LaunchScreen.storyboard"),
-		filepath.Join(workspaceDir, "Group/SubProject/SubProject/Base.lproj/Main.storyboard"),
-	}, fileLocations)
+	writeFile(t, filepath.Join(pth, "project.pbxproj"), string(content))
 }
 
-func TestWorkspaceProjectFileLocations(t *testing.T) {
-	workspaceContentsPth := testhelper.CreateTmpFile(t, "contents.xcworkspacedata", workspaceContentsContent)
-	workspacePth := filepath.Dir(workspaceContentsPth)
-
-	workspace, err := testFactory().Open(workspacePth)
+func openWorkspace(t *testing.T, pth string) *Workspace {
+	t.Helper()
+	workspace, err := testFactory(nil, staticUser(testUserName)).Open(pth)
 	require.NoError(t, err)
-
-	workspaceDir := filepath.Dir(workspacePth)
-
-	fileLocations, err := workspace.ProjectFileLocations()
-	require.NoError(t, err)
-	require.Equal(t, []string{
-		filepath.Join(workspaceDir, "XcodeProj.xcodeproj"),
-		filepath.Join(workspaceDir, "Group/SubProject/SubProject.xcodeproj"),
-	}, fileLocations)
-}
-
-func TestOpen(t *testing.T) {
-	workspaceContentsPth := testhelper.CreateTmpFile(t, "contents.xcworkspacedata", workspaceContentsContent)
-	workspacePth := filepath.Dir(workspaceContentsPth)
-
-	workspace, err := testFactory().Open(workspacePth)
-	require.NoError(t, err)
-
-	require.Equal(t, filepath.Base(workspacePth), workspace.Name)
-	require.Equal(t, workspacePth, workspace.Path)
-	require.Equal(t, 1, len(workspace.FileRefs))
-	require.Equal(t, "group:XcodeProj.xcodeproj", workspace.FileRefs[0].Location)
-	require.Equal(t, 1, len(workspace.Groups))
-	require.Equal(t, "group:Group", workspace.Groups[0].Location)
+	return workspace
 }
 
 func TestIsWorkspace(t *testing.T) {
-	require.True(t, IsWorkspace("./BitriseSample.xcworkspace"))
-	require.False(t, IsWorkspace("./BitriseSample.xcodeproj"))
+	assert.True(t, IsWorkspace("/a/b/App.xcworkspace"))
+	assert.False(t, IsWorkspace("/a/b/App.xcodeproj"))
+	assert.False(t, IsWorkspace("/a/b/App"))
 }
 
-const workspaceContentsContent = `<?xml version="1.0" encoding="UTF-8"?>
+func TestFactory_Open(t *testing.T) {
+	workspacePath := writeWorkspace(t, t.TempDir(), "XcodeProj", nestedContents)
+
+	workspace, err := testFactory(nil, staticUser(testUserName)).Open(workspacePath)
+	require.NoError(t, err)
+
+	assert.Equal(t, "XcodeProj", workspace.Name)
+	assert.Equal(t, workspacePath, workspace.Path)
+	require.Len(t, workspace.FileRefs, 1)
+	assert.Equal(t, "group:XcodeProj.xcodeproj", workspace.FileRefs[0].Location)
+	require.Len(t, workspace.Groups, 1)
+	assert.Equal(t, "group:Group", workspace.Groups[0].Location)
+}
+
+func TestFactory_Open_missingWorkspace(t *testing.T) {
+	_, err := testFactory(nil, staticUser(testUserName)).Open(filepath.Join(t.TempDir(), "Missing.xcworkspace"))
+	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+func TestFactory_Open_malformedContents(t *testing.T) {
+	workspacePath := writeWorkspace(t, t.TempDir(), "Broken", "<Workspace")
+
+	_, err := testFactory(nil, staticUser(testUserName)).Open(workspacePath)
+	assert.ErrorContains(t, err, "failed to unmarshal")
+}
+
+func TestWorkspace_FileLocations(t *testing.T) {
+	dir := t.TempDir()
+	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+
+	locations, err := workspace.FileLocations()
+	require.NoError(t, err)
+	assert.Equal(t, []string{
+		filepath.Join(dir, "XcodeProj.xcodeproj"),
+		filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"),
+		filepath.Join(dir, "Group/SubProject/SubProjectTests/Info.plist"),
+		filepath.Join(dir, "Group/SubProject/SubProject/ViewController.swift"),
+		filepath.Join(dir, "Group/SubProject/SubProject/AppDelegate.swift"),
+		filepath.Join(dir, "Group/SubProject/SubProject/Info.plist"),
+		filepath.Join(dir, "Group/SubProject/SubProject/Assets.xcassets/Contents.json"),
+		filepath.Join(dir, "Group/SubProject/SubProject/Assets.xcassets/AppIcon.appiconset/Contents.json"),
+		filepath.Join(dir, "Group/SubProject/SubProject/Base.lproj/LaunchScreen.storyboard"),
+		filepath.Join(dir, "Group/SubProject/SubProject/Base.lproj/Main.storyboard"),
+	}, locations, "top-level files first, then each group's own files before its subgroups'")
+}
+
+func TestWorkspace_FileLocations_unknownReferenceType(t *testing.T) {
+	workspace := openWorkspace(t, writeWorkspace(t, t.TempDir(), "Refs", `<?xml version="1.0" encoding="UTF-8"?>
+<Workspace version = "1.0">
+   <FileRef location = "self:"></FileRef>
+</Workspace>`))
+
+	_, err := workspace.FileLocations()
+	assert.ErrorContains(t, err, "unknown file reference type")
+}
+
+func TestWorkspace_ProjectFileLocations(t *testing.T) {
+	dir := t.TempDir()
+	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+
+	locations, err := workspace.ProjectFileLocations()
+	require.NoError(t, err)
+	assert.Equal(t, []string{
+		filepath.Join(dir, "XcodeProj.xcodeproj"),
+		filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj"),
+	}, locations)
+}
+
+func TestWorkspace_SchemeBuildSettings(t *testing.T) {
+	workspacePath := writeWorkspace(t, t.TempDir(), "App", emptyContents)
+	provider := mocks.NewBuildSettingsProvider(t)
+	provider.On("SchemeBuildSettings", workspacePath, "App", "Release", []string{"-sdk", "iphoneos"}).
+		Return(serialized.Object{"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.app"}, nil)
+
+	workspace, err := testFactory(provider, staticUser(testUserName)).Open(workspacePath)
+	require.NoError(t, err)
+
+	settings, err := workspace.SchemeBuildSettings("App", "Release", "-sdk", "iphoneos")
+	require.NoError(t, err)
+
+	bundleID, ok := settings.String("PRODUCT_BUNDLE_IDENTIFIER")
+	require.True(t, ok)
+	assert.Equal(t, "io.bitrise.app", bundleID)
+}
+
+const emptyContents = `<?xml version="1.0" encoding="UTF-8"?>
+<Workspace version = "1.0">
+</Workspace>
+`
+
+// nestedContents references XcodeProj.xcodeproj next to the workspace and SubProject.xcodeproj
+// through nested groups.
+const nestedContents = `<?xml version="1.0" encoding="UTF-8"?>
 <Workspace
    version = "1.0">
    <Group
