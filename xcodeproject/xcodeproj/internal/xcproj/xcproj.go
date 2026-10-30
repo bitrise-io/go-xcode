@@ -1,5 +1,5 @@
-// Package xcproj decodes project.xcproj, the JSON project file Xcode 27 writes inside an
-// .xcodeproj bundle in place of project.pbxproj.
+// Package xcproj reads and edits project.xcproj, the JSON project file Xcode 27 writes inside
+// an .xcodeproj bundle in place of project.pbxproj.
 package xcproj
 
 import (
