@@ -138,7 +138,7 @@ const testRepetitionHint = "belongs to the Step's test repetition inputs (test_r
 
 var stepInputFlags = map[string]stepInput{
 	"-allowProvisioningUpdates": {
-		hint:      "cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead.",
+		hint:      "cannot update provisioning profiles on its own. xcodebuild needs the App Store Connect API key flags, which the Step adds when its automatic code signing is enabled. Remove it and enable automatic code signing instead. See https://docs.bitrise.io/en/code-signing/ios-code-signing/managing-ios-code-signing-files---automatic-provisioning.html",
 		satisfied: []string{"-authenticationKeyPath", "-authenticationKeyID", "-authenticationKeyIssuerID"},
 	},
 	// xcode-test and xcode-test-without-building render these from their inputs.
