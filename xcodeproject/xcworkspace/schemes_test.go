@@ -70,6 +70,8 @@ func TestWorkspace_Schemes(t *testing.T) {
 	}, namesByContainer(schemes), "shared schemes come before user schemes, non-.xcscheme files are ignored, a project without schemes gets the autocreated ones, the missing SubProject.xcodeproj is left out")
 
 	assert.Equal(t, sharedSchemePath(workspace.Path, "Shared"), schemes[workspace.Path][0].Path)
+	assert.True(t, schemes[workspace.Path][0].IsShared)
+	assert.False(t, schemes[workspace.Path][1].IsShared)
 	assert.True(t, schemes[projectPath][0].IsShared, "autocreated schemes count as shared")
 }
 

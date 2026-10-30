@@ -100,7 +100,16 @@ func (w *Workspace) Scheme(name string) (*xcscheme.Scheme, string, error) {
 
 func (w *Workspace) sharedSchemes() ([]xcscheme.Scheme, error) {
 	// <workspace_name>.xcworkspace/xcshareddata/xcschemes/<scheme_name>.xcscheme
-	return w.readSchemes(filepath.Join(w.Path, "xcshareddata", "xcschemes"))
+	schemes, err := w.readSchemes(filepath.Join(w.Path, "xcshareddata", "xcschemes"))
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range schemes {
+		schemes[i].IsShared = true
+	}
+
+	return schemes, nil
 }
 
 func (w *Workspace) userSchemes() ([]xcscheme.Scheme, error) {
