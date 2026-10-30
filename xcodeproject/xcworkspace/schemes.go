@@ -173,6 +173,7 @@ func (w *Workspace) isAutocreateSchemesEnabled() (bool, error) {
 	data, _, err := w.plistFileHandler.Read(pth)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
+			// By default 'Autocreate Schemes' is enabled
 			return true, nil
 		}
 		return false, err
@@ -180,6 +181,7 @@ func (w *Workspace) isAutocreateSchemesEnabled() (bool, error) {
 	settings := serialized.Object(data)
 
 	if !settings.Has(autocreateSchemesSettingKey) {
+		// By default 'Autocreate Schemes' is enabled
 		return true, nil
 	}
 
