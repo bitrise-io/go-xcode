@@ -2,7 +2,7 @@ package xcworkspace
 
 import "path/filepath"
 
-// IsWorkspace ...
+// IsWorkspace reports whether the path has the .xcworkspace extension.
 func IsWorkspace(pth string) bool {
-	return filepath.Ext(pth) == ".xcworkspace"
+	return filepath.Ext(pth) == XCWorkspaceExtension
 }
