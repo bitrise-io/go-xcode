@@ -2,9 +2,9 @@ package xcodecommand_test
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/bitrise-io/go-xcode/v2/xcodecommand"
+	shellquote "github.com/kballard/go-shellquote"
 )
 
 // ExampleArchive is the call site steps-xcode-archive ends up with. The step parses its
@@ -41,11 +41,20 @@ func ExampleArchive() {
 		return
 	}
 
-	fmt.Println(strings.Join(cmd.Args(), " "))
+	fmt.Println(shellquote.Join(cmd.Args()...))
 	for _, d := range cmd.Diagnostics() {
-		fmt.Println("warning:", d)
+		fmt.Println(level(d), d)
 	}
 	// Output:
-	// clean archive -workspace App.xcworkspace -scheme App -configuration Release -xcconfig /tmp/temp.xcconfig -archivePath /tmp/App.xcarchive -destination generic/platform=iOS Simulator -quiet
-	// warning: "-destination generic/platform=iOS Simulator" replaces the Step's default "-destination generic/platform=iOS".
+	// clean archive -workspace App.xcworkspace -scheme App -configuration Release -xcconfig /tmp/temp.xcconfig -archivePath /tmp/App.xcarchive -destination 'generic/platform=iOS Simulator' -quiet
+	// info: "-destination generic/platform=iOS Simulator" replaces the Step's default "-destination generic/platform=iOS".
+}
+
+// level is the log level a step gives a finding: informational ones are notes, the rest
+// warn that xcodebuild does something other than what the option says.
+func level(d xcodecommand.Diagnostic) string {
+	if d.Informational {
+		return "info:"
+	}
+	return "warning:"
 }

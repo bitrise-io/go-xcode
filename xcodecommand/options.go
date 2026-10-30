@@ -26,21 +26,11 @@ const (
 
 // Option is one xcodebuild argument, parsed from user input or derived from params.
 type Option struct {
-	Kind    Kind
-	Name    string
-	Value   string
-	issue   issue // why an Unknown option was not parsed
-	user    bool  // from xcodebuild_options; the zero value is the Step's own
-	dropped bool  // the merge left it off the command line: the user set it too
-}
-
-// key identifies the option when merging: the flag, the build setting name or the
-// action. A user default keys as "-name=", so -flag=value never collides with -flag value.
-func (o Option) key() string {
-	if o.Kind == UserDefault {
-		return o.Name + "="
-	}
-	return o.Name
+	Kind     Kind
+	Name     string
+	Value    string
+	tookFlag bool // a value flag that took the next flag as its value, as xcodebuild does
+	fallback bool // a Step default, marked by appendDefault: a copy in the additional options replaces it
 }
 
 // String renders the option as it appears on the command line.
@@ -134,7 +124,8 @@ func ParseOptions(input string) (Options, error) {
 	return parse(args), nil
 }
 
-// parse turns shell-split arguments into typed Options, marked as the user's.
+// parse turns shell-split arguments into typed Options. Whatever fits no form is kept
+// verbatim as Unknown, so the command line stays as the user wrote it.
 func parse(args []string) Options {
 	var opts Options
 	for i := 0; i < len(args); i++ {
@@ -157,10 +148,6 @@ func parse(args []string) Options {
 			// CODE_SIGN_IDENTITY=Apple Distribution: xcodebuild fails on an unknown build action
 			opts = append(opts, Option{Kind: Unknown, Name: arg})
 		}
-	}
-
-	for i := range opts {
-		opts[i].user = true
 	}
 	return opts
 }
