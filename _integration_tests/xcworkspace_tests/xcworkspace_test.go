@@ -1,6 +1,7 @@
 package xcworkspace_tests
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -47,6 +48,33 @@ func TestWorkspace_Schemes(t *testing.T) {
 		"SubProjectWatchKitApp (Notification) Scheme",
 		"SubProjectWatchKitAppScheme",
 	}, schemeNames(schemes[filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj")]))
+}
+
+// Checked against xcodebuild 26.5: with a referenced project removed, -list exits 0 and lists only the
+// other projects' schemes and the workspace's own, and -showBuildSettings for one of the missing
+// project's schemes fails with "does not contain a scheme named".
+func TestWorkspace_Schemes_missingProject(t *testing.T) {
+	dir := _integration_tests.GetRepository(t, xcodeProjectTestRepoURL, "master")
+
+	// The clone is shared with the other tests, which run sequentially; put the project back afterwards.
+	subProjectPath := filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj")
+	hiddenPath := subProjectPath + ".missing"
+	require.NoError(t, os.Rename(subProjectPath, hiddenPath))
+	t.Cleanup(func() {
+		require.NoError(t, os.Rename(hiddenPath, subProjectPath))
+	})
+
+	workspace, err := newFactory().Open(filepath.Join(dir, "XcodeProj.xcworkspace"))
+	require.NoError(t, err)
+
+	schemes, err := workspace.Schemes()
+	require.NoError(t, err)
+	require.Len(t, schemes, 2)
+	assert.Equal(t, []string{"WorkspaceScheme"}, schemeNames(schemes[workspace.Path]))
+	assert.Equal(t, []string{"Gda\u0144sk", "ProjectScheme", "ProjectTodayExtensionScheme"}, normalised(schemeNames(schemes[filepath.Join(dir, "XcodeProj.xcodeproj")])))
+
+	_, _, err = workspace.Scheme("SubProjectScheme")
+	assert.True(t, xcscheme.IsNotFoundError(err))
 }
 
 func TestWorkspace_Scheme(t *testing.T) {

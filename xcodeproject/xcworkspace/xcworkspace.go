@@ -198,7 +198,7 @@ func (w *Workspace) ProjectFileLocations() ([]string, error) {
 }
 
 // Projects opens the projects the workspace references, in ProjectFileLocations order. A referenced
-// project missing from disk is skipped, as Xcode opens the workspace without it.
+// project missing from disk is skipped, as xcodebuild -list skips it and its schemes.
 func (w *Workspace) Projects() ([]*xcodeproj.XcodeProj, error) {
 	locations, err := w.ProjectFileLocations()
 	if err != nil {
