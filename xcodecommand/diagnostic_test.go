@@ -37,7 +37,7 @@ func TestDiagnosticMessages(t *testing.T) {
 	}{
 		{
 			name: "parser",
-			user: []string{"", "-destination 'platform=iOS Simulator,name=iPhone 15'", "-sdk macosx", "-=x", "-only-testing:", "Distribution", "-ENABLE_BITCODE=NO", "-destination"},
+			user: []string{"", "-destination 'platform=iOS Simulator,name=iPhone 15'", "-sdk macosx", "-=x", "-only-testing:", "Distribution", "-ENABLE_BITCODE=NO", "-destination", "-derivedDataPath", "-quiet"},
 			want: []string{
 				`"" is empty. xcodebuild treats it as an unknown build action. Remove it.`,
 				`"-destination 'platform=iOS Simulator,name=iPhone 15'" is a flag quoted together with its value. xcodebuild reads it as a user default and ignores it, so it has no effect. Use -destination 'platform=iOS Simulator,name=iPhone 15' to apply it, or remove it.`,
@@ -47,6 +47,7 @@ func TestDiagnosticMessages(t *testing.T) {
 				`"Distribution" is not a flag, a NAME=value build setting or a build action. xcodebuild treats it as an unknown build action. Quote a value with spaces, for example CODE_SIGN_IDENTITY="Apple Distribution", or remove it.`,
 				`"-ENABLE_BITCODE=NO" looks like the build setting ENABLE_BITCODE=NO with a leading dash. xcodebuild reads it as a user default and ignores it, so it has no effect. Use ENABLE_BITCODE=NO to apply it, or remove it.`,
 				`"-destination" has no value. xcodebuild refuses it. Add one, or remove it.`,
+				`"-derivedDataPath" has no value, so xcodebuild takes "-quiet" as its value and that flag does not apply. Add a value, or remove it.`,
 			},
 		},
 	}

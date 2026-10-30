@@ -125,9 +125,10 @@ func TestParse(t *testing.T) {
 			diags: []DiagnosticKind{MalformedOption},
 		},
 		{
-			name: "any other value flag takes a following flag as its value, as xcodebuild does",
-			args: []string{"-derivedDataPath", "-quiet", "-scheme", "-skipMacroValidation"},
-			want: Options{{Kind: ValueOption, Name: "-derivedDataPath", Value: "-quiet", issue: flagAsValue}, {Kind: ValueOption, Name: "-scheme", Value: "-skipMacroValidation", issue: flagAsValue}},
+			name:  "any other value flag takes a following flag as its value, as xcodebuild does",
+			args:  []string{"-derivedDataPath", "-quiet", "-scheme", "-skipMacroValidation"},
+			want:  Options{{Kind: ValueOption, Name: "-derivedDataPath", Value: "-quiet", issue: flagAsValue}, {Kind: ValueOption, Name: "-scheme", Value: "-skipMacroValidation", issue: flagAsValue}},
+			diags: []DiagnosticKind{MalformedOption, MalformedOption},
 		},
 		{
 			name: "installhdrs and installapi are build actions, not a switch's value",
