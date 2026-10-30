@@ -9,11 +9,14 @@ workflows:
 
   test:
     steps:
-    - git::https://github.com/bitrise-steplib/steps-check.git:
-        title: Lint
+    - script:
+        title: golangci-lint
         inputs:
-        - workflow: lint
-        - skip_step_yml_validation: "yes"
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s v2.11.4
+            ./bin/golangci-lint run
     - go-list:
         inputs:
         - exclude: "*/mocks"

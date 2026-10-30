@@ -44,11 +44,11 @@ func (options NonAppStoreOptionsModel) Hash() map[string]interface{} {
 	if options.TeamID != "" {
 		hash[TeamIDKey] = options.TeamID
 	}
-	//nolint:gosimple
+	//nolint:staticcheck
 	if options.CompileBitcode != CompileBitcodeDefault {
 		hash[CompileBitcodeKey] = options.CompileBitcode
 	}
-	//nolint:gosimple
+	//nolint:staticcheck
 	if options.EmbedOnDemandResourcesAssetPacksInBundle != EmbedOnDemandResourcesAssetPacksInBundleDefault {
 		hash[EmbedOnDemandResourcesAssetPacksInBundleKey] = options.EmbedOnDemandResourcesAssetPacksInBundle
 	}

@@ -54,15 +54,15 @@ func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	if options.TeamID != "" {
 		hash[TeamIDKey] = options.TeamID
 	}
-	//nolint:gosimple
+	//nolint:staticcheck
 	if options.UploadBitcode != UploadBitcodeDefault {
 		hash[UploadBitcodeKey] = options.UploadBitcode
 	}
-	//nolint:gosimple
+	//nolint:staticcheck
 	if options.UploadSymbols != UploadSymbolsDefault {
 		hash[UploadSymbolsKey] = options.UploadSymbols
 	}
-	//nolint:gosimple
+	//nolint:staticcheck
 	if options.ManageAppVersion != manageAppVersionDefault {
 		hash[manageAppVersionKey] = options.ManageAppVersion
 	}
@@ -87,7 +87,7 @@ func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	if options.Destination != "" {
 		hash[DestinationKey] = options.Destination
 	}
-	//nolint:gosimple
+	//nolint:staticcheck
 	if options.TestFlightInternalTestingOnly != TestFlightInternalTestingOnlyDefault {
 		hash[TestFlightInternalTestingOnlyKey] = options.TestFlightInternalTestingOnly
 	}

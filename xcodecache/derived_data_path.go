@@ -41,7 +41,7 @@ func xcodeDerivedDataHash(path string) (string, error) {
 // xcodeProjectDerivedDataPath return a per project or worksapce Xcode DerivedData path.
 func xcodeProjectDerivedDataPath(projectPath string) (string, error) {
 	projectName := strings.TrimSuffix(filepath.Base(projectPath), filepath.Ext(projectPath))
-	projectName = strings.Replace(projectName, " ", "_", -1) // changing spaces to _
+	projectName = strings.ReplaceAll(projectName, " ", "_") // changing spaces to _
 	derivedDataDir := filepath.Join(pathutil.UserHomeDir(), "Library", "Developer", "Xcode", "DerivedData")
 
 	projectHash, err := xcodeDerivedDataHash(projectPath)
