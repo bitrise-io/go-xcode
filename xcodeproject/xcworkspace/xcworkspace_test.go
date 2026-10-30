@@ -50,10 +50,11 @@ func writeWorkspace(t *testing.T, dir, name, contents string) string {
 	return pth
 }
 
-// writeProject creates the project at pth from the minimal fixture, which has one app target, App.
+// writeProject creates the project at pth from xcodeproj's minimal fixture, which has one app
+// target, App.
 func writeProject(t *testing.T, pth string) {
 	t.Helper()
-	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
+	content, err := os.ReadFile(filepath.Join("..", "xcodeproj", "testdata", "minimal.pbxproj"))
 	require.NoError(t, err)
 	writeFile(t, filepath.Join(pth, "project.pbxproj"), string(content))
 }
