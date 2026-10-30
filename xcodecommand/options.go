@@ -99,7 +99,7 @@ var (
 	// Not generic/platform=iOS: "/" is not a setting name, that is a -destination value.
 	buildSettingPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*=`)
 	// -quiet, -only-testing, -test-repetition-relaunch-enabled, -UseModernBuildSystem;
-	// not "-", "-=x" or "-destination generic/platform=iOS" quoted as one argument.
+	// not "-" or "-:x", nor "-sdk macosx" quoted as one argument.
 	flagNamePattern = regexp.MustCompile(`^-[A-Za-z0-9][A-Za-z0-9_.-]*$`)
 )
 
