@@ -12,31 +12,47 @@ workflows:
     - script:
         title: Install Go
         inputs:
-        - content: bitrise tools setup --config .tool-versions
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            # The CLI exports a GOROOT for its own Go toolkit, which breaks any other Go install.
+            unset GOROOT
+            bitrise tools setup --config .tool-versions
     - script:
         title: golangci-lint
         inputs:
         - content: |-
             #!/usr/bin/env bash
             set -ex
+            unset GOROOT
             curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s v2.11.4
             ./bin/golangci-lint run
-    - go-list:
+    - script:
+        title: Go test
         inputs:
-        - exclude: "*/mocks"
-    - go-test: { }
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            unset GOROOT
+            go version
+            go test -race $(go list ./... | grep -v /mocks)
 
   integration_test:
     steps:
     - script:
         title: Install Go
         inputs:
-        - content: bitrise tools setup --config .tool-versions
-    - change-workdir:
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            unset GOROOT
+            bitrise tools setup --config .tool-versions
+    - script:
+        title: Go integration test
         inputs:
-        - path: ./_integration_tests
-    - go-list: { }
-    - go-test: { }
-    - change-workdir:
-        inputs:
-        - path: ..
+        - content: |-
+            #!/usr/bin/env bash
+            set -ex
+            unset GOROOT
+            cd _integration_tests
+            go test -race ./...
