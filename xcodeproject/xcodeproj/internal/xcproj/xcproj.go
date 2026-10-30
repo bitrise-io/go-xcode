@@ -11,14 +11,18 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// The target kinds. A target written without a kind is native.
 const (
+	// The target kinds. A target written without a kind is native.
 	TargetKindNative              = "native"
 	TargetKindAggregate           = "aggregate"
 	TargetKindExternalBuildSystem = "external-build-system"
-)
 
-const localTargetDependencyKind = "localTarget"
+	localTargetDependencyKind = "localTarget"
+
+	// productTypePrefix is left out of a product type written as product-type. A product type
+	// without it is written whole as full-product-type.
+	productTypePrefix = "com.apple.product-type."
+)
 
 // Project is the part of project.xcproj that go-xcode reads.
 type Project struct {
@@ -45,7 +49,7 @@ type Target struct {
 	Name string
 	Kind string
 
-	// ProductType is the pbxproj product type without its com.apple.product-type. prefix.
+	// ProductType is the full pbxproj product type, such as com.apple.product-type.application.
 	ProductType string
 	Product     string
 
@@ -74,14 +78,15 @@ type rawConfiguration struct {
 }
 
 type rawTarget struct {
-	ID             string            `json:"id"`
-	Name           string            `json:"name"`
-	Kind           string            `json:"kind"`
-	ProductType    string            `json:"product-type"`
-	Product        string            `json:"product"`
-	TestHostTarget string            `json:"test-host-target"`
-	Dependencies   []rawDependency   `json:"dependencies"`
-	BuildSettings  serialized.Object `json:"build-settings"`
+	ID              string            `json:"id"`
+	Name            string            `json:"name"`
+	Kind            string            `json:"kind"`
+	ProductType     string            `json:"product-type"`
+	FullProductType string            `json:"full-product-type"`
+	Product         string            `json:"product"`
+	TestHostTarget  string            `json:"test-host-target"`
+	Dependencies    []rawDependency   `json:"dependencies"`
+	BuildSettings   serialized.Object `json:"build-settings"`
 }
 
 // rawDependency is written as a bare target name unless it carries platform filters or points
@@ -170,6 +175,11 @@ func (r rawTarget) target() (Target, error) {
 		return Target{}, fmt.Errorf("target %s has unknown kind: %s", r.Name, kind)
 	}
 
+	productType := r.FullProductType
+	if r.ProductType != "" {
+		productType = productTypePrefix + r.ProductType
+	}
+
 	var dependencies []string
 	for _, dependency := range r.Dependencies {
 		if dependency.Kind != localTargetDependencyKind {
@@ -185,7 +195,7 @@ func (r rawTarget) target() (Target, error) {
 		ID:             r.ID,
 		Name:           r.Name,
 		Kind:           kind,
-		ProductType:    r.ProductType,
+		ProductType:    productType,
 		Product:        r.Product,
 		TestHostTarget: r.TestHostTarget,
 		Dependencies:   dependencies,

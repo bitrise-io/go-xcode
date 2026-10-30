@@ -37,7 +37,7 @@ func TestDecode_xcodeOutput(t *testing.T) {
 	assert.Equal(t, "16F0774C306FEF4F008B9392", app.ID)
 	assert.Equal(t, "sample-apps-ios-json-xcproj", app.Name)
 	assert.Equal(t, TargetKindNative, app.Kind)
-	assert.Equal(t, "application", app.ProductType)
+	assert.Equal(t, "com.apple.product-type.application", app.ProductType)
 	assert.Equal(t, "Products/sample-apps-ios-json-xcproj.app", app.Product)
 	assert.Empty(t, app.TestHostTarget)
 	assert.Empty(t, app.Dependencies)
@@ -55,8 +55,8 @@ func TestDecode_xcodeOutput(t *testing.T) {
 		name        string
 		productType string
 	}{
-		{target: project.Targets[1], name: "sample-apps-ios-json-xcprojTests", productType: "bundle.unit-test"},
-		{target: project.Targets[2], name: "sample-apps-ios-json-xcprojUITests", productType: "bundle.ui-testing"},
+		{target: project.Targets[1], name: "sample-apps-ios-json-xcprojTests", productType: "com.apple.product-type.bundle.unit-test"},
+		{target: project.Targets[2], name: "sample-apps-ios-json-xcprojUITests", productType: "com.apple.product-type.bundle.ui-testing"},
 	} {
 		assert.Equal(t, test.name, test.target.Name)
 		assert.Equal(t, test.productType, test.target.ProductType)
@@ -97,8 +97,8 @@ func TestDecode(t *testing.T) {
 				"Framework",
 				{"target": "Widget", "platforms": ["ios"]},
 				{"kind": "localTarget", "target": "Clip"},
-				{"kind": "remoteTarget", "project": "Other.xcodeproj", "target": "Lib"},
-				{"kind": "package", "product": "Alamofire"},
+				{"kind": "remoteTarget", "project": "Other.xcodeproj", "target": "Lib", "target-id": "B2"},
+				{"kind": "package", "product-name": "Alamofire"},
 			]}]}`,
 			want: Project{
 				Configurations: []Configuration{},
@@ -108,6 +108,21 @@ func TestDecode(t *testing.T) {
 					Name:          "App",
 					Kind:          TargetKindAggregate,
 					Dependencies:  []string{"Framework", "Widget", "Clip"},
+					BuildSettings: serialized.Object{},
+				}},
+			},
+		},
+		{
+			name:    "product type outside com.apple.product-type.",
+			content: `{"targets": [{"name": "Tool", "id": "A1", "full-product-type": "com.example.product-type.tool"}]}`,
+			want: Project{
+				Configurations: []Configuration{},
+				BuildSettings:  serialized.Object{},
+				Targets: []Target{{
+					ID:            "A1",
+					Name:          "Tool",
+					Kind:          TargetKindNative,
+					ProductType:   "com.example.product-type.tool",
 					BuildSettings: serialized.Object{},
 				}},
 			},
