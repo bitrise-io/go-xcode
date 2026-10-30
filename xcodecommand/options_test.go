@@ -99,24 +99,24 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name: "bare word is kept verbatim and reported",
+			name: "bare word is kept verbatim",
 			args: []string{"-sdk", "iphoneos", "PRODUCT_NAME=My", "App"},
-			want: Options{{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}, {Kind: BuildSetting, Name: "PRODUCT_NAME", Value: "My"}, {Kind: Unknown, Name: "App", issue: bareWord}},
+			want: Options{{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}, {Kind: BuildSetting, Name: "PRODUCT_NAME", Value: "My"}, {Kind: Unknown, Name: "App"}},
 		},
 		{
-			name: "empty argument is kept verbatim and reported",
+			name: "empty argument is kept verbatim",
 			args: []string{""},
-			want: Options{{Kind: Unknown, Name: "", issue: emptyArgument}},
+			want: Options{{Kind: Unknown, Name: ""}},
 		},
 		{
-			name: "free-form value flag without a value is reported",
+			name: "free-form value flag as the last argument is kept verbatim",
 			args: []string{"-destination"},
-			want: Options{{Kind: Unknown, Name: "-destination", issue: missingValue}},
+			want: Options{{Kind: Unknown, Name: "-destination"}},
 		},
 		{
 			name: "-destination refuses a flag as its value",
 			args: []string{"-destination", "-quiet"},
-			want: Options{{Kind: Unknown, Name: "-destination", issue: missingValue}, {Kind: Switch, Name: "-quiet"}},
+			want: Options{{Kind: Unknown, Name: "-destination"}, {Kind: Switch, Name: "-quiet"}},
 		},
 		{
 			name: "any other value flag takes a following flag as its value, as xcodebuild does",
@@ -132,20 +132,20 @@ func TestParse(t *testing.T) {
 			name: "flag and value quoted together, value with '=': xcodebuild ignores it as a user default",
 			args: []string{"-destination generic/platform=iOS", "-destination 'platform=iOS'", "-destination\vgeneric/platform=iOS", "-destination\u00a0generic/platform=iOS"},
 			want: Options{
-				{Kind: Unknown, Name: "-destination generic/platform=iOS", issue: quotedFlagWithValue},
-				{Kind: Unknown, Name: "-destination 'platform=iOS'", issue: quotedFlagWithValue},
-				{Kind: Unknown, Name: "-destination\vgeneric/platform=iOS", issue: quotedFlagWithValue},
-				{Kind: Unknown, Name: "-destination\u00a0generic/platform=iOS", issue: quotedFlagWithValue},
+				{Kind: UserDefault, Name: "-destination generic/platform", Value: "iOS"},
+				{Kind: UserDefault, Name: "-destination 'platform", Value: "iOS'"},
+				{Kind: UserDefault, Name: "-destination\vgeneric/platform", Value: "iOS"},
+				{Kind: UserDefault, Name: "-destination\u00a0generic/platform", Value: "iOS"},
 			},
 		},
 		{
 			name: "flag and value quoted together, no '=': xcodebuild refuses it",
 			args: []string{"-sdk macosx", "-quiet foo", "-sdk\nmacosx", "-sdk\u00a0macosx"},
 			want: Options{
-				{Kind: Unknown, Name: "-sdk macosx", issue: quotedFlag},
-				{Kind: Unknown, Name: "-quiet foo", issue: quotedFlag},
-				{Kind: Unknown, Name: "-sdk\nmacosx", issue: quotedFlag},
-				{Kind: Unknown, Name: "-sdk\u00a0macosx", issue: quotedFlag},
+				{Kind: Unknown, Name: "-sdk macosx"},
+				{Kind: Unknown, Name: "-quiet foo"},
+				{Kind: Unknown, Name: "-sdk\nmacosx"},
+				{Kind: Unknown, Name: "-sdk\u00a0macosx"},
 			},
 		},
 		{
@@ -166,9 +166,9 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name: "lone dash, empty user default name and empty colon value are reported",
+			name: "a lone dash and an empty colon value are kept verbatim; -=x is a user default",
 			args: []string{"-", "-=x", "-only-testing:"},
-			want: Options{{Kind: Unknown, Name: "-", issue: invalidFlag}, {Kind: Unknown, Name: "-=x", issue: invalidFlag}, {Kind: Unknown, Name: "-only-testing:", issue: colonWithoutValue}},
+			want: Options{{Kind: Unknown, Name: "-"}, {Kind: UserDefault, Name: "-", Value: "x"}, {Kind: Unknown, Name: "-only-testing:"}},
 		},
 	}
 	for _, tt := range tests {
