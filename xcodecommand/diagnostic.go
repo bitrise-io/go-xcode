@@ -43,7 +43,8 @@ func (d Diagnostic) String() string {
 
 // report is a Diagnostic about o with a formatted message.
 func report(kind DiagnosticKind, o Option, format string, args ...any) Diagnostic {
-	return Diagnostic{Kind: kind, Option: o, Message: fmt.Sprintf(format, args...), Informational: kind == Override || kind == RedundantOption}
+	informational := kind == Override || kind == RedundantOption
+	return Diagnostic{Kind: kind, Option: o, Message: fmt.Sprintf(format, args...), Informational: informational}
 }
 
 // -ENABLE_BITCODE, -MARKETING_VERSION: a build setting typed with a dash, which

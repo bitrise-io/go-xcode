@@ -123,7 +123,7 @@ var freeFormValueFlags = []string{
 // rules, as the steps always have (quotes group a value that contains spaces), and reads
 // the arguments as xcodebuild does. Only a quoting error fails: whatever fits no form is
 // kept verbatim as Unknown, so the command line stays as the user wrote it and xcodebuild
-// refuses it with its own message; Options.Diagnostics says why.
+// refuses it with its own message.
 func ParseOptions(input string) (Options, error) {
 	args, err := shellquote.Split(input)
 	if err != nil {
