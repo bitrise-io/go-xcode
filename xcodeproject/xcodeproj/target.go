@@ -14,6 +14,15 @@ const (
 	legacyTargetISA    = "PBXLegacyTarget"
 )
 
+// targetKind is what builds a target. The zero value is no kind.
+type targetKind int
+
+const (
+	nativeTargetKind targetKind = iota + 1
+	aggregateTargetKind
+	externalBuildSystemTargetKind
+)
+
 const appClipProductType = "com.apple.product-type.application.on-demand-install-capable"
 
 // Target is a build target of the project.
@@ -24,11 +33,11 @@ type Target struct {
 	BuildConfigurations      []BuildConfiguration
 	DefaultConfigurationName string
 
-	isa                 string
-	productType         string
+	kind        targetKind
+	productType string
+	// productPath is the path of the product file; only its base name, such as App.app, is used.
 	productPath         string
 	dependencyTargetIDs []string
-	buildPhaseIDs       []string
 }
 
 // DependsOn reports whether the target directly depends on the target with the given ID.
@@ -60,7 +69,7 @@ func (t Target) isAppExtensionProduct() bool {
 }
 
 func (t Target) isNativeTarget() bool {
-	return t.isa == nativeTargetISA
+	return t.kind == nativeTargetKind
 }
 
 // Based on https://github.com/CocoaPods/Xcodeproj/blob/907c81763a7660978fda93b2f38f05de0cbb51ad/lib/xcodeproj/project/object/native_target.rb#L470
@@ -85,8 +94,14 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 		return Target{}, fmt.Errorf("target %s has no isa", id)
 	}
 
+	var kind targetKind
 	switch isa {
-	case nativeTargetISA, aggregateTargetISA, legacyTargetISA:
+	case nativeTargetISA:
+		kind = nativeTargetKind
+	case aggregateTargetISA:
+		kind = aggregateTargetKind
+	case legacyTargetISA:
+		kind = externalBuildSystemTargetKind
 	default:
 		return Target{}, fmt.Errorf("unknown target type: %s", isa)
 	}
@@ -132,18 +147,15 @@ func parseTarget(id string, objects serialized.Object) (Target, error) {
 		}
 	}
 
-	buildPhaseIDs, _ := rawTarget.StringSlice("buildPhases")
-
 	return Target{
 		ID:                       id,
 		Name:                     name,
 		BuildConfigurations:      buildConfigurations,
 		DefaultConfigurationName: defaultConfigurationName,
-		isa:                      isa,
+		kind:                     kind,
 		productType:              productType,
 		productPath:              productPath,
 		dependencyTargetIDs:      dependencyTargetIDs,
-		buildPhaseIDs:            buildPhaseIDs,
 	}, nil
 }
 

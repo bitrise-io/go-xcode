@@ -33,7 +33,7 @@ func testFactory() Factory {
 	)
 }
 
-func parseFixture(t *testing.T, name string) *XcodeProj {
+func parseFixture(t *testing.T, name string) *PBXProj {
 	t.Helper()
 
 	content, err := os.ReadFile(filepath.Join("testdata", name))
@@ -54,8 +54,8 @@ func TestIsXcodeProj(t *testing.T) {
 func TestFactory_Parse(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
-	assert.Equal(t, "XcodeProj", project.Name)
-	assert.Equal(t, "/projects/XcodeProj.xcodeproj", project.Path)
+	assert.Equal(t, "XcodeProj", project.Name())
+	assert.Equal(t, "/projects/XcodeProj.xcodeproj", project.Path())
 
 	var targetNames []string
 	for _, target := range project.Targets() {
@@ -84,7 +84,7 @@ func TestFactory_Parse_optionalTargetKeys(t *testing.T) {
 	target := project.Targets()[0]
 	assert.Equal(t, "App", target.Name)
 	assert.Empty(t, target.dependencyTargetIDs)
-	assert.Empty(t, target.buildPhaseIDs)
+	assert.Empty(t, project.buildPhaseIDs[target.ID])
 }
 
 func TestFactory_Parse_invalidContent(t *testing.T) {
@@ -111,14 +111,25 @@ func TestFactory_Open(t *testing.T) {
 	project, err := testFactory().Open(projectPath)
 	require.NoError(t, err)
 
-	assert.Equal(t, "App", project.Name)
-	assert.Equal(t, projectPath, project.Path)
+	assert.Equal(t, "App", project.Name())
+	assert.Equal(t, projectPath, project.Path())
 	require.Len(t, project.Targets(), 1)
 }
 
 func TestFactory_Open_missingProject(t *testing.T) {
 	_, err := testFactory().Open(filepath.Join(t.TempDir(), "Missing.xcodeproj"))
 	require.Error(t, err)
+}
+
+func TestFactory_Open_invalidProjectReturnsNilProject(t *testing.T) {
+	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
+	require.NoError(t, os.MkdirAll(projectPath, 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), []byte("{}"), 0644))
+
+	project, err := testFactory().Open(projectPath)
+	require.Error(t, err)
+	// Not assert.Nil: it also accepts an interface holding a nil pointer, which is what this guards.
+	assert.True(t, project == nil, "got a non-nil %T", project)
 }
 
 func TestXcodeProj_Target(t *testing.T) {
@@ -160,7 +171,7 @@ func TestXcodeProj_DependentTargetsOfTarget(t *testing.T) {
 }
 
 func TestXcodeProj_DependentTargetsOfTarget_unresolvableDependencyIsSkipped(t *testing.T) {
-	project := &XcodeProj{
+	project := &baseProj{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B", "GONE"}},
@@ -172,7 +183,7 @@ func TestXcodeProj_DependentTargetsOfTarget_unresolvableDependencyIsSkipped(t *t
 }
 
 func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
-	project := &XcodeProj{
+	project := &baseProj{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B"}},
@@ -185,7 +196,7 @@ func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
 }
 
 func TestXcodeProj_DependentTargetsOfTarget_sharedDependency(t *testing.T) {
-	project := &XcodeProj{
+	project := &baseProj{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B", "C"}},

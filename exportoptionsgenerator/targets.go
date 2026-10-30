@@ -17,7 +17,7 @@ type ArchiveInfo struct {
 }
 
 // ReadArchiveInfoFromXcodeproject reads the Bundle ID for the given scheme and configuration.
-func ReadArchiveInfoFromXcodeproject(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration string) (ArchiveInfo, error) {
+func ReadArchiveInfoFromXcodeproject(xcodeProj xcodeproj.XcodeProj, scheme *xcscheme.Scheme, configuration string) (ArchiveInfo, error) {
 	mainTarget, err := ArchivableApplicationTarget(xcodeProj, scheme)
 	if err != nil {
 		return ArchiveInfo{}, err
@@ -58,10 +58,10 @@ func ReadArchiveInfoFromXcodeproject(xcodeProj *xcodeproj.XcodeProj, scheme *xcs
 }
 
 // ArchivableApplicationTarget locate archivable app target from a given project and scheme
-func ArchivableApplicationTarget(xcodeProj *xcodeproj.XcodeProj, scheme *xcscheme.Scheme) (*xcodeproj.Target, error) {
+func ArchivableApplicationTarget(xcodeProj xcodeproj.XcodeProj, scheme *xcscheme.Scheme) (*xcodeproj.Target, error) {
 	archiveEntry, ok := scheme.AppBuildActionEntry()
 	if !ok {
-		return nil, fmt.Errorf("archivable entry not found in project: %s for scheme: %s", xcodeProj.Path, scheme.Name)
+		return nil, fmt.Errorf("archivable entry not found in project: %s for scheme: %s", xcodeProj.Path(), scheme.Name)
 	}
 
 	mainTarget, ok := xcodeProj.Target(archiveEntry.BuildableReference.BlueprintIdentifier)

@@ -17,8 +17,9 @@ const appIconSetNameBuildSettingKey = "ASSETCATALOG_COMPILER_APPICON_NAME"
 
 var buildSettingReferenceRegexp = regexp.MustCompile(`\$\{(.+)\}`)
 
-// AppIconSetPaths maps target IDs to the absolute paths of the targets' .appiconset directories.
-func (p *XcodeProj) AppIconSetPaths() (map[string][]string, error) {
+// AppIconSetPaths implements XcodeProj. It looks for asset catalogs in the targets' resources
+// build phases.
+func (p *PBXProj) AppIconSetPaths() (map[string][]string, error) {
 	objects, ok := p.rawProj.Object("objects")
 	if !ok {
 		return nil, fmt.Errorf("failed to parse project: no objects")
@@ -31,7 +32,7 @@ func (p *XcodeProj) AppIconSetPaths() (map[string][]string, error) {
 			continue
 		}
 
-		catalogs, err := assetCatalogs(target, p.projectID, objects)
+		catalogs, err := assetCatalogs(target, p.buildPhaseIDs[target.ID], objects)
 		if err != nil {
 			return nil, err
 		} else if len(catalogs) == 0 {
@@ -54,10 +55,10 @@ func (p *XcodeProj) AppIconSetPaths() (map[string][]string, error) {
 	return targetToAppIcons, nil
 }
 
-func (p *XcodeProj) lookupAppIconPaths(catalogs []fileReference, appIconSetName string, objects serialized.Object) ([]string, error) {
+func (p *PBXProj) lookupAppIconPaths(catalogs []fileReference, appIconSetName string, objects serialized.Object) ([]string, error) {
 	var icons []string
 	for _, catalog := range catalogs {
-		resolvedPath, err := resolveObjectAbsolutePath(catalog.id, p.projectID, p.Path, objects)
+		resolvedPath, err := resolveObjectAbsolutePath(catalog.id, p.projectID, p.path, objects)
 		if err != nil {
 			return nil, err
 		} else if resolvedPath == "" {
@@ -77,13 +78,13 @@ func (p *XcodeProj) lookupAppIconPaths(catalogs []fileReference, appIconSetName 
 	return icons, nil
 }
 
-func assetCatalogs(target Target, projectID string, objects serialized.Object) ([]fileReference, error) {
+func assetCatalogs(target Target, buildPhaseIDs []string, objects serialized.Object) ([]fileReference, error) {
 	// Aggregate and legacy targets may not have build phases.
 	if !target.isNativeTarget() {
 		return nil, nil
 	}
 
-	buildPhase, err := findResourcesBuildPhase(target.buildPhaseIDs, objects)
+	buildPhase, err := findResourcesBuildPhase(buildPhaseIDs, objects)
 	if err != nil {
 		return nil, fmt.Errorf("getting resource build phases failed, error: %w", err)
 	}
