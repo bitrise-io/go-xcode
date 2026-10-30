@@ -10,6 +10,10 @@ workflows:
   test:
     steps:
     - script:
+        title: Install Go
+        inputs:
+        - content: bitrise tools setup --config .tool-versions
+    - script:
         title: golangci-lint
         inputs:
         - content: |-
@@ -24,6 +28,10 @@ workflows:
 
   integration_test:
     steps:
+    - script:
+        title: Install Go
+        inputs:
+        - content: bitrise tools setup --config .tool-versions
     - change-workdir:
         inputs:
         - path: ./_integration_tests
