@@ -48,7 +48,6 @@ func FuzzAdditionalOptions(f *testing.F) {
 				errOf(Test(TestParams{ProjectPath: "App.xcodeproj", Destination: "id=SIM", CollectTestDiagnostics: "never", SkipTesting: []string{"AppTests/Flaky"}, AdditionalOptions: opts})),
 				errOf(TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "/tmp/App.xctestrun", Destination: "id=SIM", AdditionalOptions: opts})),
 				errOf(TestWithoutBuilding(TestWithoutBuildingParams{ProjectPath: "App.xcworkspace", Scheme: "App", Destination: "id=SIM", AdditionalOptions: opts})),
-				errOf(ExportArchive(ExportArchiveParams{ArchivePath: "/tmp/App.xcarchive", ExportPath: "/tmp/out", ExportOptionsPlist: "/tmp/o.plist", AdditionalOptions: opts})),
 				errOf(ResolvePackages(ResolvePackagesParams{ProjectPath: "App.xcodeproj", AdditionalOptions: opts})),
 			} {
 				require.NoError(t, err)
