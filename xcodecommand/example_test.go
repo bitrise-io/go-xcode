@@ -2,9 +2,9 @@ package xcodecommand_test
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/bitrise-io/go-xcode/v2/xcodecommand"
+	shellquote "github.com/kballard/go-shellquote"
 )
 
 // ExampleArchive is the call site steps-xcode-archive ends up with. The step parses its
@@ -41,12 +41,12 @@ func ExampleArchive() {
 		return
 	}
 
-	fmt.Println(strings.Join(cmd.Args(), " "))
+	fmt.Println(shellquote.Join(cmd.Args()...))
 	for _, d := range cmd.Diagnostics() {
 		fmt.Println(level(d), d)
 	}
 	// Output:
-	// clean archive -workspace App.xcworkspace -scheme App -configuration Release -xcconfig /tmp/temp.xcconfig -archivePath /tmp/App.xcarchive -destination generic/platform=iOS Simulator -quiet
+	// clean archive -workspace App.xcworkspace -scheme App -configuration Release -xcconfig /tmp/temp.xcconfig -archivePath /tmp/App.xcarchive -destination 'generic/platform=iOS Simulator' -quiet
 	// info: "-destination generic/platform=iOS Simulator" replaces the Step's default "-destination generic/platform=iOS".
 }
 
