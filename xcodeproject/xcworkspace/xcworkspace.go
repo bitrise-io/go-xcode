@@ -98,7 +98,9 @@ func (f Factory) Open(pth string) (*Workspace, error) {
 		return nil, fmt.Errorf("failed to open %s: %w", contentsPth, err)
 	}
 	defer func() {
-		_ = file.Close()
+		if closeErr := file.Close(); closeErr != nil {
+			f.logger.Warnf("Failed to close %s: %s", contentsPth, closeErr)
+		}
 	}()
 
 	var workspace Workspace
