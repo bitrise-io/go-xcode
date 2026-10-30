@@ -1,0 +1,27 @@
+// A project file after someone edited it by hand, using the parts of JSON5
+// that Xcode accepts on read but never writes itself.
+{
+  /* Unquoted keys are legal as long as they are ECMAScript identifiers. */
+  id: '2A9F3C1D4B8E5A6700000001',
+  organization: "Bitrise",   // single and double quotes mix freely
+  'default-configuration': "Release",
+  "last-upgrade": 0x0A8C,
+  "timeout": +1.5e2,
+  "slack": .25,
+  "budget": 12.,
+  "unbounded": +Infinity,
+  "disabled": null,
+  "targets": [
+    {
+      name: "SimpleApp",
+      "build-settings": {
+        // A line continuation keeps one long value readable.
+        "OTHER_SWIFT_FLAGS": "-D FIRST \
+-D SECOND",
+        "MARKETING_VERSION": "1.0",
+      },
+      "dependencies": [],
+    },
+    // Trailing commas everywhere, including after the last entry.
+  ],
+}
