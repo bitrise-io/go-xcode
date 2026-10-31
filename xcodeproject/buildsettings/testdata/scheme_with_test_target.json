@@ -1,0 +1,27 @@
+[
+    {
+        "action": "build",
+        "target": "ios-simple-objc",
+        "buildSettings": {
+            "PRODUCT_BUNDLE_IDENTIFIER": "Bitrise.ios-simple-objc",
+            "SDKROOT": "/Applications/Xcode-26.5.0.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk",
+            "INFOPLIST_FILE": "ios-simple-objc/Info.plist",
+            "LD_RUNPATH_SEARCH_PATHS": " @executable_path/Frameworks",
+            "GCC_PREPROCESSOR_DEFINITIONS": "DEBUG=1 ",
+            "PRODUCT_NAME": "ios-simple-objc"
+        }
+    },
+    {
+        "action": "build",
+        "target": "ios-simple-objcTests",
+        "buildSettings": {
+            "PRODUCT_BUNDLE_IDENTIFIER": "Bitrise.ios-simple-objcTests",
+            "SDKROOT": "/Applications/Xcode-26.5.0.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk",
+            "INFOPLIST_FILE": "ios-simple-objcTests/Info.plist",
+            "BUNDLE_LOADER": "/Users/vagrant/Library/Developer/Xcode/DerivedData/ios-simple-objc-bzuvhfsihipgxcfqcopeposzptoc/Build/Products/Debug-iphoneos/ios-simple-objc.app/ios-simple-objc",
+            "LD_RUNPATH_SEARCH_PATHS": " @loader_path/Frameworks @executable_path/Frameworks @loader_path/Frameworks",
+            "GCC_PREPROCESSOR_DEFINITIONS": "BITRISE_MUTATION_LEVEL=7 DEBUG=1 DEBUG=1 ",
+            "PRODUCT_NAME": "ios-simple-objcTests"
+        }
+    }
+]
