@@ -163,7 +163,7 @@ func (p *ProjectHelper) UITestTargetBundleIDs() ([]string, error) {
 func (p *ProjectHelper) Platform(configurationName string) (autocodesign.Platform, error) {
 	platformDisplayName, err := p.buildSettingForKey(p.MainTarget.Name, configurationName, "PLATFORM_DISPLAY_NAME")
 	if err != nil {
-		return "", fmt.Errorf("no PLATFORM_DISPLAY_NAME config found for (%s) target", p.MainTarget.Name)
+		return "", fmt.Errorf("failed to read PLATFORM_DISPLAY_NAME of target %s: %w", p.MainTarget.Name, err)
 	}
 
 	if platformDisplayName != string(autocodesign.IOS) && platformDisplayName != string(autocodesign.MacOS) && platformDisplayName != string(autocodesign.TVOS) {
