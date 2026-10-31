@@ -261,7 +261,7 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 		p.logger.Printf("buildSettings: Falling back to project build settings")
 	}
 
-	projectSettings, projectErr := p.XcProj.TargetBuildSettings(targetName, conf, p.additionalXcodebuildOptions...)
+	projectSettings, projectErr := p.XcProj.TargetBuildSettings(targetName, conf, projectTargetOptions(p.additionalXcodebuildOptions)...)
 	if projectErr == nil {
 		settingsList = append(settingsList, projectSettings)
 		return settingsList, nil
@@ -275,6 +275,16 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 	}
 
 	return settingsList, projectErr
+}
+
+// projectTargetOptions are the additional options a "-project -target" settings query gets. It
+// leaves out -onlyUsePackageVersionsFromResolvedFile: a project may keep no Package.resolved of its
+// own when its workspace holds one, and with the flag xcodebuild then refuses to resolve the
+// packages and prints no build settings at all (SSW-2708).
+func projectTargetOptions(options []string) []string {
+	return slices.DeleteFunc(slices.Clone(options), func(option string) bool {
+		return option == "-onlyUsePackageVersionsFromResolvedFile"
+	})
 }
 
 func (p *ProjectHelper) cachedBuildSettings(targetName, conf string) ([]serialized.Object, error) {
