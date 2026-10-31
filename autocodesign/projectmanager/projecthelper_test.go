@@ -654,3 +654,11 @@ func Test_resolveEntitlementVariables(t *testing.T) {
 		})
 	}
 }
+
+func Test_projectTargetOptions(t *testing.T) {
+	options := []string{"-skipMacroValidation", "-onlyUsePackageVersionsFromResolvedFile", "-clonedSourcePackagesDirPath", "/tmp/spm"}
+
+	require.Equal(t, []string{"-skipMacroValidation", "-clonedSourcePackagesDirPath", "/tmp/spm"}, projectTargetOptions(options))
+	require.Equal(t, []string{"-skipMacroValidation", "-onlyUsePackageVersionsFromResolvedFile", "-clonedSourcePackagesDirPath", "/tmp/spm"}, options, "the caller's options are untouched")
+	require.Nil(t, projectTargetOptions(nil))
+}

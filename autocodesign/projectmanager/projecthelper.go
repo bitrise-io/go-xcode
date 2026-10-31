@@ -40,6 +40,7 @@ type buildSettingsCacheKey struct {
 // ProjectHelper ...
 type ProjectHelper struct {
 	logger                      log.Logger
+	schemeName                  string
 	MainTarget                  xcodeproj.Target
 	DependentTargets            []xcodeproj.Target
 	UITestTargets               []xcodeproj.Target
@@ -104,6 +105,7 @@ func NewProjectHelper(projOrWSPath string, logger log.Logger, schemeName string,
 
 	return &ProjectHelper{
 		logger:                      logger,
+		schemeName:                  schemeName,
 		MainTarget:                  mainTarget,
 		DependentTargets:            dependentTargets,
 		UITestTargets:               uiTestTargets,
@@ -161,7 +163,7 @@ func (p *ProjectHelper) UITestTargetBundleIDs() ([]string, error) {
 func (p *ProjectHelper) Platform(configurationName string) (autocodesign.Platform, error) {
 	platformDisplayName, err := p.buildSettingForKey(p.MainTarget.Name, configurationName, "PLATFORM_DISPLAY_NAME")
 	if err != nil {
-		return "", fmt.Errorf("no PLATFORM_DISPLAY_NAME config found for (%s) target", p.MainTarget.Name)
+		return "", fmt.Errorf("failed to read PLATFORM_DISPLAY_NAME of target %s: %w", p.MainTarget.Name, err)
 	}
 
 	if platformDisplayName != string(autocodesign.IOS) && platformDisplayName != string(autocodesign.MacOS) && platformDisplayName != string(autocodesign.TVOS) {
@@ -238,9 +240,12 @@ func (p *ProjectHelper) targetTeamID(targetName, config string) (string, error) 
 func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialized.Object, error) {
 	var settingsList []serialized.Object
 	var wsErr error
-	if p.XcWorkspace != nil { // workspace available
+	// The workspace is asked by scheme, and the scheme it was given builds the main target; the
+	// other targets are not schemes (v1 asked for them by name, which fails unless a scheme happens
+	// to share the name), so they are read from the project directly.
+	if p.XcWorkspace != nil && targetName == p.MainTarget.Name {
 		var settings serialized.Object
-		settings, wsErr = p.XcWorkspace.SchemeBuildSettings(targetName, conf, p.additionalXcodebuildOptions...)
+		settings, wsErr = p.XcWorkspace.SchemeBuildSettings(p.schemeName, conf, p.additionalXcodebuildOptions...)
 		if wsErr == nil {
 			// Settings like INFOPLIST_FILE and CODE_SIGN_ENTITLEMENTS are project-relative
 			// https://developer.apple.com/documentation/xcode/build-settings-reference#Infoplist-File
@@ -252,11 +257,11 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 	}
 
 	if wsErr != nil {
-		p.logger.Warnf("buildSettings: failed to fetch build settings for target `%s` (project `%s`): %w", targetName, p.XcWorkspace.Name, wsErr)
+		p.logger.Warnf("buildSettings: failed to fetch build settings for scheme `%s` (workspace `%s`): %s", p.schemeName, p.XcWorkspace.Name, wsErr)
 		p.logger.Printf("buildSettings: Falling back to project build settings")
 	}
 
-	projectSettings, projectErr := p.XcProj.TargetBuildSettings(targetName, conf, p.additionalXcodebuildOptions...)
+	projectSettings, projectErr := p.XcProj.TargetBuildSettings(targetName, conf, projectTargetOptions(p.additionalXcodebuildOptions)...)
 	if projectErr == nil {
 		settingsList = append(settingsList, projectSettings)
 		return settingsList, nil
@@ -270,6 +275,16 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 	}
 
 	return settingsList, projectErr
+}
+
+// projectTargetOptions are the additional options a "-project -target" settings query gets. It
+// leaves out -onlyUsePackageVersionsFromResolvedFile: a project may keep no Package.resolved of its
+// own when its workspace holds one, and with the flag xcodebuild then refuses to resolve the
+// packages and prints no build settings at all (SSW-2708).
+func projectTargetOptions(options []string) []string {
+	return slices.DeleteFunc(slices.Clone(options), func(option string) bool {
+		return option == "-onlyUsePackageVersionsFromResolvedFile"
+	})
 }
 
 func (p *ProjectHelper) cachedBuildSettings(targetName, conf string) ([]serialized.Object, error) {
