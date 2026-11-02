@@ -54,6 +54,7 @@ func TestEditor_SetTargetBuildSetting(t *testing.T) {
   ],
   "targets": [
     {
+      "id": "T1",
       "name": "App",
       "build-settings": {
 %s
@@ -147,6 +148,19 @@ func TestEditor_SetTargetBuildSetting(t *testing.T) {
         "PROVISIONING_PROFILE[config=Release]": "8a2f3c1d-0000-0000-0000-000000000000",`,
 		},
 		{
+			name: "does not repeat a comment in front of the last key",
+			settings: `        "CODE_SIGN_STYLE": "Automatic",
+        // Keep the bundle ID in sync with the App Store record.
+        "PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.App",`,
+			configuration: "Release",
+			key:           "DEVELOPMENT_TEAM",
+			value:         "ABCDE12345",
+			want: `        "CODE_SIGN_STYLE": "Automatic",
+        "DEVELOPMENT_TEAM[config=Release]": "ABCDE12345",
+        // Keep the bundle ID in sync with the App Store record.
+        "PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.App",`,
+		},
+		{
 			name:          "clears a value",
 			settings:      `        "PROVISIONING_PROFILE_SPECIFIER[config=Release]": "Sample",`,
 			configuration: "Release",
@@ -178,7 +192,7 @@ func TestEditor_SetTargetBuildSetting_errors(t *testing.T) {
 	}{
 		{
 			name:          "unknown configuration",
-			content:       `{"configurations": ["Debug"], "targets": [{"name": "App", "build-settings": {"A": "1"}}]}`,
+			content:       `{"configurations": ["Debug"], "targets": [{"id": "T1", "name": "App", "build-settings": {"A": "1"}}]}`,
 			target:        "App",
 			configuration: "Release",
 			key:           "KEY",
@@ -186,7 +200,7 @@ func TestEditor_SetTargetBuildSetting_errors(t *testing.T) {
 		},
 		{
 			name:          "unknown target",
-			content:       `{"configurations": ["Debug"], "targets": [{"name": "App", "build-settings": {"A": "1"}}]}`,
+			content:       `{"configurations": ["Debug"], "targets": [{"id": "T1", "name": "App", "build-settings": {"A": "1"}}]}`,
 			target:        "Other",
 			configuration: "Debug",
 			key:           "KEY",
@@ -194,7 +208,7 @@ func TestEditor_SetTargetBuildSetting_errors(t *testing.T) {
 		},
 		{
 			name:          "target without build settings",
-			content:       `{"configurations": ["Debug"], "targets": [{"name": "App"}]}`,
+			content:       `{"configurations": ["Debug"], "targets": [{"id": "T1", "name": "App"}]}`,
 			target:        "App",
 			configuration: "Debug",
 			key:           "KEY",
@@ -210,7 +224,7 @@ func TestEditor_SetTargetBuildSetting_errors(t *testing.T) {
 		},
 		{
 			name:          "key with a configuration condition",
-			content:       `{"configurations": ["Debug"], "targets": [{"name": "App", "build-settings": {"A": "1"}}]}`,
+			content:       `{"configurations": ["Debug"], "targets": [{"id": "T1", "name": "App", "build-settings": {"A": "1"}}]}`,
 			target:        "App",
 			configuration: "Debug",
 			key:           "KEY[config=Debug]",
@@ -218,7 +232,7 @@ func TestEditor_SetTargetBuildSetting_errors(t *testing.T) {
 		},
 		{
 			name:          "malformed key",
-			content:       `{"configurations": ["Debug"], "targets": [{"name": "App", "build-settings": {"A": "1"}}]}`,
+			content:       `{"configurations": ["Debug"], "targets": [{"id": "T1", "name": "App", "build-settings": {"A": "1"}}]}`,
 			target:        "App",
 			configuration: "Debug",
 			key:           "KEY[sdk=iphoneos*",
@@ -241,5 +255,5 @@ func TestNewEditor_JSON5OnlySyntax(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = NewEditor(content)
-	require.ErrorContains(t, err, "line 5, column 3")
+	require.ErrorContains(t, err, "other JSON5 syntax, such as unquoted keys or single-quoted strings, is not supported")
 }

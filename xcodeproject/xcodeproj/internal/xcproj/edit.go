@@ -2,7 +2,6 @@ package xcproj
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"slices"
 
@@ -18,15 +17,20 @@ type Editor struct {
 
 // NewEditor parses the content of a project.xcproj file for editing.
 func NewEditor(content []byte) (*Editor, error) {
+	project, err := Decode(content)
+	if err != nil {
+		return nil, err
+	}
+
 	// The parsed tree aliases its input.
 	root, err := hujson.Parse(bytes.Clone(content))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project.xcproj: %w", err)
 	}
 
-	configurations, err := configurationNames(&root)
-	if err != nil {
-		return nil, err
+	configurations := make([]string, 0, len(project.Configurations))
+	for _, configuration := range project.Configurations {
+		configurations = append(configurations, configuration.Name)
 	}
 
 	return &Editor{root: root, configurations: configurations}, nil
@@ -77,29 +81,6 @@ func (e *Editor) SetTargetBuildSetting(targetName, configuration, key, value str
 // Content returns the edited project.xcproj.
 func (e *Editor) Content() []byte {
 	return e.root.Pack()
-}
-
-func configurationNames(root *hujson.Value) ([]string, error) {
-	value := root.Find("/configurations")
-	if value == nil {
-		return nil, nil
-	}
-
-	standard, err := hujson.Standardize(value.Pack())
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse configurations: %w", err)
-	}
-
-	var raw []rawConfiguration
-	if err := json.Unmarshal(standard, &raw); err != nil {
-		return nil, fmt.Errorf("failed to decode configurations: %w", err)
-	}
-
-	names := make([]string, 0, len(raw))
-	for _, configuration := range raw {
-		names = append(names, configuration.Name)
-	}
-	return names, nil
 }
 
 func (e *Editor) targetBuildSettings(targetName string) (*hujson.Object, error) {
@@ -171,7 +152,7 @@ func insertMember(object *hujson.Object, name string, value hujson.ValueTrimmed)
 	layout := object.Members[len(object.Members)-1]
 	inserted := hujson.ObjectMember{
 		Name: hujson.Value{
-			BeforeExtra: bytes.Clone(layout.Name.BeforeExtra),
+			BeforeExtra: lineBreakAndIndent(layout.Name.BeforeExtra),
 			Value:       hujson.String(name),
 			AfterExtra:  bytes.Clone(layout.Name.AfterExtra),
 		},
@@ -190,6 +171,14 @@ func insertMember(object *hujson.Object, name string, value hujson.ValueTrimmed)
 	}
 
 	object.Members = slices.Insert(object.Members, index, inserted)
+}
+
+// lineBreakAndIndent drops any comment in front of a member, so a new member does not repeat it.
+func lineBreakAndIndent(extra hujson.Extra) hujson.Extra {
+	if i := bytes.LastIndexByte(extra, '\n'); i >= 0 {
+		extra = extra[i:]
+	}
+	return bytes.Clone(extra)
 }
 
 func removeMember(object *hujson.Object, index int) {
