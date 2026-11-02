@@ -26,28 +26,6 @@ func openXCProjFixture(t *testing.T) XcodeProj {
 	return openProjectFiles(t, map[string][]byte{xcProjFileName: content})
 }
 
-func openProjectFiles(t *testing.T, files map[string][]byte) XcodeProj {
-	t.Helper()
-
-	projectPath := writeProjectFiles(t, files)
-	project, err := testFactory().Open(projectPath)
-	require.NoError(t, err)
-
-	return project
-}
-
-func writeProjectFiles(t *testing.T, files map[string][]byte) string {
-	t.Helper()
-
-	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
-	require.NoError(t, os.MkdirAll(projectPath, 0755))
-	for name, content := range files {
-		require.NoError(t, os.WriteFile(filepath.Join(projectPath, name), content, 0644))
-	}
-
-	return projectPath
-}
-
 func TestXCProj_Targets(t *testing.T) {
 	project := openXCProjFixture(t)
 
