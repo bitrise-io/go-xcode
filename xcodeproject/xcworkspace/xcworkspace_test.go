@@ -174,9 +174,9 @@ func TestWorkspace_embeddedInProject(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{projectPath}, locations)
 
-	_, container, err := workspace.Scheme("App")
+	scheme, err := workspace.Scheme("App")
 	require.NoError(t, err)
-	assert.Equal(t, projectPath, container, "the project's autocreated scheme")
+	assert.Equal(t, projectPath, scheme.ContainerPath, "the project's autocreated scheme")
 }
 
 func TestWorkspace_FileLocations_unknownReferenceType(t *testing.T) {

@@ -63,22 +63,21 @@ func (p *XcodeProj) SchemesWithAutocreateOverride(autocreateEnabled bool) ([]xcs
 	return nil, nil
 }
 
-// Scheme returns the scheme with the given name and the path of its project. Names are compared
-// after Unicode normalisation.
-func (p *XcodeProj) Scheme(name string) (xcscheme.Scheme, string, error) {
+// Scheme returns the scheme with the given name. Names are compared after Unicode normalisation.
+func (p *XcodeProj) Scheme(name string) (xcscheme.Scheme, error) {
 	schemes, err := p.Schemes()
 	if err != nil {
-		return xcscheme.Scheme{}, "", err
+		return xcscheme.Scheme{}, err
 	}
 
 	normalisedName := norm.NFC.String(name)
 	for _, scheme := range schemes {
 		if norm.NFC.String(scheme.Name) == normalisedName {
-			return scheme, p.Path, nil
+			return scheme, nil
 		}
 	}
 
-	return xcscheme.Scheme{}, "", xcscheme.NotFoundError{Scheme: name, Container: p.Name}
+	return xcscheme.Scheme{}, xcscheme.NotFoundError{Scheme: name, Container: p.Name}
 }
 
 // existingOrManagedSchemes returns found=false when the caller must decide by the autocreate option.
@@ -109,6 +108,7 @@ func (p *XcodeProj) existingOrManagedSchemes() (schemes []xcscheme.Scheme, found
 func (p *XcodeProj) defaultSchemes() []xcscheme.Scheme {
 	schemes := p.generateSchemes()
 	for i := range schemes {
+		schemes[i].ContainerPath = p.Path
 		schemes[i].IsShared = true
 	}
 	return schemes
@@ -168,6 +168,7 @@ func (p *XcodeProj) readSchemes(dir string) ([]xcscheme.Scheme, error) {
 		if err != nil {
 			return nil, err
 		}
+		scheme.ContainerPath = p.Path
 
 		schemes = append(schemes, scheme)
 	}
