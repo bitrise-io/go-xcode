@@ -24,7 +24,7 @@ func forceCodeSignOptions(target, configuration string) ForceCodeSignOptions {
 	return opts
 }
 
-func requireBuildSetting(t *testing.T, project *XcodeProj, target, configuration, key, want string) {
+func requireBuildSetting(t *testing.T, project XcodeProj, target, configuration, key, want string) {
 	t.Helper()
 
 	buildSettings, err := targetBuildSettings(requireTarget(t, project, target), configuration)
@@ -35,7 +35,20 @@ func requireBuildSetting(t *testing.T, project *XcodeProj, target, configuration
 	assert.Equal(t, want, got, key)
 }
 
-func requireTarget(t *testing.T, project *XcodeProj, name string) Target {
+// openPBXProj opens the project at projectPath, which must be in the property list format.
+func openPBXProj(t *testing.T, projectPath string) *PBXProj {
+	t.Helper()
+
+	project, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+
+	pbxProj, ok := project.(*PBXProj)
+	require.True(t, ok, "%s is not a project.pbxproj project", projectPath)
+
+	return pbxProj
+}
+
+func requireTarget(t *testing.T, project XcodeProj, name string) Target {
 	t.Helper()
 	target, ok := project.TargetByName(name)
 	require.True(t, ok, "target %s not found", name)
@@ -234,8 +247,7 @@ func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), content, 0644))
 
-	project, err := testFactory().Open(projectPath)
-	require.NoError(t, err)
+	project := openPBXProj(t, projectPath)
 
 	objects, ok := project.rawProj.Object("objects")
 	require.True(t, ok)
@@ -246,8 +258,7 @@ func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
 
 	require.NoError(t, project.Save())
 
-	reopened, err := testFactory().Open(projectPath)
-	require.NoError(t, err)
+	reopened := openPBXProj(t, projectPath)
 	require.Len(t, reopened.Targets(), 1)
 
 	reopenedObjects, ok := reopened.rawProj.Object("objects")

@@ -29,7 +29,7 @@ const minimalSchemeXML = `<?xml version="1.0" encoding="UTF-8"?>
 </Scheme>
 `
 
-func schemesProject(t *testing.T, fixture string, user UserProvider) *XcodeProj {
+func schemesProject(t *testing.T, fixture string, user UserProvider) *PBXProj {
 	t.Helper()
 
 	projectPath := filepath.Join(t.TempDir(), "XcodeProj.xcodeproj")
@@ -37,10 +37,9 @@ func schemesProject(t *testing.T, fixture string, user UserProvider) *XcodeProj 
 
 	content, err := os.ReadFile(filepath.Join("testdata", fixture))
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), content, 0644))
 
 	factory := NewFactory(log.NewLogger(), nil, fileutil.NewFileManager(), plistutil.NewFileHandler(fileutil.NewFileManager()), pathutil.NewPathModifier(), nil, user, NewDirCreator())
-	project, err := factory.Open(projectPath)
+	project, err := factory.Parse(content, projectPath)
 	require.NoError(t, err)
 
 	return project
@@ -52,17 +51,17 @@ func writeFile(t *testing.T, pth, content string) {
 	require.NoError(t, os.WriteFile(pth, []byte(content), 0644))
 }
 
-func sharedSchemePath(project *XcodeProj, name string) string {
-	return filepath.Join(project.Path, "xcshareddata", "xcschemes", name+".xcscheme")
+func sharedSchemePath(project *PBXProj, name string) string {
+	return filepath.Join(project.Path(), "xcshareddata", "xcschemes", name+".xcscheme")
 }
 
-func userSchemesPath(project *XcodeProj, file string) string {
-	return filepath.Join(project.Path, "xcuserdata", testUserName+".xcuserdatad", "xcschemes", file)
+func userSchemesPath(project *PBXProj, file string) string {
+	return filepath.Join(project.Path(), "xcuserdata", testUserName+".xcuserdatad", "xcschemes", file)
 }
 
-func writeAutocreateSetting(t *testing.T, project *XcodeProj, value string) {
+func writeAutocreateSetting(t *testing.T, project *PBXProj, value string) {
 	t.Helper()
-	writeFile(t, filepath.Join(project.Path, "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings"),
+	writeFile(t, filepath.Join(project.Path(), "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings"),
 		`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -163,7 +162,7 @@ func TestXcodeProj_SchemesWithAutocreateOverride(t *testing.T) {
 func TestXcodeProj_Schemes_settingsNotReadWhenSchemesExist(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeFile(t, sharedSchemePath(project, "Shared"), minimalSchemeXML)
-	writeFile(t, filepath.Join(project.Path, "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings"), "not a plist")
+	writeFile(t, filepath.Join(project.Path(), "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings"), "not a plist")
 
 	schemes, err := project.Schemes()
 	require.NoError(t, err)
@@ -179,14 +178,14 @@ func TestXcodeProj_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
 }
 
 func TestXcodeProj_Schemes_autocreateWithNothingToGenerate(t *testing.T) {
-	project := &XcodeProj{
-		Path:             filepath.Join(t.TempDir(), "Tests.xcodeproj"),
+	project := &baseProj{
+		path:             filepath.Join(t.TempDir(), "Tests.xcodeproj"),
 		logger:           log.NewLogger(),
 		fileManager:      fileutil.NewFileManager(),
 		plistFileHandler: plistutil.NewFileHandler(fileutil.NewFileManager()),
 		userProvider:     userProvider(t, testUserName, nil),
 		targets: []Target{
-			{ID: "T", Name: "Tests", isa: nativeTargetISA, productType: "com.apple.product-type.bundle.unit-test"},
+			{ID: "T", Name: "Tests", kind: nativeTargetKind, productType: "com.apple.product-type.bundle.unit-test"},
 		},
 	}
 
@@ -221,7 +220,7 @@ func TestXcodeProj_Scheme(t *testing.T) {
 		scheme, container, err := project.Scheme("Café")
 		require.NoError(t, err)
 		assert.Equal(t, "Café", scheme.Name)
-		assert.Equal(t, project.Path, container)
+		assert.Equal(t, project.Path(), container)
 	})
 
 	t.Run("unknown name", func(t *testing.T) {
