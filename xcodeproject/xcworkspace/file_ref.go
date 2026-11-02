@@ -10,39 +10,35 @@ type FileRef struct {
 	Location string `xml:"location,attr"`
 }
 
-// FileRefType says what a location's path is relative to.
-type FileRefType string
+// locationType says what a file reference or group location's path is relative to.
+type locationType string
 
 const (
-	// AbsoluteFileRefType is an absolute path, or a relative one that xcodebuild takes relative to
+	// absoluteLocation is an absolute path, or a relative one that xcodebuild takes relative to
 	// the workspace's directory.
-	AbsoluteFileRefType FileRefType = "absolute"
-	// GroupFileRefType is relative to the enclosing group, or to the workspace's directory at the
+	absoluteLocation locationType = "absolute"
+	// groupLocation is relative to the enclosing group, or to the workspace's directory at the
 	// top level.
-	GroupFileRefType FileRefType = "group"
-	// ContainerFileRefType is relative to the workspace's directory, whichever group it is in.
-	ContainerFileRefType FileRefType = "container"
-	// DeveloperFileRefType is relative to the Xcode Developer directory, where no project a build
+	groupLocation locationType = "group"
+	// containerLocation is relative to the workspace's directory, whichever group it is in.
+	containerLocation locationType = "container"
+	// developerLocation is relative to the Xcode Developer directory, where no project a build
 	// targets lives.
-	DeveloperFileRefType FileRefType = "developer"
-	// SelfFileRefType is the project an embedded project.xcworkspace belongs to.
-	SelfFileRefType FileRefType = "self"
+	developerLocation locationType = "developer"
+	// selfLocation is the project an embedded project.xcworkspace belongs to.
+	selfLocation locationType = "self"
 )
 
-// TypeAndPath splits the reference's location, such as "group:App.xcodeproj", into its type and path.
-func (f FileRef) TypeAndPath() (FileRefType, string, error) {
-	return parseLocation(f.Location)
-}
-
-func parseLocation(location string) (FileRefType, string, error) {
+// parseLocation splits a location, such as "group:App.xcodeproj", into its type and path.
+func parseLocation(location string) (locationType, string, error) {
 	refType, pth, found := strings.Cut(location, ":")
 	if !found {
 		return "", "", fmt.Errorf("unknown file reference location (%s)", location)
 	}
 
-	switch FileRefType(refType) {
-	case AbsoluteFileRefType, GroupFileRefType, ContainerFileRefType, DeveloperFileRefType, SelfFileRefType:
-		return FileRefType(refType), pth, nil
+	switch locationType(refType) {
+	case absoluteLocation, groupLocation, containerLocation, developerLocation, selfLocation:
+		return locationType(refType), pth, nil
 	default:
 		return "", "", fmt.Errorf("unknown file reference type: %s, value: %s", refType, pth)
 	}

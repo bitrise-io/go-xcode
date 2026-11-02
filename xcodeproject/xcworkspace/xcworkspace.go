@@ -183,22 +183,22 @@ func (w *Workspace) absPath(location, groupDir string) (pth string, ok bool, err
 	}
 
 	switch refType {
-	case GroupFileRefType:
+	case groupLocation:
 		pth = filepath.Join(groupDir, pth)
-	case ContainerFileRefType, AbsoluteFileRefType:
+	case containerLocation, absoluteLocation:
 		// An absolute: location can hold a relative path, which xcodebuild resolves against the
 		// workspace directory, like a container: one.
 		if !filepath.IsAbs(pth) {
 			pth = filepath.Join(filepath.Dir(w.Path), pth)
 		}
-	case SelfFileRefType:
+	case selfLocation:
 		project, embedded := w.embeddingProject()
 		if !embedded {
 			w.logger.TDebugf("Skipping self: location of a workspace not embedded in a project: %s", location)
 			return "", false, nil
 		}
 		pth = project
-	case DeveloperFileRefType:
+	case developerLocation:
 		w.logger.TDebugf("Skipping location in the Developer directory: %s", location)
 		return "", false, nil
 	}
