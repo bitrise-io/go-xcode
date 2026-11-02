@@ -129,15 +129,15 @@ func (w *Workspace) SchemeBuildSettings(scheme, configuration string, customOpti
 	return w.buildSettings.SchemeBuildSettings(w.Path, scheme, configuration, customOptions...)
 }
 
-// FileLocations returns the absolute paths of the files the workspace references: the top-level
+// fileLocations returns the absolute paths of the files the workspace references: the top-level
 // ones first, then each group's, where a group's own files precede those of its subgroups. A
 // developer: location is left out, as it points into the Xcode Developer directory; a self: one
 // resolves to the project an embedded project.xcworkspace belongs to and is left out elsewhere.
-func (w *Workspace) FileLocations() ([]string, error) {
-	return w.fileLocations(w.FileRefs, w.Groups, filepath.Dir(w.Path))
+func (w *Workspace) fileLocations() ([]string, error) {
+	return w.collectFileLocations(w.FileRefs, w.Groups, filepath.Dir(w.Path))
 }
 
-func (w *Workspace) fileLocations(fileRefs []FileRef, groups []Group, groupDir string) ([]string, error) {
+func (w *Workspace) collectFileLocations(fileRefs []FileRef, groups []Group, groupDir string) ([]string, error) {
 	var locations []string
 
 	for _, fileRef := range fileRefs {
@@ -161,7 +161,7 @@ func (w *Workspace) fileLocations(fileRefs []FileRef, groups []Group, groupDir s
 			continue
 		}
 
-		groupLocations, err := w.fileLocations(group.FileRefs, group.Groups, subgroupDir)
+		groupLocations, err := w.collectFileLocations(group.FileRefs, group.Groups, subgroupDir)
 		if err != nil {
 			return nil, err
 		}
@@ -222,10 +222,11 @@ func (w *Workspace) embeddingProject() (string, bool) {
 	return parent, true
 }
 
-// ProjectFileLocations ...
+// ProjectFileLocations returns the absolute paths of the projects the workspace references, in the
+// order they appear in its file tree: top-level references first, then each group's.
 func (w *Workspace) ProjectFileLocations() ([]string, error) {
 	var projectLocations []string
-	fileLocations, err := w.FileLocations()
+	fileLocations, err := w.fileLocations()
 	if err != nil {
 		return nil, err
 	}

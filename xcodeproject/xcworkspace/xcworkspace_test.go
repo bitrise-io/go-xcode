@@ -102,7 +102,7 @@ func TestWorkspace_FileLocations(t *testing.T) {
 	dir := t.TempDir()
 	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
 
-	locations, err := workspace.FileLocations()
+	locations, err := workspace.fileLocations()
 	require.NoError(t, err)
 	assert.Equal(t, []string{
 		filepath.Join(dir, "XcodeProj.xcodeproj"),
@@ -130,7 +130,7 @@ func TestWorkspace_FileLocations_referenceTypes(t *testing.T) {
    </Group>
 </Workspace>`))
 
-	locations, err := workspace.FileLocations()
+	locations, err := workspace.fileLocations()
 	require.NoError(t, err)
 	assert.Equal(t, []string{
 		filepath.Join(dir, "Modules/Feature/Feature.xcodeproj"),
@@ -154,7 +154,7 @@ func TestWorkspace_FileLocations_locationsOutsideTheWorkspaceAreLeftOut(t *testi
    <FileRef location = "group:App.xcodeproj"></FileRef>
 </Workspace>`))
 
-	locations, err := workspace.FileLocations()
+	locations, err := workspace.fileLocations()
 	require.NoError(t, err)
 	assert.Equal(t, []string{filepath.Join(dir, "App.xcodeproj")}, locations)
 }
@@ -185,7 +185,7 @@ func TestWorkspace_FileLocations_unknownReferenceType(t *testing.T) {
    <FileRef location = "bogus:Something"></FileRef>
 </Workspace>`))
 
-	_, err := workspace.FileLocations()
+	_, err := workspace.fileLocations()
 	assert.ErrorContains(t, err, "unknown file reference type")
 }
 
