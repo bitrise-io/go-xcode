@@ -58,7 +58,7 @@ func TestXCProj_Targets(t *testing.T) {
 	targets := project.Targets()
 	require.Len(t, targets, 3)
 
-	app, uiTests := targets[0], targets[2]
+	app, unitTests, uiTests := targets[0], targets[1], targets[2]
 	assert.Equal(t, []string{xcprojAppTargetName, xcprojAppTargetName + "Tests", xcprojAppTargetName + "UITests"}, targetNames(targets))
 	assert.Equal(t, []string{xcprojAppTargetID, xcprojUnitTestTargetID, xcprojUITestTargetID}, []string{targets[0].ID, targets[1].ID, targets[2].ID})
 
@@ -72,8 +72,8 @@ func TestXCProj_Targets(t *testing.T) {
 	assert.True(t, app.IsExecutableProduct())
 	assert.Empty(t, app.dependencyTargetIDs)
 
-	assert.Equal(t, "com.apple.product-type.bundle.unit-test", targets[1].productType)
-	assert.True(t, targets[1].isTest())
+	assert.Equal(t, "com.apple.product-type.bundle.unit-test", unitTests.productType)
+	assert.True(t, unitTests.isTest())
 
 	assert.Equal(t, "com.apple.product-type.bundle.ui-testing", uiTests.productType)
 	assert.True(t, uiTests.IsUITestProduct())
@@ -131,14 +131,47 @@ func TestXCProj_BuildConfigurations_noBuildSettings(t *testing.T) {
 	assert.NotNil(t, project.Targets()[0].BuildConfigurations[0].buildSettings)
 }
 
-func TestXCProj_unknownDependency(t *testing.T) {
-	projectPath := writeProjectFiles(t, map[string][]byte{
-		xcProjFileName: []byte(`{"targets": [{"name": "App", "id": "A1", "dependencies": ["Gone"]}]}`),
+func TestXCProj_dependencies(t *testing.T) {
+	project := openProjectFiles(t, map[string][]byte{
+		xcProjFileName: []byte(`{"targets": [
+			{"name": "Lib", "id": "L1"},
+			{"name": "Twin", "id": "T1"},
+			{"name": "Twin", "id": "T2"},
+			{"name": "App", "id": "A1", "dependencies": ["Lib", "Gone", "Twin", "id:T2", "id:X9"]}
+		]}`),
 	})
 
-	project, err := testFactory().Open(projectPath)
-	require.ErrorContains(t, err, "unknown target Gone")
-	assert.True(t, project == nil, "got a non-nil %T", project)
+	app, ok := project.Target("A1")
+	require.True(t, ok)
+	assert.Equal(t, []string{"L1", "T2"}, app.dependencyTargetIDs)
+}
+
+func TestXCProj_productReferencedByID(t *testing.T) {
+	project := openProjectFiles(t, map[string][]byte{
+		xcProjFileName: []byte(`{"targets": [{"name": "App", "id": "A1", "product-type": "application", "product": "id:P1"}]}`),
+	})
+
+	require.Len(t, project.Targets(), 1)
+	app := project.Targets()[0]
+	assert.Empty(t, app.productPath)
+	assert.False(t, app.IsExecutableProduct())
+}
+
+func TestXCProj_targetKinds(t *testing.T) {
+	project := openProjectFiles(t, map[string][]byte{
+		xcProjFileName: []byte(`{"targets": [
+			{"name": "App", "id": "A1"},
+			{"name": "Native", "id": "N1", "kind": "native"},
+			{"name": "Aggregate", "id": "G1", "kind": "aggregate"},
+			{"name": "External", "id": "E1", "kind": "external-build-system"}
+		]}`),
+	})
+
+	var kinds []targetKind
+	for _, target := range project.Targets() {
+		kinds = append(kinds, target.kind)
+	}
+	assert.Equal(t, []targetKind{nativeTargetKind, nativeTargetKind, aggregateTargetKind, externalBuildSystemTargetKind}, kinds)
 }
 
 func TestXCProj_RecreateSchemes(t *testing.T) {

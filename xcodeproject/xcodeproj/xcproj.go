@@ -2,13 +2,24 @@ package xcodeproj
 
 import (
 	"errors"
-	"fmt"
+	"strings"
 
+	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/internal/xcproj"
 )
 
-var errNotSupportedForXCProj = errors.New("not supported yet for project.xcproj")
+const xcprojIDReferencePrefix = "id:"
+
+var (
+	errNotSupportedForXCProj = errors.New("not supported yet for project.xcproj")
+
+	xcprojTargetKinds = map[string]targetKind{
+		xcproj.TargetKindNative:              nativeTargetKind,
+		xcproj.TargetKindAggregate:           aggregateTargetKind,
+		xcproj.TargetKindExternalBuildSystem: externalBuildSystemTargetKind,
+	}
+)
 
 // XCProj is a project whose project file is project.xcproj, the JSON format.
 type XCProj struct {
@@ -19,8 +30,8 @@ func (f Factory) newXCProj(content []byte, projectPath string) (*XCProj, error) 
 	return parseXCProj(content, f.newBaseProj(projectPath))
 }
 
-// TargetDevelopmentTeam implements XcodeProj. project.xcproj keeps the development team only in
-// the DEVELOPMENT_TEAM build setting, so it always reports false.
+// TargetDevelopmentTeam implements XcodeProj. project.xcproj records the development team only in
+// the DEVELOPMENT_TEAM build setting.
 func (p *XCProj) TargetDevelopmentTeam(string) (string, bool) {
 	return "", false
 }
@@ -51,36 +62,34 @@ func parseXCProj(content []byte, base baseProj) (*XCProj, error) {
 		return nil, err
 	}
 
-	targets, err := xcprojTargets(project)
-	if err != nil {
-		return nil, err
-	}
-
-	base.targets = targets
+	base.targets = xcprojTargets(project, base.logger)
 	base.buildConfigurations = xcprojBuildConfigurations(project.Configurations, project.BuildSettings)
 	base.defaultConfigurationName = project.DefaultConfiguration
 
 	return &XCProj{baseProj: base}, nil
 }
 
-func xcprojTargets(project xcproj.Project) ([]Target, error) {
-	targetIDs := make(map[string]string, len(project.Targets))
+func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
+	knownIDs := make(map[string]bool, len(project.Targets))
+	// An empty ID marks a name more than one target has.
+	idsByName := make(map[string]string, len(project.Targets))
 	for _, target := range project.Targets {
-		targetIDs[target.Name] = target.ID
+		knownIDs[target.ID] = true
+		if _, ok := idsByName[target.Name]; ok {
+			idsByName[target.Name] = ""
+		} else {
+			idsByName[target.Name] = target.ID
+		}
 	}
 
 	targets := make([]Target, 0, len(project.Targets))
 	for _, target := range project.Targets {
-		kind, err := xcprojTargetKind(target.Kind)
-		if err != nil {
-			return nil, fmt.Errorf("target %s: %w", target.Name, err)
-		}
-
 		var dependencyTargetIDs []string
-		for _, name := range target.Dependencies {
-			id, ok := targetIDs[name]
+		for _, reference := range target.Dependencies {
+			id, ok := resolveXCProjDependency(reference, idsByName, knownIDs)
 			if !ok {
-				return nil, fmt.Errorf("target %s depends on unknown target %s", target.Name, name)
+				logger.Warnf("couldn't resolve dependency %s of target %s (%s) to a single target, skipping", reference, target.Name, target.ID)
+				continue
 			}
 			dependencyTargetIDs = append(dependencyTargetIDs, id)
 		}
@@ -88,6 +97,8 @@ func xcprojTargets(project xcproj.Project) ([]Target, error) {
 		var productPath string
 		if len(target.Product) > 0 {
 			productPath = target.Product[len(target.Product)-1]
+		} else if target.ProductID != "" {
+			logger.Warnf("product of target %s (%s) is referenced by ID %s, its path is unknown", target.Name, target.ID, target.ProductID)
 		}
 
 		targets = append(targets, Target{
@@ -95,27 +106,24 @@ func xcprojTargets(project xcproj.Project) ([]Target, error) {
 			Name:                     target.Name,
 			BuildConfigurations:      xcprojBuildConfigurations(project.Configurations, target.BuildSettings),
 			DefaultConfigurationName: project.DefaultConfiguration,
-			kind:                     kind,
+			kind:                     xcprojTargetKinds[target.Kind],
 			productType:              target.ProductType,
 			productPath:              productPath,
 			dependencyTargetIDs:      dependencyTargetIDs,
 		})
 	}
 
-	return targets, nil
+	return targets
 }
 
-func xcprojTargetKind(kind string) (targetKind, error) {
-	switch kind {
-	case xcproj.TargetKindNative:
-		return nativeTargetKind, nil
-	case xcproj.TargetKindAggregate:
-		return aggregateTargetKind, nil
-	case xcproj.TargetKindExternalBuildSystem:
-		return externalBuildSystemTargetKind, nil
-	default:
-		return 0, fmt.Errorf("unknown target kind: %s", kind)
+func resolveXCProjDependency(reference string, idsByName map[string]string, knownIDs map[string]bool) (string, bool) {
+	if id, ok := idsByName[reference]; ok {
+		return id, id != ""
 	}
+	if id, ok := strings.CutPrefix(reference, xcprojIDReferencePrefix); ok && knownIDs[id] {
+		return id, true
+	}
+	return "", false
 }
 
 func xcprojBuildConfigurations(configurations []xcproj.Configuration, settings serialized.Object) []BuildConfiguration {
