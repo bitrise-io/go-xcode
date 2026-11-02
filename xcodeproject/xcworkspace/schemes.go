@@ -108,10 +108,7 @@ func (w *Workspace) visitSchemeContainers(visit func(containerSchemes) bool) err
 		}
 
 		if autocreate == nil {
-			enabled, err := w.isAutocreateSchemesEnabled()
-			if err != nil {
-				return fmt.Errorf("failed to read the workspace autocreate scheme option: %w", err)
-			}
+			enabled := w.isAutocreateSchemesEnabled()
 			autocreate = &enabled
 		}
 
@@ -179,30 +176,33 @@ func (w *Workspace) readSchemes(dir string) ([]xcscheme.Scheme, error) {
 	return schemes, nil
 }
 
-// isAutocreateSchemesEnabled defaults to true when the settings file or the key is missing.
-func (w *Workspace) isAutocreateSchemesEnabled() (bool, error) {
+// isAutocreateSchemesEnabled defaults to true when the settings file or the key is missing. Like
+// xcodebuild, which warns about a settings file it cannot read and lists the schemes anyway, it
+// also falls back to the default when the file cannot be read or the key is not a boolean.
+func (w *Workspace) isAutocreateSchemesEnabled() bool {
 	// <workspace_name>.xcworkspace/xcshareddata/WorkspaceSettings.xcsettings
 	pth := filepath.Join(w.Path, "xcshareddata", "WorkspaceSettings.xcsettings")
 
 	data, _, err := w.plistFileHandler.Read(pth)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			// By default 'Autocreate Schemes' is enabled
-			return true, nil
+		if !errors.Is(err, os.ErrNotExist) {
+			w.logger.Warnf("Failed to read the workspace's 'Autocreate schemes' setting, using Xcode's default (on): %s. Fix or remove %s.", err, pth)
 		}
-		return false, err
+		// By default 'Autocreate Schemes' is enabled
+		return true
 	}
 	settings := serialized.Object(data)
 
 	if !settings.Has(autocreateSchemesSettingKey) {
 		// By default 'Autocreate Schemes' is enabled
-		return true, nil
+		return true
 	}
 
 	autocreate, ok := settings.Bool(autocreateSchemesSettingKey)
 	if !ok {
-		return false, fmt.Errorf("%s is not a boolean", autocreateSchemesSettingKey)
+		w.logger.Warnf("The workspace's 'Autocreate schemes' setting (%s) is not a boolean, using Xcode's default (on). Set it to true or false in %s.", autocreateSchemesSettingKey, pth)
+		return true
 	}
 
-	return autocreate, nil
+	return autocreate
 }

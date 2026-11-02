@@ -111,14 +111,43 @@ func TestWorkspace_Schemes_autocreateOffKeepsExistingProjectSchemes(t *testing.T
 	assert.Equal(t, map[string][]string{projectPath: {"ProjectScheme"}}, namesByContainer(schemes))
 }
 
-func TestWorkspace_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
-	dir := t.TempDir()
-	workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
-	writeProject(t, filepath.Join(dir, "XcodeProj.xcodeproj"))
-	writeAutocreateSetting(t, workspace, "<string>YES</string>")
+// xcodebuild warns about a settings file it cannot read and still lists the schemes, autocreating
+// them as by default (checked with xcodebuild 26.5 -list).
+func TestWorkspace_Schemes_unusableAutocreateSettingFallsBackToTheDefault(t *testing.T) {
+	settingsPath := func(workspace *Workspace) string {
+		return filepath.Join(workspace.Path, "xcshareddata", "WorkspaceSettings.xcsettings")
+	}
 
-	_, err := workspace.Schemes()
-	assert.ErrorContains(t, err, "not a boolean")
+	tests := []struct {
+		name  string
+		write func(t *testing.T, workspace *Workspace)
+	}{
+		{name: "not a plist", write: func(t *testing.T, workspace *Workspace) {
+			writeFile(t, settingsPath(workspace), "not a plist")
+		}},
+		{name: "not a boolean", write: func(t *testing.T, workspace *Workspace) {
+			writeAutocreateSetting(t, workspace, "<string>NO</string>")
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+			projectPath := filepath.Join(dir, "XcodeProj.xcodeproj")
+			writeProject(t, projectPath)
+			subProjectPath := filepath.Join(dir, "Group/SubProject/SubProject.xcodeproj")
+			writeProject(t, subProjectPath)
+			writeFile(t, sharedSchemePath(subProjectPath, "SubProjectScheme"), minimalSchemeXML)
+			tt.write(t, workspace)
+
+			schemes, err := workspace.Schemes()
+			require.NoError(t, err)
+			assert.Equal(t, map[string][]string{
+				projectPath:    {"App"},
+				subProjectPath: {"SubProjectScheme"},
+			}, namesByContainer(schemes), "a project without schemes gets the autocreated ones, a project's own schemes are listed")
+		})
+	}
 }
 
 func TestWorkspace_Schemes_settingsNotReadWithoutProjects(t *testing.T) {
