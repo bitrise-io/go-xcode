@@ -1,6 +1,7 @@
 package xcodeproj
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -116,9 +117,22 @@ func TestFactory_Open(t *testing.T) {
 	require.Len(t, project.Targets(), 1)
 }
 
+func TestFactory_Open_bothProjectFiles(t *testing.T) {
+	pbxProj, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
+	require.NoError(t, err)
+
+	project := openProjectFiles(t, map[string][]byte{
+		pbxProjFileName: pbxProj,
+		xcProjFileName:  []byte("not read"),
+	})
+
+	assert.IsType(t, &PBXProj{}, project)
+}
+
 func TestFactory_Open_missingProject(t *testing.T) {
 	_, err := testFactory().Open(filepath.Join(t.TempDir(), "Missing.xcodeproj"))
-	require.Error(t, err)
+	require.ErrorContains(t, err, "found neither project.pbxproj nor project.xcproj")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestFactory_Open_invalidProjectReturnsNilProject(t *testing.T) {

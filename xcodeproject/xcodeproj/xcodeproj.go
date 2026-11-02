@@ -2,8 +2,10 @@
 package xcodeproj
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -20,6 +22,7 @@ const (
 	XcodeProjExtension = ".xcodeproj"
 
 	pbxProjFileName = "project.pbxproj"
+	xcProjFileName  = "project.xcproj"
 )
 
 // XcodeProj is a parsed Xcode project.
@@ -153,18 +156,47 @@ func IsXcodeProj(pth string) bool {
 	return filepath.Ext(pth) == XcodeProjExtension
 }
 
-// Open reads and parses the project at pth.
+// Open reads and parses the project at pth: its project.pbxproj, or its project.xcproj when the
+// bundle has no project.pbxproj.
 func (f Factory) Open(pth string) (XcodeProj, error) {
 	absPth, err := f.pathModifier.AbsPath(pth)
 	if err != nil {
 		return nil, fmt.Errorf("failed to expand path (%s): %w", pth, err)
 	}
 
-	pbxProjPth := filepath.Join(absPth, pbxProjFileName)
+	// The buffers are read here and nobody else holds them, so they need no copy.
+	content, err := f.readProjectFile(filepath.Join(absPth, pbxProjFileName))
+	if err == nil {
+		project, err := f.newPBXProj(content, absPth)
+		if err != nil {
+			// Returning the nil *PBXProj would make a non-nil XcodeProj.
+			return nil, err
+		}
+		return project, nil
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		return nil, err
+	}
 
-	file, err := f.fileManager.Open(pbxProjPth)
+	content, err = f.readProjectFile(filepath.Join(absPth, xcProjFileName))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, fmt.Errorf("found neither %s nor %s in %s: %w", pbxProjFileName, xcProjFileName, absPth, err)
+	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to open %s: %w", pbxProjPth, err)
+		return nil, err
+	}
+
+	project, err := f.newXCProj(content, absPth)
+	if err != nil {
+		return nil, err
+	}
+	return project, nil
+}
+
+func (f Factory) readProjectFile(pth string) ([]byte, error) {
+	file, err := f.fileManager.Open(pth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %s: %w", pth, err)
 	}
 	defer func() {
 		_ = file.Close()
@@ -172,16 +204,9 @@ func (f Factory) Open(pth string) (XcodeProj, error) {
 
 	content, err := io.ReadAll(file)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", pbxProjPth, err)
+		return nil, fmt.Errorf("failed to read %s: %w", pth, err)
 	}
-
-	// The buffer was read here and nobody else holds it, so it needs no copy.
-	project, err := f.newPBXProj(content, absPth)
-	if err != nil {
-		// Returning the nil *PBXProj would make a non-nil XcodeProj.
-		return nil, err
-	}
-	return project, nil
+	return content, nil
 }
 
 func (f Factory) newBaseProj(projectPath string) baseProj {
