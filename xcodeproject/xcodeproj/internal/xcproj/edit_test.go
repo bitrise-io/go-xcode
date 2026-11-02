@@ -102,6 +102,34 @@ func TestEditor_SetTargetBuildSetting(t *testing.T) {
         "CODE_SIGN_STYLE[config=Release]": "Manual",`,
 		},
 		{
+			name: "moves a comment in front of a split key to the first new key",
+			settings: `        "A": "1",
+        // Pinned until the team moves to manual signing.
+        "CODE_SIGN_STYLE": "Automatic",
+        "Z": "2",`,
+			configuration: "Release",
+			key:           "CODE_SIGN_STYLE",
+			value:         "Manual",
+			want: `        "A": "1",
+        // Pinned until the team moves to manual signing.
+        "CODE_SIGN_STYLE[config=Debug]": "Automatic",
+        "CODE_SIGN_STYLE[config=Release]": "Manual",
+        "Z": "2",`,
+		},
+		{
+			name: "moves a comment in front of a split key above an existing override",
+			settings: `        "CODE_SIGN_IDENTITY[config=Release]": "Apple Distribution",
+        // Pinned until the team moves to manual signing.
+        "CODE_SIGN_IDENTITY[sdk=iphoneos*]": "Apple Development",`,
+			configuration: "Release",
+			key:           "CODE_SIGN_IDENTITY[sdk=iphoneos*]",
+			value:         "iPhone Distribution",
+			want: `        // Pinned until the team moves to manual signing.
+        "CODE_SIGN_IDENTITY[config=Debug][sdk=iphoneos*]": "Apple Development",
+        "CODE_SIGN_IDENTITY[config=Release]": "Apple Distribution",
+        "CODE_SIGN_IDENTITY[config=Release][sdk=iphoneos*]": "iPhone Distribution",`,
+		},
+		{
 			name:          "splits the only key, keeping the trailing comma",
 			settings:      `        "CODE_SIGN_STYLE": "Automatic",`,
 			configuration: "Debug",
@@ -179,6 +207,32 @@ func TestEditor_SetTargetBuildSetting(t *testing.T) {
 			assert.Equal(t, fmt.Sprintf(project, tt.want), string(editor.Content()))
 		})
 	}
+}
+
+// The new Debug key sorts before an existing member, so inserting it shifts the shared key, and
+// the third member leaves room to shift in place.
+func TestEditor_SetTargetBuildSetting_splitShiftsMembers(t *testing.T) {
+	const project = `{
+  "configurations": ["Debug", "Release", "Staging"],
+  "targets": [{"id": "T1", "name": "App", "build-settings": {
+    %s
+  }}],
+}`
+	settings := `"CODE_SIGN_IDENTITY[config=Release]": "Apple Distribution",
+    "CODE_SIGN_IDENTITY[sdk=iphoneos*]": "Apple Development",
+    "PRODUCT_NAME": "App",`
+	want := `"CODE_SIGN_IDENTITY[config=Debug][sdk=iphoneos*]": "Apple Development",
+    "CODE_SIGN_IDENTITY[config=Release]": "Apple Distribution",
+    "CODE_SIGN_IDENTITY[config=Release][sdk=iphoneos*]": "Apple Development",
+    "CODE_SIGN_IDENTITY[config=Staging][sdk=iphoneos*]": "iPhone Distribution",
+    "PRODUCT_NAME": "App",`
+
+	editor, err := NewEditor(fmt.Appendf(nil, project, settings))
+	require.NoError(t, err)
+
+	require.NoError(t, editor.SetTargetBuildSetting("App", "Staging", "CODE_SIGN_IDENTITY[sdk=iphoneos*]", "iPhone Distribution"))
+
+	assert.Equal(t, fmt.Sprintf(project, want), string(editor.Content()))
 }
 
 func TestEditor_SetTargetBuildSetting_errors(t *testing.T) {

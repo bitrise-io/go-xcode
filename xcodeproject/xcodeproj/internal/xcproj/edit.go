@@ -62,15 +62,8 @@ func (e *Editor) SetTargetBuildSetting(targetName, configuration, key, value str
 		return nil
 	}
 
-	if shared := memberValue(settings, key); shared != nil {
-		for _, other := range e.configurations {
-			otherKey := configurationKey(parsed, other)
-			if other != configuration && memberValue(settings, otherKey) == nil {
-				insertMember(settings, otherKey, shared.Value)
-			}
-		}
-		insertMember(settings, configuredKey, hujson.String(value))
-		removeMember(settings, memberIndex(settings, key))
+	if memberIndex(settings, key) >= 0 {
+		e.splitSharedKey(settings, parsed, configuration, value)
 		return nil
 	}
 
@@ -144,6 +137,30 @@ func memberName(member hujson.ObjectMember) string {
 func configurationKey(key buildSettingKey, configuration string) string {
 	key.conditions = append([]string{configConditionPrefix + configuration}, key.conditions...)
 	return key.String()
+}
+
+// splitSharedKey replaces the shared key with one key per configuration. Every other
+// configuration keeps the shared value, unless it already has its own key.
+func (e *Editor) splitSharedKey(settings *hujson.Object, key buildSettingKey, configuration, value string) {
+	// Copied, as inserting shifts the members in place.
+	shared := settings.Members[memberIndex(settings, key.String())]
+
+	newKeys := []string{configurationKey(key, configuration)}
+	for _, other := range e.configurations {
+		otherKey := configurationKey(key, other)
+		if other != configuration && memberValue(settings, otherKey) == nil {
+			insertMember(settings, otherKey, shared.Value.Value)
+			newKeys = append(newKeys, otherKey)
+		}
+	}
+	insertMember(settings, newKeys[0], hujson.String(value))
+	removeMember(settings, memberIndex(settings, key.String()))
+
+	// A comment in front of the shared key describes the setting, so it moves with it.
+	first := slices.IndexFunc(settings.Members, func(member hujson.ObjectMember) bool {
+		return slices.Contains(newKeys, memberName(member))
+	})
+	settings.Members[first].Name.BeforeExtra = shared.Name.BeforeExtra
 }
 
 // insertMember keeps the members sorted, as Xcode writes them, and copies the layout of the
