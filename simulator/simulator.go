@@ -1,11 +1,9 @@
 package simulator
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/bitrise-io/go-utils/errorutil"
@@ -23,8 +21,6 @@ type Manager interface {
 	LaunchWithGUI(simulatorID string) error
 	Boot(device destination.Device) error
 	WaitForBootFinished(id string, timeout time.Duration) error
-	EnableVerboseLog(id string) error
-	CollectDiagnostics() (string, error)
 	Shutdown(id string) error
 	Erase(id string) error
 }
@@ -160,56 +156,6 @@ func (m manager) WaitForBootFinished(id string, timeout time.Duration) error {
 	}
 }
 
-// EnableVerboseLog enables verbose log. Simulator needs to be booted.
-func (m manager) EnableVerboseLog(id string) error {
-	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "logverbose", id, "enable"}, &command.Opts{
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-	})
-	m.logger.TPrintf("$ %s", cmd.PrintableCommandArgs())
-
-	if err := cmd.Run(); err != nil {
-		if errorutil.IsExitStatusError(err) {
-			m.logger.Warnf("Failed to enable Simulator verbose logging, command exited with code %d", err)
-			return nil
-		}
-
-		return fmt.Errorf("failed to enable Simulator verbose logging, command execution failed: %v", err)
-	}
-
-	return nil
-}
-
-// CollectDiagnostics collects Simulator diagnostics
-func (m manager) CollectDiagnostics() (string, error) {
-	diagnosticsName, err := m.diagnosticsName()
-	if err != nil {
-		return "", err
-	}
-
-	diagnosticsOutDir, err := os.MkdirTemp("", diagnosticsName)
-	if err != nil {
-		return "", fmt.Errorf("failed to collect Simulator diagnostics, could not create temporary directory: %v", err)
-	}
-
-	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "diagnose", "-b", "--no-archive", fmt.Sprintf("--output=%s", diagnosticsOutDir)}, &command.Opts{
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
-		Stdin:  bytes.NewReader([]byte("\n")),
-	})
-	m.logger.TPrintf("$ %s", cmd.PrintableCommandArgs())
-
-	if err := cmd.Run(); err != nil {
-		if errorutil.IsExitStatusError(err) {
-			return "", fmt.Errorf("failed to collect Simulator diagnostics: %v", err)
-		}
-
-		return "", fmt.Errorf("failed to collect Simulator diagnostics, command execution failed: %v", err)
-	}
-
-	return diagnosticsOutDir, nil
-}
-
 // Shutdown shuts down the Simulator
 func (m manager) Shutdown(id string) error {
 	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "shutdown", id}, &command.Opts{
@@ -252,13 +198,4 @@ func (m manager) Erase(id string) error {
 	}
 
 	return nil
-}
-
-func (m manager) diagnosticsName() (string, error) {
-	timestamp, err := time.Now().MarshalText()
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal timestamp: %w", err)
-	}
-
-	return fmt.Sprintf("simctl_diagnose_%s.zip", strings.ReplaceAll(string(timestamp), ":", "-")), nil
 }
