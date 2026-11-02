@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Target IDs from internal/xcproj/testdata/ios-sample.xcproj.
 const (
 	xcprojAppTargetID      = "16F0774C306FEF4F008B9392"
 	xcprojUnitTestTargetID = "16F07759306FEF50008B9392"

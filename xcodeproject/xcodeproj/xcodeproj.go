@@ -164,9 +164,9 @@ func (f Factory) Open(pth string) (XcodeProj, error) {
 		return nil, fmt.Errorf("failed to expand path (%s): %w", pth, err)
 	}
 
-	// The buffers are read here and nobody else holds them, so they need no copy.
 	content, err := f.readProjectFile(filepath.Join(absPth, pbxProjFileName))
 	if err == nil {
+		// The buffer was read here and nobody else holds it, so it needs no copy.
 		project, err := f.newPBXProj(content, absPth)
 		if err != nil {
 			// Returning the nil *PBXProj would make a non-nil XcodeProj.
@@ -180,7 +180,7 @@ func (f Factory) Open(pth string) (XcodeProj, error) {
 
 	content, err = f.readProjectFile(filepath.Join(absPth, xcProjFileName))
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, fmt.Errorf("found neither %s nor %s in %s: %w", pbxProjFileName, xcProjFileName, absPth, err)
+		return nil, fmt.Errorf("found neither %s nor %s in %s: %w", pbxProjFileName, xcProjFileName, absPth, fs.ErrNotExist)
 	}
 	if err != nil {
 		return nil, err
