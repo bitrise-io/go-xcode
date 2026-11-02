@@ -22,8 +22,14 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-// The sample workspace references one project next to it and one through nested groups.
-const xcodeProjectTestRepoURL = "https://github.com/bitrise-samples/xcode-project-test.git"
+const (
+	// The sample workspace references one project next to it and one through nested groups.
+	xcodeProjectTestRepoURL = "https://github.com/bitrise-samples/xcode-project-test.git"
+	// A CocoaPods layout: the app project and Pods/Pods.xcodeproj, both group: references.
+	cocoaPodsSampleRepoURL = "https://github.com/bitrise-io/sample-apps-ios-workspace-swift.git"
+	// A workspace holding a single top-level container: reference.
+	containerSampleRepoURL = "https://github.com/bitrise-io/sample-swift-project-with-parallel-ui-test.git"
+)
 
 func TestWorkspace_Schemes(t *testing.T) {
 	dir := _integration_tests.GetRepository(t, xcodeProjectTestRepoURL, "master")
@@ -113,13 +119,6 @@ func TestWorkspace_SchemeBuildSettings(t *testing.T) {
 	require.True(t, ok)
 	assert.NotEmpty(t, bundleID)
 }
-
-const (
-	// A CocoaPods layout: the app project and Pods/Pods.xcodeproj, both group: references.
-	cocoaPodsSampleRepoURL = "https://github.com/bitrise-io/sample-apps-ios-workspace-swift.git"
-	// A workspace holding a single top-level container: reference.
-	containerSampleRepoURL = "https://github.com/bitrise-io/sample-swift-project-with-parallel-ui-test.git"
-)
 
 func TestWorkspace_cocoaPodsLayout(t *testing.T) {
 	dir := _integration_tests.GetRepository(t, cocoaPodsSampleRepoURL, "master")
