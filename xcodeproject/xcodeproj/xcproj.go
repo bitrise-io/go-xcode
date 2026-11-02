@@ -2,14 +2,11 @@ package xcodeproj
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/internal/xcproj"
 )
-
-const xcprojIDReferencePrefix = "id:"
 
 var (
 	errNotSupportedForXCProj = errors.New("not supported yet for project.xcproj")
@@ -85,10 +82,17 @@ func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
 	targets := make([]Target, 0, len(project.Targets))
 	for _, target := range project.Targets {
 		var dependencyTargetIDs []string
-		for _, reference := range target.Dependencies {
-			id, ok := resolveXCProjDependency(reference, idsByName, knownIDs)
-			if !ok {
-				logger.Warnf("couldn't resolve dependency %s of target %s (%s) to a single target, skipping", reference, target.Name, target.ID)
+		for _, name := range target.Dependencies {
+			id := idsByName[name]
+			if id == "" {
+				logger.Warnf("couldn't resolve dependency %s of target %s (%s) to a single target, skipping", name, target.Name, target.ID)
+				continue
+			}
+			dependencyTargetIDs = append(dependencyTargetIDs, id)
+		}
+		for _, id := range target.DependencyIDs {
+			if !knownIDs[id] {
+				logger.Warnf("dependency ID %s of target %s (%s) is not a target of the project, skipping", id, target.Name, target.ID)
 				continue
 			}
 			dependencyTargetIDs = append(dependencyTargetIDs, id)
@@ -114,16 +118,6 @@ func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
 	}
 
 	return targets
-}
-
-func resolveXCProjDependency(reference string, idsByName map[string]string, knownIDs map[string]bool) (string, bool) {
-	if id, ok := idsByName[reference]; ok {
-		return id, id != ""
-	}
-	if id, ok := strings.CutPrefix(reference, xcprojIDReferencePrefix); ok && knownIDs[id] {
-		return id, true
-	}
-	return "", false
 }
 
 func xcprojBuildConfigurations(configurations []xcproj.Configuration, settings serialized.Object) []BuildConfiguration {
