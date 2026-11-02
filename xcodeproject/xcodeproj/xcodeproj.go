@@ -15,15 +15,12 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 )
 
-// XcodeProjExtension is the file extension of an Xcode project bundle.
-const XcodeProjExtension = ".xcodeproj"
+const (
+	// XcodeProjExtension is the file extension of an Xcode project bundle.
+	XcodeProjExtension = ".xcodeproj"
 
-const pbxProjFileName = "project.pbxproj"
-
-// IsXcodeProj reports whether the path has the .xcodeproj extension.
-func IsXcodeProj(pth string) bool {
-	return filepath.Ext(pth) == XcodeProjExtension
-}
+	pbxProjFileName = "project.pbxproj"
+)
 
 // XcodeProj is a parsed Xcode project.
 type XcodeProj interface {
@@ -107,6 +104,26 @@ type Factory struct {
 	schemeFactory    xcscheme.Factory
 }
 
+// baseProj is what's common in the PBXProj and XCProj implementations.
+type baseProj struct {
+	name string
+	path string
+
+	logger           log.Logger
+	buildSettings    BuildSettingsProvider
+	fileManager      fileutil.FileManager
+	plistFileHandler plistutil.FileHandler
+	pathModifier     pathutil.PathModifier
+	pathProvider     pathutil.PathProvider
+	userProvider     UserProvider
+	dirCreator       DirCreator
+	schemeFactory    xcscheme.Factory
+
+	targets                  []Target
+	buildConfigurations      []BuildConfiguration
+	defaultConfigurationName string
+}
+
 // NewFactory returns a Factory that injects the given collaborators into every project it opens.
 func NewFactory(
 	logger log.Logger,
@@ -129,6 +146,11 @@ func NewFactory(
 		dirCreator:       dirCreator,
 		schemeFactory:    xcscheme.NewFactory(fileManager),
 	}
+}
+
+// IsXcodeProj reports whether the path has the .xcodeproj extension.
+func IsXcodeProj(pth string) bool {
+	return filepath.Ext(pth) == XcodeProjExtension
 }
 
 // Open reads and parses the project at pth.
@@ -176,26 +198,6 @@ func (f Factory) newBaseProj(projectPath string) baseProj {
 		dirCreator:       f.dirCreator,
 		schemeFactory:    f.schemeFactory,
 	}
-}
-
-// baseProj is what's common in the PBXProj and XCProj implementations.
-type baseProj struct {
-	name string
-	path string
-
-	logger           log.Logger
-	buildSettings    BuildSettingsProvider
-	fileManager      fileutil.FileManager
-	plistFileHandler plistutil.FileHandler
-	pathModifier     pathutil.PathModifier
-	pathProvider     pathutil.PathProvider
-	userProvider     UserProvider
-	dirCreator       DirCreator
-	schemeFactory    xcscheme.Factory
-
-	targets                  []Target
-	buildConfigurations      []BuildConfiguration
-	defaultConfigurationName string
 }
 
 // Name implements XcodeProj.
