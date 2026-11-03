@@ -25,6 +25,13 @@ func (p *PBXProj) AppIconSetPaths() (map[string][]string, error) {
 		return nil, fmt.Errorf("failed to parse project: no objects")
 	}
 
+	return p.appIconSetPaths(func(target Target) ([]string, error) {
+		return p.assetCatalogPaths(target, objects)
+	})
+}
+
+// appIconSetPaths calls catalogPaths only for targets that name an app icon set.
+func (p *baseProj) appIconSetPaths(catalogPaths func(Target) ([]string, error)) (map[string][]string, error) {
 	targetToAppIcons := map[string][]string{}
 	for _, target := range p.targets {
 		appIconSetNames := appIconSetNames(target)
@@ -32,7 +39,7 @@ func (p *PBXProj) AppIconSetPaths() (map[string][]string, error) {
 			continue
 		}
 
-		catalogs, err := assetCatalogs(target, p.buildPhaseIDs[target.ID], objects)
+		catalogs, err := catalogPaths(target)
 		if err != nil {
 			return nil, err
 		} else if len(catalogs) == 0 {
@@ -41,7 +48,7 @@ func (p *PBXProj) AppIconSetPaths() (map[string][]string, error) {
 
 		var appIcons []string
 		for _, appIconSetName := range appIconSetNames {
-			paths, err := p.lookupAppIconPaths(catalogs, appIconSetName, objects)
+			paths, err := p.globAppIconSets(catalogs, appIconSetName)
 			if err != nil {
 				return nil, err
 			} else if len(paths) == 0 {
@@ -55,8 +62,41 @@ func (p *PBXProj) AppIconSetPaths() (map[string][]string, error) {
 	return targetToAppIcons, nil
 }
 
-func (p *PBXProj) lookupAppIconPaths(catalogs []fileReference, appIconSetName string, objects serialized.Object) ([]string, error) {
+// appIconSetNames returns nothing if any configuration lacks the setting.
+func appIconSetNames(target Target) []string {
+	var names []string
+	for _, configuration := range target.BuildConfigurations {
+		name, ok := configuration.BuildSetting(appIconSetNameBuildSettingKey)
+		if !ok {
+			return nil
+		}
+		names = append(names, name)
+	}
+	return names
+}
+
+func (p *baseProj) globAppIconSets(catalogPaths []string, appIconSetName string) ([]string, error) {
+	pattern := buildSettingReferenceRegexp.ReplaceAllString(appIconSetName, "*")
+
 	var icons []string
+	for _, catalogPath := range catalogPaths {
+		matches, err := p.pathProvider.Glob(path.Join(p.pathModifier.EscapeGlobPath(catalogPath), pattern+".appiconset"))
+		if err != nil {
+			return nil, err
+		}
+		icons = append(icons, matches...)
+	}
+
+	return icons, nil
+}
+
+func (p *PBXProj) assetCatalogPaths(target Target, objects serialized.Object) ([]string, error) {
+	catalogs, err := assetCatalogs(target, p.buildPhaseIDs[target.ID], objects)
+	if err != nil {
+		return nil, err
+	}
+
+	paths := make([]string, 0, len(catalogs))
 	for _, catalog := range catalogs {
 		resolvedPath, err := resolveObjectAbsolutePath(catalog.id, p.projectID, p.path, objects)
 		if err != nil {
@@ -64,18 +104,10 @@ func (p *PBXProj) lookupAppIconPaths(catalogs []fileReference, appIconSetName st
 		} else if resolvedPath == "" {
 			return nil, fmt.Errorf("could not resolve path")
 		}
-
-		pattern := buildSettingReferenceRegexp.ReplaceAllString(appIconSetName, "*")
-
-		matches, err := p.pathProvider.Glob(path.Join(p.pathModifier.EscapeGlobPath(resolvedPath), pattern+".appiconset"))
-		if err != nil {
-			return nil, err
-		}
-
-		icons = append(icons, matches...)
+		paths = append(paths, resolvedPath)
 	}
 
-	return icons, nil
+	return paths, nil
 }
 
 func assetCatalogs(target Target, buildPhaseIDs []string, objects serialized.Object) ([]fileReference, error) {
@@ -140,17 +172,4 @@ func filterAssetCatalogs(buildPhase resourcesBuildPhase, objects serialized.Obje
 		}
 	}
 	return catalogs, nil
-}
-
-// appIconSetNames returns nothing if any configuration lacks the setting.
-func appIconSetNames(target Target) []string {
-	var names []string
-	for _, configuration := range target.BuildConfigurations {
-		name, ok := configuration.BuildSetting(appIconSetNameBuildSettingKey)
-		if !ok {
-			return nil
-		}
-		names = append(names, name)
-	}
-	return names
 }
