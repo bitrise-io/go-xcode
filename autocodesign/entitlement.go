@@ -69,9 +69,9 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 		}
 		capSetts = append(capSetts, capSett)
 	} else if capType == appstoreconnect.DataProtection {
-		entVal, ok := serialized.Object(e).String(entKey)
-		if !ok {
-			return nil, errors.New("no entitlements value for key: " + entKey)
+		entVal, err := optionalString(serialized.Object(e), entKey)
+		if err != nil {
+			return nil, err
 		}
 
 		key, ok := DataProtections[entVal]
@@ -160,9 +160,9 @@ func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability, allEntitlemen
 	if capType == appstoreconnect.ICloud {
 		return iCloudEquals(allEntitlements, cap)
 	} else if capType == appstoreconnect.DataProtection {
-		entVal, ok := serialized.Object(e).String(entKey)
-		if !ok {
-			return false, fmt.Errorf("entitlement %s is not a string", entKey)
+		entVal, err := optionalString(serialized.Object(e), entKey)
+		if err != nil {
+			return false, err
 		}
 		return dataProtectionEquals(entVal, cap)
 	}
@@ -171,17 +171,15 @@ func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability, allEntitlemen
 }
 
 func (e Entitlements) iCloudServices() (iCloudDocuments, iCloudKit, keyValueStorage bool, err error) {
-	const kvStoreKey = "com.apple.developer.ubiquity-kvstore-identifier"
-	v, ok := serialized.Object(e).String(kvStoreKey)
-	if !ok && serialized.Object(e).Has(kvStoreKey) {
-		return false, false, false, fmt.Errorf("entitlement %s is not a string", kvStoreKey)
+	v, err := optionalString(serialized.Object(e), "com.apple.developer.ubiquity-kvstore-identifier")
+	if err != nil {
+		return false, false, false, err
 	}
 	keyValueStorage = v != ""
 
-	const iCloudServicesKey = "com.apple.developer.icloud-services"
-	iCloudServices, ok := serialized.Object(e).StringSlice(iCloudServicesKey)
-	if !ok && serialized.Object(e).Has(iCloudServicesKey) {
-		return false, false, false, fmt.Errorf("entitlement %s is not a string array", iCloudServicesKey)
+	iCloudServices, err := optionalStringSlice(serialized.Object(e), "com.apple.developer.icloud-services")
+	if err != nil {
+		return false, false, false, err
 	}
 
 	if len(iCloudServices) > 0 {
@@ -202,11 +200,36 @@ func (e Entitlements) ICloudContainers() ([]string, error) {
 		return nil, nil
 	}
 
-	containers, ok := serialized.Object(e).StringSlice(ICloudIdentifiersEntitlementKey)
-	if !ok && serialized.Object(e).Has(ICloudIdentifiersEntitlementKey) {
-		return nil, fmt.Errorf("entitlement %s is not a string array", ICloudIdentifiersEntitlementKey)
+	return optionalStringSlice(serialized.Object(e), ICloudIdentifiersEntitlementKey)
+}
+
+// optionalString returns the string entitlement under key. A missing entitlement is "", as a plist
+// omits what is not set; a value of another type is an error.
+func optionalString(entitlements serialized.Object, key string) (string, error) {
+	if value, ok := entitlements.String(key); ok {
+		return value, nil
 	}
-	return containers, nil
+	if raw, present := entitlements.Value(key); present {
+		return "", wrongTypeError(key, raw, "string")
+	}
+	return "", nil
+}
+
+// optionalStringSlice returns the string array entitlement under key. A missing entitlement is nil;
+// a value of another type is an error.
+func optionalStringSlice(entitlements serialized.Object, key string) ([]string, error) {
+	if value, ok := entitlements.StringSlice(key); ok {
+		return value, nil
+	}
+	if raw, present := entitlements.Value(key); present {
+		return nil, wrongTypeError(key, raw, "string array")
+	}
+	return nil, nil
+}
+
+// wrongTypeError names the value, so the entitlements file can be corrected.
+func wrongTypeError(key string, value any, expected string) error {
+	return fmt.Errorf("entitlement %s is not a %s: %#v (%T)", key, expected, value, value)
 }
 
 func iCloudEquals(ent Entitlements, cap appstoreconnect.BundleIDCapability) (bool, error) {
