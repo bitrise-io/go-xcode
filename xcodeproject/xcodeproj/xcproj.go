@@ -45,9 +45,28 @@ func (p *XCProj) AppIconSetPaths() (map[string][]string, error) {
 	return nil, errNotSupportedForXCProj
 }
 
-// ForceCodeSign implements XcodeProj.
-func (p *XCProj) ForceCodeSign(ForceCodeSignOptions) error {
-	return errNotSupportedForXCProj
+// ForceCodeSign implements XcodeProj. It leaves legacy-team-id and legacy-provisioning-style
+// alone, as Xcode ignores them.
+func (p *XCProj) ForceCodeSign(opts ForceCodeSignOptions) error {
+	target, ok := p.TargetByName(opts.TargetName)
+	if !ok {
+		return fmt.Errorf("failed to find target with name: %s", opts.TargetName)
+	}
+
+	buildSettings, err := targetBuildSettings(target, opts.Configuration)
+	if err != nil {
+		return err
+	}
+
+	for key, value := range forcedCodeSignBuildSettings(opts) {
+		for _, sdkKey := range keysForAllSDKs(buildSettings, key) {
+			if err := p.SetBuildSetting(opts.TargetName, opts.Configuration, sdkKey, value); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // SetBuildSetting implements XcodeProj. Only string values are supported.
