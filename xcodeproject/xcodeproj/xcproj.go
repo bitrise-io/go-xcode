@@ -26,7 +26,6 @@ type XCProj struct {
 	baseProj
 
 	content          []byte
-	configurations   []xcproj.Configuration
 	editor           *xcproj.Editor
 	developmentTeams map[string]string
 }
@@ -72,7 +71,12 @@ func (p *XCProj) SetBuildSetting(targetName, configurationName, key string, valu
 	}
 
 	if p.editor == nil {
-		editor, err := xcproj.NewEditor(p.content, p.configurations)
+		configurationNames := make([]string, 0, len(p.buildConfigurations))
+		for _, configuration := range p.buildConfigurations {
+			configurationNames = append(configurationNames, configuration.Name)
+		}
+
+		editor, err := xcproj.NewEditor(p.content, configurationNames)
 		if err != nil {
 			return err
 		}
@@ -115,7 +119,6 @@ func parseXCProj(content []byte, base baseProj) (*XCProj, error) {
 	return &XCProj{
 		baseProj:         base,
 		content:          content,
-		configurations:   project.Configurations,
 		developmentTeams: xcprojDevelopmentTeams(project.Targets),
 	}, nil
 }

@@ -16,21 +16,16 @@ type Editor struct {
 	configurations []string
 }
 
-// NewEditor takes configurations from Decode's result for the same content, so the file is
-// decoded once.
-func NewEditor(content []byte, configurations []Configuration) (*Editor, error) {
+// NewEditor needs the names of the project's configurations to split a shared key into one key
+// per configuration.
+func NewEditor(content []byte, configurations []string) (*Editor, error) {
 	// The parsed tree aliases its input.
 	root, err := hujson.Parse(bytes.Clone(content))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project.xcproj: %w", err)
 	}
 
-	names := make([]string, 0, len(configurations))
-	for _, configuration := range configurations {
-		names = append(names, configuration.Name)
-	}
-
-	return &Editor{root: root, configurations: names}, nil
+	return &Editor{root: root, configurations: configurations}, nil
 }
 
 // SetTargetBuildSetting sets key for one configuration of a target. key may carry conditions

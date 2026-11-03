@@ -329,7 +329,12 @@ func newEditor(t *testing.T, content []byte) *Editor {
 	project, err := Decode(content)
 	require.NoError(t, err)
 
-	editor, err := NewEditor(content, project.Configurations)
+	var configurations []string
+	for _, configuration := range project.Configurations {
+		configurations = append(configurations, configuration.Name)
+	}
+
+	editor, err := NewEditor(content, configurations)
 	require.NoError(t, err)
 
 	return editor
