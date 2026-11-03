@@ -286,7 +286,7 @@ func TestEditor_SetTargetBuildSetting_errors(t *testing.T) {
 			target:        "App",
 			configuration: "Debug",
 			key:           "KEY",
-			wantErr:       "target App has no build settings",
+			wantErr:       "target App has no build settings: adding the first build setting to project.xcproj is not supported",
 		},
 		{
 			name:          "project without targets",

@@ -94,7 +94,7 @@ func (e *Editor) targetBuildSettings(targetName string) (*hujson.Object, error) 
 
 		settings, ok := valueOf[*hujson.Object](memberValue(target, "build-settings"))
 		if !ok || len(settings.Members) == 0 {
-			return nil, fmt.Errorf("target %s has no build settings", targetName)
+			return nil, fmt.Errorf("target %s has no build settings: adding the first build setting to project.xcproj is not supported", targetName)
 		}
 		return settings, nil
 	}
