@@ -89,6 +89,8 @@ func (p *baseProj) globAppIconSets(catalogPaths []string, appIconSetName string)
 	return icons, nil
 }
 
+// TODO: catalogs in the target's synchronized folders (PBXFileSystemSynchronizedRootGroup) are not
+// found.
 func (p *PBXProj) assetCatalogPaths(target Target, objects serialized.Object) ([]string, error) {
 	catalogs, err := assetCatalogs(target, p.buildPhaseIDs[target.ID], objects)
 	if err != nil {
