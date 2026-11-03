@@ -219,25 +219,6 @@ func (p *XcodeProj) dependentTargetsOfTarget(target Target, visited map[string]b
 	return dependents
 }
 
-// TargetDevelopmentTeam returns the DevelopmentTeam recorded in TargetAttributes for the target.
-func (p *XcodeProj) TargetDevelopmentTeam(targetID string) (string, bool) {
-	if p.targetAttributes == nil {
-		return "", false
-	}
-
-	attributes, ok := p.targetAttributes.Object(targetID)
-	if !ok {
-		return "", false
-	}
-
-	developmentTeam, ok := attributes.String("DevelopmentTeam")
-	if !ok || developmentTeam == "" {
-		return "", false
-	}
-
-	return developmentTeam, true
-}
-
 func deduplicateTargets(targets []Target) []Target {
 	seen := map[string]bool{}
 	unique := make([]Target, 0, len(targets))
