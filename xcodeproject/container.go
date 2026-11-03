@@ -14,8 +14,9 @@ type Container interface {
 	// the workspace itself or one of the projects it references.
 	Scheme(name string) (xcscheme.Scheme, string, error)
 	// SchemeBuildSettings returns the effective build settings of the scheme's main target, resolved
-	// by xcodebuild within the bundle: -workspace for a workspace, -project for a project. That is
-	// the context the scheme builds in, so packages and the build cache are the build's own.
+	// by xcodebuild within the bundle that was opened: -workspace for a workspace, -project for a
+	// project, decided by the bundle's own path. That is the context the scheme builds in, so
+	// packages and the build cache are the build's own.
 	SchemeBuildSettings(scheme, configuration string, additionalOptions ...string) (serialized.Object, error)
 }
 

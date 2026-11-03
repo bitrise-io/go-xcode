@@ -8,7 +8,9 @@ import (
 )
 
 // BuildSettingsProvider resolves effective build settings: those of one target, and those of the
-// main target of a scheme as the scheme builds it.
+// main target of a scheme as the scheme builds it. projectPath is the .xcodeproj bundle; the path's
+// extension tells an implementation which xcodebuild flag to pass, as xcodebuild itself accepts
+// only an .xcodeproj after -project.
 type BuildSettingsProvider interface {
 	TargetBuildSettings(projectPath, target, configuration string, extraArgs ...string) (serialized.Object, error)
 	SchemeBuildSettings(projectPath, scheme, configuration string, extraArgs ...string) (serialized.Object, error)
