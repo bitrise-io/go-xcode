@@ -72,25 +72,26 @@ func TestFactory_Open(t *testing.T) {
 	dir := t.TempDir()
 	projectPath := writeProject(t, dir)
 	workspacePath := writeWorkspace(t, dir)
+	factory := testFactory(t)
 
-	container, err := testFactory(t).Open(projectPath)
+	c, err := factory.Open(projectPath)
 	require.NoError(t, err)
-	_, _, err = container.Scheme("Workspace")
+	_, _, err = c.Scheme("Workspace")
 	assert.True(t, xcscheme.IsNotFoundError(err), "a project does not see the workspace's schemes")
 
-	container, err = testFactory(t).Open(workspacePath)
+	c, err = factory.Open(workspacePath)
 	require.NoError(t, err)
-	_, containerPath, err := container.Scheme("Workspace")
+	_, containerPath, err := c.Scheme("Workspace")
 	require.NoError(t, err)
 	assert.Equal(t, workspacePath, containerPath, "opened as the workspace")
 
-	_, err = testFactory(t).Open(filepath.Join(dir, "Package.swift"))
+	_, err = factory.Open(filepath.Join(dir, "Package.swift"))
 	assert.ErrorContains(t, err, "neither an Xcode project")
 
-	_, err = testFactory(t).Open(filepath.Join(dir, "Missing.xcodeproj"))
+	_, err = factory.Open(filepath.Join(dir, "Missing.xcodeproj"))
 	assert.ErrorIs(t, err, os.ErrNotExist)
 
-	_, err = testFactory(t).Open(filepath.Join(dir, "Missing.xcworkspace"))
+	_, err = factory.Open(filepath.Join(dir, "Missing.xcworkspace"))
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 
