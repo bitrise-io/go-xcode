@@ -75,13 +75,14 @@ func TestFactory_Open(t *testing.T) {
 
 	container, err := testFactory(t).Open(projectPath)
 	require.NoError(t, err)
-	assert.Equal(t, projectPath, container.Path())
-	assert.Equal(t, "App", container.Name())
+	_, _, err = container.Scheme("Workspace")
+	assert.True(t, xcscheme.IsNotFoundError(err), "a project does not see the workspace's schemes")
 
 	container, err = testFactory(t).Open(workspacePath)
 	require.NoError(t, err)
-	assert.Equal(t, workspacePath, container.Path())
-	assert.Equal(t, "Workspace", container.Name(), "the workspace's own name, not its project's")
+	_, containerPath, err := container.Scheme("Workspace")
+	require.NoError(t, err)
+	assert.Equal(t, workspacePath, containerPath, "opened as the workspace")
 
 	_, err = testFactory(t).Open(filepath.Join(dir, "Package.swift"))
 	assert.ErrorContains(t, err, "neither an Xcode project")
@@ -137,16 +138,11 @@ func TestFactory_Scheme_pathForms(t *testing.T) {
 	workspacePath := writeWorkspace(t, dir)
 
 	t.Run("trailing separator", func(t *testing.T) {
-		for pth, wantName := range map[string]string{projectPath + "/": "App", workspacePath + "/": "Workspace"} {
-			container, err := testFactory(t).Open(pth)
+		for pth, schemeName := range map[string]string{projectPath + "/": "App", workspacePath + "/": "Workspace"} {
+			scheme, containerPath, err := testFactory(t).Scheme(pth, schemeName)
 			require.NoError(t, err)
-			assert.Equal(t, filepath.Clean(pth), container.Path())
-			assert.Equal(t, wantName, container.Name())
-
-			scheme, containerPath, err := testFactory(t).Scheme(pth, "App")
-			require.NoError(t, err)
-			assert.Equal(t, "App", scheme.Name)
-			assert.Equal(t, projectPath, containerPath)
+			assert.Equal(t, schemeName, scheme.Name)
+			assert.Equal(t, filepath.Clean(pth), containerPath)
 		}
 	})
 
