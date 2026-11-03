@@ -2,8 +2,11 @@ package xcodeproj
 
 import (
 	"errors"
+	"fmt"
+	"path/filepath"
 
 	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/internal/filewriter"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/internal/xcproj"
 )
@@ -22,6 +25,8 @@ var (
 type XCProj struct {
 	baseProj
 
+	content          []byte
+	editor           *xcproj.Editor
 	developmentTeams map[string]string
 }
 
@@ -45,14 +50,60 @@ func (p *XCProj) ForceCodeSign(ForceCodeSignOptions) error {
 	return errNotSupportedForXCProj
 }
 
-// SetBuildSetting implements XcodeProj.
-func (p *XCProj) SetBuildSetting(string, string, string, any) error {
-	return errNotSupportedForXCProj
+// SetBuildSetting implements XcodeProj. Only string values are supported.
+//
+// TODO: a key with a [config=...] condition is rejected here but accepted by
+// PBXProj.SetBuildSetting; make the two formats agree.
+func (p *XCProj) SetBuildSetting(targetName, configurationName, key string, value any) error {
+	stringValue, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("failed to set build setting %s: a %T value is not supported for project.xcproj, only a string", key, value)
+	}
+
+	target, ok := p.TargetByName(targetName)
+	if !ok {
+		return fmt.Errorf("failed to find target with name: %s", targetName)
+	}
+
+	buildSettings, err := targetBuildSettings(target, configurationName)
+	if err != nil {
+		return err
+	}
+
+	if p.editor == nil {
+		configurationNames := make([]string, 0, len(p.buildConfigurations))
+		for _, configuration := range p.buildConfigurations {
+			configurationNames = append(configurationNames, configuration.Name)
+		}
+
+		editor, err := xcproj.NewEditor(p.content, configurationNames)
+		if err != nil {
+			return err
+		}
+		p.editor = editor
+	}
+
+	if err := p.editor.SetTargetBuildSetting(targetName, configurationName, key, stringValue); err != nil {
+		return err
+	}
+	buildSettings[key] = stringValue
+
+	return nil
 }
 
 // Save implements XcodeProj.
 func (p *XCProj) Save() error {
-	return errNotSupportedForXCProj
+	content := p.content
+	if p.editor != nil {
+		content = p.editor.Content()
+	}
+
+	pth := filepath.Join(p.path, xcProjFileName)
+	if err := filewriter.WriteKeepingMode(p.fileManager, pth, content, newProjectFileMode); err != nil {
+		return fmt.Errorf("failed to write %s: %w", pth, err)
+	}
+
+	return nil
 }
 
 func parseXCProj(content []byte, base baseProj) (*XCProj, error) {
@@ -65,7 +116,11 @@ func parseXCProj(content []byte, base baseProj) (*XCProj, error) {
 	base.buildConfigurations = xcprojBuildConfigurations(project.Configurations, project.BuildSettings)
 	base.defaultConfigurationName = project.DefaultConfiguration
 
-	return &XCProj{baseProj: base, developmentTeams: xcprojDevelopmentTeams(project.Targets)}, nil
+	return &XCProj{
+		baseProj:         base,
+		content:          content,
+		developmentTeams: xcprojDevelopmentTeams(project.Targets),
+	}, nil
 }
 
 func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {

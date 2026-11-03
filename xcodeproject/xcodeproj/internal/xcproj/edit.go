@@ -16,22 +16,13 @@ type Editor struct {
 	configurations []string
 }
 
-// NewEditor parses the content of a project.xcproj file for editing.
-func NewEditor(content []byte) (*Editor, error) {
-	project, err := Decode(content)
-	if err != nil {
-		return nil, err
-	}
-
+// NewEditor needs the names of the project's configurations to split a shared key into one key
+// per configuration.
+func NewEditor(content []byte, configurations []string) (*Editor, error) {
 	// The parsed tree aliases its input.
 	root, err := hujson.Parse(bytes.Clone(content))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project.xcproj: %w", err)
-	}
-
-	configurations := make([]string, 0, len(project.Configurations))
-	for _, configuration := range project.Configurations {
-		configurations = append(configurations, configuration.Name)
 	}
 
 	return &Editor{root: root, configurations: configurations}, nil
@@ -98,7 +89,7 @@ func (e *Editor) targetBuildSettings(targetName string) (*hujson.Object, error) 
 
 		settings, ok := valueOf[*hujson.Object](memberValue(target, "build-settings"))
 		if !ok || len(settings.Members) == 0 {
-			return nil, fmt.Errorf("target %s has no build settings", targetName)
+			return nil, fmt.Errorf("target %s has no build settings: adding the first build setting to project.xcproj is not supported", targetName)
 		}
 		return settings, nil
 	}

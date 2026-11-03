@@ -186,12 +186,137 @@ func TestXCProj_TargetDevelopmentTeam(t *testing.T) {
 	}
 }
 
+func TestXCProj_SetBuildSetting(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("internal", "xcproj", "testdata", xcprojFixtureFileName))
+	require.NoError(t, err)
+	projectPath := writeProjectFiles(t, map[string][]byte{xcProjFileName: content})
+	xcProjPath := filepath.Join(projectPath, xcProjFileName)
+	require.NoError(t, os.Chmod(xcProjPath, 0664))
+
+	project, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+	fetchedBefore := requireTarget(t, project, xcprojAppTargetName)
+
+	require.NoError(t, project.SetBuildSetting(xcprojAppTargetName, "Release", "CODE_SIGN_STYLE", "Manual"))
+	require.NoError(t, project.SetBuildSetting(xcprojAppTargetName, "Release", "CODE_SIGN_IDENTITY[sdk=iphoneos*]", "Apple Distribution"))
+	require.NoError(t, project.SetBuildSetting(xcprojAppTargetName, "Debug", "MARKETING_VERSION", "2.0"))
+
+	release, err := targetBuildSettings(fetchedBefore, "Release")
+	require.NoError(t, err)
+	value, ok := release.String("CODE_SIGN_STYLE")
+	assert.True(t, ok)
+	assert.Equal(t, "Manual", value, "targets fetched earlier see the change")
+
+	require.NoError(t, project.Save())
+
+	reopened, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+	assert.Equal(t, reopened.Targets(), project.Targets())
+	assert.Equal(t, reopened.BuildConfigurations(), project.BuildConfigurations())
+
+	requireBuildSetting(t, reopened, xcprojAppTargetName, "Debug", "CODE_SIGN_STYLE", "Automatic")
+	requireBuildSetting(t, reopened, xcprojAppTargetName, "Release", "CODE_SIGN_STYLE", "Manual")
+	requireBuildSetting(t, reopened, xcprojAppTargetName, "Release", "CODE_SIGN_IDENTITY[sdk=iphoneos*]", "Apple Distribution")
+	requireBuildSetting(t, reopened, xcprojAppTargetName, "Debug", "MARKETING_VERSION", "2.0")
+	requireBuildSetting(t, reopened, xcprojAppTargetName, "Release", "MARKETING_VERSION", "1.0")
+
+	info, err := os.Stat(xcProjPath)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0664), info.Mode().Perm(), "an existing file keeps its mode")
+}
+
+func TestXCProj_Save_noEdit(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("internal", "xcproj", "testdata", xcprojFixtureFileName))
+	require.NoError(t, err)
+	projectPath := writeProjectFiles(t, map[string][]byte{xcProjFileName: content})
+
+	project, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+	require.NoError(t, project.Save())
+
+	saved, err := os.ReadFile(filepath.Join(projectPath, xcProjFileName))
+	require.NoError(t, err)
+	assert.Equal(t, string(content), string(saved))
+}
+
+func TestXCProj_SetBuildSetting_errors(t *testing.T) {
+	tests := []struct {
+		name          string
+		target        string
+		configuration string
+		key           string
+		value         any
+		wantErr       string
+	}{
+		{
+			name:          "non-string value",
+			target:        "App",
+			configuration: "Debug",
+			key:           "OTHER_LDFLAGS",
+			value:         []string{"-ObjC"},
+			wantErr:       "failed to set build setting OTHER_LDFLAGS: a []string value is not supported for project.xcproj, only a string",
+		},
+		{
+			name:          "unknown target",
+			target:        "Other",
+			configuration: "Debug",
+			key:           "KEY",
+			value:         "value",
+			wantErr:       "failed to find target with name: Other",
+		},
+		{
+			name:          "unknown configuration",
+			target:        "App",
+			configuration: "Release",
+			key:           "KEY",
+			value:         "value",
+			wantErr:       "failed to find build configuration Release of target App",
+		},
+		{
+			name:          "target without build settings",
+			target:        "Lib",
+			configuration: "Debug",
+			key:           "KEY",
+			value:         "value",
+			wantErr:       "target Lib has no build settings: adding the first build setting to project.xcproj is not supported",
+		},
+		{
+			name:          "key with a configuration condition",
+			target:        "App",
+			configuration: "Debug",
+			key:           "KEY[config=Debug]",
+			value:         "value",
+			wantErr:       "invalid build setting key: KEY[config=Debug]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			content := []byte(`{"configurations": ["Debug"], "targets": [
+				{"name": "App", "id": "A1", "build-settings": {"A": "1"}},
+				{"name": "Lib", "id": "L1"}
+			]}`)
+			project := openProjectFiles(t, map[string][]byte{xcProjFileName: content})
+
+			err := project.SetBuildSetting(tt.target, tt.configuration, tt.key, tt.value)
+			require.EqualError(t, err, tt.wantErr)
+
+			for _, target := range project.Targets() {
+				_, ok := target.BuildConfigurations[0].BuildSetting(tt.key)
+				assert.False(t, ok, "a failed edit leaves target %s unchanged", target.Name)
+			}
+
+			require.NoError(t, project.Save())
+			saved, err := os.ReadFile(filepath.Join(project.Path(), xcProjFileName))
+			require.NoError(t, err)
+			assert.Equal(t, string(content), string(saved), "a failed edit leaves the file unchanged")
+		})
+	}
+}
+
 func TestXCProj_notSupported(t *testing.T) {
 	project := openXCProjFixture(t)
 
 	_, err := project.AppIconSetPaths()
 	assert.ErrorIs(t, err, errNotSupportedForXCProj)
 	assert.ErrorIs(t, project.ForceCodeSign(ForceCodeSignOptions{}), errNotSupportedForXCProj)
-	assert.ErrorIs(t, project.SetBuildSetting(xcprojAppTargetName, "Release", "MARKETING_VERSION", "2.0"), errNotSupportedForXCProj)
-	assert.ErrorIs(t, project.Save(), errNotSupportedForXCProj)
 }
