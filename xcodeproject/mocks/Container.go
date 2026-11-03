@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -34,6 +35,68 @@ type Container_Expecter struct {
 
 func (_m *Container) EXPECT() *Container_Expecter {
 	return &Container_Expecter{mock: &_m.Mock}
+}
+
+// Project provides a mock function for the type Container
+func (_mock *Container) Project(pth string) (*xcodeproj.XcodeProj, error) {
+	ret := _mock.Called(pth)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Project")
+	}
+
+	var r0 *xcodeproj.XcodeProj
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string) (*xcodeproj.XcodeProj, error)); ok {
+		return returnFunc(pth)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string) *xcodeproj.XcodeProj); ok {
+		r0 = returnFunc(pth)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*xcodeproj.XcodeProj)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string) error); ok {
+		r1 = returnFunc(pth)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// Container_Project_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Project'
+type Container_Project_Call struct {
+	*mock.Call
+}
+
+// Project is a helper method to define mock.On call
+//   - pth string
+func (_e *Container_Expecter) Project(pth interface{}) *Container_Project_Call {
+	return &Container_Project_Call{Call: _e.mock.On("Project", pth)}
+}
+
+func (_c *Container_Project_Call) Run(run func(pth string)) *Container_Project_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		run(
+			arg0,
+		)
+	})
+	return _c
+}
+
+func (_c *Container_Project_Call) Return(xcodeProj *xcodeproj.XcodeProj, err error) *Container_Project_Call {
+	_c.Call.Return(xcodeProj, err)
+	return _c
+}
+
+func (_c *Container_Project_Call) RunAndReturn(run func(pth string) (*xcodeproj.XcodeProj, error)) *Container_Project_Call {
+	_c.Call.Return(run)
+	return _c
 }
 
 // Scheme provides a mock function for the type Container

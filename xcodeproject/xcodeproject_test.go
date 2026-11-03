@@ -160,3 +160,55 @@ func TestFactory_Scheme_pathForms(t *testing.T) {
 		assert.ErrorIs(t, err, os.ErrNotExist)
 	})
 }
+
+func TestContainer_Project(t *testing.T) {
+	t.Run("a project container returns the project it opened", func(t *testing.T) {
+		dir := t.TempDir()
+		projectPath := writeProject(t, dir)
+		c, err := testFactory(t).Open(projectPath)
+		require.NoError(t, err)
+		require.NoError(t, os.Remove(filepath.Join(projectPath, "project.pbxproj")))
+
+		project, err := c.Project(projectPath)
+		require.NoError(t, err, "not read from disk again")
+		assert.Equal(t, projectPath, project.Path)
+	})
+
+	t.Run("a workspace container returns the project its scheme search opened", func(t *testing.T) {
+		dir := t.TempDir()
+		projectPath := writeProject(t, dir)
+		c, err := testFactory(t).Open(writeWorkspace(t, dir))
+		require.NoError(t, err)
+		_, containerPath, err := c.Scheme("App")
+		require.NoError(t, err)
+		require.NoError(t, os.Remove(filepath.Join(projectPath, "project.pbxproj")))
+
+		project, err := c.Project(containerPath)
+		require.NoError(t, err, "not read from disk again")
+		assert.Equal(t, projectPath, project.Path)
+	})
+
+	t.Run("another project is opened once and kept", func(t *testing.T) {
+		dir := t.TempDir()
+		projectPath := writeProject(t, dir)
+		subProjectPath := writeProject(t, filepath.Join(dir, "Sub"))
+		c, err := testFactory(t).Open(projectPath)
+		require.NoError(t, err)
+
+		project, err := c.Project(subProjectPath)
+		require.NoError(t, err)
+		require.NoError(t, os.RemoveAll(subProjectPath))
+		again, err := c.Project(subProjectPath)
+		require.NoError(t, err)
+		assert.Same(t, project, again)
+	})
+
+	t.Run("missing", func(t *testing.T) {
+		dir := t.TempDir()
+		c, err := testFactory(t).Open(writeProject(t, dir))
+		require.NoError(t, err)
+
+		_, err = c.Project(filepath.Join(dir, "Missing.xcodeproj"))
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
+}
