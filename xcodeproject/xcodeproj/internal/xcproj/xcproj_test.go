@@ -164,6 +164,21 @@ func TestDecode(t *testing.T) {
 			},
 		},
 		{
+			name:    "legacy team ID",
+			content: `{"targets": [{"name": "App", "id": "A1", "legacy-team-id": "TEAM123456"}]}`,
+			want: Project{
+				Configurations: []Configuration{},
+				BuildSettings:  serialized.Object{},
+				Targets: []Target{{
+					ID:            "A1",
+					Name:          "App",
+					Kind:          TargetKindNative,
+					LegacyTeamID:  "TEAM123456",
+					BuildSettings: serialized.Object{},
+				}},
+			},
+		},
+		{
 			name:    "comments",
 			content: "// header\n{\n  /* block */ \"default-configuration\": \"Debug\", // trailing\n}",
 			want: Project{

@@ -168,10 +168,22 @@ func TestXCProj_RecreateSchemes(t *testing.T) {
 }
 
 func TestXCProj_TargetDevelopmentTeam(t *testing.T) {
-	project := openXCProjFixture(t)
+	project := openProjectFiles(t, map[string][]byte{
+		xcProjFileName: []byte(`{"targets": [
+			{"name": "App", "id": "A1", "legacy-team-id": "TEAM123456"},
+			{"name": "Tests", "id": "T1", "legacy-team-id": ""},
+			{"name": "Lib", "id": "L1"}
+		]}`),
+	})
 
-	_, ok := project.TargetDevelopmentTeam(xcprojAppTargetID)
-	assert.False(t, ok)
+	team, ok := project.TargetDevelopmentTeam("A1")
+	require.True(t, ok)
+	assert.Equal(t, "TEAM123456", team)
+
+	for _, targetID := range []string{"T1", "L1", "X9"} {
+		_, ok := project.TargetDevelopmentTeam(targetID)
+		assert.False(t, ok, targetID)
+	}
 }
 
 func TestXCProj_notSupported(t *testing.T) {

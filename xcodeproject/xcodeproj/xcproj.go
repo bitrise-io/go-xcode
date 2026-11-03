@@ -21,16 +21,18 @@ var (
 // XCProj is a project whose project file is project.xcproj, the JSON format.
 type XCProj struct {
 	baseProj
+
+	developmentTeams map[string]string
 }
 
 func (f Factory) newXCProj(content []byte, projectPath string) (*XCProj, error) {
 	return parseXCProj(content, f.newBaseProj(projectPath))
 }
 
-// TargetDevelopmentTeam implements XcodeProj. project.xcproj records the development team only in
-// the DEVELOPMENT_TEAM build setting.
-func (p *XCProj) TargetDevelopmentTeam(string) (string, bool) {
-	return "", false
+// TargetDevelopmentTeam implements XcodeProj. It reads the target's legacy-team-id.
+func (p *XCProj) TargetDevelopmentTeam(targetID string) (string, bool) {
+	developmentTeam := p.developmentTeams[targetID]
+	return developmentTeam, developmentTeam != ""
 }
 
 // AppIconSetPaths implements XcodeProj.
@@ -63,7 +65,7 @@ func parseXCProj(content []byte, base baseProj) (*XCProj, error) {
 	base.buildConfigurations = xcprojBuildConfigurations(project.Configurations, project.BuildSettings)
 	base.defaultConfigurationName = project.DefaultConfiguration
 
-	return &XCProj{baseProj: base}, nil
+	return &XCProj{baseProj: base, developmentTeams: xcprojDevelopmentTeams(project.Targets)}, nil
 }
 
 func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
@@ -111,4 +113,12 @@ func xcprojBuildConfigurations(configurations []xcproj.Configuration, settings s
 		})
 	}
 	return buildConfigurations
+}
+
+func xcprojDevelopmentTeams(targets []xcproj.Target) map[string]string {
+	developmentTeams := make(map[string]string, len(targets))
+	for _, target := range targets {
+		developmentTeams[target.ID] = target.LegacyTeamID
+	}
+	return developmentTeams
 }
