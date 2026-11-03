@@ -1,7 +1,9 @@
 package xcodeproj
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -30,6 +32,8 @@ func (p *XCProj) assetCatalogPaths(target Target) ([]string, error) {
 	walkFiles(p.files, projectDir, projectDir, func(reference xcproj.Reference, pth string) {
 		switch reference.Kind {
 		case xcproj.ReferenceKindFolder:
+			// Membership exceptions are not decoded, so a catalog an exception adds to another
+			// target is missed for that target.
 			if slices.Contains(reference.Targets, target.Name) {
 				folders = append(folders, pth)
 			}
@@ -82,9 +86,13 @@ func resolveXCProjFilePath(pth, groupDir, projectDir string) (string, bool) {
 	return filepath.Join(groupDir, pth), true
 }
 
-// findAssetCatalogs does not follow symbolic links.
+// findAssetCatalogs uses Lstat so that a symbolic link cycle cannot loop. A missing dir has no
+// catalogs: git does not keep an empty synchronized folder.
 func (p *XCProj) findAssetCatalogs(dir string) ([]string, error) {
 	names, err := p.fileManager.ReadDirEntryNames(dir)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to list %s: %w", dir, err)
 	}

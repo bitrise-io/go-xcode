@@ -63,6 +63,16 @@ func TestXCProj_AppIconSetPaths(t *testing.T) {
 			want:         []string{"Icons.xcassets/AppIcon.appiconset"},
 		},
 		{
+			name: "group at the project root",
+			files: `[{"kind": "group", "path": "Branding", "children": [
+				{"kind": "group", "path": "<PROJECT>/", "children": [
+					{"path": "Icons.xcassets", "target-membership": ["App/resources"]},
+				]},
+			]}]`,
+			iconSetPaths: []string{"Icons.xcassets/AppIcon.appiconset"},
+			want:         []string{"Icons.xcassets/AppIcon.appiconset"},
+		},
+		{
 			name:         "escaped path",
 			files:        `[{"path": "\\<Icons\\\\.xcassets", "target-membership": ["App/resources"]}]`,
 			iconSetPaths: []string{`<Icons\.xcassets/AppIcon.appiconset`},
@@ -101,9 +111,13 @@ func TestXCProj_AppIconSetPaths(t *testing.T) {
 			wantErr:      "not found app icon set (AppIcon)",
 		},
 		{
-			name:    "synchronized folder missing",
-			files:   `[{"kind": "folder", "path": "App", "target-membership": ["App"]}]`,
-			wantErr: "failed to list",
+			name: "synchronized folder missing",
+			files: `[
+				{"kind": "folder", "path": "App", "target-membership": ["App"]},
+				{"path": "Icons.xcassets", "target-membership": ["App/resources"]},
+			]`,
+			iconSetPaths: []string{"Icons.xcassets/AppIcon.appiconset"},
+			want:         []string{"Icons.xcassets/AppIcon.appiconset"},
 		},
 	}
 
