@@ -6,7 +6,7 @@ type BuildForTestingParams struct {
 	ProjectPath       string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Scheme            string
 	Configuration     string
-	Destination       string
+	Destination       string // a default: a -destination in AdditionalOptions replaces it
 	XCConfigPath      string
 	SDK               string
 	TestPlan          string

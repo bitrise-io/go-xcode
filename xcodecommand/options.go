@@ -30,15 +30,7 @@ type Option struct {
 	Name     string
 	Value    string
 	tookFlag bool // a value flag that took the next flag as its value, as xcodebuild does
-}
-
-// key identifies the option when merging: the flag, the build setting name or the
-// action. A user default keys as "-name=", so -flag=value never collides with -flag value.
-func (o Option) key() string {
-	if o.Kind == UserDefault {
-		return o.Name + "="
-	}
-	return o.Name
+	fallback bool // a Step default, marked by appendDefault: a copy in the additional options replaces it
 }
 
 // String renders the option as it appears on the command line.
@@ -71,6 +63,15 @@ func (opts Options) Args() []string {
 		args = append(args, o.args()...)
 	}
 	return args
+}
+
+// sets says whether a copy of o, the same form of the same flag or build setting, is among
+// the options. Another form is no copy: "-destination=x" is a user default xcodebuild
+// ignores, "-quiet YES" and "-quiet:YES" are arguments it refuses. A copy that took the
+// next flag as its value does not count either: it is a mistake the parser reports, and
+// leaving o in place lets xcodebuild refuse the repeat.
+func (opts Options) sets(o Option) bool {
+	return slices.ContainsFunc(opts, func(u Option) bool { return u.Kind == o.Kind && u.Name == o.Name && !u.tookFlag })
 }
 
 // Filter returns the options for which keep is true, in order.
