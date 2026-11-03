@@ -47,10 +47,10 @@ func (f Factory) Open(pth string) (Container, error) {
 // Scheme returns the project or workspace scheme by name, with the path of the bundle holding it.
 // It is Open followed by Container.Scheme.
 func (f Factory) Scheme(pth string, name string) (xcscheme.Scheme, string, error) {
-	container, err := f.Open(pth)
+	c, err := f.Open(pth)
 	if err != nil {
 		return xcscheme.Scheme{}, "", err
 	}
 
-	return container.Scheme(name)
+	return c.Scheme(name)
 }
