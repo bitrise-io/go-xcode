@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"slices"
+	"unicode"
 
 	"github.com/tailscale/hujson"
 )
@@ -191,7 +192,11 @@ func insertMember(object *hujson.Object, name string, value hujson.ValueTrimmed)
 }
 
 // lineBreakAndIndent drops any comment in front of a member, so a new member does not repeat it.
+// It cuts at the first comment, as a line break after that may be inside the comment.
 func lineBreakAndIndent(extra hujson.Extra) hujson.Extra {
+	if end := bytes.IndexFunc(extra, func(r rune) bool { return !unicode.IsSpace(r) }); end >= 0 {
+		extra = extra[:end]
+	}
 	if i := bytes.LastIndexByte(extra, '\n'); i >= 0 {
 		extra = extra[i:]
 	}

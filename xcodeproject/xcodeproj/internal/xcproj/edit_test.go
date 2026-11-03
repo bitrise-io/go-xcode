@@ -189,6 +189,30 @@ func TestEditor_SetTargetBuildSetting(t *testing.T) {
         "PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.App",`,
 		},
 		{
+			name: "does not repeat a block comment on the line of the last key",
+			settings: `        "CODE_SIGN_STYLE": "Automatic",
+        /* Matches the App Store record. */ "PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.App",`,
+			configuration: "Release",
+			key:           "DEVELOPMENT_TEAM",
+			value:         "ABCDE12345",
+			want: `        "CODE_SIGN_STYLE": "Automatic",
+        "DEVELOPMENT_TEAM[config=Release]": "ABCDE12345",
+        /* Matches the App Store record. */ "PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.App",`,
+		},
+		{
+			name: "does not copy part of a multi-line comment in front of the last key",
+			settings: `        "CODE_SIGN_STYLE": "Automatic",
+        /* Matches the
+           App Store record. */ "PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.App",`,
+			configuration: "Release",
+			key:           "PROVISIONING_PROFILE",
+			value:         "8a2f3c1d-0000-0000-0000-000000000000",
+			want: `        "CODE_SIGN_STYLE": "Automatic",
+        /* Matches the
+           App Store record. */ "PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.App",
+        "PROVISIONING_PROFILE[config=Release]": "8a2f3c1d-0000-0000-0000-000000000000",`,
+		},
+		{
 			name:          "clears a value",
 			settings:      `        "PROVISIONING_PROFILE_SPECIFIER[config=Release]": "Sample",`,
 			configuration: "Release",
