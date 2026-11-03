@@ -131,7 +131,32 @@ func TestFactory_Scheme_notFound(t *testing.T) {
 	}
 }
 
-func TestFactory_Scheme_openFails(t *testing.T) {
-	_, _, err := testFactory(t).Scheme(filepath.Join(t.TempDir(), "Missing.xcworkspace"), "App")
-	assert.ErrorIs(t, err, os.ErrNotExist)
+func TestFactory_Scheme_pathForms(t *testing.T) {
+	dir := t.TempDir()
+	projectPath := writeProject(t, dir)
+	workspacePath := writeWorkspace(t, dir)
+
+	t.Run("trailing separator", func(t *testing.T) {
+		for _, pth := range []string{projectPath + "/", workspacePath + "/"} {
+			container, err := testFactory(t).Open(pth)
+			require.NoError(t, err)
+			assert.Equal(t, filepath.Clean(pth), container.Path())
+			assert.Equal(t, "App", container.Name())
+
+			scheme, containerPath, err := testFactory(t).Scheme(pth, "App")
+			require.NoError(t, err)
+			assert.Equal(t, "App", scheme.Name)
+			assert.Equal(t, projectPath, containerPath)
+		}
+	})
+
+	t.Run("neither a project nor a workspace", func(t *testing.T) {
+		_, _, err := testFactory(t).Scheme(filepath.Join(dir, "Package.swift"), "App")
+		assert.ErrorContains(t, err, "neither an Xcode project")
+	})
+
+	t.Run("missing from disk", func(t *testing.T) {
+		_, _, err := testFactory(t).Scheme(filepath.Join(dir, "Missing.xcodeproj"), "App")
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
 }

@@ -2,6 +2,7 @@ package xcodeproject
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
@@ -22,16 +23,17 @@ func NewFactory(project xcodeproj.Factory, workspace xcworkspace.Factory) Factor
 	}
 }
 
-// Open opens the project or workspace at pth, decided by its extension.
+// Open opens the project or workspace at pth, decided by its extension. A trailing path separator
+// is ignored, as xcodebuild ignores it.
 func (f Factory) Open(pth string) (Container, error) {
-	switch {
-	case xcodeproj.IsXcodeProj(pth):
+	switch cleanPth := filepath.Clean(pth); {
+	case xcodeproj.IsXcodeProj(cleanPth):
 		project, err := f.project.Open(pth)
 		if err != nil {
 			return nil, err
 		}
 		return &container{project: project}, nil
-	case xcworkspace.IsWorkspace(pth):
+	case xcworkspace.IsWorkspace(cleanPth):
 		workspace, err := f.workspace.Open(pth)
 		if err != nil {
 			return nil, err
