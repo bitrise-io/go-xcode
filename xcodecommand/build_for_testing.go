@@ -12,7 +12,7 @@ type BuildForTestingParams struct {
 	TestPlan          string
 	Clean             bool // run clean first
 	Authentication    *Authentication
-	AdditionalOptions []string // the step's xcodebuild_options, shell-split
+	AdditionalOptions Options // the step's xcodebuild_options, from ParseOptions
 }
 
 // BuildForTesting renders params into a build-for-testing Command.

@@ -33,7 +33,7 @@ func TestArchive(t *testing.T) {
 			// As in v1, additional options are appended verbatim: a user -destination is added
 			// next to the step's.
 			name:   "additional options are appended verbatim",
-			params: ArchiveParams{Destination: "generic/platform=iOS", AdditionalOptions: []string{"-destination", "generic/platform=tvOS"}},
+			params: ArchiveParams{Destination: "generic/platform=iOS", AdditionalOptions: additional("-destination", "generic/platform=tvOS")},
 			want:   []string{"archive", "-destination", "generic/platform=iOS", "-destination", "generic/platform=tvOS"},
 		},
 		{
@@ -46,7 +46,7 @@ func TestArchive(t *testing.T) {
 				ArchivePath:       "/tmp/App.xcarchive",
 				Clean:             true,
 				Authentication:    &testAuth,
-				AdditionalOptions: []string{"-destination", "generic/platform=iOS", "-skipPackagePluginValidation"},
+				AdditionalOptions: additional("-destination", "generic/platform=iOS", "-skipPackagePluginValidation"),
 			},
 			want: []string{
 				"clean", "archive",
