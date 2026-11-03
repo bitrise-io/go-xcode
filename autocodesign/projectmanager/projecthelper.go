@@ -20,6 +20,9 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/xcworkspace"
 )
 
+// clonedSourcePackagesDirPathFlag names the directory xcodebuild clones Swift packages into.
+const clonedSourcePackagesDirPathFlag = "-clonedSourcePackagesDirPath"
+
 // BuildAction is the type of build action to be performed on the scheme.
 type BuildAction string
 
@@ -243,10 +246,12 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 	// The workspace is asked by scheme, and the scheme it was given builds the main target; the
 	// other targets are not schemes (v1 asked for them by name, which fails unless a scheme happens
 	// to share the name), so they are read from the project directly.
+	var workspaceSettings serialized.Object
 	if p.XcWorkspace != nil && targetName == p.MainTarget.Name {
 		var settings serialized.Object
 		settings, wsErr = p.XcWorkspace.SchemeBuildSettings(p.schemeName, conf, p.additionalXcodebuildOptions...)
 		if wsErr == nil {
+			workspaceSettings = settings
 			// Settings like INFOPLIST_FILE and CODE_SIGN_ENTITLEMENTS are project-relative
 			// https://developer.apple.com/documentation/xcode/build-settings-reference#Infoplist-File
 			settingsList = append(settingsList, settings)
@@ -254,6 +259,8 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 				return settingsList, nil
 			}
 		}
+	} else if p.XcWorkspace != nil {
+		workspaceSettings = p.mainTargetWorkspaceSettings(conf)
 	}
 
 	if wsErr != nil {
@@ -261,7 +268,7 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 		p.logger.Printf("buildSettings: Falling back to project build settings")
 	}
 
-	projectSettings, projectErr := p.XcProj.TargetBuildSettings(targetName, conf, p.additionalXcodebuildOptions...)
+	projectSettings, projectErr := p.XcProj.TargetBuildSettings(targetName, conf, p.projectTargetOptions(workspaceSettings)...)
 	if projectErr == nil {
 		settingsList = append(settingsList, projectSettings)
 		return settingsList, nil
@@ -275,6 +282,54 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 	}
 
 	return settingsList, projectErr
+}
+
+// mainTargetWorkspaceSettings returns the main target's settings as the workspace resolves them:
+// the cached ones when the main target was asked already, which the steps do first, or a fresh
+// read. nil when the workspace cannot answer; the project query then runs as before.
+func (p *ProjectHelper) mainTargetWorkspaceSettings(conf string) serialized.Object {
+	settingsList, err := p.cachedBuildSettings(p.MainTarget.Name, conf)
+	if err != nil || len(settingsList) == 0 {
+		return nil
+	}
+	return settingsList[0]
+}
+
+// projectTargetOptions are the options of a "-project -target" settings query. Unless the options
+// name a package clone directory already, the query is pointed at the workspace's own
+// SourcePackages, taken from the workspace settings, so it finds the packages the workspace
+// resolved instead of resolving them again into the project's DerivedData. A project query with
+// -onlyUsePackageVersionsFromResolvedFile fails otherwise: the project has no Package.resolved of
+// its own when its workspace holds one (SSW-2708).
+func (p *ProjectHelper) projectTargetOptions(workspaceSettings serialized.Object) []string {
+	if workspaceSettings == nil || slices.Contains(p.additionalXcodebuildOptions, clonedSourcePackagesDirPathFlag) {
+		return p.additionalXcodebuildOptions
+	}
+
+	dir, ok := sourcePackagesDir(workspaceSettings)
+	if !ok {
+		return p.additionalXcodebuildOptions
+	}
+
+	p.logger.Debugf("buildSettings: project target queries use the workspace's packages: %s", dir)
+	return append(slices.Clone(p.additionalXcodebuildOptions), clonedSourcePackagesDirPathFlag, dir)
+}
+
+// sourcePackagesDir is where xcodebuild keeps the packages of the container the settings belong
+// to: <DerivedData>/<container>/SourcePackages, next to BUILD_ROOT's <container>/Build/Products.
+// ok is false when BUILD_ROOT does not follow that layout, for example under a SYMROOT override.
+func sourcePackagesDir(settings serialized.Object) (string, bool) {
+	buildRoot, err := settings.String("BUILD_ROOT")
+	if err != nil || buildRoot == "" {
+		return "", false
+	}
+
+	buildDir := filepath.Dir(buildRoot)
+	if filepath.Base(buildDir) != "Build" {
+		return "", false
+	}
+
+	return filepath.Join(filepath.Dir(buildDir), "SourcePackages"), true
 }
 
 func (p *ProjectHelper) cachedBuildSettings(targetName, conf string) ([]serialized.Object, error) {
