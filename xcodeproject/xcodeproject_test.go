@@ -176,16 +176,11 @@ func TestContainer_SchemeBuildSettings(t *testing.T) {
 	workspacePath := writeWorkspace(t, dir)
 	settings := serialized.Object{"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.app"}
 
-	t.Run("a project asks its own provider", func(t *testing.T) {
-		projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
-		projectSettings.On("SchemeBuildSettings", projectPath, "App", "Release", []string{"-sdk", "iphoneos"}).Return(settings, nil).Once()
-		workspaceSettings := xcworkspacemocks.NewBuildSettingsProvider(t)
-
-		c, err := testFactoryWithProviders(t, projectSettings, workspaceSettings).Open(projectPath)
+	t.Run("a project has no scheme read", func(t *testing.T) {
+		c, err := testFactoryWithProviders(t, xcodeprojmocks.NewBuildSettingsProvider(t), xcworkspacemocks.NewBuildSettingsProvider(t)).Open(projectPath)
 		require.NoError(t, err)
-		got, err := c.SchemeBuildSettings("App", "Release", "-sdk", "iphoneos")
-		require.NoError(t, err)
-		assert.Equal(t, settings, got)
+		_, err = c.SchemeBuildSettings("App", "Release", "-sdk", "iphoneos")
+		assert.ErrorContains(t, err, "read by target, not by scheme")
 	})
 
 	t.Run("a workspace asks its own provider", func(t *testing.T) {
@@ -202,12 +197,12 @@ func TestContainer_SchemeBuildSettings(t *testing.T) {
 
 	t.Run("the provider's error is passed on as it is", func(t *testing.T) {
 		failure := errors.New("xcodebuild exploded")
-		projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
-		projectSettings.On("SchemeBuildSettings", projectPath, "App", "Release", []string{"-sdk", "iphoneos"}).Return(nil, failure).Once()
+		workspaceSettings := xcworkspacemocks.NewBuildSettingsProvider(t)
+		workspaceSettings.On("SchemeBuildSettings", workspacePath, "Workspace", "Release", []string{"-sdk", "iphoneos"}).Return(nil, failure).Once()
 
-		c, err := testFactoryWithProviders(t, projectSettings, xcworkspacemocks.NewBuildSettingsProvider(t)).Open(projectPath)
+		c, err := testFactoryWithProviders(t, xcodeprojmocks.NewBuildSettingsProvider(t), workspaceSettings).Open(workspacePath)
 		require.NoError(t, err)
-		_, err = c.SchemeBuildSettings("App", "Release", "-sdk", "iphoneos")
+		_, err = c.SchemeBuildSettings("Workspace", "Release", "-sdk", "iphoneos")
 		assert.ErrorIs(t, err, failure)
 	})
 }
