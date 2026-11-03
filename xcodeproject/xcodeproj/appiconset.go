@@ -61,19 +61,6 @@ func (p *baseProj) appIconSetPaths(catalogPaths func(Target) ([]string, error)) 
 	return targetToAppIcons, nil
 }
 
-// appIconSetNames returns nothing if any configuration lacks the setting.
-func appIconSetNames(target Target) []string {
-	var names []string
-	for _, configuration := range target.BuildConfigurations {
-		name, ok := configuration.BuildSetting(appIconSetNameBuildSettingKey)
-		if !ok {
-			return nil
-		}
-		names = append(names, name)
-	}
-	return names
-}
-
 func (p *baseProj) globAppIconSets(catalogPaths []string, appIconSetName string) ([]string, error) {
 	pattern := buildSettingReferenceRegexp.ReplaceAllString(appIconSetName, "*")
 
@@ -173,4 +160,17 @@ func filterAssetCatalogs(buildPhase resourcesBuildPhase, objects serialized.Obje
 		}
 	}
 	return catalogs, nil
+}
+
+// appIconSetNames returns nothing if any configuration lacks the setting.
+func appIconSetNames(target Target) []string {
+	var names []string
+	for _, configuration := range target.BuildConfigurations {
+		name, ok := configuration.BuildSetting(appIconSetNameBuildSettingKey)
+		if !ok {
+			return nil
+		}
+		names = append(names, name)
+	}
+	return names
 }

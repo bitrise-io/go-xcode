@@ -10,11 +10,13 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/internal/xcproj"
 )
 
-var xcprojTargetKinds = map[string]targetKind{
-	xcproj.TargetKindNative:              nativeTargetKind,
-	xcproj.TargetKindAggregate:           aggregateTargetKind,
-	xcproj.TargetKindExternalBuildSystem: externalBuildSystemTargetKind,
-}
+var (
+	xcprojTargetKinds = map[string]targetKind{
+		xcproj.TargetKindNative:              nativeTargetKind,
+		xcproj.TargetKindAggregate:           aggregateTargetKind,
+		xcproj.TargetKindExternalBuildSystem: externalBuildSystemTargetKind,
+	}
+)
 
 // XCProj is a project whose project file is project.xcproj, the JSON format.
 type XCProj struct {
