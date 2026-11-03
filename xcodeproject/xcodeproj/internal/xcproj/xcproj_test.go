@@ -114,22 +114,6 @@ func TestDecode(t *testing.T) {
 			},
 		},
 		{
-			name:    "dependency written as an object ID",
-			content: `{"targets": [{"name": "App", "id": "A1", "dependencies": ["Framework", "id:B2", {"target": "id:C3"}]}]}`,
-			want: Project{
-				Configurations: []Configuration{},
-				BuildSettings:  serialized.Object{},
-				Targets: []Target{{
-					ID:            "A1",
-					Name:          "App",
-					Kind:          TargetKindNative,
-					Dependencies:  []string{"Framework"},
-					DependencyIDs: []string{"B2", "C3"},
-					BuildSettings: serialized.Object{},
-				}},
-			},
-		},
-		{
 			name:    "product type outside com.apple.product-type.",
 			content: `{"targets": [{"name": "Tool", "id": "A1", "full-product-type": "com.example.product-type.tool"}]}`,
 			want: Project{

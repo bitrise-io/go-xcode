@@ -69,8 +69,6 @@ type Target struct {
 	// Dependencies are the names of the project's own targets this target depends on.
 	// Dependencies on other projects and on Swift packages are left out.
 	Dependencies []string
-	// DependencyIDs are the object IDs of own targets written by ID in place of a name.
-	DependencyIDs []string
 
 	// BuildSettings is keyed like Project.BuildSettings.
 	BuildSettings serialized.Object
@@ -237,7 +235,7 @@ func (r rawTarget) target() (Target, error) {
 		productType = productTypePrefix + r.ProductType
 	}
 
-	var dependencies, dependencyIDs []string
+	var dependencies []string
 	for _, dependency := range r.Dependencies {
 		if dependency.Kind != localTargetDependencyKind {
 			continue
@@ -245,11 +243,7 @@ func (r rawTarget) target() (Target, error) {
 		if dependency.Target == "" {
 			return Target{}, fmt.Errorf("target %s has a dependency with no target", r.Name)
 		}
-		if id, ok := strings.CutPrefix(dependency.Target, groupTreeIDPrefix); ok {
-			dependencyIDs = append(dependencyIDs, id)
-		} else {
-			dependencies = append(dependencies, dependency.Target)
-		}
+		dependencies = append(dependencies, dependency.Target)
 	}
 
 	return Target{
@@ -261,7 +255,6 @@ func (r rawTarget) target() (Target, error) {
 		ProductID:      r.Product.ID,
 		TestHostTarget: r.TestHostTarget,
 		Dependencies:   dependencies,
-		DependencyIDs:  dependencyIDs,
 		BuildSettings:  nonNil(r.BuildSettings),
 	}, nil
 }

@@ -67,32 +67,18 @@ func parseXCProj(content []byte, base baseProj) (*XCProj, error) {
 }
 
 func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
-	knownIDs := make(map[string]bool, len(project.Targets))
-	// An empty ID marks a name more than one target has.
 	idsByName := make(map[string]string, len(project.Targets))
 	for _, target := range project.Targets {
-		knownIDs[target.ID] = true
-		if _, ok := idsByName[target.Name]; ok {
-			idsByName[target.Name] = ""
-		} else {
-			idsByName[target.Name] = target.ID
-		}
+		idsByName[target.Name] = target.ID
 	}
 
 	targets := make([]Target, 0, len(project.Targets))
 	for _, target := range project.Targets {
 		var dependencyTargetIDs []string
 		for _, name := range target.Dependencies {
-			id := idsByName[name]
-			if id == "" {
-				logger.Warnf("couldn't resolve dependency %s of target %s (%s) to a single target, skipping", name, target.Name, target.ID)
-				continue
-			}
-			dependencyTargetIDs = append(dependencyTargetIDs, id)
-		}
-		for _, id := range target.DependencyIDs {
-			if !knownIDs[id] {
-				logger.Warnf("dependency ID %s of target %s (%s) is not a target of the project, skipping", id, target.Name, target.ID)
+			id, ok := idsByName[name]
+			if !ok {
+				logger.Warnf("couldn't resolve dependency %s of target %s (%s), skipping", name, target.Name, target.ID)
 				continue
 			}
 			dependencyTargetIDs = append(dependencyTargetIDs, id)

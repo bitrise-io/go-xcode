@@ -112,15 +112,13 @@ func TestXCProj_dependencies(t *testing.T) {
 	project := openProjectFiles(t, map[string][]byte{
 		xcProjFileName: []byte(`{"targets": [
 			{"name": "Lib", "id": "L1"},
-			{"name": "Twin", "id": "T1"},
-			{"name": "Twin", "id": "T2"},
-			{"name": "App", "id": "A1", "dependencies": ["Lib", "Gone", "Twin", "id:T2", "id:X9"]}
+			{"name": "App", "id": "A1", "dependencies": ["Lib", "Gone"]}
 		]}`),
 	})
 
 	app, ok := project.Target("A1")
 	require.True(t, ok)
-	assert.Equal(t, []string{"L1", "T2"}, app.dependencyTargetIDs)
+	assert.Equal(t, []string{"L1"}, app.dependencyTargetIDs)
 }
 
 func TestXCProj_productReferencedByID(t *testing.T) {
