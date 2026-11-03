@@ -119,6 +119,12 @@ func TestMerge(t *testing.T) {
 			got := merge(derived, tt.user)
 			require.Equal(t, tt.want, got.Args())
 			require.Equal(t, tt.dropped, dropped(got))
+
+			// every option keeps its place and its owner: the Step's first, then the user's
+			require.Equal(t, append(slices.Clone(derived), tt.user...), got.options())
+			for i, p := range got {
+				require.Equal(t, i >= len(derived), p.user, p.String())
+			}
 		})
 	}
 }
