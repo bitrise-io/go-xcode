@@ -4,6 +4,7 @@ package xcproj
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -19,6 +20,16 @@ const (
 	TargetKindAggregate           = "aggregate"
 	TargetKindExternalBuildSystem = "external-build-system"
 )
+
+// The reference kinds of the file tree. A reference written without a kind is a file reference.
+const (
+	ReferenceKindFile   = "file-reference"
+	ReferenceKindGroup  = "group"
+	ReferenceKindFolder = "folder"
+)
+
+// BuildPhaseKindResources is the kind of a target's Copy Resources build phase.
+const BuildPhaseKindResources = "resources"
 
 const (
 	localTargetDependencyKind = "localTarget"
@@ -40,6 +51,33 @@ type Project struct {
 	BuildSettings serialized.Object
 
 	Targets []Target
+
+	// Files is the top level of the file tree.
+	Files []Reference
+}
+
+// Reference is one element of the project's file tree.
+type Reference struct {
+	Kind string
+
+	// Path is relative to the parent group, unless it starts with / or ~, or with a base such as
+	// <PROJECT>/. A group without one takes its parent's directory.
+	Path string
+
+	// Targets are the names of the targets a folder's content belongs to.
+	Targets []string
+
+	// BuildPhases are the build phases a file reference belongs to. A build phase referenced by
+	// object ID is left out.
+	BuildPhases []BuildPhaseReference
+
+	Children []Reference
+}
+
+// BuildPhaseReference names a build phase by its target and its kind.
+type BuildPhaseReference struct {
+	Target string
+	Kind   string
 }
 
 // Configuration is one build configuration of the project.
@@ -82,6 +120,7 @@ type rawProject struct {
 	Configurations       []rawConfiguration `json:"configurations"`
 	BuildSettings        serialized.Object  `json:"build-settings"`
 	Targets              []rawTarget        `json:"targets"`
+	Files                []rawReference     `json:"files"`
 }
 
 // rawConfiguration is written as a bare name unless it has an ID or an xcconfig file.
@@ -101,6 +140,21 @@ type rawTarget struct {
 	LegacyTeamID    string                `json:"legacy-team-id"`
 	Dependencies    []rawDependency       `json:"dependencies"`
 	BuildSettings   serialized.Object     `json:"build-settings"`
+}
+
+// rawReference holds target-membership raw, because a folder lists target names and a file
+// reference lists build files.
+type rawReference struct {
+	Kind             string            `json:"kind"`
+	Path             string            `json:"path"`
+	TargetMembership []json.RawMessage `json:"target-membership"`
+	Children         []rawReference    `json:"children"`
+}
+
+// rawBuildFile is written as a bare build phase reference unless it carries build file
+// properties.
+type rawBuildFile struct {
+	BuildPhase rawGroupTreeReference `json:"build-phase"`
 }
 
 // rawGroupTreeReference is written as an id:-prefixed object ID, a /-joined name path, or, when
@@ -181,6 +235,16 @@ func (r *rawGroupTreeReference) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// UnmarshalJSON accepts a bare build phase reference or an object.
+func (b *rawBuildFile) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, &b.BuildPhase); err == nil {
+		return nil
+	}
+
+	type buildFileObject rawBuildFile
+	return json.Unmarshal(data, (*buildFileObject)(b))
+}
+
 // UnmarshalJSON accepts a bare name or an object.
 func (c *rawNamePathComponent) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &c.Name); err == nil {
@@ -221,11 +285,17 @@ func (r rawProject) project() (Project, error) {
 		}
 	}
 
+	files, err := references(r.Files)
+	if err != nil {
+		return Project{}, err
+	}
+
 	return Project{
 		DefaultConfiguration: r.DefaultConfiguration,
 		Configurations:       configurations,
 		BuildSettings:        nonNil(r.BuildSettings),
 		Targets:              targets,
+		Files:                files,
 	}, nil
 }
 
@@ -274,6 +344,60 @@ func (r rawTarget) target() (Target, error) {
 		Dependencies:   dependencies,
 		BuildSettings:  nonNil(r.BuildSettings),
 	}, nil
+}
+
+func references(rawReferences []rawReference) ([]Reference, error) {
+	if rawReferences == nil {
+		return nil, nil
+	}
+
+	references := make([]Reference, 0, len(rawReferences))
+	for _, rawReference := range rawReferences {
+		reference, err := rawReference.reference()
+		if err != nil {
+			return nil, err
+		}
+		references = append(references, reference)
+	}
+	return references, nil
+}
+
+func (r rawReference) reference() (Reference, error) {
+	reference := Reference{Kind: cmp.Or(r.Kind, ReferenceKindFile), Path: r.Path}
+
+	for _, membership := range r.TargetMembership {
+		if reference.Kind == ReferenceKindFolder {
+			var target string
+			if err := json.Unmarshal(membership, &target); err != nil {
+				return Reference{}, fmt.Errorf("folder %s has an invalid target membership: %w", r.Path, err)
+			}
+			reference.Targets = append(reference.Targets, target)
+			continue
+		}
+
+		var buildFile rawBuildFile
+		if err := json.Unmarshal(membership, &buildFile); err != nil {
+			return Reference{}, fmt.Errorf("file %s has an invalid target membership: %w", r.Path, err)
+		}
+		if buildFile.BuildPhase.ID != "" {
+			continue
+		}
+		namePath := buildFile.BuildPhase.NamePath
+		// The name path is the target, the build phase kind and, when the kind is not unique, the
+		// build phase name.
+		if len(namePath) < 2 || len(namePath) > 3 {
+			return Reference{}, fmt.Errorf("file %s has an invalid build phase reference: %s", r.Path, membership)
+		}
+		reference.BuildPhases = append(reference.BuildPhases, BuildPhaseReference{Target: namePath[0], Kind: namePath[1]})
+	}
+
+	children, err := references(r.Children)
+	if err != nil {
+		return Reference{}, err
+	}
+	reference.Children = children
+
+	return reference, nil
 }
 
 // nonNil keeps an absent settings map from reading differently than an empty one.
