@@ -168,7 +168,7 @@ func (e *Editor) splitSharedKey(settings *hujson.Object, key buildSettingKey, co
 }
 
 // insertMember keeps the members sorted, as Xcode writes them, and copies the layout of the
-// last member, which unlike the first follows a comma.
+// last member, which unlike the first follows a comma. object must not be empty.
 func insertMember(object *hujson.Object, name string, value hujson.ValueTrimmed) {
 	layout := object.Members[len(object.Members)-1]
 	inserted := hujson.ObjectMember{
