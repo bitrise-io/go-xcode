@@ -1,8 +1,9 @@
-// Package xcproj decodes project.xcproj, the JSON project file Xcode 27 writes inside an
-// .xcodeproj bundle in place of project.pbxproj.
+// Package xcproj reads and edits project.xcproj, the JSON project file Xcode 27 writes inside
+// an .xcodeproj bundle in place of project.pbxproj.
 package xcproj
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -119,7 +120,7 @@ type rawDependency struct {
 
 // Decode parses the content of a project.xcproj file.
 func Decode(content []byte) (Project, error) {
-	standard, err := hujson.Standardize(content)
+	standard, err := hujson.Standardize(bytes.Clone(content))
 	if err != nil {
 		return Project{}, fmt.Errorf("failed to parse project.xcproj (Xcode writes JSON with comments and trailing commas; other JSON5 syntax, such as unquoted keys or single-quoted strings, is not supported): %w", err)
 	}
