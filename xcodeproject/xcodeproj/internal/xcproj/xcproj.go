@@ -197,12 +197,24 @@ func (r rawProject) project() (Project, error) {
 	}
 
 	targets := make([]Target, 0, len(r.Targets))
+	names := make(map[string]bool, len(r.Targets))
 	for i, rawTarget := range r.Targets {
 		target, err := rawTarget.target()
 		if err != nil {
 			return Project{}, fmt.Errorf("target %d: %w", i, err)
 		}
+		if names[target.Name] {
+			return Project{}, fmt.Errorf("target %d: another target is also named %s", i, target.Name)
+		}
+		names[target.Name] = true
 		targets = append(targets, target)
+	}
+	for _, target := range targets {
+		for _, dependency := range target.Dependencies {
+			if !names[dependency] {
+				return Project{}, fmt.Errorf("target %s depends on unknown target %s", target.Name, dependency)
+			}
+		}
 	}
 
 	return Project{

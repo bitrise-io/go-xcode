@@ -76,12 +76,7 @@ func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
 	for _, target := range project.Targets {
 		var dependencyTargetIDs []string
 		for _, name := range target.Dependencies {
-			id, ok := idsByName[name]
-			if !ok {
-				logger.Warnf("couldn't resolve dependency %s of target %s (%s), skipping", name, target.Name, target.ID)
-				continue
-			}
-			dependencyTargetIDs = append(dependencyTargetIDs, id)
+			dependencyTargetIDs = append(dependencyTargetIDs, idsByName[name])
 		}
 
 		var productPath string

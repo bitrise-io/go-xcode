@@ -100,17 +100,22 @@ func TestDecode(t *testing.T) {
 				{"kind": "localTarget", "target": "Clip"},
 				{"kind": "remoteTarget", "project": "Other.xcodeproj", "target": "Lib", "target-id": "B2"},
 				{"kind": "package", "product-name": "Alamofire"},
-			]}]}`,
+			]}, {"name": "Framework", "id": "F1"}, {"name": "Widget", "id": "W1"}, {"name": "Clip", "id": "C1"}]}`,
 			want: Project{
 				Configurations: []Configuration{},
 				BuildSettings:  serialized.Object{},
-				Targets: []Target{{
-					ID:            "A1",
-					Name:          "App",
-					Kind:          TargetKindAggregate,
-					Dependencies:  []string{"Framework", "Widget", "Clip"},
-					BuildSettings: serialized.Object{},
-				}},
+				Targets: []Target{
+					{
+						ID:            "A1",
+						Name:          "App",
+						Kind:          TargetKindAggregate,
+						Dependencies:  []string{"Framework", "Widget", "Clip"},
+						BuildSettings: serialized.Object{},
+					},
+					{ID: "F1", Name: "Framework", Kind: TargetKindNative, BuildSettings: serialized.Object{}},
+					{ID: "W1", Name: "Widget", Kind: TargetKindNative, BuildSettings: serialized.Object{}},
+					{ID: "C1", Name: "Clip", Kind: TargetKindNative, BuildSettings: serialized.Object{}},
+				},
 			},
 		},
 		{
@@ -182,6 +187,16 @@ func TestDecode(t *testing.T) {
 			name:    "target without an id",
 			content: `{"targets": [{"name": "App"}]}`,
 			wantErr: "target 0: target App has no id",
+		},
+		{
+			name:    "duplicate target name",
+			content: `{"targets": [{"name": "App", "id": "A1"}, {"name": "App", "id": "A2"}]}`,
+			wantErr: "target 1: another target is also named App",
+		},
+		{
+			name:    "unknown dependency",
+			content: `{"targets": [{"name": "Lib", "id": "L1"}, {"name": "App", "id": "A1", "dependencies": ["Lib", "Gone"]}]}`,
+			wantErr: "target App depends on unknown target Gone",
 		},
 		{
 			name:    "unknown target kind",

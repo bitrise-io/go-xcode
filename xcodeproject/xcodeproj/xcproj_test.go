@@ -108,17 +108,17 @@ func TestXCProj_BuildConfigurations_noBuildSettings(t *testing.T) {
 	assert.NotNil(t, project.Targets()[0].BuildConfigurations[0].buildSettings)
 }
 
-func TestXCProj_dependencies(t *testing.T) {
-	project := openProjectFiles(t, map[string][]byte{
+func TestXCProj_unknownDependency(t *testing.T) {
+	projectPath := writeProjectFiles(t, map[string][]byte{
 		xcProjFileName: []byte(`{"targets": [
 			{"name": "Lib", "id": "L1"},
 			{"name": "App", "id": "A1", "dependencies": ["Lib", "Gone"]}
 		]}`),
 	})
 
-	app, ok := project.Target("A1")
-	require.True(t, ok)
-	assert.Equal(t, []string{"L1"}, app.dependencyTargetIDs)
+	project, err := testFactory().Open(projectPath)
+	require.ErrorContains(t, err, "target App depends on unknown target Gone")
+	assert.True(t, project == nil, "got a non-nil %T", project)
 }
 
 func TestXCProj_productReferencedByID(t *testing.T) {
