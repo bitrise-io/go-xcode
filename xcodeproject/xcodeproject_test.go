@@ -54,11 +54,11 @@ func writeProject(t *testing.T, dir string) string {
 	return pth
 }
 
-// writeWorkspace creates <dir>/App.xcworkspace referencing App.xcodeproj next to it, with a shared
+// writeWorkspace creates <dir>/Workspace.xcworkspace referencing App.xcodeproj next to it, with a shared
 // scheme named Workspace, and returns its path.
 func writeWorkspace(t *testing.T, dir string) string {
 	t.Helper()
-	pth := filepath.Join(dir, "App"+xcworkspace.XCWorkspaceExtension)
+	pth := filepath.Join(dir, "Workspace"+xcworkspace.XCWorkspaceExtension)
 	writeFile(t, filepath.Join(pth, "contents.xcworkspacedata"), `<?xml version="1.0" encoding="UTF-8"?>
 <Workspace version = "1.0">
    <FileRef location = "group:App.xcodeproj"></FileRef>
@@ -81,7 +81,7 @@ func TestFactory_Open(t *testing.T) {
 	container, err = testFactory(t).Open(workspacePath)
 	require.NoError(t, err)
 	assert.Equal(t, workspacePath, container.Path())
-	assert.Equal(t, "App", container.Name())
+	assert.Equal(t, "Workspace", container.Name(), "the workspace's own name, not its project's")
 
 	_, err = testFactory(t).Open(filepath.Join(dir, "Package.swift"))
 	assert.ErrorContains(t, err, "neither an Xcode project")
@@ -137,11 +137,11 @@ func TestFactory_Scheme_pathForms(t *testing.T) {
 	workspacePath := writeWorkspace(t, dir)
 
 	t.Run("trailing separator", func(t *testing.T) {
-		for _, pth := range []string{projectPath + "/", workspacePath + "/"} {
+		for pth, wantName := range map[string]string{projectPath + "/": "App", workspacePath + "/": "Workspace"} {
 			container, err := testFactory(t).Open(pth)
 			require.NoError(t, err)
 			assert.Equal(t, filepath.Clean(pth), container.Path())
-			assert.Equal(t, "App", container.Name())
+			assert.Equal(t, wantName, container.Name())
 
 			scheme, containerPath, err := testFactory(t).Scheme(pth, "App")
 			require.NoError(t, err)
