@@ -114,7 +114,7 @@ func forcedCodeSignBuildSettings(opts ForceCodeSignOptions) map[string]string {
 	}
 }
 
-// keysForAllSDKs returns key and its [sdk=...] variants that buildSettings already has.
+// key is returned even when buildSettings does not have it yet.
 func keysForAllSDKs(buildSettings serialized.Object, key string) []string {
 	keys := []string{key}
 
