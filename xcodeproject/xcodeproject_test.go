@@ -77,7 +77,8 @@ func TestFactory_Open(t *testing.T) {
 	c, err := factory.Open(projectPath)
 	require.NoError(t, err)
 	_, _, err = c.Scheme("Workspace")
-	assert.True(t, xcscheme.IsNotFoundError(err), "a project does not see the workspace's schemes")
+	var notFound xcscheme.NotFoundError
+	assert.ErrorAs(t, err, &notFound, "a project does not see the workspace's schemes")
 
 	c, err = factory.Open(workspacePath)
 	require.NoError(t, err)
@@ -128,7 +129,9 @@ func TestFactory_Scheme_notFound(t *testing.T) {
 	for _, pth := range []string{projectPath, workspacePath} {
 		t.Run(filepath.Base(pth), func(t *testing.T) {
 			_, _, err := testFactory(t).Scheme(pth, "Missing")
-			assert.True(t, xcscheme.IsNotFoundError(err))
+			var notFound xcscheme.NotFoundError
+			require.ErrorAs(t, err, &notFound)
+			assert.Equal(t, "Missing", notFound.Scheme)
 		})
 	}
 }
