@@ -405,7 +405,7 @@ func ParseRawProfileEntitlements(profileContents []byte) (Entitlements, error) {
 
 // FindMissingContainers ...
 func FindMissingContainers(projectEnts, profileEnts Entitlements) ([]string, error) {
-	projContainerIDs, err := optionalStringSlice(serialized.Object(projectEnts), ICloudIdentifiersEntitlementKey)
+	projContainerIDs, err := serialized.Object(projectEnts).OptionalStringSlice(ICloudIdentifiersEntitlementKey)
 	if err != nil {
 		return nil, fmt.Errorf("project %w", err)
 	}
@@ -415,7 +415,7 @@ func FindMissingContainers(projectEnts, profileEnts Entitlements) ([]string, err
 
 	// project has containers, so the profile should have at least the same
 
-	profContainerIDs, err := optionalStringSlice(serialized.Object(profileEnts), ICloudIdentifiersEntitlementKey)
+	profContainerIDs, err := serialized.Object(profileEnts).OptionalStringSlice(ICloudIdentifiersEntitlementKey)
 	if err != nil {
 		return nil, fmt.Errorf("profile %w", err)
 	}

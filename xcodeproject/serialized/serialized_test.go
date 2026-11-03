@@ -1,6 +1,7 @@
 package serialized
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -212,4 +213,62 @@ func TestGet_compositesRequireDedicatedAccessors(t *testing.T) {
 	slice, ok := o.StringSlice("array") // StringSlice() casts element-wise
 	require.True(t, ok)
 	require.Equal(t, []string{"a", "b"}, slice)
+}
+
+func TestOptionalString(t *testing.T) {
+	o := Object{"present": "value", "wrongType": 42}
+
+	{
+		v, err := o.OptionalString("present")
+		require.NoError(t, err)
+		require.Equal(t, "value", v)
+	}
+	{
+		v, err := o.OptionalString("missing")
+		require.NoError(t, err, "an absent key is not an error")
+		require.Equal(t, "", v)
+	}
+	{
+		v, err := o.OptionalString("wrongType")
+		require.EqualError(t, err, "wrongType is not a string: 42 (int)")
+		require.Equal(t, "", v)
+
+		var wrongType WrongTypeError
+		require.ErrorAs(t, err, &wrongType)
+		require.Equal(t, WrongTypeError{Key: "wrongType", Value: 42, Expected: "string"}, wrongType)
+	}
+}
+
+func TestOptionalStringSlice(t *testing.T) {
+	o := Object{
+		"present":      []any{"a", "b"},
+		"empty":        []any{},
+		"notAnArray":   "a",
+		"mixedElement": []any{"a", 1},
+	}
+
+	{
+		v, err := o.OptionalStringSlice("present")
+		require.NoError(t, err)
+		require.Equal(t, []string{"a", "b"}, v)
+	}
+	{
+		v, err := o.OptionalStringSlice("empty")
+		require.NoError(t, err)
+		require.Equal(t, []string{}, v, "present and empty is not nil")
+	}
+	{
+		v, err := o.OptionalStringSlice("missing")
+		require.NoError(t, err, "an absent key is not an error")
+		require.Nil(t, v)
+	}
+	{
+		_, err := o.OptionalStringSlice("notAnArray")
+		require.EqualError(t, err, `notAnArray is not a string array: "a" (string)`)
+		require.True(t, errors.As(err, &WrongTypeError{}))
+	}
+	{
+		_, err := o.OptionalStringSlice("mixedElement")
+		require.EqualError(t, err, `mixedElement is not a string array: []interface {}{"a", 1} ([]interface {})`)
+	}
 }
