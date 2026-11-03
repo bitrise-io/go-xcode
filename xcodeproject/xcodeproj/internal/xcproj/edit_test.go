@@ -18,8 +18,7 @@ func TestEditor_xcodeManualSigning(t *testing.T) {
 	manual, err := os.ReadFile(filepath.Join("testdata", "ios-sample-manual-signing.xcproj"))
 	require.NoError(t, err)
 
-	editor, err := NewEditor(automatic)
-	require.NoError(t, err)
+	editor := newEditor(t, automatic)
 
 	const target = "sample-apps-ios-json-xcproj"
 	for _, setting := range []struct{ key, value string }{
@@ -40,8 +39,7 @@ func TestEditor_noEdit(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "ios-sample.xcproj"))
 	require.NoError(t, err)
 
-	editor, err := NewEditor(content)
-	require.NoError(t, err)
+	editor := newEditor(t, content)
 
 	assert.Equal(t, string(content), string(editor.Content()))
 }
@@ -223,8 +221,7 @@ func TestEditor_SetTargetBuildSetting(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			editor, err := NewEditor(fmt.Appendf(nil, project, tt.settings))
-			require.NoError(t, err)
+			editor := newEditor(t, fmt.Appendf(nil, project, tt.settings))
 
 			require.NoError(t, editor.SetTargetBuildSetting("App", tt.configuration, tt.key, tt.value))
 
@@ -251,8 +248,7 @@ func TestEditor_SetTargetBuildSetting_splitShiftsMembers(t *testing.T) {
     "CODE_SIGN_IDENTITY[config=Staging][sdk=iphoneos*]": "iPhone Distribution",
     "PRODUCT_NAME": "App",`
 
-	editor, err := NewEditor(fmt.Appendf(nil, project, settings))
-	require.NoError(t, err)
+	editor := newEditor(t, fmt.Appendf(nil, project, settings))
 
 	require.NoError(t, editor.SetTargetBuildSetting("App", "Staging", "CODE_SIGN_IDENTITY[sdk=iphoneos*]", "iPhone Distribution"))
 
@@ -319,19 +315,22 @@ func TestEditor_SetTargetBuildSetting_errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			editor, err := NewEditor([]byte(tt.content))
-			require.NoError(t, err)
+			editor := newEditor(t, []byte(tt.content))
 
-			err = editor.SetTargetBuildSetting(tt.target, tt.configuration, tt.key, "value")
+			err := editor.SetTargetBuildSetting(tt.target, tt.configuration, tt.key, "value")
 			require.EqualError(t, err, tt.wantErr)
 		})
 	}
 }
 
-func TestNewEditor_JSON5OnlySyntax(t *testing.T) {
-	content, err := os.ReadFile(filepath.Join("testdata", "hand-edited-json5.xcproj"))
+func newEditor(t *testing.T, content []byte) *Editor {
+	t.Helper()
+
+	project, err := Decode(content)
 	require.NoError(t, err)
 
-	_, err = NewEditor(content)
-	require.ErrorContains(t, err, "other JSON5 syntax, such as unquoted keys or single-quoted strings, is not supported")
+	editor, err := NewEditor(content, project.Configurations)
+	require.NoError(t, err)
+
+	return editor
 }

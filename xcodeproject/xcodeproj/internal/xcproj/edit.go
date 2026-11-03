@@ -16,25 +16,21 @@ type Editor struct {
 	configurations []string
 }
 
-// NewEditor parses the content of a project.xcproj file for editing.
-func NewEditor(content []byte) (*Editor, error) {
-	project, err := Decode(content)
-	if err != nil {
-		return nil, err
-	}
-
+// NewEditor parses the content of a project.xcproj file for editing. configurations are what
+// Decode returns for content.
+func NewEditor(content []byte, configurations []Configuration) (*Editor, error) {
 	// The parsed tree aliases its input.
 	root, err := hujson.Parse(bytes.Clone(content))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project.xcproj: %w", err)
 	}
 
-	configurations := make([]string, 0, len(project.Configurations))
-	for _, configuration := range project.Configurations {
-		configurations = append(configurations, configuration.Name)
+	names := make([]string, 0, len(configurations))
+	for _, configuration := range configurations {
+		names = append(names, configuration.Name)
 	}
 
-	return &Editor{root: root, configurations: configurations}, nil
+	return &Editor{root: root, configurations: names}, nil
 }
 
 // SetTargetBuildSetting sets key for one configuration of a target. key may carry conditions
