@@ -29,12 +29,5 @@ func BuildForTesting(params BuildForTestingParams) (Command, error) {
 	opts = appendAuthentication(opts, params.Authentication)
 	opts = appendValue(opts, "-testPlan", params.TestPlan)
 
-	return assemble(opts, params.AdditionalOptions, buildForTestingPolicy)
-}
-
-// build-for-testing takes the test selection flags, which it bakes into the xctestrun.
-var buildForTestingPolicy = actionPolicy{
-	name:       ActionBuildForTesting,
-	defaults:   []string{"-destination"},
-	appendable: []string{"-arch"},
+	return assemble(opts, params.AdditionalOptions)
 }

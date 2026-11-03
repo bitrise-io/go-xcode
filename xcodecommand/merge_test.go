@@ -14,12 +14,11 @@ func TestMerge(t *testing.T) {
 		{Kind: ValueOption, Name: "-project", Value: "App.xcodeproj"},
 		{Kind: ValueOption, Name: "-scheme", Value: "App"},
 		{Kind: ValueOption, Name: "-configuration", Value: "Release"},
-		{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS"},
+		{Kind: ValueOption, Name: "-destination", Value: "generic/platform=iOS", fallback: true},
 		{Kind: ValueOption, Name: "-xcconfig", Value: "/tmp/temp.xcconfig"},
 		{Kind: Switch, Name: "-allowProvisioningUpdates"},
 		{Kind: BuildSetting, Name: "CODE_SIGNING_ALLOWED", Value: "NO"},
 	}
-	policy := actionPolicy{name: "archive", defaults: []string{"-destination"}, appendable: []string{"-skip-testing"}}
 	base := []string{
 		"clean", "archive", "-project", "App.xcodeproj", "-scheme", "App",
 		"-configuration", "Release", "-destination", "generic/platform=iOS",
@@ -103,6 +102,13 @@ func TestMerge(t *testing.T) {
 			want: append(slices.Clone(base), "-scheme", "App"),
 		},
 		{
+			// "-allowProvisioningUpdates:YES" is an invalid option, "-allowProvisioningUpdates YES"
+			// an unknown build action: xcodebuild refuses either, so the step's switch stays
+			name: "a copy in another form replaces nothing",
+			user: Options{{Kind: ColonOption, Name: "-allowProvisioningUpdates", Value: "YES"}, {Kind: ValueOption, Name: "-allowProvisioningUpdates", Value: "YES"}},
+			want: append(slices.Clone(base), "-allowProvisioningUpdates:YES", "-allowProvisioningUpdates", "YES"),
+		},
+		{
 			name: "actions and unknown tokens are appended, never merged",
 			user: Options{{Kind: Action, Name: "clean"}, {Kind: Unknown, Name: "-scheme"}},
 			want: append(slices.Clone(base), "clean", "-scheme"),
@@ -110,7 +116,7 @@ func TestMerge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := merge(derived, tt.user, policy)
+			got := merge(derived, tt.user)
 			require.Equal(t, tt.want, got.Args())
 			require.Equal(t, tt.dropped, dropped(got))
 		})
@@ -128,7 +134,8 @@ func dropped(line merged) []string {
 	return out
 }
 
-func TestMerge_appendableKeepsDerivedEntries(t *testing.T) {
+func TestMerge_repeatableFlagKeepsEveryCopy(t *testing.T) {
+	// test's quarantine -skip-testing next to the user's: xcodebuild applies every copy
 	derived := Options{
 		{Kind: Action, Name: "test"},
 		{Kind: ColonOption, Name: "-skip-testing", Value: "AppTests/Flaky"},
@@ -136,17 +143,29 @@ func TestMerge_appendableKeepsDerivedEntries(t *testing.T) {
 	}
 	user := Options{{Kind: ColonOption, Name: "-skip-testing", Value: "AppTests/Manual"}}
 
-	got := merge(derived, user, actionPolicy{name: "test", appendable: []string{"-skip-testing"}})
+	got := merge(derived, user)
 	require.Equal(t, []string{"test", "-skip-testing:AppTests/Flaky", "-skip-testing:AppTests/Slow", "-skip-testing:AppTests/Manual"}, got.Args())
 	require.Empty(t, dropped(got))
 }
 
+func TestMerge_aCopyThatTookAFlagReplacesNothing(t *testing.T) {
+	// analyze with "-resultBundlePath -quiet" in xcodebuild_options: the parser takes -quiet
+	// as the value, as xcodebuild does. The step's default stays, and xcodebuild refuses the
+	// repeat instead of writing the bundle to ./-quiet.
+	derived := Options{{Kind: ValueOption, Name: "-resultBundlePath", Value: "/tmp/Analyze.xcresult", fallback: true}}
+	user := parse([]string{"-resultBundlePath", "-quiet"})
+
+	got := merge(derived, user)
+	require.Equal(t, []string{"-resultBundlePath", "/tmp/Analyze.xcresult", "-resultBundlePath", "-quiet"}, got.Args())
+	require.Empty(t, dropped(got))
+}
+
 func TestMerge_userDefaultDoesNotReplaceAFlag(t *testing.T) {
-	derived := Options{{Kind: ValueOption, Name: "-collect-test-diagnostics", Value: "never"}}
+	derived := Options{{Kind: ValueOption, Name: "-collect-test-diagnostics", Value: "never", fallback: true}}
 	user := Options{{Kind: UserDefault, Name: "-collect-test-diagnostics", Value: "on-failure"}}
 
-	got := merge(derived, user, actionPolicy{name: "test", defaults: []string{"-collect-test-diagnostics"}})
+	got := merge(derived, user)
 
 	require.Equal(t, []string{"-collect-test-diagnostics", "never", "-collect-test-diagnostics=on-failure"}, got.Args(), "the step's flag stays; xcodebuild ignores the = form")
-	require.Empty(t, dropped(got), "a user default keys as -flag=, so it never replaces the flag; lint reports it")
+	require.Empty(t, dropped(got), "a user default is another form of the flag, so it never replaces it")
 }

@@ -25,14 +25,8 @@ func Analyze(params AnalyzeParams) (Command, error) {
 		xcconfigPath:  params.XCConfigPath,
 		sdk:           params.SDK,
 	}.options()...)
-	opts = appendValue(opts, "-resultBundlePath", params.ResultBundlePath)
+	opts = appendDefault(opts, "-resultBundlePath", params.ResultBundlePath)
 	opts = appendCodeSigningAllowed(opts, params.DisableCodeSigning)
 
-	return assemble(opts, params.AdditionalOptions, analyzePolicy)
-}
-
-var analyzePolicy = actionPolicy{
-	name:       ActionAnalyze,
-	defaults:   []string{"-destination", "-resultBundlePath"},
-	appendable: []string{"-arch"},
+	return assemble(opts, params.AdditionalOptions)
 }

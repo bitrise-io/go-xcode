@@ -28,8 +28,8 @@ func (c Command) Create(factory command.Factory, opts *command.Opts) command.Com
 }
 
 // assemble merges the step's additional options over the derived flags.
-func assemble(derived, user Options, policy actionPolicy) (Command, error) {
-	return Command{args: merge(derived, user, policy).Args()}, nil
+func assemble(derived, user Options) (Command, error) {
+	return Command{args: merge(derived, user).Args()}, nil
 }
 
 // projectOptions are the flags every scheme-building action shares.
@@ -46,7 +46,7 @@ func (p projectOptions) options() Options {
 	opts := containerOptions(p.projectPath)
 	opts = appendValue(opts, "-scheme", p.scheme)
 	opts = appendValue(opts, "-configuration", p.configuration)
-	opts = appendValue(opts, "-destination", p.destination)
+	opts = appendDefault(opts, "-destination", p.destination)
 	opts = appendValue(opts, "-xcconfig", p.xcconfigPath)
 	opts = appendValue(opts, "-sdk", p.sdk)
 	return opts
@@ -78,6 +78,16 @@ func appendValue(opts Options, flag, value string) Options {
 		return opts
 	}
 	return append(opts, Option{Kind: ValueOption, Name: flag, Value: value})
+}
+
+// appendDefault adds a value flag the Step sets on its own, which a copy in the additional
+// options replaces: the build family's -destination, as steps-xcode-archive dropped its
+// own for the user's. Any other derived flag stays next to the user's copy; see merge.
+func appendDefault(opts Options, flag, value string) Options {
+	if value == "" {
+		return opts
+	}
+	return append(opts, Option{Kind: ValueOption, Name: flag, Value: value, fallback: true})
 }
 
 func appendAuthentication(opts Options, auth *Authentication) Options {

@@ -28,13 +28,5 @@ func Archive(params ArchiveParams) (Command, error) {
 	opts = appendValue(opts, "-archivePath", params.ArchivePath)
 	opts = appendAuthentication(opts, params.Authentication)
 
-	return assemble(opts, params.AdditionalOptions, archivePolicy)
-}
-
-// The step's -destination is a fallback the user's replaces; -arch is repeatable. The
-// other build actions follow the same rule.
-var archivePolicy = actionPolicy{
-	name:       ActionArchive,
-	defaults:   []string{"-destination"},
-	appendable: []string{"-arch"},
+	return assemble(opts, params.AdditionalOptions)
 }
