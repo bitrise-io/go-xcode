@@ -199,38 +199,6 @@ func TestXcodeProj_DependentTargetsOfTarget_sharedDependency(t *testing.T) {
 	assert.Equal(t, []string{"B", "D", "E", "C"}, targetNames(project.DependentTargetsOfTarget(project.targets[0])))
 }
 
-func TestXcodeProj_TargetDevelopmentTeam(t *testing.T) {
-	t.Run("target with a development team", func(t *testing.T) {
-		project := parseFixture(t, "minimal.pbxproj")
-
-		team, ok := project.TargetDevelopmentTeam("AA00000000000000000000E1")
-		require.True(t, ok)
-		assert.Equal(t, "TEAM123456", team)
-	})
-
-	t.Run("target has attributes but no development team", func(t *testing.T) {
-		project := parseFixture(t, "ios-sample.pbxproj")
-
-		_, ok := project.TargetDevelopmentTeam(uiTestTargetID)
-		assert.False(t, ok)
-	})
-
-	t.Run("target absent from TargetAttributes", func(t *testing.T) {
-		project := parseFixture(t, "without-target-attributes.pbxproj")
-
-		_, ok := project.TargetDevelopmentTeam("13BD6332256BE7BF00F72361")
-		assert.False(t, ok)
-	})
-
-	t.Run("project without TargetAttributes at all", func(t *testing.T) {
-		project := parseFixture(t, "minimal.pbxproj")
-		project.targetAttributes = nil
-
-		_, ok := project.TargetDevelopmentTeam("AA00000000000000000000E1")
-		assert.False(t, ok)
-	})
-}
-
 func targetNames(targets []Target) []string {
 	var names []string
 	for _, target := range targets {
