@@ -3,9 +3,7 @@
 package xcodeproject
 
 import (
-	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
-	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace"
 )
 
 // Container is an opened Xcode project or workspace, so a caller never needs to know which of the
@@ -20,32 +18,31 @@ type Container interface {
 	Scheme(name string) (xcscheme.Scheme, string, error)
 }
 
-// container is the Container over either a project or a workspace.
+// schemeSource looks up a scheme by name. Both *xcodeproj.XcodeProj and *xcworkspace.Workspace
+// implement it.
+type schemeSource interface {
+	Scheme(name string) (xcscheme.Scheme, string, error)
+}
+
+// container is the Container over either a project or a workspace: what both share is taken from
+// the opened bundle once, so no method needs to know which of the two it holds.
 type container struct {
-	project   *xcodeproj.XcodeProj   // the opened project, nil for a workspace
-	workspace *xcworkspace.Workspace // the opened workspace, nil for a project
+	path    string
+	name    string
+	schemes schemeSource
 }
 
 // Path implements Container.
 func (c *container) Path() string {
-	if c.workspace != nil {
-		return c.workspace.Path
-	}
-	return c.project.Path
+	return c.path
 }
 
 // Name implements Container.
 func (c *container) Name() string {
-	if c.workspace != nil {
-		return c.workspace.Name
-	}
-	return c.project.Name
+	return c.name
 }
 
 // Scheme implements Container.
 func (c *container) Scheme(name string) (xcscheme.Scheme, string, error) {
-	if c.workspace != nil {
-		return c.workspace.Scheme(name)
-	}
-	return c.project.Scheme(name)
+	return c.schemes.Scheme(name)
 }
