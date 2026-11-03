@@ -3,12 +3,14 @@ package projectmanager
 import (
 	"fmt"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/bitrise-io/go-utils/command/git"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
+	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 	"github.com/stretchr/testify/require"
 )
 
@@ -563,6 +565,83 @@ func Test_resolveEntitlementVariables(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("resolveEntitlementVariables() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_sourcePackagesDir(t *testing.T) {
+	tests := []struct {
+		name     string
+		settings serialized.Object
+		want     string
+		wantOK   bool
+	}{
+		{
+			name:     "DerivedData layout",
+			settings: serialized.Object{"BUILD_ROOT": "/Users/vagrant/Library/Developer/Xcode/DerivedData/App-eqdzidalkfwffoalxuhdwmgqthfr/Build/Products"},
+			want:     "/Users/vagrant/Library/Developer/Xcode/DerivedData/App-eqdzidalkfwffoalxuhdwmgqthfr/SourcePackages",
+			wantOK:   true,
+		},
+		{
+			name:     "SYMROOT override",
+			settings: serialized.Object{"BUILD_ROOT": "/tmp/out"},
+			wantOK:   false,
+		},
+		{
+			name:     "missing",
+			settings: serialized.Object{},
+			wantOK:   false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, ok := sourcePackagesDir(tt.settings)
+			require.Equal(t, tt.wantOK, ok)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestProjectHelper_projectTargetOptions(t *testing.T) {
+	workspaceSettings := serialized.Object{"BUILD_ROOT": "/dd/App-hash/Build/Products"}
+	tests := []struct {
+		name              string
+		options           []string
+		workspaceSettings serialized.Object
+		want              []string
+	}{
+		{
+			name:              "workspace packages shared with the project query",
+			options:           []string{"-skipMacroValidation", "-onlyUsePackageVersionsFromResolvedFile"},
+			workspaceSettings: workspaceSettings,
+			want:              []string{"-skipMacroValidation", "-onlyUsePackageVersionsFromResolvedFile", "-clonedSourcePackagesDirPath", "/dd/App-hash/SourcePackages"},
+		},
+		{
+			name:              "the step's own clone directory wins",
+			options:           []string{"-clonedSourcePackagesDirPath", "/cache/spm"},
+			workspaceSettings: workspaceSettings,
+			want:              []string{"-clonedSourcePackagesDirPath", "/cache/spm"},
+		},
+		{
+			name:              "no workspace settings",
+			options:           []string{"-onlyUsePackageVersionsFromResolvedFile"},
+			workspaceSettings: nil,
+			want:              []string{"-onlyUsePackageVersionsFromResolvedFile"},
+		},
+		{
+			name:              "unusable BUILD_ROOT",
+			options:           nil,
+			workspaceSettings: serialized.Object{"BUILD_ROOT": "/tmp/out"},
+			want:              nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := ProjectHelper{logger: log.NewLogger(), additionalXcodebuildOptions: tt.options}
+			original := slices.Clone(tt.options)
+
+			require.Equal(t, tt.want, p.projectTargetOptions(tt.workspaceSettings))
+			require.Equal(t, original, tt.options, "the helper's options are not modified")
 		})
 	}
 }
