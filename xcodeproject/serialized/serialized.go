@@ -10,8 +10,6 @@
 // and report a value of the wrong type as a WrongTypeError.
 package serialized
 
-import "fmt"
-
 // Object is a decoded plist/pbxproj node: a set of string keys mapped to
 // arbitrary values.
 type Object map[string]any
@@ -104,18 +102,6 @@ func (o Object) Object(key string) (Object, bool) {
 		return nil, false
 	}
 	return casted, true
-}
-
-// WrongTypeError reports a key whose value is not of the type the caller asked
-// for. Value is the stored value, so the file it came from can be corrected.
-type WrongTypeError struct {
-	Key      string
-	Value    any
-	Expected string
-}
-
-func (e WrongTypeError) Error() string {
-	return fmt.Sprintf("%s is not a %s: %#v (%T)", e.Key, e.Expected, e.Value, e.Value)
 }
 
 // OptionalString returns the string stored at key. An absent key is "" with no
