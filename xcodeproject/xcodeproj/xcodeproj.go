@@ -2,8 +2,10 @@
 package xcodeproj
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -15,15 +17,13 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 )
 
-// XcodeProjExtension is the file extension of an Xcode project bundle.
-const XcodeProjExtension = ".xcodeproj"
+const (
+	// XcodeProjExtension is the file extension of an Xcode project bundle.
+	XcodeProjExtension = ".xcodeproj"
 
-const pbxProjFileName = "project.pbxproj"
-
-// IsXcodeProj reports whether the path has the .xcodeproj extension.
-func IsXcodeProj(pth string) bool {
-	return filepath.Ext(pth) == XcodeProjExtension
-}
+	pbxProjFileName = "project.pbxproj"
+	xcProjFileName  = "project.xcproj"
+)
 
 // XcodeProj is a parsed Xcode project.
 type XcodeProj interface {
@@ -107,6 +107,26 @@ type Factory struct {
 	schemeFactory    xcscheme.Factory
 }
 
+// baseProj is what's common in the PBXProj and XCProj implementations.
+type baseProj struct {
+	name string
+	path string
+
+	logger           log.Logger
+	buildSettings    BuildSettingsProvider
+	fileManager      fileutil.FileManager
+	plistFileHandler plistutil.FileHandler
+	pathModifier     pathutil.PathModifier
+	pathProvider     pathutil.PathProvider
+	userProvider     UserProvider
+	dirCreator       DirCreator
+	schemeFactory    xcscheme.Factory
+
+	targets                  []Target
+	buildConfigurations      []BuildConfiguration
+	defaultConfigurationName string
+}
+
 // NewFactory returns a Factory that injects the given collaborators into every project it opens.
 func NewFactory(
 	logger log.Logger,
@@ -131,18 +151,75 @@ func NewFactory(
 	}
 }
 
-// Open reads and parses the project at pth.
+// IsXcodeProj reports whether the path has the .xcodeproj extension.
+func IsXcodeProj(pth string) bool {
+	return filepath.Ext(pth) == XcodeProjExtension
+}
+
+// Open reads and parses the project at pth: its project.pbxproj or its project.xcproj. A bundle
+// with both is an error, because xcodebuild refuses to read it.
 func (f Factory) Open(pth string) (XcodeProj, error) {
 	absPth, err := f.pathModifier.AbsPath(pth)
 	if err != nil {
 		return nil, fmt.Errorf("failed to expand path (%s): %w", pth, err)
 	}
 
-	pbxProjPth := filepath.Join(absPth, pbxProjFileName)
-
-	file, err := f.fileManager.Open(pbxProjPth)
+	pbxProjPath := filepath.Join(absPth, pbxProjFileName)
+	xcProjPath := filepath.Join(absPth, xcProjFileName)
+	hasPBXProj, err := f.projectFileExists(pbxProjPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open %s: %w", pbxProjPth, err)
+		return nil, err
+	}
+	hasXCProj, err := f.projectFileExists(xcProjPath)
+	if err != nil {
+		return nil, err
+	}
+
+	switch {
+	case hasPBXProj && hasXCProj:
+		return nil, fmt.Errorf("found both %s and %s in %s: Xcode treats a project with both as invalid, remove the obsolete one", pbxProjFileName, xcProjFileName, absPth)
+	case hasPBXProj:
+		content, err := f.readProjectFile(pbxProjPath)
+		if err != nil {
+			return nil, err
+		}
+		// The buffer was read here and nobody else holds it, so it needs no copy.
+		project, err := f.newPBXProj(content, absPth)
+		if err != nil {
+			// Returning the nil *PBXProj would make a non-nil XcodeProj.
+			return nil, err
+		}
+		return project, nil
+	case hasXCProj:
+		content, err := f.readProjectFile(xcProjPath)
+		if err != nil {
+			return nil, err
+		}
+		project, err := f.newXCProj(content, absPth)
+		if err != nil {
+			return nil, err
+		}
+		return project, nil
+	default:
+		return nil, fmt.Errorf("found neither %s nor %s in %s: %w", pbxProjFileName, xcProjFileName, absPth, fs.ErrNotExist)
+	}
+}
+
+func (f Factory) projectFileExists(pth string) (bool, error) {
+	_, err := f.fileManager.Lstat(pth)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("failed to check %s: %w", pth, err)
+	}
+	return true, nil
+}
+
+func (f Factory) readProjectFile(pth string) ([]byte, error) {
+	file, err := f.fileManager.Open(pth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open %s: %w", pth, err)
 	}
 	defer func() {
 		_ = file.Close()
@@ -150,16 +227,9 @@ func (f Factory) Open(pth string) (XcodeProj, error) {
 
 	content, err := io.ReadAll(file)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", pbxProjPth, err)
+		return nil, fmt.Errorf("failed to read %s: %w", pth, err)
 	}
-
-	// The buffer was read here and nobody else holds it, so it needs no copy.
-	project, err := f.newPBXProj(content, absPth)
-	if err != nil {
-		// Returning the nil *PBXProj would make a non-nil XcodeProj.
-		return nil, err
-	}
-	return project, nil
+	return content, nil
 }
 
 func (f Factory) newBaseProj(projectPath string) baseProj {
@@ -176,26 +246,6 @@ func (f Factory) newBaseProj(projectPath string) baseProj {
 		dirCreator:       f.dirCreator,
 		schemeFactory:    f.schemeFactory,
 	}
-}
-
-// baseProj is what's common in the PBXProj and XCProj implementations.
-type baseProj struct {
-	name string
-	path string
-
-	logger           log.Logger
-	buildSettings    BuildSettingsProvider
-	fileManager      fileutil.FileManager
-	plistFileHandler plistutil.FileHandler
-	pathModifier     pathutil.PathModifier
-	pathProvider     pathutil.PathProvider
-	userProvider     UserProvider
-	dirCreator       DirCreator
-	schemeFactory    xcscheme.Factory
-
-	targets                  []Target
-	buildConfigurations      []BuildConfiguration
-	defaultConfigurationName string
 }
 
 // Name implements XcodeProj.

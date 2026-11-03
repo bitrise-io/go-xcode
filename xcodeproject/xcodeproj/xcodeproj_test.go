@@ -1,6 +1,7 @@
 package xcodeproj
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,6 +32,29 @@ func testFactory() Factory {
 		NewUserProvider(),
 		NewDirCreator(),
 	)
+}
+
+func openProjectFiles(t *testing.T, files map[string][]byte) XcodeProj {
+	t.Helper()
+
+	projectPath := writeProjectFiles(t, files)
+	project, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+
+	return project
+}
+
+func writeProjectFiles(t *testing.T, files map[string][]byte) string {
+	t.Helper()
+
+	// Real directory: a faked FileManager would have to return a real *os.File anyway.
+	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
+	require.NoError(t, os.MkdirAll(projectPath, 0755))
+	for name, content := range files {
+		require.NoError(t, os.WriteFile(filepath.Join(projectPath, name), content, 0644))
+	}
+
+	return projectPath
 }
 
 func parseFixture(t *testing.T, name string) *PBXProj {
@@ -100,13 +124,9 @@ func TestFactory_Parse_noProjectObject(t *testing.T) {
 }
 
 func TestFactory_Open(t *testing.T) {
-	// Real directory: a faked FileManager would have to return a real *os.File anyway.
-	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
-	require.NoError(t, os.MkdirAll(projectPath, 0755))
-
 	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), content, 0644))
+	projectPath := writeProjectFiles(t, map[string][]byte{pbxProjFileName: content})
 
 	project, err := testFactory().Open(projectPath)
 	require.NoError(t, err)
@@ -116,15 +136,37 @@ func TestFactory_Open(t *testing.T) {
 	require.Len(t, project.Targets(), 1)
 }
 
+func TestFactory_Open_bothProjectFiles(t *testing.T) {
+	pbxProj, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
+	require.NoError(t, err)
+	projectPath := writeProjectFiles(t, map[string][]byte{
+		pbxProjFileName: pbxProj,
+		xcProjFileName:  []byte("not read"),
+	})
+
+	project, err := testFactory().Open(projectPath)
+	require.ErrorContains(t, err, "found both project.pbxproj and project.xcproj")
+	assert.True(t, project == nil, "got a non-nil %T", project)
+}
+
 func TestFactory_Open_missingProject(t *testing.T) {
 	_, err := testFactory().Open(filepath.Join(t.TempDir(), "Missing.xcodeproj"))
-	require.Error(t, err)
+	require.ErrorContains(t, err, "found neither project.pbxproj nor project.xcproj")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestFactory_Open_unreadableProjectFile(t *testing.T) {
+	projectPath := writeProjectFiles(t, map[string][]byte{})
+	require.NoError(t, os.Mkdir(filepath.Join(projectPath, pbxProjFileName), 0755))
+
+	project, err := testFactory().Open(projectPath)
+	require.ErrorContains(t, err, pbxProjFileName)
+	assert.NotErrorIs(t, err, fs.ErrNotExist)
+	assert.True(t, project == nil, "got a non-nil %T", project)
 }
 
 func TestFactory_Open_invalidProjectReturnsNilProject(t *testing.T) {
-	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
-	require.NoError(t, os.MkdirAll(projectPath, 0755))
-	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), []byte("{}"), 0644))
+	projectPath := writeProjectFiles(t, map[string][]byte{pbxProjFileName: []byte("{}")})
 
 	project, err := testFactory().Open(projectPath)
 	require.Error(t, err)

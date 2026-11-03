@@ -66,6 +66,9 @@ type Target struct {
 	// TestHostTarget is the name of the app target a test target runs in.
 	TestHostTarget string
 
+	// LegacyTeamID is the development team recorded outside the DEVELOPMENT_TEAM build setting.
+	LegacyTeamID string
+
 	// Dependencies are the names of the project's own targets this target depends on.
 	// Dependencies on other projects and on Swift packages are left out.
 	Dependencies []string
@@ -95,6 +98,7 @@ type rawTarget struct {
 	FullProductType string                `json:"full-product-type"`
 	Product         rawGroupTreeReference `json:"product"`
 	TestHostTarget  string                `json:"test-host-target"`
+	LegacyTeamID    string                `json:"legacy-team-id"`
 	Dependencies    []rawDependency       `json:"dependencies"`
 	BuildSettings   serialized.Object     `json:"build-settings"`
 }
@@ -197,12 +201,24 @@ func (r rawProject) project() (Project, error) {
 	}
 
 	targets := make([]Target, 0, len(r.Targets))
+	names := make(map[string]bool, len(r.Targets))
 	for i, rawTarget := range r.Targets {
 		target, err := rawTarget.target()
 		if err != nil {
 			return Project{}, fmt.Errorf("target %d: %w", i, err)
 		}
+		if names[target.Name] {
+			return Project{}, fmt.Errorf("target %d: another target is also named %s", i, target.Name)
+		}
+		names[target.Name] = true
 		targets = append(targets, target)
+	}
+	for _, target := range targets {
+		for _, dependency := range target.Dependencies {
+			if !names[dependency] {
+				return Project{}, fmt.Errorf("target %s depends on unknown target %s", target.Name, dependency)
+			}
+		}
 	}
 
 	return Project{
@@ -254,6 +270,7 @@ func (r rawTarget) target() (Target, error) {
 		Product:        r.Product.NamePath,
 		ProductID:      r.Product.ID,
 		TestHostTarget: r.TestHostTarget,
+		LegacyTeamID:   r.LegacyTeamID,
 		Dependencies:   dependencies,
 		BuildSettings:  nonNil(r.BuildSettings),
 	}, nil
