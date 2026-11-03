@@ -139,13 +139,14 @@ func TestFactory_Open(t *testing.T) {
 func TestFactory_Open_bothProjectFiles(t *testing.T) {
 	pbxProj, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
 	require.NoError(t, err)
-
-	project := openProjectFiles(t, map[string][]byte{
+	projectPath := writeProjectFiles(t, map[string][]byte{
 		pbxProjFileName: pbxProj,
 		xcProjFileName:  []byte("not read"),
 	})
 
-	assert.IsType(t, &PBXProj{}, project)
+	project, err := testFactory().Open(projectPath)
+	require.ErrorContains(t, err, "found both project.pbxproj and project.xcproj")
+	assert.True(t, project == nil, "got a non-nil %T", project)
 }
 
 func TestFactory_Open_missingProject(t *testing.T) {
@@ -155,7 +156,7 @@ func TestFactory_Open_missingProject(t *testing.T) {
 }
 
 func TestFactory_Open_unreadableProjectFile(t *testing.T) {
-	projectPath := writeProjectFiles(t, map[string][]byte{xcProjFileName: []byte(`{"targets": []}`)})
+	projectPath := writeProjectFiles(t, map[string][]byte{})
 	require.NoError(t, os.Mkdir(filepath.Join(projectPath, pbxProjFileName), 0755))
 
 	project, err := testFactory().Open(projectPath)

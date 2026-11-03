@@ -156,16 +156,33 @@ func IsXcodeProj(pth string) bool {
 	return filepath.Ext(pth) == XcodeProjExtension
 }
 
-// Open reads and parses the project at pth: its project.pbxproj, or its project.xcproj when the
-// bundle has no project.pbxproj.
+// Open reads and parses the project at pth: its project.pbxproj or its project.xcproj. A bundle
+// with both is an error, because xcodebuild refuses to read it.
 func (f Factory) Open(pth string) (XcodeProj, error) {
 	absPth, err := f.pathModifier.AbsPath(pth)
 	if err != nil {
 		return nil, fmt.Errorf("failed to expand path (%s): %w", pth, err)
 	}
 
-	content, err := f.readProjectFile(filepath.Join(absPth, pbxProjFileName))
-	if err == nil {
+	pbxProjPath := filepath.Join(absPth, pbxProjFileName)
+	xcProjPath := filepath.Join(absPth, xcProjFileName)
+	hasPBXProj, err := f.projectFileExists(pbxProjPath)
+	if err != nil {
+		return nil, err
+	}
+	hasXCProj, err := f.projectFileExists(xcProjPath)
+	if err != nil {
+		return nil, err
+	}
+
+	switch {
+	case hasPBXProj && hasXCProj:
+		return nil, fmt.Errorf("found both %s and %s in %s: Xcode treats a project with both as invalid, remove the obsolete one", pbxProjFileName, xcProjFileName, absPth)
+	case hasPBXProj:
+		content, err := f.readProjectFile(pbxProjPath)
+		if err != nil {
+			return nil, err
+		}
 		// The buffer was read here and nobody else holds it, so it needs no copy.
 		project, err := f.newPBXProj(content, absPth)
 		if err != nil {
@@ -173,24 +190,30 @@ func (f Factory) Open(pth string) (XcodeProj, error) {
 			return nil, err
 		}
 		return project, nil
-	}
-	if !errors.Is(err, fs.ErrNotExist) {
-		return nil, err
-	}
-
-	content, err = f.readProjectFile(filepath.Join(absPth, xcProjFileName))
-	if errors.Is(err, fs.ErrNotExist) {
+	case hasXCProj:
+		content, err := f.readProjectFile(xcProjPath)
+		if err != nil {
+			return nil, err
+		}
+		project, err := f.newXCProj(content, absPth)
+		if err != nil {
+			return nil, err
+		}
+		return project, nil
+	default:
 		return nil, fmt.Errorf("found neither %s nor %s in %s: %w", pbxProjFileName, xcProjFileName, absPth, fs.ErrNotExist)
 	}
-	if err != nil {
-		return nil, err
-	}
+}
 
-	project, err := f.newXCProj(content, absPth)
-	if err != nil {
-		return nil, err
+func (f Factory) projectFileExists(pth string) (bool, error) {
+	_, err := f.fileManager.Lstat(pth)
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
 	}
-	return project, nil
+	if err != nil {
+		return false, fmt.Errorf("failed to check %s: %w", pth, err)
+	}
+	return true, nil
 }
 
 func (f Factory) readProjectFile(pth string) ([]byte, error) {
