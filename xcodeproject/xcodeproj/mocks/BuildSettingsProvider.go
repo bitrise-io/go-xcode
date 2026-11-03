@@ -36,6 +36,95 @@ func (_m *BuildSettingsProvider) EXPECT() *BuildSettingsProvider_Expecter {
 	return &BuildSettingsProvider_Expecter{mock: &_m.Mock}
 }
 
+// SchemeBuildSettings provides a mock function for the type BuildSettingsProvider
+func (_mock *BuildSettingsProvider) SchemeBuildSettings(projectPath string, scheme string, configuration string, extraArgs ...string) (serialized.Object, error) {
+	var tmpRet mock.Arguments
+	if len(extraArgs) > 0 {
+		tmpRet = _mock.Called(projectPath, scheme, configuration, extraArgs)
+	} else {
+		tmpRet = _mock.Called(projectPath, scheme, configuration)
+	}
+	ret := tmpRet
+
+	if len(ret) == 0 {
+		panic("no return value specified for SchemeBuildSettings")
+	}
+
+	var r0 serialized.Object
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string, string, string, ...string) (serialized.Object, error)); ok {
+		return returnFunc(projectPath, scheme, configuration, extraArgs...)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string, string, string, ...string) serialized.Object); ok {
+		r0 = returnFunc(projectPath, scheme, configuration, extraArgs...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(serialized.Object)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string, string, string, ...string) error); ok {
+		r1 = returnFunc(projectPath, scheme, configuration, extraArgs...)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// BuildSettingsProvider_SchemeBuildSettings_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SchemeBuildSettings'
+type BuildSettingsProvider_SchemeBuildSettings_Call struct {
+	*mock.Call
+}
+
+// SchemeBuildSettings is a helper method to define mock.On call
+//   - projectPath string
+//   - scheme string
+//   - configuration string
+//   - extraArgs ...string
+func (_e *BuildSettingsProvider_Expecter) SchemeBuildSettings(projectPath interface{}, scheme interface{}, configuration interface{}, extraArgs ...interface{}) *BuildSettingsProvider_SchemeBuildSettings_Call {
+	return &BuildSettingsProvider_SchemeBuildSettings_Call{Call: _e.mock.On("SchemeBuildSettings",
+		append([]interface{}{projectPath, scheme, configuration}, extraArgs...)...)}
+}
+
+func (_c *BuildSettingsProvider_SchemeBuildSettings_Call) Run(run func(projectPath string, scheme string, configuration string, extraArgs ...string)) *BuildSettingsProvider_SchemeBuildSettings_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 []string
+		var variadicArgs []string
+		if len(args) > 3 {
+			variadicArgs = args[3].([]string)
+		}
+		arg3 = variadicArgs
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3...,
+		)
+	})
+	return _c
+}
+
+func (_c *BuildSettingsProvider_SchemeBuildSettings_Call) Return(object serialized.Object, err error) *BuildSettingsProvider_SchemeBuildSettings_Call {
+	_c.Call.Return(object, err)
+	return _c
+}
+
+func (_c *BuildSettingsProvider_SchemeBuildSettings_Call) RunAndReturn(run func(projectPath string, scheme string, configuration string, extraArgs ...string) (serialized.Object, error)) *BuildSettingsProvider_SchemeBuildSettings_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // TargetBuildSettings provides a mock function for the type BuildSettingsProvider
 func (_mock *BuildSettingsProvider) TargetBuildSettings(projectPath string, target string, configuration string, extraArgs ...string) (serialized.Object, error) {
 	var tmpRet mock.Arguments

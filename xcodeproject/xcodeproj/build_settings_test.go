@@ -55,6 +55,17 @@ func TestXcodeProj_TargetBuildSettings(t *testing.T) {
 	assert.Equal(t, serialized.Object{"SDKROOT": "iphoneos"}, settings)
 }
 
+func TestXcodeProj_SchemeBuildSettings(t *testing.T) {
+	provider := mocks.NewBuildSettingsProvider(t)
+	project := projectWithProvider(t, provider)
+	provider.On("SchemeBuildSettings", project.Path, "App", "Release", []string{"-destination", "generic/platform=iOS"}).
+		Return(serialized.Object{"SDKROOT": "iphoneos"}, nil).Once()
+
+	settings, err := project.SchemeBuildSettings("App", "Release", "-destination", "generic/platform=iOS")
+	require.NoError(t, err)
+	assert.Equal(t, serialized.Object{"SDKROOT": "iphoneos"}, settings)
+}
+
 func TestXcodeProj_TargetBuildSettings_providerFailure(t *testing.T) {
 	failure := errors.New("xcodebuild exploded")
 	provider := mocks.NewBuildSettingsProvider(t)

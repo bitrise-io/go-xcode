@@ -7,9 +7,11 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// BuildSettingsProvider resolves the effective build settings of a target.
+// BuildSettingsProvider resolves effective build settings: those of one target, and those of the
+// main target of a scheme as the scheme builds it.
 type BuildSettingsProvider interface {
 	TargetBuildSettings(projectPath, target, configuration string, extraArgs ...string) (serialized.Object, error)
+	SchemeBuildSettings(projectPath, scheme, configuration string, extraArgs ...string) (serialized.Object, error)
 }
 
 // UserProvider supplies the current OS user name, which appears in user scheme paths.
