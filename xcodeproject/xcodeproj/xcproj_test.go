@@ -313,10 +313,81 @@ func TestXCProj_SetBuildSetting_errors(t *testing.T) {
 	}
 }
 
+func TestXCProj_ForceCodeSign(t *testing.T) {
+	const content = `{
+  "configurations": [
+    "Debug",
+    "Release",
+  ],
+  "targets": [
+    {
+      "build-settings": {
+        "CODE_SIGN_IDENTITY[sdk=iphoneos*]": "iPhone Developer",
+        "CODE_SIGN_STYLE": "Automatic",
+        "DEVELOPMENT_TEAM": "TEAM123456",
+        "MARKETING_VERSION": "1.0",
+      },
+      "id": "A1",
+      "legacy-provisioning-style": "automatic",
+      "legacy-team-id": "TEAM123456",
+      "name": "App",
+    },
+  ],
+}
+`
+	const want = `{
+  "configurations": [
+    "Debug",
+    "Release",
+  ],
+  "targets": [
+    {
+      "build-settings": {
+        "CODE_SIGN_IDENTITY[config=Debug][sdk=iphoneos*]": "iPhone Developer",
+        "CODE_SIGN_IDENTITY[config=Release]": "Apple Development: John Doe (ASDF1234)",
+        "CODE_SIGN_IDENTITY[config=Release][sdk=iphoneos*]": "Apple Development: John Doe (ASDF1234)",
+        "CODE_SIGN_STYLE[config=Debug]": "Automatic",
+        "CODE_SIGN_STYLE[config=Release]": "Manual",
+        "DEVELOPMENT_TEAM[config=Debug]": "TEAM123456",
+        "DEVELOPMENT_TEAM[config=Release]": "ABCD1234",
+        "MARKETING_VERSION": "1.0",
+        "PROVISIONING_PROFILE[config=Release]": "asdf56b6-e75a-4f86-bf25-101bfc2fasdf",
+        "PROVISIONING_PROFILE_SPECIFIER[config=Release]": "",
+      },
+      "id": "A1",
+      "legacy-provisioning-style": "automatic",
+      "legacy-team-id": "TEAM123456",
+      "name": "App",
+    },
+  ],
+}
+`
+	project := openProjectFiles(t, map[string][]byte{xcProjFileName: []byte(content)})
+
+	require.NoError(t, project.ForceCodeSign(forceCodeSignOptions("App", "Release")))
+	require.NoError(t, project.Save())
+
+	saved, err := os.ReadFile(filepath.Join(project.Path(), xcProjFileName))
+	require.NoError(t, err)
+	assert.Equal(t, want, string(saved))
+
+	reopened, err := testFactory().Open(project.Path())
+	require.NoError(t, err)
+	assert.Equal(t, reopened.Targets(), project.Targets())
+}
+
+func TestXCProj_ForceCodeSign_unknownTargetOrConfiguration(t *testing.T) {
+	project := openProjectFiles(t, map[string][]byte{
+		xcProjFileName: []byte(`{"configurations": ["Debug"], "targets": [{"name": "App", "id": "A1", "build-settings": {"A": "1"}}]}`),
+	})
+
+	require.EqualError(t, project.ForceCodeSign(forceCodeSignOptions("Nope", "Debug")), "failed to find target with name: Nope")
+	require.EqualError(t, project.ForceCodeSign(forceCodeSignOptions("App", "Nope")), "failed to find build configuration Nope of target App")
+}
+
 func TestXCProj_notSupported(t *testing.T) {
 	project := openXCProjFixture(t)
 
 	_, err := project.AppIconSetPaths()
 	assert.ErrorIs(t, err, errNotSupportedForXCProj)
-	assert.ErrorIs(t, project.ForceCodeSign(ForceCodeSignOptions{}), errNotSupportedForXCProj)
 }

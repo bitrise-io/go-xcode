@@ -38,15 +38,10 @@ func (p *PBXProj) ForceCodeSign(opts ForceCodeSignOptions) error {
 		return err
 	}
 
-	forced := map[string]string{
-		"CODE_SIGN_STYLE":                "Manual",
-		"DEVELOPMENT_TEAM":               opts.DevelopmentTeam,
-		"CODE_SIGN_IDENTITY":             opts.CodesignIdentity,
-		"PROVISIONING_PROFILE_SPECIFIER": "",
-		"PROVISIONING_PROFILE":           opts.ProvisioningProfileUUID,
-	}
-	for key, value := range forced {
-		writeBuildSettingForAllSDKs(buildSettings, key, value)
+	for key, value := range forcedCodeSignBuildSettings(opts) {
+		for _, sdkKey := range keysForAllSDKs(buildSettings, key) {
+			buildSettings[sdkKey] = value
+		}
 	}
 
 	if attributes, ok := p.targetAttributes.Object(target.ID); ok {
@@ -109,16 +104,28 @@ func targetBuildSettings(target Target, configurationName string) (serialized.Ob
 	return nil, fmt.Errorf("failed to find build configuration %s of target %s", configurationName, target.Name)
 }
 
-// writeBuildSettingForAllSDKs also updates the existing [sdk=...] variants of key.
-func writeBuildSettingForAllSDKs(buildSettings serialized.Object, key, value string) {
-	buildSettings[key] = value
+func forcedCodeSignBuildSettings(opts ForceCodeSignOptions) map[string]string {
+	return map[string]string{
+		"CODE_SIGN_STYLE":                "Manual",
+		"DEVELOPMENT_TEAM":               opts.DevelopmentTeam,
+		"CODE_SIGN_IDENTITY":             opts.CodesignIdentity,
+		"PROVISIONING_PROFILE_SPECIFIER": "",
+		"PROVISIONING_PROFILE":           opts.ProvisioningProfileUUID,
+	}
+}
+
+// key is returned even when buildSettings does not have it yet.
+func keysForAllSDKs(buildSettings serialized.Object, key string) []string {
+	keys := []string{key}
 
 	sdkVariant := regexp.MustCompile(fmt.Sprintf(`^%s\[sdk=.*\]$`, regexp.QuoteMeta(key)))
 	for existingKey := range buildSettings {
 		if sdkVariant.MatchString(existingKey) {
-			buildSettings[existingKey] = value
+			keys = append(keys, existingKey)
 		}
 	}
+
+	return keys
 }
 
 type objectChange struct {
