@@ -12,8 +12,8 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// newPBXProjFileMode is the mode of a newly created project.pbxproj; an existing one keeps its mode.
-const newPBXProjFileMode = 0644
+// newProjectFileMode is the mode of a newly created project file; an existing one keeps its mode.
+const newProjectFileMode = 0644
 
 // ForceCodeSignOptions are the manual code signing settings ForceCodeSign applies.
 type ForceCodeSignOptions struct {
@@ -92,7 +92,7 @@ func (p *PBXProj) Save() error {
 		}
 	}
 
-	if err := filewriter.WriteKeepingMode(p.fileManager, pth, content, newPBXProjFileMode); err != nil {
+	if err := filewriter.WriteKeepingMode(p.fileManager, pth, content, newProjectFileMode); err != nil {
 		return fmt.Errorf("failed to write %s: %w", pth, err)
 	}
 
