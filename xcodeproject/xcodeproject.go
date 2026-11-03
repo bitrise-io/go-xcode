@@ -40,7 +40,7 @@ func (f Factory) Open(pth string) (Container, error) {
 		}
 		return &container{workspace: workspace}, nil
 	default:
-		return nil, fmt.Errorf("%s is neither an Xcode project (%s) nor a workspace (%s)", pth, xcodeproj.XcodeProjExtension, xcworkspace.XCWorkspaceExtension)
+		return nil, fmt.Errorf("%s is neither an Xcode project nor a workspace: use the path of the %s or %s bundle", pth, xcodeproj.XcodeProjExtension, xcworkspace.XCWorkspaceExtension)
 	}
 }
 
