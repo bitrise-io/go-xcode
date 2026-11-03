@@ -223,6 +223,48 @@ func TestWorkspace_Projects_malformedProject(t *testing.T) {
 	assert.ErrorContains(t, err, "failed to open project")
 }
 
+func TestWorkspace_Project(t *testing.T) {
+	dir := t.TempDir()
+	projectPath := filepath.Join(dir, "XcodeProj.xcodeproj")
+	writeProject(t, projectPath)
+	otherPath := filepath.Join(dir, "Other.xcodeproj")
+	writeProject(t, otherPath)
+
+	t.Run("a project the scheme search opened is not parsed again", func(t *testing.T) {
+		workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+		_, containerPath, err := workspace.Scheme("App")
+		require.NoError(t, err)
+		require.Equal(t, projectPath, containerPath)
+		require.NoError(t, os.Remove(filepath.Join(projectPath, "project.pbxproj")))
+
+		projects, err := workspace.Projects()
+		require.NoError(t, err)
+		require.Len(t, projects, 1)
+
+		project, err := workspace.Project(projectPath)
+		require.NoError(t, err)
+		assert.Same(t, projects[0], project)
+	})
+
+	t.Run("a project outside the workspace is opened once and kept", func(t *testing.T) {
+		workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+		project, err := workspace.Project(otherPath)
+		require.NoError(t, err)
+		assert.Equal(t, otherPath, project.Path)
+
+		require.NoError(t, os.RemoveAll(otherPath))
+		again, err := workspace.Project(otherPath + "/")
+		require.NoError(t, err, "served from what the workspace kept, not read from disk")
+		assert.Same(t, project, again)
+	})
+
+	t.Run("missing", func(t *testing.T) {
+		workspace := openWorkspace(t, writeWorkspace(t, dir, "XcodeProj", nestedContents))
+		_, err := workspace.Project(filepath.Join(dir, "Missing.xcodeproj"))
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
+}
+
 func TestWorkspace_SchemeBuildSettings(t *testing.T) {
 	workspacePath := writeWorkspace(t, t.TempDir(), "App", emptyContents)
 	provider := mocks.NewBuildSettingsProvider(t)

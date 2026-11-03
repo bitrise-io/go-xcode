@@ -82,6 +82,8 @@ type Workspace struct {
 	userProvider     xcodeproj.UserProvider
 	projectFactory   xcodeproj.Factory
 	schemeFactory    xcscheme.Factory
+
+	projects map[string]*xcodeproj.XcodeProj // the projects opened so far, by path
 }
 
 // Open reads the workspace at pth.
@@ -275,10 +277,32 @@ func (w *Workspace) openProject(location string) (project *xcodeproj.XcodeProj, 
 		return nil, false, nil
 	}
 
-	project, err = w.projectFactory.Open(location)
+	project, err = w.Project(location)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to open project (%s): %w", location, err)
 	}
 
 	return project, true, nil
+}
+
+// Project returns the project at pth, an absolute .xcodeproj path. A project the workspace already
+// opened, while searching its schemes or listing its projects, is returned as it is; any other, such
+// as a sub-project a scheme builds, is opened and kept. So each project is parsed once.
+func (w *Workspace) Project(pth string) (*xcodeproj.XcodeProj, error) {
+	if project, ok := w.projects[filepath.Clean(pth)]; ok {
+		return project, nil
+	}
+
+	project, err := w.projectFactory.Open(pth)
+	if err != nil {
+		return nil, err
+	}
+
+	if w.projects == nil {
+		w.projects = map[string]*xcodeproj.XcodeProj{}
+	}
+	w.projects[filepath.Clean(pth)] = project
+	w.projects[filepath.Clean(project.Path)] = project
+
+	return project, nil
 }
