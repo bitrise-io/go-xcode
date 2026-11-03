@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	mock "github.com/stretchr/testify/mock"
 )
@@ -98,6 +99,89 @@ func (_c *Container_Scheme_Call) Return(scheme xcscheme.Scheme, s string, err er
 }
 
 func (_c *Container_Scheme_Call) RunAndReturn(run func(name string) (xcscheme.Scheme, string, error)) *Container_Scheme_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// SchemeBuildSettings provides a mock function for the type Container
+func (_mock *Container) SchemeBuildSettings(scheme string, configuration string, additionalOptions ...string) (serialized.Object, error) {
+	var tmpRet mock.Arguments
+	if len(additionalOptions) > 0 {
+		tmpRet = _mock.Called(scheme, configuration, additionalOptions)
+	} else {
+		tmpRet = _mock.Called(scheme, configuration)
+	}
+	ret := tmpRet
+
+	if len(ret) == 0 {
+		panic("no return value specified for SchemeBuildSettings")
+	}
+
+	var r0 serialized.Object
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(string, string, ...string) (serialized.Object, error)); ok {
+		return returnFunc(scheme, configuration, additionalOptions...)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string, string, ...string) serialized.Object); ok {
+		r0 = returnFunc(scheme, configuration, additionalOptions...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(serialized.Object)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(string, string, ...string) error); ok {
+		r1 = returnFunc(scheme, configuration, additionalOptions...)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// Container_SchemeBuildSettings_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SchemeBuildSettings'
+type Container_SchemeBuildSettings_Call struct {
+	*mock.Call
+}
+
+// SchemeBuildSettings is a helper method to define mock.On call
+//   - scheme string
+//   - configuration string
+//   - additionalOptions ...string
+func (_e *Container_Expecter) SchemeBuildSettings(scheme interface{}, configuration interface{}, additionalOptions ...interface{}) *Container_SchemeBuildSettings_Call {
+	return &Container_SchemeBuildSettings_Call{Call: _e.mock.On("SchemeBuildSettings",
+		append([]interface{}{scheme, configuration}, additionalOptions...)...)}
+}
+
+func (_c *Container_SchemeBuildSettings_Call) Run(run func(scheme string, configuration string, additionalOptions ...string)) *Container_SchemeBuildSettings_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 []string
+		var variadicArgs []string
+		if len(args) > 2 {
+			variadicArgs = args[2].([]string)
+		}
+		arg2 = variadicArgs
+		run(
+			arg0,
+			arg1,
+			arg2...,
+		)
+	})
+	return _c
+}
+
+func (_c *Container_SchemeBuildSettings_Call) Return(object serialized.Object, err error) *Container_SchemeBuildSettings_Call {
+	_c.Call.Return(object, err)
+	return _c
+}
+
+func (_c *Container_SchemeBuildSettings_Call) RunAndReturn(run func(scheme string, configuration string, additionalOptions ...string) (serialized.Object, error)) *Container_SchemeBuildSettings_Call {
 	_c.Call.Return(run)
 	return _c
 }

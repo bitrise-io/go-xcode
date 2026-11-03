@@ -9,10 +9,12 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 	xcodeprojmocks "github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/mocks"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace"
+	xcworkspacemocks "github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,6 +25,12 @@ const minimalSchemeXML = `<?xml version="1.0" encoding="UTF-8"?>
 `
 
 func testFactory(t *testing.T) Factory {
+	return testFactoryWithProviders(t, nil, nil)
+}
+
+// testFactoryWithProviders builds a Factory whose projects read build settings through
+// projectSettings and whose workspaces through workspaceSettings.
+func testFactoryWithProviders(t *testing.T, projectSettings xcodeproj.BuildSettingsProvider, workspaceSettings xcworkspace.BuildSettingsProvider) Factory {
 	logger := log.NewLogger()
 	fileManager := fileutil.NewFileManager()
 	plistFileHandler := plistutil.NewFileHandler(fileManager)
@@ -30,8 +38,8 @@ func testFactory(t *testing.T) Factory {
 	user := xcodeprojmocks.NewUserProvider(t)
 	user.On("CurrentUserName").Return("bitrise", nil).Maybe()
 
-	projectFactory := xcodeproj.NewFactory(logger, nil, fileManager, plistFileHandler, pathModifier, nil, user, xcodeproj.NewDirCreator())
-	workspaceFactory := xcworkspace.NewFactory(logger, nil, fileManager, plistFileHandler, pathModifier, pathutil.NewPathChecker(), user, projectFactory)
+	projectFactory := xcodeproj.NewFactory(logger, projectSettings, fileManager, plistFileHandler, pathModifier, nil, user, xcodeproj.NewDirCreator())
+	workspaceFactory := xcworkspace.NewFactory(logger, workspaceSettings, fileManager, plistFileHandler, pathModifier, pathutil.NewPathChecker(), user, projectFactory)
 
 	return NewFactory(projectFactory, workspaceFactory)
 }
@@ -158,5 +166,36 @@ func TestFactory_Scheme_pathForms(t *testing.T) {
 	t.Run("missing from disk", func(t *testing.T) {
 		_, _, err := testFactory(t).Scheme(filepath.Join(dir, "Missing.xcodeproj"), "App")
 		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
+}
+
+func TestContainer_SchemeBuildSettings(t *testing.T) {
+	dir := t.TempDir()
+	projectPath := writeProject(t, dir)
+	workspacePath := writeWorkspace(t, dir)
+	settings := serialized.Object{"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.app"}
+
+	t.Run("a project is asked with -project", func(t *testing.T) {
+		projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
+		projectSettings.On("SchemeBuildSettings", projectPath, "App", "Release", []string{"-sdk", "iphoneos"}).Return(settings, nil).Once()
+		workspaceSettings := xcworkspacemocks.NewBuildSettingsProvider(t)
+
+		c, err := testFactoryWithProviders(t, projectSettings, workspaceSettings).Open(projectPath)
+		require.NoError(t, err)
+		got, err := c.SchemeBuildSettings("App", "Release", "-sdk", "iphoneos")
+		require.NoError(t, err)
+		assert.Equal(t, settings, got)
+	})
+
+	t.Run("a workspace is asked with -workspace", func(t *testing.T) {
+		projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
+		workspaceSettings := xcworkspacemocks.NewBuildSettingsProvider(t)
+		workspaceSettings.On("SchemeBuildSettings", workspacePath, "Workspace", "Release", []string{"-sdk", "iphoneos"}).Return(settings, nil).Once()
+
+		c, err := testFactoryWithProviders(t, projectSettings, workspaceSettings).Open(workspacePath)
+		require.NoError(t, err)
+		got, err := c.SchemeBuildSettings("Workspace", "Release", "-sdk", "iphoneos")
+		require.NoError(t, err)
+		assert.Equal(t, settings, got)
 	})
 }
