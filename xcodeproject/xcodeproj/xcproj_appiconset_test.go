@@ -102,7 +102,31 @@ func TestXCProj_AppIconSetPaths(t *testing.T) {
 			files: `[{"kind": "group", "path": "<USER:BRANDING_DIR>/Branding", "children": [
 				{"path": "Icons.xcassets", "target-membership": ["App/resources"]},
 			]}]`,
-			iconSetPaths: []string{"Branding/Icons.xcassets/AppIcon.appiconset"},
+			wantErr: "failed to resolve path <USER:BRANDING_DIR>/Branding: unsupported path base",
+		},
+		{
+			name:    "home-relative synchronized folder",
+			files:   `[{"kind": "folder", "path": "~/App", "target-membership": ["App"]}]`,
+			wantErr: "failed to resolve path ~/App: unsupported path base",
+		},
+		{
+			name: "unresolvable path that leads to no catalog of the target",
+			files: `[
+				{"kind": "group", "path": "<SDK>/", "children": [
+					{"path": "Other.xcassets", "target-membership": ["Other/resources"]},
+					{"path": "Info.plist", "target-membership": ["App/resources"]},
+				]},
+				{"kind": "group", "path": "<USER:BRANDING_DIR>/", "children": [
+					{"path": "<PROJECT>/Icons.xcassets", "target-membership": ["App/resources"]},
+				]},
+			]`,
+			iconSetPaths: []string{"Icons.xcassets/AppIcon.appiconset"},
+			want:         []string{"Icons.xcassets/AppIcon.appiconset"},
+		},
+		{
+			name:         "non-native target",
+			files:        `[{"kind": "folder", "path": "Aggregate", "target-membership": ["Aggregate"]}]`,
+			iconSetPaths: []string{"Aggregate/Assets.xcassets/AppIcon.appiconset"},
 		},
 		{
 			name:         "app icon set missing",
@@ -129,6 +153,7 @@ func TestXCProj_AppIconSetPaths(t *testing.T) {
 					"targets": [
 						{"name": "App", "id": "A1", "build-settings": {"ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon"}},
 						{"name": "Other", "id": "O1"},
+						{"name": "Aggregate", "id": "G1", "kind": "aggregate", "build-settings": {"ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon"}},
 					],
 					"files": %s,
 				}`, tt.files),

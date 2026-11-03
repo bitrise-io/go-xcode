@@ -1,6 +1,7 @@
 package xcodeproj
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -25,24 +26,34 @@ func (p *XCProj) AppIconSetPaths() (map[string][]string, error) {
 }
 
 func (p *XCProj) assetCatalogPaths(target Target) ([]string, error) {
+	if !target.isNativeTarget() {
+		return nil, nil
+	}
+
 	resources := xcproj.BuildPhaseReference{Target: target.Name, Kind: xcproj.BuildPhaseKindResources}
 	projectDir := filepath.Dir(p.path)
 
 	var catalogs, folders []string
-	walkFiles(p.files, projectDir, projectDir, func(reference xcproj.Reference, pth string) {
-		switch reference.Kind {
-		case xcproj.ReferenceKindFolder:
-			// Membership exceptions are not decoded, so a catalog an exception excludes is still
-			// found, and one it adds to another target is missed.
-			if slices.Contains(reference.Targets, target.Name) {
-				folders = append(folders, pth)
-			}
-		case xcproj.ReferenceKindFile:
-			if filepath.Ext(pth) == assetCatalogExtension && slices.Contains(reference.BuildPhases, resources) {
-				catalogs = append(catalogs, pth)
-			}
+	var err error
+	walkFiles(p.files, projectDir, nil, projectDir, func(reference xcproj.Reference, pth string, pathErr error) {
+		// Membership exceptions are not decoded, so a catalog an exception excludes is still found,
+		// and one it adds to another target is missed.
+		isFolder := reference.Kind == xcproj.ReferenceKindFolder && slices.Contains(reference.Targets, target.Name)
+		isCatalog := reference.Kind == xcproj.ReferenceKindFile && filepath.Ext(reference.Path) == assetCatalogExtension &&
+			slices.Contains(reference.BuildPhases, resources)
+
+		switch {
+		case (isFolder || isCatalog) && pathErr != nil:
+			err = cmp.Or(err, pathErr)
+		case isFolder:
+			folders = append(folders, pth)
+		case isCatalog:
+			catalogs = append(catalogs, pth)
 		}
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	for _, folder := range folders {
 		folderCatalogs, err := p.findAssetCatalogs(folder)
@@ -55,35 +66,36 @@ func (p *XCProj) assetCatalogPaths(target Target) ([]string, error) {
 	return catalogs, nil
 }
 
-func walkFiles(references []xcproj.Reference, groupDir, projectDir string, visit func(xcproj.Reference, string)) {
+// walkFiles hands the path error to visit instead of stopping, because a path needs to resolve
+// only when it leads to one of the target's catalogs.
+func walkFiles(references []xcproj.Reference, groupDir string, groupErr error, projectDir string, visit func(xcproj.Reference, string, error)) {
 	for _, reference := range references {
-		pth, ok := resolveXCProjFilePath(reference.Path, groupDir, projectDir)
-		if !ok {
-			continue
-		}
-
-		visit(reference, pth)
+		pth, err := resolveXCProjFilePath(reference.Path, groupDir, groupErr, projectDir)
+		visit(reference, pth, err)
 		if reference.Kind == xcproj.ReferenceKindGroup {
-			walkFiles(reference.Children, pth, projectDir, visit)
+			walkFiles(reference.Children, pth, err, projectDir, visit)
 		}
 	}
 }
 
-// resolveXCProjFilePath reports false for a path whose base only the build machine can resolve,
-// such as <PRODUCTS>/, <SDK>/, <USER:SETTING>/ or ~.
-func resolveXCProjFilePath(pth, groupDir, projectDir string) (string, bool) {
+// resolveXCProjFilePath fails for ~ and for a base that needs build settings, such as <PRODUCTS>/,
+// <SDK>/ or <USER:SETTING>/.
+func resolveXCProjFilePath(pth, groupDir string, groupErr error, projectDir string) (string, error) {
 	if relativePath, ok := strings.CutPrefix(pth, projectPathBase); ok {
-		return filepath.Join(projectDir, relativePath), true
+		return filepath.Join(projectDir, relativePath), nil
 	}
 	if strings.HasPrefix(pth, "<") || strings.HasPrefix(pth, "~") {
-		return "", false
+		return "", fmt.Errorf("failed to resolve path %s: unsupported path base", pth)
 	}
 
 	pth = filePathUnescaper.Replace(pth)
 	if filepath.IsAbs(pth) {
-		return filepath.Clean(pth), true
+		return filepath.Clean(pth), nil
 	}
-	return filepath.Join(groupDir, pth), true
+	if groupErr != nil {
+		return "", groupErr
+	}
+	return filepath.Join(groupDir, pth), nil
 }
 
 // findAssetCatalogs uses Lstat so that a symbolic link cycle cannot loop. A missing dir has no
