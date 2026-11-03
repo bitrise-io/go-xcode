@@ -30,7 +30,6 @@ func (p *PBXProj) AppIconSetPaths() (map[string][]string, error) {
 	})
 }
 
-// appIconSetPaths calls catalogPaths only for targets that name an app icon set.
 func (p *baseProj) appIconSetPaths(catalogPaths func(Target) ([]string, error)) (map[string][]string, error) {
 	targetToAppIcons := map[string][]string{}
 	for _, target := range p.targets {

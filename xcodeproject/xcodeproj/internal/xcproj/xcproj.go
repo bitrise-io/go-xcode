@@ -21,14 +21,14 @@ const (
 	TargetKindExternalBuildSystem = "external-build-system"
 )
 
-// The reference kinds of the file tree. A reference written without a kind is a file reference.
+// A reference written without a kind is a file reference.
 const (
 	ReferenceKindFile   = "file-reference"
 	ReferenceKindGroup  = "group"
 	ReferenceKindFolder = "folder"
 )
 
-// BuildPhaseKindResources is the kind of a target's Copy Resources build phase.
+// BuildPhaseKindResources names the Copy Resources phase in a build phase reference.
 const BuildPhaseKindResources = "resources"
 
 const (
@@ -52,11 +52,10 @@ type Project struct {
 
 	Targets []Target
 
-	// Files is the top level of the file tree.
 	Files []Reference
 }
 
-// Reference is one element of the project's file tree.
+// Reference is a file reference, a group or a folder of the file tree.
 type Reference struct {
 	Kind string
 
@@ -64,17 +63,17 @@ type Reference struct {
 	// <PROJECT>/. A group without one takes its parent's directory.
 	Path string
 
-	// Targets are the names of the targets a folder's content belongs to.
+	// Targets is set only for a folder.
 	Targets []string
 
-	// BuildPhases are the build phases a file reference belongs to. A build phase referenced by
-	// object ID is left out.
+	// BuildPhases leaves out a build phase referenced by object ID: Xcode writes one only when the
+	// name would be ambiguous, and build phases are not decoded.
 	BuildPhases []BuildPhaseReference
 
 	Children []Reference
 }
 
-// BuildPhaseReference names a build phase by its target and its kind.
+// BuildPhaseReference is the target and kind part of a build phase name path.
 type BuildPhaseReference struct {
 	Target string
 	Kind   string
@@ -235,7 +234,7 @@ func (r *rawGroupTreeReference) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// UnmarshalJSON accepts a bare build phase reference or an object.
+// UnmarshalJSON implements json.Unmarshaler.
 func (b *rawBuildFile) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &b.BuildPhase); err == nil {
 		return nil
