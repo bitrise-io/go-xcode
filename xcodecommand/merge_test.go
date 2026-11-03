@@ -118,11 +118,11 @@ func TestMerge(t *testing.T) {
 }
 
 // dropped renders the options the merge left off the command line.
-func dropped(opts Options) []string {
+func dropped(line merged) []string {
 	var out []string
-	for _, o := range opts {
-		if o.dropped {
-			out = append(out, o.String())
+	for _, p := range line {
+		if p.dropped {
+			out = append(out, p.String())
 		}
 	}
 	return out

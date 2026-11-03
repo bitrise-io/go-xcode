@@ -30,7 +30,6 @@ type Option struct {
 	Name     string
 	Value    string
 	tookFlag bool // a value flag that took the next flag as its value, as xcodebuild does
-	dropped  bool // the merge left it off the command line: the user set it too
 }
 
 // key identifies the option when merging: the flag, the build setting name or the
@@ -65,13 +64,11 @@ func (o Option) args() []string {
 // Options is an ordered list of xcodebuild arguments.
 type Options []Option
 
-// Args renders the options as xcodebuild arguments, without the ones the merge dropped.
+// Args renders the options as xcodebuild arguments.
 func (opts Options) Args() []string {
 	var args []string
 	for _, o := range opts {
-		if !o.dropped {
-			args = append(args, o.args()...)
-		}
+		args = append(args, o.args()...)
 	}
 	return args
 }
