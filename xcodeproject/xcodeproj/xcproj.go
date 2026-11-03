@@ -52,6 +52,9 @@ func (p *XCProj) ForceCodeSign(ForceCodeSignOptions) error {
 }
 
 // SetBuildSetting implements XcodeProj. Only string values are supported.
+//
+// TODO: a key with a [config=...] condition is rejected here but accepted by
+// PBXProj.SetBuildSetting; make the two formats agree.
 func (p *XCProj) SetBuildSetting(targetName, configurationName, key string, value any) error {
 	stringValue, ok := value.(string)
 	if !ok {

@@ -291,12 +291,11 @@ func TestXCProj_SetBuildSetting_errors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			project := openProjectFiles(t, map[string][]byte{
-				xcProjFileName: []byte(`{"configurations": ["Debug"], "targets": [
-					{"name": "App", "id": "A1", "build-settings": {"A": "1"}},
-					{"name": "Lib", "id": "L1"}
-				]}`),
-			})
+			content := []byte(`{"configurations": ["Debug"], "targets": [
+				{"name": "App", "id": "A1", "build-settings": {"A": "1"}},
+				{"name": "Lib", "id": "L1"}
+			]}`)
+			project := openProjectFiles(t, map[string][]byte{xcProjFileName: content})
 
 			err := project.SetBuildSetting(tt.target, tt.configuration, tt.key, tt.value)
 			require.EqualError(t, err, tt.wantErr)
@@ -305,6 +304,11 @@ func TestXCProj_SetBuildSetting_errors(t *testing.T) {
 				_, ok := target.BuildConfigurations[0].BuildSetting(tt.key)
 				assert.False(t, ok, "a failed edit leaves target %s unchanged", target.Name)
 			}
+
+			require.NoError(t, project.Save())
+			saved, err := os.ReadFile(filepath.Join(project.Path(), xcProjFileName))
+			require.NoError(t, err)
+			assert.Equal(t, string(content), string(saved), "a failed edit leaves the file unchanged")
 		})
 	}
 }

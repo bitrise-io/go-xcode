@@ -16,8 +16,8 @@ type Editor struct {
 	configurations []string
 }
 
-// NewEditor parses the content of a project.xcproj file for editing. configurations are what
-// Decode returns for content.
+// NewEditor takes configurations from Decode's result for the same content, so the file is
+// decoded once.
 func NewEditor(content []byte, configurations []Configuration) (*Editor, error) {
 	// The parsed tree aliases its input.
 	root, err := hujson.Parse(bytes.Clone(content))
