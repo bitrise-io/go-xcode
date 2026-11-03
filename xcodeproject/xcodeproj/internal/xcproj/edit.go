@@ -42,6 +42,9 @@ func NewEditor(content []byte) (*Editor, error) {
 //
 // A key that applies to every configuration is split into one key per configuration first,
 // which is how Xcode records a setting that differs between configurations.
+//
+// The target must have at least one build setting, as a new key copies the layout of an
+// existing one.
 func (e *Editor) SetTargetBuildSetting(targetName, configuration, key, value string) error {
 	if !slices.Contains(e.configurations, configuration) {
 		return fmt.Errorf("project has no configuration %s", configuration)
