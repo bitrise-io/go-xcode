@@ -262,6 +262,11 @@ func TestDecode(t *testing.T) {
 			wantErr: `file Icons.xcassets has an invalid build phase reference: "App"`,
 		},
 		{
+			name:    "build phase reference with too many parts",
+			content: `{"files": [{"path": "Icons.xcassets", "target-membership": ["App/copy/Embed/Assets"]}]}`,
+			wantErr: `file Icons.xcassets has an invalid build phase reference: "App/copy/Embed/Assets"`,
+		},
+		{
 			name:    "folder membership of the wrong type",
 			content: `{"files": [{"kind": "folder", "path": "App", "target-membership": [1]}]}`,
 			wantErr: "folder App has an invalid target membership",
