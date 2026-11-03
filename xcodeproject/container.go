@@ -26,6 +26,7 @@ type container struct {
 	workspace *xcworkspace.Workspace // the opened workspace, nil for a project
 }
 
+// Path implements Container.
 func (c *container) Path() string {
 	if c.workspace != nil {
 		return c.workspace.Path
@@ -33,6 +34,7 @@ func (c *container) Path() string {
 	return c.project.Path
 }
 
+// Name implements Container.
 func (c *container) Name() string {
 	if c.workspace != nil {
 		return c.workspace.Name
@@ -40,6 +42,7 @@ func (c *container) Name() string {
 	return c.project.Name
 }
 
+// Scheme implements Container.
 func (c *container) Scheme(name string) (xcscheme.Scheme, string, error) {
 	if c.workspace != nil {
 		return c.workspace.Scheme(name)
