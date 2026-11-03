@@ -16,6 +16,11 @@ packages:
       BuildSettingsProvider:
       UserProvider:
       DirCreator:
+  github.com/bitrise-io/go-xcode/v2/xcodeproject:
+    config:
+      dir: xcodeproject/mocks
+    interfaces:
+      Container:
   github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace:
     config:
       dir: xcodeproject/xcworkspace/mocks
