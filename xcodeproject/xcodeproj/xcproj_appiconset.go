@@ -32,8 +32,8 @@ func (p *XCProj) assetCatalogPaths(target Target) ([]string, error) {
 	walkFiles(p.files, projectDir, projectDir, func(reference xcproj.Reference, pth string) {
 		switch reference.Kind {
 		case xcproj.ReferenceKindFolder:
-			// Membership exceptions are not decoded, so a catalog an exception adds to another
-			// target is missed for that target.
+			// Membership exceptions are not decoded, so a catalog an exception excludes is still
+			// found, and one it adds to another target is missed.
 			if slices.Contains(reference.Targets, target.Name) {
 				folders = append(folders, pth)
 			}
