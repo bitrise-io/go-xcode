@@ -1,0 +1,144 @@
+package xcodeproj
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+// testdata/ios-sample-asset-catalogs holds Assets.xcassets in the app's synchronized folder and
+// Branding/Icons/Icons.xcassets in nested groups.
+func TestXCProj_AppIconSetPaths_xcodeOutput(t *testing.T) {
+	projectDir, err := filepath.Abs(filepath.Join("testdata", "ios-sample-asset-catalogs"))
+	require.NoError(t, err)
+	projectPath := filepath.Join(projectDir, "sample-apps-ios-json-xcproj.xcodeproj")
+
+	project, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+
+	got, err := project.AppIconSetPaths()
+	require.NoError(t, err)
+	assert.Equal(t, map[string][]string{
+		xcprojAppTargetID: {filepath.Join(projectDir, "sample-apps-ios-json-xcproj", "Assets.xcassets", "AppIcon.appiconset")},
+	}, got)
+
+	content, err := os.ReadFile(filepath.Join(projectPath, xcProjFileName))
+	require.NoError(t, err)
+	content = []byte(strings.Replace(string(content), `"ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon"`, `"ASSETCATALOG_COMPILER_APPICON_NAME": "AlternateIcon"`, 1))
+	alternateIconProject, err := testFactory().newXCProj(content, projectPath)
+	require.NoError(t, err)
+
+	got, err = alternateIconProject.AppIconSetPaths()
+	require.NoError(t, err)
+	assert.Equal(t, map[string][]string{
+		xcprojAppTargetID: {filepath.Join(projectDir, "Branding", "Icons", "Icons.xcassets", "AlternateIcon.appiconset")},
+	}, got)
+}
+
+func TestXCProj_AppIconSetPaths(t *testing.T) {
+	tests := []struct {
+		name         string
+		files        string
+		iconSetPaths []string
+		want         []string
+		wantErr      string
+	}{
+		{
+			name:         "root-level file reference with a multi-part path",
+			files:        `[{"path": "Branding/Icons/Icons.xcassets", "target-membership": ["App/resources"]}]`,
+			iconSetPaths: []string{"Branding/Icons/Icons.xcassets/AppIcon.appiconset"},
+			want:         []string{"Branding/Icons/Icons.xcassets/AppIcon.appiconset"},
+		},
+		{
+			name: "project path base inside a group",
+			files: `[{"kind": "group", "path": "Branding", "children": [
+				{"path": "<PROJECT>/Icons.xcassets", "target-membership": ["App/resources"]},
+			]}]`,
+			iconSetPaths: []string{"Icons.xcassets/AppIcon.appiconset"},
+			want:         []string{"Icons.xcassets/AppIcon.appiconset"},
+		},
+		{
+			name:         "escaped path",
+			files:        `[{"path": "\\<Icons\\\\.xcassets", "target-membership": ["App/resources"]}]`,
+			iconSetPaths: []string{`<Icons\.xcassets/AppIcon.appiconset`},
+			want:         []string{`<Icons\.xcassets/AppIcon.appiconset`},
+		},
+		{
+			name:         "asset catalog nested in a synchronized folder",
+			files:        `[{"kind": "folder", "path": "App", "target-membership": ["App"]}]`,
+			iconSetPaths: []string{"App/Resources/Assets.xcassets/AppIcon.appiconset"},
+			want:         []string{"App/Resources/Assets.xcassets/AppIcon.appiconset"},
+		},
+		{
+			name: "asset catalogs of other targets and build phases",
+			files: `[
+				{"path": "Copied.xcassets", "target-membership": ["App/copy"]},
+				{"path": "Other.xcassets", "target-membership": ["Other/resources"]},
+				{"kind": "folder", "path": "OtherFolder", "target-membership": ["Other"]},
+			]`,
+			iconSetPaths: []string{
+				"Copied.xcassets/AppIcon.appiconset",
+				"Other.xcassets/AppIcon.appiconset",
+				"OtherFolder/Assets.xcassets/AppIcon.appiconset",
+			},
+		},
+		{
+			name: "path base that needs build settings",
+			files: `[{"kind": "group", "path": "<USER:BRANDING_DIR>/Branding", "children": [
+				{"path": "Icons.xcassets", "target-membership": ["App/resources"]},
+			]}]`,
+			iconSetPaths: []string{"Branding/Icons.xcassets/AppIcon.appiconset"},
+		},
+		{
+			name:         "app icon set missing",
+			files:        `[{"kind": "folder", "path": "App", "target-membership": ["App"]}]`,
+			iconSetPaths: []string{"App/Assets.xcassets/Other.appiconset"},
+			wantErr:      "not found app icon set (AppIcon)",
+		},
+		{
+			name:    "synchronized folder missing",
+			files:   `[{"kind": "folder", "path": "App", "target-membership": ["App"]}]`,
+			wantErr: "failed to list",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			projectPath := writeProjectFiles(t, map[string][]byte{
+				xcProjFileName: fmt.Appendf(nil, `{
+					"configurations": ["Debug"],
+					"targets": [
+						{"name": "App", "id": "A1", "build-settings": {"ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon"}},
+						{"name": "Other", "id": "O1"},
+					],
+					"files": %s,
+				}`, tt.files),
+			})
+			projectDir := filepath.Dir(projectPath)
+			for _, iconSetPath := range tt.iconSetPaths {
+				require.NoError(t, os.MkdirAll(filepath.Join(projectDir, iconSetPath), 0755))
+			}
+
+			project, err := testFactory().Open(projectPath)
+			require.NoError(t, err)
+
+			got, err := project.AppIconSetPaths()
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+				return
+			}
+			require.NoError(t, err)
+
+			want := map[string][]string{}
+			for _, iconSetPath := range tt.want {
+				want["A1"] = append(want["A1"], filepath.Join(projectDir, iconSetPath))
+			}
+			assert.Equal(t, want, got)
+		})
+	}
+}

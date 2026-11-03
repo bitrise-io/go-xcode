@@ -1,7 +1,6 @@
 package xcodeproj
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -11,15 +10,11 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/internal/xcproj"
 )
 
-var (
-	errNotSupportedForXCProj = errors.New("not supported yet for project.xcproj")
-
-	xcprojTargetKinds = map[string]targetKind{
-		xcproj.TargetKindNative:              nativeTargetKind,
-		xcproj.TargetKindAggregate:           aggregateTargetKind,
-		xcproj.TargetKindExternalBuildSystem: externalBuildSystemTargetKind,
-	}
-)
+var xcprojTargetKinds = map[string]targetKind{
+	xcproj.TargetKindNative:              nativeTargetKind,
+	xcproj.TargetKindAggregate:           aggregateTargetKind,
+	xcproj.TargetKindExternalBuildSystem: externalBuildSystemTargetKind,
+}
 
 // XCProj is a project whose project file is project.xcproj, the JSON format.
 type XCProj struct {
@@ -28,6 +23,7 @@ type XCProj struct {
 	content          []byte
 	editor           *xcproj.Editor
 	developmentTeams map[string]string
+	files            []xcproj.Reference
 }
 
 func (f Factory) newXCProj(content []byte, projectPath string) (*XCProj, error) {
@@ -38,11 +34,6 @@ func (f Factory) newXCProj(content []byte, projectPath string) (*XCProj, error) 
 func (p *XCProj) TargetDevelopmentTeam(targetID string) (string, bool) {
 	developmentTeam := p.developmentTeams[targetID]
 	return developmentTeam, developmentTeam != ""
-}
-
-// AppIconSetPaths implements XcodeProj.
-func (p *XCProj) AppIconSetPaths() (map[string][]string, error) {
-	return nil, errNotSupportedForXCProj
 }
 
 // ForceCodeSign implements XcodeProj. It leaves legacy-team-id and legacy-provisioning-style
@@ -139,6 +130,7 @@ func parseXCProj(content []byte, base baseProj) (*XCProj, error) {
 		baseProj:         base,
 		content:          content,
 		developmentTeams: xcprojDevelopmentTeams(project.Targets),
+		files:            project.Files,
 	}, nil
 }
 

@@ -28,7 +28,7 @@ func testFactory() Factory {
 		fileutil.NewFileManager(),
 		plistutil.NewFileHandler(fileutil.NewFileManager()),
 		pathutil.NewPathModifier(),
-		nil, // path provider is only needed for app icon lookup
+		pathutil.NewPathProvider(),
 		NewUserProvider(),
 		NewDirCreator(),
 	)
