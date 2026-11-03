@@ -49,7 +49,7 @@ func FuzzAdditionalOptions(f *testing.F) {
 			} else {
 				require.Equal(t, args, opts.Args(), "parsing must round-trip")
 			}
-			checkFindings(t, opts.Diagnostics(), opts.Args(), false)
+			checkFindings(t, opts.Diagnostics(), opts.Args(), opts)
 
 			// The params are valid, so only the additional options could fail a builder, and
 			// none may: every option passes through and is reported, or not.
@@ -84,7 +84,7 @@ func FuzzAdditionalOptions(f *testing.F) {
 				require.Equal(t, cmd.Diagnostics(), again.Diagnostics(), "building must be deterministic")
 
 				require.True(t, endsWith(cmd.Args(), args), "the user's options end the command line verbatim: %q", cmd.Args())
-				checkFindings(t, cmd.Diagnostics(), cmd.Args(), true)
+				checkFindings(t, cmd.Diagnostics(), cmd.Args(), opts)
 			}
 
 			// Package resolution: the options that apply are forwarded in order, the rest make
@@ -103,7 +103,7 @@ func FuzzAdditionalOptions(f *testing.F) {
 				require.Empty(t, cmd.Diagnostics())
 			} else {
 				require.Equal(t, []DiagnosticKind{LeftOut}, kinds(cmd.Diagnostics()))
-				checkFindings(t, cmd.Diagnostics(), cmd.Args(), true)
+				checkFindings(t, cmd.Diagnostics(), cmd.Args(), opts)
 			}
 		}
 	})
@@ -111,15 +111,12 @@ func FuzzAdditionalOptions(f *testing.F) {
 
 // checkFindings checks what every finding promises: it names one of the user's options,
 // never an Unknown one (xcodebuild refuses those with its own message), the option is on the
-// command line, and the level follows the kind, or the hint for a Step input. A command's
-// findings are about options the merge marked as the user's.
-func checkFindings(t *testing.T, diagnostics []Diagnostic, args []string, fromCommand bool) {
+// command line, and the level follows the kind, or the hint for a Step input.
+func checkFindings(t *testing.T, diagnostics []Diagnostic, args []string, user Options) {
 	t.Helper()
 	for _, d := range diagnostics {
 		require.NotEmpty(t, d.Message)
-		if fromCommand {
-			require.True(t, d.Option.user, "a command's finding is about the user's option: %s", d.Message)
-		}
+		require.Contains(t, user, d.Option, "a finding is about one of the user's options: %s", d.Message)
 		if d.Kind != LeftOut { // the note lists what resolution leaves out, Unknown arguments included
 			require.NotEqual(t, Unknown, d.Option.Kind, "what xcodebuild refuses gets no line: %s", d.Message)
 			require.True(t, contains(args, d.Option.args()), "the option is on the command line: %s", d.Message)
