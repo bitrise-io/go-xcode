@@ -182,20 +182,15 @@ func TestXcodeProj_SetBuildSetting_errors(t *testing.T) {
 	require.ErrorContains(t, project.SetBuildSetting("XcodeProj", "Nope", "K", "V"), "Nope")
 }
 
-func TestWriteBuildSettingForAllSDKs(t *testing.T) {
+func TestKeysForAllSDKs(t *testing.T) {
 	buildSettings := serialized.Object{
-		"CODE_SIGN_IDENTITY":                "old",
 		"CODE_SIGN_IDENTITY[sdk=iphoneos*]": "old",
 		"CODE_SIGN_IDENTITY_OTHER":          "untouched",
 	}
 
-	writeBuildSettingForAllSDKs(buildSettings, "CODE_SIGN_IDENTITY", "new")
+	keys := keysForAllSDKs(buildSettings, "CODE_SIGN_IDENTITY")
 
-	assert.Equal(t, serialized.Object{
-		"CODE_SIGN_IDENTITY":                "new",
-		"CODE_SIGN_IDENTITY[sdk=iphoneos*]": "new",
-		"CODE_SIGN_IDENTITY_OTHER":          "untouched",
-	}, buildSettings)
+	assert.ElementsMatch(t, []string{"CODE_SIGN_IDENTITY", "CODE_SIGN_IDENTITY[sdk=iphoneos*]"}, keys)
 }
 
 func TestXcodeProj_Save(t *testing.T) {
