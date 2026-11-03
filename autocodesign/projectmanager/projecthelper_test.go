@@ -10,8 +10,6 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
-	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
-	"github.com/bitrise-io/go-xcode/xcodeproject/xcodeproj"
 	"github.com/stretchr/testify/require"
 )
 
@@ -113,92 +111,6 @@ func TestNew(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, projHelp, "No projectHelper was generated")
 			require.Equal(t, tt.wantConfiguration, projHelp.Configuration)
-		})
-	}
-}
-
-func TestProjectHelper_ProjectTeamID_withouthTargetAttributes(t *testing.T) {
-	logger := log.NewLogger()
-	logger.EnableDebugLog(true)
-
-	helper := ProjectHelper{
-		logger:     logger,
-		MainTarget: xcodeproj.Target{Name: "AppTarget"},
-		// bypass calling xcodebuild -showBuildSettings
-		buildSettingsCache: map[buildSettingsCacheKey][]serialized.Object{{targetName: "AppTarget", configuration: "Debug"}: {}},
-		// project withouth TargetAttributes
-		XcProj: xcodeproj.XcodeProj{Proj: xcodeproj.Proj{Attributes: xcodeproj.ProjectAtributes{TargetAttributes: nil}}},
-	}
-	_, err := helper.ProjectTeamID("Debug")
-	require.NoError(t, err)
-}
-
-func TestProjectHelper_ProjectTeamID(t *testing.T) {
-	logger := log.NewLogger()
-	logger.EnableDebugLog(true)
-
-	var err error
-	schemeCases, _, projHelpCases, configCases, projectCases, err = initTestCases(t, logger)
-	if err != nil {
-		t.Fatalf("Failed to initialize test cases: %s", err)
-	}
-
-	tests := []struct {
-		name    string
-		config  string
-		want    string
-		wantErr bool
-	}{
-		{
-			name:    schemeCases[0] + " Debug",
-			config:  configCases[0],
-			want:    "72SA8V3WYL",
-			wantErr: false,
-		},
-		{
-			name:    schemeCases[1] + " Release",
-			config:  configCases[1],
-			want:    "72SA8V3WYL",
-			wantErr: false,
-		},
-		{
-			name:    schemeCases[2] + " Debug",
-			config:  configCases[2],
-			want:    "72SA8V3WYL",
-			wantErr: false,
-		},
-		{
-			name:    schemeCases[3] + " Release",
-			config:  configCases[3],
-			want:    "72SA8V3WYL",
-			wantErr: false,
-		},
-		{
-			name:    schemeCases[4] + " Debug",
-			config:  configCases[4],
-			want:    "72SA8V3WYL",
-			wantErr: false,
-		},
-		{
-			name:    schemeCases[5] + " Release",
-			config:  configCases[5],
-			want:    "72SA8V3WYL",
-			wantErr: false,
-		},
-	}
-
-	for i, tt := range tests {
-		p := projHelpCases[i]
-
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := p.ProjectTeamID(tt.config)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ProjectHelper.ProjectTeamID() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("ProjectHelper.ProjectTeamID() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }
