@@ -17,7 +17,7 @@ type Container interface {
 	// by xcodebuild within the bundle that was opened: -workspace for a workspace, -project for a
 	// project, decided by the bundle's own path. That is the context the scheme builds in, so
 	// packages and the build cache are the build's own.
-	SchemeBuildSettings(scheme, configuration string, additionalOptions ...string) (serialized.Object, error)
+	SchemeBuildSettings(scheme, configuration string, extraArgs ...string) (serialized.Object, error)
 }
 
 // bundle is what an opened project and an opened workspace both answer. *xcodeproj.XcodeProj and
@@ -39,6 +39,6 @@ func (c *container) Scheme(name string) (xcscheme.Scheme, string, error) {
 }
 
 // SchemeBuildSettings implements Container.
-func (c *container) SchemeBuildSettings(scheme, configuration string, additionalOptions ...string) (serialized.Object, error) {
-	return c.bundle.SchemeBuildSettings(scheme, configuration, additionalOptions...)
+func (c *container) SchemeBuildSettings(scheme, configuration string, extraArgs ...string) (serialized.Object, error) {
+	return c.bundle.SchemeBuildSettings(scheme, configuration, extraArgs...)
 }

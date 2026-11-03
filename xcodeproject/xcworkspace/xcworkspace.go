@@ -127,8 +127,8 @@ func (f Factory) Open(pth string) (*Workspace, error) {
 
 // SchemeBuildSettings returns the scheme's effective build settings, resolved by xcodebuild within
 // the workspace.
-func (w *Workspace) SchemeBuildSettings(scheme, configuration string, customOptions ...string) (serialized.Object, error) {
-	return w.buildSettings.SchemeBuildSettings(w.Path, scheme, configuration, customOptions...)
+func (w *Workspace) SchemeBuildSettings(scheme, configuration string, extraArgs ...string) (serialized.Object, error) {
+	return w.buildSettings.SchemeBuildSettings(w.Path, scheme, configuration, extraArgs...)
 }
 
 // fileLocations returns the absolute paths of the files the workspace references: the top-level

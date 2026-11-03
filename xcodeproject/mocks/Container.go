@@ -104,10 +104,10 @@ func (_c *Container_Scheme_Call) RunAndReturn(run func(name string) (xcscheme.Sc
 }
 
 // SchemeBuildSettings provides a mock function for the type Container
-func (_mock *Container) SchemeBuildSettings(scheme string, configuration string, additionalOptions ...string) (serialized.Object, error) {
+func (_mock *Container) SchemeBuildSettings(scheme string, configuration string, extraArgs ...string) (serialized.Object, error) {
 	var tmpRet mock.Arguments
-	if len(additionalOptions) > 0 {
-		tmpRet = _mock.Called(scheme, configuration, additionalOptions)
+	if len(extraArgs) > 0 {
+		tmpRet = _mock.Called(scheme, configuration, extraArgs)
 	} else {
 		tmpRet = _mock.Called(scheme, configuration)
 	}
@@ -120,17 +120,17 @@ func (_mock *Container) SchemeBuildSettings(scheme string, configuration string,
 	var r0 serialized.Object
 	var r1 error
 	if returnFunc, ok := ret.Get(0).(func(string, string, ...string) (serialized.Object, error)); ok {
-		return returnFunc(scheme, configuration, additionalOptions...)
+		return returnFunc(scheme, configuration, extraArgs...)
 	}
 	if returnFunc, ok := ret.Get(0).(func(string, string, ...string) serialized.Object); ok {
-		r0 = returnFunc(scheme, configuration, additionalOptions...)
+		r0 = returnFunc(scheme, configuration, extraArgs...)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(serialized.Object)
 		}
 	}
 	if returnFunc, ok := ret.Get(1).(func(string, string, ...string) error); ok {
-		r1 = returnFunc(scheme, configuration, additionalOptions...)
+		r1 = returnFunc(scheme, configuration, extraArgs...)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -145,13 +145,13 @@ type Container_SchemeBuildSettings_Call struct {
 // SchemeBuildSettings is a helper method to define mock.On call
 //   - scheme string
 //   - configuration string
-//   - additionalOptions ...string
-func (_e *Container_Expecter) SchemeBuildSettings(scheme interface{}, configuration interface{}, additionalOptions ...interface{}) *Container_SchemeBuildSettings_Call {
+//   - extraArgs ...string
+func (_e *Container_Expecter) SchemeBuildSettings(scheme interface{}, configuration interface{}, extraArgs ...interface{}) *Container_SchemeBuildSettings_Call {
 	return &Container_SchemeBuildSettings_Call{Call: _e.mock.On("SchemeBuildSettings",
-		append([]interface{}{scheme, configuration}, additionalOptions...)...)}
+		append([]interface{}{scheme, configuration}, extraArgs...)...)}
 }
 
-func (_c *Container_SchemeBuildSettings_Call) Run(run func(scheme string, configuration string, additionalOptions ...string)) *Container_SchemeBuildSettings_Call {
+func (_c *Container_SchemeBuildSettings_Call) Run(run func(scheme string, configuration string, extraArgs ...string)) *Container_SchemeBuildSettings_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 string
 		if args[0] != nil {
@@ -181,7 +181,7 @@ func (_c *Container_SchemeBuildSettings_Call) Return(object serialized.Object, e
 	return _c
 }
 
-func (_c *Container_SchemeBuildSettings_Call) RunAndReturn(run func(scheme string, configuration string, additionalOptions ...string) (serialized.Object, error)) *Container_SchemeBuildSettings_Call {
+func (_c *Container_SchemeBuildSettings_Call) RunAndReturn(run func(scheme string, configuration string, extraArgs ...string) (serialized.Object, error)) *Container_SchemeBuildSettings_Call {
 	_c.Call.Return(run)
 	return _c
 }
