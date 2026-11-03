@@ -104,9 +104,10 @@ func showBuildSettingsArgs(projectPath, nameFlag, name, configuration string, ex
 	return append(args, extraArgs...)
 }
 
-// parseShowBuildSettingsOutput keeps the first occurrence of a repeated key, which for a
-// multi-target scheme is the main target. ReadLine is used because values can exceed
-// bufio.Scanner's line limit.
+// parseShowBuildSettingsOutput keeps the first occurrence of a repeated key. xcodebuild prints
+// one block per target a scheme builds, first build action entry first, so a key comes from the
+// first target that has it; a key the first target lacks comes from a later one. ReadLine is used
+// because values can exceed bufio.Scanner's line limit.
 func parseShowBuildSettingsOutput(out string) (serialized.Object, error) {
 	settings := serialized.Object{}
 

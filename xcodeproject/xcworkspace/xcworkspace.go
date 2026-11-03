@@ -22,9 +22,11 @@ const (
 
 const contentsFileName = "contents.xcworkspacedata"
 
-// BuildSettingsProvider resolves the effective build settings of a scheme's main target.
-// workspacePath is the .xcworkspace bundle; the path's extension tells an implementation which
-// xcodebuild flag to pass, as xcodebuild itself accepts only an .xcworkspace after -workspace.
+// BuildSettingsProvider resolves the effective build settings of a scheme as xcodebuild reports
+// them for it: one block per target the scheme builds, first build action entry first, the first
+// block that has a key supplying it. workspacePath is the .xcworkspace bundle; the path's extension
+// tells an implementation which xcodebuild flag to pass, as xcodebuild itself accepts only an
+// .xcworkspace after -workspace.
 type BuildSettingsProvider interface {
 	SchemeBuildSettings(workspacePath, scheme, configuration string, extraArgs ...string) (serialized.Object, error)
 }

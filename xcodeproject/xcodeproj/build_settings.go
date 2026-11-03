@@ -38,9 +38,10 @@ func (p *XcodeProj) TargetBuildSettings(target, configuration string, extraArgs 
 	return p.buildSettings.TargetBuildSettings(p.Path, target, configuration, extraArgs...)
 }
 
-// SchemeBuildSettings returns the effective build settings of the scheme's main target, resolved by
-// xcodebuild within the project (`-project -scheme`). A scheme the project holds or one of its
-// autocreated ones can be asked for.
+// SchemeBuildSettings returns the effective build settings of the scheme as the provider reports
+// them, resolved by xcodebuild within the project (`-project -scheme`): see BuildSettingsProvider
+// for which target's settings those are. A scheme the project holds or one of its autocreated
+// ones can be asked for.
 func (p *XcodeProj) SchemeBuildSettings(scheme, configuration string, extraArgs ...string) (serialized.Object, error) {
 	return p.buildSettings.SchemeBuildSettings(p.Path, scheme, configuration, extraArgs...)
 }
