@@ -59,7 +59,8 @@ var (
 	// Test flags xcodebuild accepts and ignores outside a test action (verified on archive,
 	// Xcode 26.5 and 27.0). The test flags it refuses there (-testPlan, -enableCodeCoverage,
 	// -testLanguage, -testRegion, -testProductsPath: "only supported when testing"; -xctestrun
-	// next to -scheme) need no line: the build fails on them with xcodebuild's own message.
+	// next to -scheme, and -scheme, -project, -workspace or -testProductsPath next to
+	// -xctestrun) need no line: the build fails on them with xcodebuild's own message.
 	testOnly = rejection{
 		reason: "It applies to test actions only, and xcodebuild ignores it here.",
 		flags: []string{
@@ -74,12 +75,4 @@ var (
 	}
 	// On a test run, -enumerate-tests lists the tests and runs none, and the command succeeds.
 	listsTests = rejection{reason: "It makes xcodebuild list the tests instead of running them.", flags: []string{"-enumerate-tests"}}
-	// xcodebuild refuses -xctestrun next to -project, -workspace or -scheme, which test and
-	// build-for-testing always pass. test-without-building runs an xctestrun, which already
-	// names what to test, so it refuses those flags and -testProductsPath ("Cannot specify
-	// both -xctestrun and -testProductsPath"); or a scheme, so it refuses -xctestrun. It
-	// accepts -testPlan next to -xctestrun and looks the plan up (Xcode 26.5), so that passes.
-	withoutBuildingOnly = rejection{reason: "It applies to test-without-building only, and xcodebuild refuses it next to -scheme.", flags: []string{"-xctestrun"}}
-	withXCTestRun       = rejection{reason: "The xctestrun already names what to test, and xcodebuild refuses it next to -xctestrun.", flags: []string{"-scheme", "-project", "-workspace", "-testProductsPath"}}
-	withScheme          = rejection{reason: "The Step tests a scheme, and xcodebuild refuses it next to -scheme.", flags: []string{"-xctestrun"}}
 )

@@ -39,18 +39,13 @@ func TestPolicies(t *testing.T) {
 		},
 		{
 			policy:  testPolicy,
-			rejects: []string{"-exportArchive", "-xctestrun", "-enumerate-tests", "-json"},
-			accepts: []string{"-testPlan", "-only-testing", "-parallel-testing-enabled", "-enableCodeCoverage"},
+			rejects: []string{"-exportArchive", "-enumerate-tests", "-json"},
+			accepts: []string{"-testPlan", "-only-testing", "-parallel-testing-enabled", "-enableCodeCoverage", "-xctestrun"},
 		},
 		{
 			policy:  testWithoutBuildingPolicy,
-			rejects: []string{"-exportArchive", "-showBuildSettings", "-scheme", "-project", "-workspace", "-testProductsPath", "-enumerate-tests"},
-			accepts: []string{"-xctestrun", "-testPlan", "-enableCodeCoverage", "-only-testing", "-skip-testing", "-test-iterations"},
-		},
-		{
-			policy:  testWithoutBuildingSchemePolicy,
-			rejects: []string{"-exportArchive", "-showBuildSettings", "-xctestrun", "-enumerate-tests"},
-			accepts: []string{"-testPlan", "-enableCodeCoverage", "-only-testing", "-skip-testing", "-test-iterations"},
+			rejects: []string{"-exportArchive", "-showBuildSettings", "-json", "-enumerate-tests"},
+			accepts: []string{"-xctestrun", "-testPlan", "-enableCodeCoverage", "-only-testing", "-skip-testing", "-test-iterations", "-scheme", "-testProductsPath"},
 		},
 		{
 			policy:  resolvePackagesPolicy,
