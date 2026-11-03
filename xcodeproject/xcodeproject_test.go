@@ -1,6 +1,7 @@
 package xcodeproject
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -175,7 +176,7 @@ func TestContainer_SchemeBuildSettings(t *testing.T) {
 	workspacePath := writeWorkspace(t, dir)
 	settings := serialized.Object{"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.app"}
 
-	t.Run("a project is asked with -project", func(t *testing.T) {
+	t.Run("a project asks its own provider", func(t *testing.T) {
 		projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
 		projectSettings.On("SchemeBuildSettings", projectPath, "App", "Release", []string{"-sdk", "iphoneos"}).Return(settings, nil).Once()
 		workspaceSettings := xcworkspacemocks.NewBuildSettingsProvider(t)
@@ -187,7 +188,7 @@ func TestContainer_SchemeBuildSettings(t *testing.T) {
 		assert.Equal(t, settings, got)
 	})
 
-	t.Run("a workspace is asked with -workspace", func(t *testing.T) {
+	t.Run("a workspace asks its own provider", func(t *testing.T) {
 		projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
 		workspaceSettings := xcworkspacemocks.NewBuildSettingsProvider(t)
 		workspaceSettings.On("SchemeBuildSettings", workspacePath, "Workspace", "Release", []string{"-sdk", "iphoneos"}).Return(settings, nil).Once()
@@ -197,5 +198,16 @@ func TestContainer_SchemeBuildSettings(t *testing.T) {
 		got, err := c.SchemeBuildSettings("Workspace", "Release", "-sdk", "iphoneos")
 		require.NoError(t, err)
 		assert.Equal(t, settings, got)
+	})
+
+	t.Run("the provider's error is passed on as it is", func(t *testing.T) {
+		failure := errors.New("xcodebuild exploded")
+		projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
+		projectSettings.On("SchemeBuildSettings", projectPath, "App", "Release", []string{"-sdk", "iphoneos"}).Return(nil, failure).Once()
+
+		c, err := testFactoryWithProviders(t, projectSettings, xcworkspacemocks.NewBuildSettingsProvider(t)).Open(projectPath)
+		require.NoError(t, err)
+		_, err = c.SchemeBuildSettings("App", "Release", "-sdk", "iphoneos")
+		assert.ErrorIs(t, err, failure)
 	})
 }
