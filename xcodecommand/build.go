@@ -37,3 +37,8 @@ func appendCodeSigningAllowed(opts Options, disable bool) Options {
 	}
 	return append(opts, Option{Kind: BuildSetting, Name: "CODE_SIGNING_ALLOWED", Value: "NO"})
 }
+
+var buildPolicy = actionPolicy{
+	name:       ActionBuild,
+	rejections: []rejection{modeSwitching, silentLog, testOnly},
+}

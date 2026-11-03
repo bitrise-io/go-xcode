@@ -30,3 +30,8 @@ func Archive(params ArchiveParams) (Command, error) {
 
 	return assemble(opts, params.AdditionalOptions)
 }
+
+var archivePolicy = actionPolicy{
+	name:       ActionArchive,
+	rejections: []rejection{modeSwitching, silentLog, testOnly},
+}
