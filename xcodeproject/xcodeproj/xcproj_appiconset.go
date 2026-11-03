@@ -65,8 +65,8 @@ func walkFiles(references []xcproj.Reference, groupDir, projectDir string, visit
 	}
 }
 
-// resolveXCProjFilePath reports false for a path that only the build environment can resolve, such as
-// one under <PRODUCTS>/, <SDK>/, <USER:SETTING>/ or ~.
+// resolveXCProjFilePath reports false for a path whose base only the build machine can resolve,
+// such as <PRODUCTS>/, <SDK>/, <USER:SETTING>/ or ~.
 func resolveXCProjFilePath(pth, groupDir, projectDir string) (string, bool) {
 	if relativePath, ok := strings.CutPrefix(pth, projectPathBase); ok {
 		return filepath.Join(projectDir, relativePath), true
