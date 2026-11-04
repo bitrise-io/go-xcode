@@ -14,7 +14,7 @@ type Container interface {
 	Scheme(name string) (xcscheme.Scheme, string, error)
 }
 
-// schemeSource looks up a scheme by name. Both *xcodeproj.XcodeProj and *xcworkspace.Workspace
+// schemeSource looks up a scheme by name. Both xcodeproj.XcodeProj and *xcworkspace.Workspace
 // implement it.
 type schemeSource interface {
 	Scheme(name string) (xcscheme.Scheme, string, error)

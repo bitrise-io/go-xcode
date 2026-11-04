@@ -48,7 +48,7 @@ type ProjectHelper struct {
 	DependentTargets            []xcodeproj.Target
 	UITestTargets               []xcodeproj.Target
 	XcWorkspace                 *xcworkspace.Workspace // nil if working with standalone project
-	XcProj                      *xcodeproj.XcodeProj
+	XcProj                      xcodeproj.XcodeProj
 	Configuration               string
 	additionalXcodebuildOptions []string
 	isCompatMode                bool
@@ -239,7 +239,7 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 	}
 
 	// err != nil
-	projectErr = fmt.Errorf("failed to fetch build settings for target `%s` (project `%s`): %w", targetName, p.XcProj.Name, projectErr)
+	projectErr = fmt.Errorf("failed to fetch build settings for target `%s` (project `%s`): %w", targetName, p.XcProj.Name(), projectErr)
 	if len(settingsList) != 0 {
 		p.logger.Errorf("buildSettings: %s", projectErr)
 		return settingsList, nil // return workspace settings if available, supress error
@@ -332,7 +332,7 @@ func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key stri
 		return "", fmt.Errorf("%s: %w", key, serialized.ErrKeyNotFound)
 	}
 
-	projectBasePath := p.XcProj.Path
+	projectBasePath := p.XcProj.Path()
 	if pathutil.IsRelativePath(settingValue) {
 		settingValue = filepath.Join(filepath.Dir(projectBasePath), settingValue)
 	}
@@ -375,7 +375,7 @@ func (p *ProjectHelper) TargetBundleID(name, conf string) (string, error) {
 		return bundleID, nil
 	}
 
-	p.logger.Debugf("buildSettings: PRODUCT_BUNDLE_IDENTIFIER env not found in 'xcodebuild -showBuildSettings -project %s -target %s -configuration %s command's output, checking the Info.plist file's CFBundleIdentifier property...", p.XcProj.Path, name, conf)
+	p.logger.Debugf("buildSettings: PRODUCT_BUNDLE_IDENTIFIER env not found in 'xcodebuild -showBuildSettings -project %s -target %s -configuration %s command's output, checking the Info.plist file's CFBundleIdentifier property...", p.XcProj.Path(), name, conf)
 
 	infoPlistAbsPath, err := p.buildSettingPathForKey(name, conf, "INFOPLIST_FILE")
 	if err != nil {
@@ -512,7 +512,7 @@ func expandTargetSetting(value string, buildSettings serialized.Object) (string,
 	return prefix + envValue + suffix, nil
 }
 
-func configuration(logger log.Logger, configurationName string, scheme xcscheme.Scheme, xcproj *xcodeproj.XcodeProj) (string, error) {
+func configuration(logger log.Logger, configurationName string, scheme xcscheme.Scheme, xcproj xcodeproj.XcodeProj) (string, error) {
 	defaultConfiguration := scheme.ArchiveAction.BuildConfiguration
 	var configuration string
 	if configurationName == "" || configurationName == defaultConfiguration {
@@ -569,7 +569,7 @@ func getBuildActionEntryFromScheme(logger log.Logger, scheme xcscheme.Scheme, bu
 // The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the XcodeProj would fail.
 // containerPath is the path container was opened from; the Container does not expose it, and the
 // log line and the scheme error name it so a wrong project path is visible in the step log.
-func findBuiltProject(logger log.Logger, container xcodeproject.Container, containerPath string, projectFactory xcodeproj.Factory, buildAction BuildAction, schemeName string) (*xcodeproj.XcodeProj, xcscheme.Scheme, xcodeproj.Target, error) {
+func findBuiltProject(logger log.Logger, container xcodeproject.Container, containerPath string, projectFactory xcodeproj.Factory, buildAction BuildAction, schemeName string) (xcodeproj.XcodeProj, xcscheme.Scheme, xcodeproj.Target, error) {
 	logger.TInfof("Locating built project for scheme `%s`, Xcode project (%s)", schemeName, containerPath)
 
 	scheme, schemeContainerPath, err := container.Scheme(schemeName)
@@ -600,7 +600,7 @@ func findBuiltProject(logger log.Logger, container xcodeproject.Container, conta
 	blueIdent := entry.BuildableReference.BlueprintIdentifier
 	target, ok := xcodeProj.Target(blueIdent)
 	if !ok {
-		return nil, scheme, xcodeproj.Target{}, fmt.Errorf("target %s (%s) not found in project %s", entry.BuildableReference.BlueprintName, blueIdent, xcodeProj.Path)
+		return nil, scheme, xcodeproj.Target{}, fmt.Errorf("target %s (%s) not found in project %s", entry.BuildableReference.BlueprintName, blueIdent, xcodeProj.Path())
 	}
 
 	return xcodeProj, scheme, target, nil

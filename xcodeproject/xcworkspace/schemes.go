@@ -114,10 +114,10 @@ func (w *Workspace) visitSchemeContainers(visit func(containerSchemes) bool) err
 
 		schemes, err := project.SchemesWithAutocreateOverride(*autocreate)
 		if err != nil {
-			return fmt.Errorf("failed to read project (%s) schemes: %w", project.Path, err)
+			return fmt.Errorf("failed to read project (%s) schemes: %w", project.Path(), err)
 		}
 
-		if len(schemes) > 0 && visit(containerSchemes{path: project.Path, schemes: schemes}) {
+		if len(schemes) > 0 && visit(containerSchemes{path: project.Path(), schemes: schemes}) {
 			return nil
 		}
 	}
