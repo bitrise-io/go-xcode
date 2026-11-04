@@ -11,7 +11,7 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
-	v2fileutil "github.com/bitrise-io/go-utils/v2/fileutil"
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	v2pathutil "github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
@@ -70,7 +70,7 @@ func NewProjectHelper(projOrWSPath string, logger log.Logger, schemeName string,
 }
 
 func newProjectHelper(projOrWSPath string, logger log.Logger, schemeName string, buildAction BuildAction, configurationName string, additionalXcodebuildOptions []string, isDebug bool, envRepo env.Repository) (*ProjectHelper, error) {
-	fileManager := v2fileutil.NewFileManager()
+	fileManager := fileutil.NewFileManager()
 	plistFileHandler := plistutil.NewFileHandler(fileManager)
 	buildSettings := xcodebuild.NewShowBuildSettingsProvider(command.NewFactory(envRepo), logger)
 	pathModifier := v2pathutil.NewPathModifier()
