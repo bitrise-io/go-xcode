@@ -118,8 +118,7 @@ func readProjectModel(t *testing.T, project XcodeProj) projectModel {
 	return model
 }
 
-// withoutConfigurationIDs clears the configuration IDs, which project.xcproj omits unless a name is
-// ambiguous.
+// withoutConfigurationIDs clears the configuration IDs, which project.xcproj does not always record.
 func withoutConfigurationIDs(configurations []BuildConfiguration) []BuildConfiguration {
 	configurations = slices.Clone(configurations)
 	for i := range configurations {
