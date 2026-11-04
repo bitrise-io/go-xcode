@@ -233,7 +233,7 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 	}
 
 	if wsErr != nil {
-		p.logger.Warnf("buildSettings: failed to fetch build settings for target `%s` (workspace `%s`): %w", targetName, p.XcWorkspace.Name, wsErr)
+		p.logger.Warnf("buildSettings: failed to fetch build settings for target `%s` (workspace `%s`): %s", targetName, p.XcWorkspace.Name, wsErr)
 		p.logger.Printf("buildSettings: Falling back to project build settings")
 	}
 
