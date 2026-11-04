@@ -185,11 +185,15 @@ func TestOptions_Filter(t *testing.T) {
 	}, kept.Args(), "the destination value generic/platform=iOS is not mistaken for a build setting")
 }
 
-func TestOption_key(t *testing.T) {
-	require.Equal(t, "-quiet", Option{Kind: Switch, Name: "-quiet"}.key())
-	require.Equal(t, "-sdk", Option{Kind: ValueOption, Name: "-sdk", Value: "iphoneos"}.key())
-	require.Equal(t, "-sdk=", Option{Kind: UserDefault, Name: "-sdk", Value: "iphoneos"}.key(), "a user default never collides with the flag of the same name")
-	require.Equal(t, "ARCHS", Option{Kind: BuildSetting, Name: "ARCHS", Value: "arm64"}.key())
+func TestOptions_sets(t *testing.T) {
+	opts := parse([]string{"-destination", "id=1", "-quiet", "ARCHS=arm64", "-sdk=iphoneos", "-resultBundlePath", "-verbose"})
+
+	require.True(t, opts.sets(Option{Kind: ValueOption, Name: "-destination"}))
+	require.True(t, opts.sets(Option{Kind: Switch, Name: "-quiet"}))
+	require.True(t, opts.sets(Option{Kind: BuildSetting, Name: "ARCHS"}))
+	require.False(t, opts.sets(Option{Kind: ValueOption, Name: "-sdk"}), "a user default is another form of the flag")
+	require.False(t, opts.sets(Option{Kind: Switch, Name: "-destination"}), "a flag with a value is another form of the switch")
+	require.False(t, opts.sets(Option{Kind: ValueOption, Name: "-resultBundlePath"}), "a copy that took the next flag as its value does not count")
 }
 
 // ParseOptions splits the input with POSIX shell rules, then parses; only a quoting error
