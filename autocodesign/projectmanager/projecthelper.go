@@ -24,10 +24,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace"
 )
 
-// ErrBuildSettingNotFound is wrapped into the error of a settings read whose key xcodebuild
-// -showBuildSettings did not print; errors.Is tells it from a failed read.
-var ErrBuildSettingNotFound = errors.New("build setting not found")
-
 // BuildAction is the type of build action to be performed on the scheme.
 type BuildAction string
 
@@ -299,7 +295,7 @@ func (p *ProjectHelper) buildSettingForKey(targetName, conf string, key string) 
 	settings := settingsList[0] // workspace setting if available, project otherwise
 	settingValue, ok := settings.String(key)
 	if !ok {
-		return "", fmt.Errorf("%s: %w", key, ErrBuildSettingNotFound)
+		return "", fmt.Errorf("%s: %w", key, serialized.ErrKeyNotFound)
 	}
 
 	if len(settingsList) == 1 {
@@ -309,7 +305,7 @@ func (p *ProjectHelper) buildSettingForKey(targetName, conf string, key string) 
 	projectSettings := settingsList[1]
 	projectSettingValue, ok := projectSettings.String(key)
 	if !ok {
-		p.logger.Errorf("buildSettings: Failed to fetch project build setting for key (%s): %s", key, ErrBuildSettingNotFound)
+		p.logger.Errorf("buildSettings: Failed to fetch project build setting for key (%s): %s", key, serialized.ErrKeyNotFound)
 		p.logger.Printf("buildSettings: Returning workspace value for key (%s): %s", key, settingValue)
 		return settingValue, nil
 	}
@@ -334,7 +330,7 @@ func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key stri
 	settings := settingsList[0]
 	settingValue, ok := settings.String(key)
 	if !ok {
-		return "", fmt.Errorf("%s: %w", key, ErrBuildSettingNotFound)
+		return "", fmt.Errorf("%s: %w", key, serialized.ErrKeyNotFound)
 	}
 
 	projectBasePath := p.XcProj.Path
@@ -349,7 +345,7 @@ func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key stri
 	projectSettings := settingsList[1]
 	projectSettingValue, ok := projectSettings.String(key)
 	if !ok {
-		return "", fmt.Errorf("%s: %w", key, ErrBuildSettingNotFound)
+		return "", fmt.Errorf("%s: %w", key, serialized.ErrKeyNotFound)
 	}
 
 	if pathutil.IsRelativePath(projectSettingValue) {
@@ -373,7 +369,7 @@ func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key stri
 // It returns  the target bundle ID
 func (p *ProjectHelper) TargetBundleID(name, conf string) (string, error) {
 	bundleID, err := p.buildSettingForKey(name, conf, "PRODUCT_BUNDLE_IDENTIFIER")
-	if err != nil && !errors.Is(err, ErrBuildSettingNotFound) {
+	if err != nil && !errors.Is(err, serialized.ErrKeyNotFound) {
 		return "", fmt.Errorf("failed to parse target (%s) build settings attribute PRODUCT_BUNDLE_IDENTIFIER: %w", name, err)
 	}
 	if bundleID != "" {
@@ -424,7 +420,7 @@ func (p *ProjectHelper) TargetBundleID(name, conf string) (string, error) {
 func (p *ProjectHelper) targetEntitlements(name, config, bundleID string) (autocodesign.Entitlements, error) {
 	codeSignEntitlementsPth, err := p.buildSettingPathForKey(name, config, "CODE_SIGN_ENTITLEMENTS")
 	if err != nil {
-		if errors.Is(err, ErrBuildSettingNotFound) {
+		if errors.Is(err, serialized.ErrKeyNotFound) {
 			p.logger.Debugf("buildSettings: Target (%s) does not have CODE_SIGN_ENTITLEMENTS in build settings", name)
 			return nil, nil
 		}
@@ -445,7 +441,7 @@ func (p *ProjectHelper) IsSigningManagedAutomatically() (bool, error) {
 	targetName := p.MainTarget.Name
 	codeSignStyle, err := p.buildSettingForKey(targetName, p.Configuration, "CODE_SIGN_STYLE")
 	if err != nil {
-		if errors.Is(err, ErrBuildSettingNotFound) {
+		if errors.Is(err, serialized.ErrKeyNotFound) {
 			p.logger.Debugf("setting CODE_SIGN_STYLE unspecified for target (%s), defaulting to `Manual`", targetName)
 
 			return false, nil
