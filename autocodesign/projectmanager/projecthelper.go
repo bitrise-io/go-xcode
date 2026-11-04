@@ -8,8 +8,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bitrise-io/go-plist"
-	"github.com/bitrise-io/go-utils/fileutil"
 	"github.com/bitrise-io/go-utils/pathutil"
 	"github.com/bitrise-io/go-utils/v2/command"
 	"github.com/bitrise-io/go-utils/v2/env"
@@ -393,17 +391,12 @@ func (p *ProjectHelper) TargetBundleID(name, conf string) (string, error) {
 		return "", fmt.Errorf("failed to to determine bundle id: xcodebuild -showBuildSettings does not contains PRODUCT_BUNDLE_IDENTIFIER nor INFOPLIST_FILE' unless info_plist_path")
 	}
 
-	b, err := fileutil.ReadBytesFromFile(infoPlistAbsPath)
+	infoPlist, _, err := p.plistFileHandler.Read(infoPlistAbsPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read Info.plist: %w", err)
 	}
 
-	var options map[string]interface{}
-	if _, err := plist.Unmarshal(b, &options); err != nil {
-		return "", fmt.Errorf("failed to unmarshal Info.plist: %w", err)
-	}
-
-	bundleID, ok := options["CFBundleIdentifier"].(string)
+	bundleID, ok := serialized.Object(infoPlist).String("CFBundleIdentifier")
 	if !ok || bundleID == "" {
 		return "", fmt.Errorf("failed to parse CFBundleIdentifier from the Info.plist")
 	}

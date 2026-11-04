@@ -10,6 +10,7 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
+	plistmocks "github.com/bitrise-io/go-xcode/v2/plistutil/mocks"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 	xcodeprojmocks "github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/mocks"
@@ -128,6 +129,30 @@ func TestReadSchemeBuildSettingString_missingKeyIsErrBuildSettingNotFound(t *tes
 
 	_, err := project.ReadSchemeBuildSettingString("PRODUCT_NAME")
 	require.ErrorIs(t, err, ErrBuildSettingNotFound, "a step tells a setting xcodebuild did not print from a failed read by this error")
+}
+
+func TestTargetBundleID_fallsBackToTheInfoPlist(t *testing.T) {
+	// Without PRODUCT_BUNDLE_IDENTIFIER the bundle ID is CFBundleIdentifier of the Info.plist the
+	// settings name, read through the injected plist handler; a variable in it expands from the
+	// same settings, so xcodebuild runs once.
+	settings := serialized.Object{"INFOPLIST_FILE": "App/Info.plist", "PRODUCT_NAME": "App"}
+	for name, tt := range map[string]struct{ plist, want string }{
+		"literal":  {plist: "io.bitrise.app", want: "io.bitrise.app"},
+		"variable": {plist: "io.bitrise.$(PRODUCT_NAME)", want: "io.bitrise.App"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
+			projectSettings.On("TargetBuildSettings", testProjectPath, "App", "Release", testOptions).Return(settings, nil).Once()
+			plistHandler := plistmocks.NewFileHandler(t)
+			plistHandler.On("Read", "/repo/App/Info.plist").Return(plistutil.PlistData{"CFBundleIdentifier": tt.plist}, 0, nil).Once()
+			helper := settingsHelper(t, nil, false, projectSettings) // no workspace
+			helper.plistFileHandler = plistHandler
+
+			got, err := helper.TargetBundleID("App", "Release")
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
 }
 
 func TestFetchBuildSettings_project(t *testing.T) {
