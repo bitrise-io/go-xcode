@@ -120,7 +120,7 @@ func newProjectHelper(projOrWSPath string, logger log.Logger, schemeName string,
 		}
 	}
 
-	xcproj, scheme, mainTarget, err := findBuiltProject(logger, container, projectFactory, buildAction, schemeName)
+	xcproj, scheme, mainTarget, err := findBuiltProject(logger, container, projOrWSPath, projectFactory, buildAction, schemeName)
 	if err != nil {
 		return nil, err
 	}
@@ -572,12 +572,14 @@ func getBuildActionEntryFromScheme(logger log.Logger, scheme xcscheme.Scheme, bu
 
 // findBuiltProject returns the Xcode project which will be built for the provided scheme, plus the scheme.
 // The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the XcodeProj would fail.
-func findBuiltProject(logger log.Logger, container xcodeproject.Container, projectFactory xcodeproj.Factory, buildAction BuildAction, schemeName string) (*xcodeproj.XcodeProj, xcscheme.Scheme, xcodeproj.Target, error) {
-	logger.TInfof("Locating built project for scheme `%s`", schemeName)
+// containerPath is the path container was opened from; the Container does not expose it, and the
+// log line and the scheme error name it so a wrong project path is visible in the step log.
+func findBuiltProject(logger log.Logger, container xcodeproject.Container, containerPath string, projectFactory xcodeproj.Factory, buildAction BuildAction, schemeName string) (*xcodeproj.XcodeProj, xcscheme.Scheme, xcodeproj.Target, error) {
+	logger.TInfof("Locating built project for scheme `%s`, Xcode project (%s)", schemeName, containerPath)
 
 	scheme, schemeContainerPath, err := container.Scheme(schemeName)
 	if err != nil {
-		return nil, xcscheme.Scheme{}, xcodeproj.Target{}, fmt.Errorf("could not get scheme `%s`: %w", schemeName, err)
+		return nil, xcscheme.Scheme{}, xcodeproj.Target{}, fmt.Errorf("could not get scheme `%s` from path (%s): %w", schemeName, containerPath, err)
 	}
 
 	entry, err := getBuildActionEntryFromScheme(logger, scheme, buildAction)
