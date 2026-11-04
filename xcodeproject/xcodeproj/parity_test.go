@@ -26,7 +26,7 @@ type projectModel struct {
 	appIconSetPaths          map[string][]string
 }
 
-// testdata/bullseye holds one project saved by Xcode as project.pbxproj and, converted, as
+// testdata/format-parity holds one project saved by Xcode as project.pbxproj and, converted, as
 // project.xcproj.
 func TestXcodeProj_formatParity(t *testing.T) {
 	pbxProj := openBullsEyeFixture(t, pbxProjFileName)
@@ -64,7 +64,7 @@ func TestXcodeProj_formatParity(t *testing.T) {
 func openBullsEyeFixture(t *testing.T, projectFileName string) XcodeProj {
 	t.Helper()
 
-	fixtureDir := filepath.Join("testdata", "bullseye")
+	fixtureDir := filepath.Join("testdata", "format-parity")
 	projectDir := t.TempDir()
 	require.NoError(t, os.CopyFS(filepath.Join(projectDir, "BullsEye"), os.DirFS(filepath.Join(fixtureDir, "BullsEye"))))
 
