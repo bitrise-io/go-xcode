@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	bullsEyeAppTargetID      = "D2A5F1FF1F4A9144005CD714"
-	bullsEyeUITestTargetName = "BullsEyeUITests"
+	parityAppTargetID      = "D2A5F1FF1F4A9144005CD714"
+	parityAppTargetName    = "BullsEye"
+	parityUITestTargetName = "BullsEyeUITests"
 )
 
 // projectModel is what both project file formats must read the same from one project.
@@ -29,26 +30,26 @@ type projectModel struct {
 // testdata/format-parity holds one project saved by Xcode as project.pbxproj and, converted, as
 // project.xcproj.
 func TestXcodeProj_formatParity(t *testing.T) {
-	pbxProj := openBullsEyeFixture(t, pbxProjFileName)
-	xcProj := openBullsEyeFixture(t, xcProjFileName)
+	pbxProj := openParityFixture(t, pbxProjFileName)
+	xcProj := openParityFixture(t, xcProjFileName)
 	require.IsType(t, &PBXProj{}, pbxProj)
 	require.IsType(t, &XCProj{}, xcProj)
 
 	want := readProjectModel(t, pbxProj)
 	assert.Equal(t, "BullsEye", want.name)
-	assert.Equal(t, []string{"BullsEye", "BullsEyeTests", "BullsEyeSlowTests", bullsEyeUITestTargetName, "BullsEyeFailingTests"}, targetNames(want.targets))
-	assert.Equal(t, []string{"BullsEye"}, want.dependentTargets[bullsEyeUITestTargetName])
+	assert.Equal(t, []string{parityAppTargetName, "BullsEyeTests", "BullsEyeSlowTests", parityUITestTargetName, "BullsEyeFailingTests"}, targetNames(want.targets))
+	assert.Equal(t, []string{parityAppTargetName}, want.dependentTargets[parityUITestTargetName])
 	assert.Equal(t, map[string][]string{
-		bullsEyeAppTargetID: {filepath.Join("BullsEye", "Assets.xcassets", "AppIcon.appiconset")},
+		parityAppTargetID: {filepath.Join("BullsEye", "Assets.xcassets", "AppIcon.appiconset")},
 	}, want.appIconSetPaths)
 	assert.Equal(t, want, readProjectModel(t, xcProj))
 
 	for _, project := range []XcodeProj{pbxProj, xcProj} {
-		require.NoError(t, project.ForceCodeSign(forceCodeSignOptions("BullsEye", "Release")))
-		require.NoError(t, project.ForceCodeSign(forceCodeSignOptions(bullsEyeUITestTargetName, "Debug")))
+		require.NoError(t, project.ForceCodeSign(forceCodeSignOptions(parityAppTargetName, "Release")))
+		require.NoError(t, project.ForceCodeSign(forceCodeSignOptions(parityUITestTargetName, "Debug")))
 	}
-	requireBuildSetting(t, pbxProj, "BullsEye", "Release", "CODE_SIGN_STYLE", "Manual")
-	requireBuildSetting(t, pbxProj, "BullsEye", "Debug", "CODE_SIGN_STYLE", "Automatic")
+	requireBuildSetting(t, pbxProj, parityAppTargetName, "Release", "CODE_SIGN_STYLE", "Manual")
+	requireBuildSetting(t, pbxProj, parityAppTargetName, "Debug", "CODE_SIGN_STYLE", "Automatic")
 
 	want = readProjectModel(t, pbxProj)
 	assert.Equal(t, want, readProjectModel(t, xcProj), "after ForceCodeSign")
@@ -61,7 +62,7 @@ func TestXcodeProj_formatParity(t *testing.T) {
 	}
 }
 
-func openBullsEyeFixture(t *testing.T, projectFileName string) XcodeProj {
+func openParityFixture(t *testing.T, projectFileName string) XcodeProj {
 	t.Helper()
 
 	fixtureDir := filepath.Join("testdata", "format-parity")
