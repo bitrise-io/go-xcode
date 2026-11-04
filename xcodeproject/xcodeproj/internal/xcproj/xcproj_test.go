@@ -179,6 +179,39 @@ func TestDecode(t *testing.T) {
 			},
 		},
 		{
+			name: "file tree",
+			content: `{"files": [
+				{"kind": "folder", "path": "App", "target-membership": ["App", "Widget"]},
+				{"kind": "group", "path": "Branding", "children": [
+					{"path": "Icons.xcassets", "target-membership": [
+						"App/resources",
+						["Widget", "copy", {"name": "Embed/Assets"}],
+						{"build-phase": "Clip/resources", "platforms": ["ios"]},
+						"id:B2",
+					]},
+				]},
+				{"kind": "variant-group", "path": "Localizable.strings"},
+			]}`,
+			want: Project{
+				Configurations: []Configuration{},
+				BuildSettings:  serialized.Object{},
+				Targets:        []Target{},
+				Files: []Reference{
+					{Kind: ReferenceKindFolder, Path: "App", Targets: []string{"App", "Widget"}},
+					{Kind: ReferenceKindGroup, Path: "Branding", Children: []Reference{{
+						Kind: ReferenceKindFile,
+						Path: "Icons.xcassets",
+						BuildPhases: []BuildPhaseReference{
+							{Target: "App", Kind: BuildPhaseKindResources},
+							{Target: "Widget", Kind: "copy"},
+							{Target: "Clip", Kind: BuildPhaseKindResources},
+						},
+					}}},
+					{Kind: "variant-group", Path: "Localizable.strings"},
+				},
+			},
+		},
+		{
 			name:    "comments",
 			content: "// header\n{\n  /* block */ \"default-configuration\": \"Debug\", // trailing\n}",
 			want: Project{
@@ -222,6 +255,21 @@ func TestDecode(t *testing.T) {
 			name:    "local dependency without a target",
 			content: `{"targets": [{"name": "App", "id": "A1", "dependencies": [{"platforms": ["ios"]}]}]}`,
 			wantErr: "target 0: target App has a dependency with no target",
+		},
+		{
+			name:    "build phase reference without a kind",
+			content: `{"files": [{"path": "Icons.xcassets", "target-membership": ["App"]}]}`,
+			wantErr: `file Icons.xcassets has an invalid build phase reference: "App"`,
+		},
+		{
+			name:    "build phase reference with too many parts",
+			content: `{"files": [{"path": "Icons.xcassets", "target-membership": ["App/copy/Embed/Assets"]}]}`,
+			wantErr: `file Icons.xcassets has an invalid build phase reference: "App/copy/Embed/Assets"`,
+		},
+		{
+			name:    "folder membership of the wrong type",
+			content: `{"files": [{"kind": "folder", "path": "App", "target-membership": [1]}]}`,
+			wantErr: "folder App has an invalid target membership",
 		},
 		{
 			name:    "wrong value type",

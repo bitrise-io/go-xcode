@@ -384,10 +384,3 @@ func TestXCProj_ForceCodeSign_unknownTargetOrConfiguration(t *testing.T) {
 	require.EqualError(t, project.ForceCodeSign(forceCodeSignOptions("Nope", "Debug")), "failed to find target with name: Nope")
 	require.EqualError(t, project.ForceCodeSign(forceCodeSignOptions("App", "Nope")), "failed to find build configuration Nope of target App")
 }
-
-func TestXCProj_notSupported(t *testing.T) {
-	project := openXCProjFixture(t)
-
-	_, err := project.AppIconSetPaths()
-	assert.ErrorIs(t, err, errNotSupportedForXCProj)
-}
