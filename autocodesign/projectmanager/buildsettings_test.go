@@ -121,6 +121,15 @@ func TestFetchBuildSettings_compatModeReadsBoth(t *testing.T) {
 	require.Equal(t, []serialized.Object{fromWorkspace, projectOnly}, got, "workspace settings first, project settings second")
 }
 
+func TestReadSchemeBuildSettingString_missingKeyIsErrBuildSettingNotFound(t *testing.T) {
+	projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
+	projectSettings.On("TargetBuildSettings", testProjectPath, "App", "Release", testOptions).Return(serialized.Object{"SDKROOT": "iphoneos"}, nil).Once()
+	project := Project{logger: log.NewLogger(), projHelper: *settingsHelper(t, nil, false, projectSettings)} // no workspace
+
+	_, err := project.ReadSchemeBuildSettingString("PRODUCT_NAME")
+	require.ErrorIs(t, err, ErrBuildSettingNotFound, "a step tells a setting xcodebuild did not print from a failed read by this error")
+}
+
 func TestFetchBuildSettings_project(t *testing.T) {
 	projectOnly := serialized.Object{"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.app"}
 	projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
