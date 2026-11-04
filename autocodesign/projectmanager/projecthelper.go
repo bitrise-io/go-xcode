@@ -107,7 +107,6 @@ func newProjectHelper(projOrWSPath string, logger log.Logger, schemeName string,
 		return nil, fmt.Errorf("failed to open %s: %w", projOrWSPath, err)
 	}
 
-	// The workspace is kept for its scheme build settings until Container answers those too.
 	var workspace *xcworkspace.Workspace
 	if xcworkspace.IsWorkspace(projOrWSPath) {
 		workspace, err = workspaceFactory.Open(projOrWSPath)
