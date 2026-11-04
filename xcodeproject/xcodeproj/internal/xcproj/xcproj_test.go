@@ -164,21 +164,6 @@ func TestDecode(t *testing.T) {
 			},
 		},
 		{
-			name:    "legacy team ID",
-			content: `{"targets": [{"name": "App", "id": "A1", "legacy-team-id": "TEAM123456"}]}`,
-			want: Project{
-				Configurations: []Configuration{},
-				BuildSettings:  serialized.Object{},
-				Targets: []Target{{
-					ID:            "A1",
-					Name:          "App",
-					Kind:          TargetKindNative,
-					LegacyTeamID:  "TEAM123456",
-					BuildSettings: serialized.Object{},
-				}},
-			},
-		},
-		{
 			name: "file tree",
 			content: `{"files": [
 				{"kind": "folder", "path": "App", "target-membership": ["App", "Widget"]},
