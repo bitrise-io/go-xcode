@@ -108,7 +108,7 @@ func newProjectHelper(projOrWSPath string, logger log.Logger, schemeName string,
 	}
 
 	var workspace *xcworkspace.Workspace
-	if xcworkspace.IsWorkspace(projOrWSPath) {
+	if xcworkspace.IsWorkspace(filepath.Clean(projOrWSPath)) {
 		workspace, err = workspaceFactory.Open(projOrWSPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open workspace: %w", err)
