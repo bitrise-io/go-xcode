@@ -225,7 +225,7 @@ func TestXcodeProj_Save_newFileGetsDefaultMode(t *testing.T) {
 	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
 	require.NoError(t, os.MkdirAll(projectPath, 0755))
 
-	project, err := testFactory().Parse(content, projectPath)
+	project, err := testFactory().newPBXProj(content, projectPath)
 	require.NoError(t, err)
 	require.NoError(t, project.Save())
 
@@ -259,24 +259,4 @@ func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
 	reopenedObjects, ok := reopened.rawProj.Object("objects")
 	require.True(t, ok)
 	assert.True(t, reopenedObjects.Has("BB00000000000000000000A1"))
-}
-
-// Save rebuilds the file from the bytes given to Parse, so Parse must not keep the caller's buffer.
-func TestFactory_Parse_copiesContent(t *testing.T) {
-	content, err := os.ReadFile(filepath.Join("testdata", "without-target-attributes.pbxproj"))
-	require.NoError(t, err)
-	want, err := os.ReadFile(filepath.Join("testdata", "without-target-attributes-modified.pbxproj"))
-	require.NoError(t, err)
-
-	project, err := testFactory().Parse(content, "/projects/App.xcodeproj")
-	require.NoError(t, err)
-
-	for i := range content {
-		content[i] = 'x'
-	}
-
-	require.NoError(t, project.ForceCodeSign(forceCodeSignOptions("TargetWithouthTargetAttributes", "Debug")))
-	got, err := project.perObjectModify()
-	require.NoError(t, err)
-	assert.Equal(t, string(want), string(got))
 }

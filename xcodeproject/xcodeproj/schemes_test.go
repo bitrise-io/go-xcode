@@ -39,7 +39,7 @@ func schemesProject(t *testing.T, fixture string, user UserProvider) *PBXProj {
 	require.NoError(t, err)
 
 	factory := NewFactory(log.NewLogger(), nil, fileutil.NewFileManager(), plistutil.NewFileHandler(fileutil.NewFileManager()), pathutil.NewPathModifier(), nil, user, NewDirCreator())
-	project, err := factory.Parse(content, projectPath)
+	project, err := factory.newPBXProj(content, projectPath)
 	require.NoError(t, err)
 
 	return project

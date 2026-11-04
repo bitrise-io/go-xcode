@@ -63,7 +63,7 @@ func parseFixture(t *testing.T, name string) *PBXProj {
 	content, err := os.ReadFile(filepath.Join("testdata", name))
 	require.NoError(t, err)
 
-	project, err := testFactory().Parse(content, "/projects/XcodeProj.xcodeproj")
+	project, err := testFactory().newPBXProj(content, "/projects/XcodeProj.xcodeproj")
 	require.NoError(t, err)
 
 	return project
@@ -101,7 +101,7 @@ func TestFactory_Parse_optionalTargetKeys(t *testing.T) {
 	require.NotContains(t, string(content), "dependencies")
 	require.NotContains(t, string(content), "buildPhases")
 
-	project, err := testFactory().Parse(content, "/projects/App.xcodeproj")
+	project, err := testFactory().newPBXProj(content, "/projects/App.xcodeproj")
 	require.NoError(t, err)
 
 	require.Len(t, project.Targets(), 1)
@@ -112,14 +112,14 @@ func TestFactory_Parse_optionalTargetKeys(t *testing.T) {
 }
 
 func TestFactory_Parse_invalidContent(t *testing.T) {
-	_, err := testFactory().Parse([]byte("not a plist"), "/projects/App.xcodeproj")
+	_, err := testFactory().newPBXProj([]byte("not a plist"), "/projects/App.xcodeproj")
 	require.Error(t, err)
 }
 
 func TestFactory_Parse_noProjectObject(t *testing.T) {
 	content := []byte("{\n\tobjects = {\n\t\tAA1 = {\n\t\t\tisa = PBXGroup;\n\t\t};\n\t};\n}\n")
 
-	_, err := testFactory().Parse(content, "/projects/App.xcodeproj")
+	_, err := testFactory().newPBXProj(content, "/projects/App.xcodeproj")
 	require.ErrorContains(t, err, "PBXProject")
 }
 

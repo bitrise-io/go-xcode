@@ -87,8 +87,9 @@ func TestXcodeProj_ForceCodeSignRoundTrip(t *testing.T) {
 
 	projectPath := filepath.Join(t.TempDir(), "ios-simple-objc.xcodeproj")
 	require.NoError(t, os.MkdirAll(projectPath, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), content, 0o644))
 
-	project, err := newFactory().Parse(content, projectPath)
+	project, err := newFactory().Open(projectPath)
 	require.NoError(t, err)
 	require.NoError(t, project.ForceCodeSign(xcodeproj.ForceCodeSignOptions{
 		TargetName:              "ios-simple-objc",

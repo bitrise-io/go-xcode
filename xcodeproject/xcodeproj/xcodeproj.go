@@ -183,7 +183,6 @@ func (f Factory) Open(pth string) (XcodeProj, error) {
 		if err != nil {
 			return nil, err
 		}
-		// The buffer was read here and nobody else holds it, so it needs no copy.
 		project, err := f.newPBXProj(content, absPth)
 		if err != nil {
 			// Returning the nil *PBXProj would make a non-nil XcodeProj.

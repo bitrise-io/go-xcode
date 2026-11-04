@@ -88,7 +88,7 @@ func TestXcodeProj_AppIconSetPaths(t *testing.T) {
 			}
 
 			factory := NewFactory(log.NewLogger(), nil, fileutil.NewFileManager(), nil, pathutil.NewPathModifier(), pathutil.NewPathProvider(), nil, nil)
-			project, err := factory.Parse(tt.content, filepath.Join(projectDir, tt.projPath))
+			project, err := factory.newPBXProj(tt.content, filepath.Join(projectDir, tt.projPath))
 			require.NoError(t, err)
 
 			got, err := project.AppIconSetPaths()
