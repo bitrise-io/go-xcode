@@ -217,14 +217,14 @@ func TestXcodeProj_Scheme(t *testing.T) {
 
 	t.Run("found, matching regardless of Unicode normalisation", func(t *testing.T) {
 		// Looked up with a precomposed é.
-		scheme, container, err := project.Scheme("Café")
+		scheme, err := project.Scheme("Café")
 		require.NoError(t, err)
 		assert.Equal(t, "Café", scheme.Name)
-		assert.Equal(t, project.Path(), container)
+		assert.Equal(t, project.Path(), scheme.ContainerPath)
 	})
 
 	t.Run("unknown name", func(t *testing.T) {
-		_, _, err := project.Scheme("Nope")
+		_, err := project.Scheme("Nope")
 		var notFound xcscheme.NotFoundError
 		require.ErrorAs(t, err, &notFound)
 		assert.Equal(t, "Nope", notFound.Scheme)

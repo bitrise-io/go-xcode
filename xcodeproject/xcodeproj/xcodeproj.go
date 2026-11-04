@@ -73,9 +73,8 @@ type XcodeProj interface {
 	// caller, for use within a workspace. With no schemes and autocreate off it returns no schemes
 	// and no error.
 	SchemesWithAutocreateOverride(autocreateEnabled bool) ([]xcscheme.Scheme, error)
-	// Scheme returns the scheme with the given name and the path of its project. Names are compared
-	// after Unicode normalisation.
-	Scheme(name string) (xcscheme.Scheme, string, error)
+	// Scheme returns the scheme with the given name. Names are compared after Unicode normalisation.
+	Scheme(name string) (xcscheme.Scheme, error)
 	// RecreateSchemes returns the schemes Xcode would create for the project, one per native,
 	// non-test target. It only builds them in memory; use SaveSharedScheme to write them.
 	RecreateSchemes() []xcscheme.Scheme
