@@ -483,7 +483,7 @@ func resolveEntitlementVariables(logger log.Logger, entitlements autocodesign.En
 		if strings.ContainsRune(container, '$') {
 			expanded, err := expandTargetSetting(container, serialized.Object{"CFBundleIdentifier": bundleID})
 			if err != nil {
-				logger.Warnf("buildSettings: Ignoring iCloud container ID (%s) as can not expand variable: %w", container, err)
+				logger.Warnf("buildSettings: Ignoring iCloud container ID (%s) as can not expand variable: %s", container, err)
 				continue
 			}
 
