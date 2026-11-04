@@ -34,6 +34,7 @@ func TestNew(t *testing.T) {
 		configurationName string
 		wantConfiguration string
 		wantErr           bool
+		wantWorkspace     bool // the helper holds the workspace, so scheme settings resolve in it
 	}{
 		{
 			name:              "Bad Scheme name",
@@ -58,6 +59,15 @@ func TestNew(t *testing.T) {
 			configurationName: "",
 			wantConfiguration: "Release",
 			wantErr:           false,
+		},
+		{
+			name:              "Xcode 10 workspace - iOS - trailing separator keeps the workspace",
+			projOrWSPath:      projectCases[0] + "/",
+			schemeName:        "Xcode-10_default",
+			configurationName: "",
+			wantConfiguration: "Release",
+			wantErr:           false,
+			wantWorkspace:     true,
 		},
 		{
 			name:              "Xcode 10 workspace - iOS - Scheme in workspace",
@@ -110,6 +120,9 @@ func TestNew(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, projHelp, "No projectHelper was generated")
 			require.Equal(t, tt.wantConfiguration, projHelp.Configuration)
+			if tt.wantWorkspace {
+				require.NotNil(t, projHelp.XcWorkspace, "a workspace path must give the workspace query plan")
+			}
 		})
 	}
 }
