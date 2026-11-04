@@ -35,7 +35,7 @@ type Container interface {
 
 // container is the Container over either a project or a workspace, keeping the projects it opened.
 type container struct {
-	project        xcodeproj.XcodeProj   // the opened project, nil for a workspace
+	project        xcodeproj.XcodeProj    // the opened project, nil for a workspace
 	workspace      *xcworkspace.Workspace // the opened workspace, nil for a project
 	projectFactory xcodeproj.Factory
 
