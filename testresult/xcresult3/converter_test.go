@@ -248,6 +248,33 @@ German: swift_testingTests.swift:20: Expectation failed: true == false - // This
 `,
 		)
 	})
+
+	t.Run("xcresult3-device-configuration-tests.xcresult", func(t *testing.T) {
+		xcresultPath := setupTestData(t, "xcresult3-device-configuration-tests.xcresult")
+		t.Log("xcresultPath: ", xcresultPath)
+
+		c := Converter{xcresultPth: xcresultPath}
+		junitXML, err := c.Convert()
+		require.NoError(t, err)
+
+		// testLaunch() runs for each UI configuration and fails in all of them, on the first run and on both retries.
+		var launchTests []testreport.TestCase
+		for _, testSuite := range junitXML.TestSuites {
+			for _, testCase := range testSuite.TestCases {
+				if testCase.ClassName == "DarkAndLightModeUITestsLaunchTests" {
+					launchTests = append(launchTests, testCase)
+				}
+			}
+		}
+
+		require.Len(t, launchTests, 3)
+		for _, testCase := range launchTests {
+			require.Equal(t, "testLaunch()", testCase.Name)
+			require.NotNil(t, testCase.Failure)
+			// The configuration names and the file prefix of the message vary with the Xcode version.
+			require.Regexp(t, `^(?:(?:Dark|Light) Appearance, [^:]+: .*XCTAssertTrue failed\n){4}$`, testCase.Failure.Value)
+		}
+	})
 }
 
 func BenchmarkConverter_XML(b *testing.B) {
