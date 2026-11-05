@@ -190,6 +190,18 @@ func Test_findMissingContainers(t *testing.T) {
 			want:    nil,
 			wantErr: true,
 		},
+		{
+			name: "profile value is not a string array",
+			appEnts: Entitlements(map[string]interface{}{
+				"com.apple.developer.icloud-container-identifiers": []interface{}{"container1"},
+			}),
+			profileEnts: Entitlements(map[string]interface{}{
+				"com.apple.developer.icloud-container-identifiers": "container1",
+			}),
+
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

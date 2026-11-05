@@ -6,7 +6,7 @@ import (
 
 	"github.com/bitrise-io/go-xcode/certificateutil"
 	"github.com/bitrise-io/go-xcode/exportoptions"
-	"github.com/fullsailor/pkcs7"
+	"github.com/smallstep/pkcs7"
 	"github.com/stretchr/testify/require"
 )
 
@@ -52,6 +52,13 @@ func TestNewProvisioningProfileInfoFromPKCS7Content(t *testing.T) {
 	require.Equal(t, time.Date(2022, 2, 28, 10, 35, 39, 0, time.UTC), got.CreationDate)
 	require.Equal(t, time.Date(2023, 2, 28, 10, 35, 39, 0, time.UTC), got.ExpirationDate)
 	require.NotEmpty(t, got.Entitlements)
+}
+
+func TestNewProvisioningProfileInfoFromPKCS7Content_TruncatedContent(t *testing.T) {
+	require.NotPanics(t, func() {
+		_, err := NewProvisioningProfileInfoFromPKCS7Content([]byte{0x30})
+		require.Error(t, err)
+	})
 }
 
 // TestIsXcodeManaged covers full cases; this is a sanity check that the method delegates correctly.

@@ -8,7 +8,7 @@ import (
 
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-xcode/v2/mocks"
-	"github.com/fullsailor/pkcs7"
+	"github.com/smallstep/pkcs7"
 	"github.com/stretchr/testify/require"
 )
 
