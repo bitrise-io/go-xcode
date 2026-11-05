@@ -9,9 +9,10 @@ import (
 
 func TestParse(t *testing.T) {
 	tests := []struct {
-		name string
-		args []string
-		want Options
+		name  string
+		args  []string
+		want  Options
+		diags []DiagnosticKind
 	}{
 		{name: "nothing"},
 		{
@@ -70,9 +71,10 @@ func TestParse(t *testing.T) {
 			want: Options{{Kind: UserDefault, Name: "-IDECustomDerivedDataLocation", Value: "/a:b"}},
 		},
 		{
-			name: "user default that looks like a build setting is reported and kept",
-			args: []string{"-ENABLE_BITCODE=NO"},
-			want: Options{{Kind: UserDefault, Name: "-ENABLE_BITCODE", Value: "NO"}},
+			name:  "user default that looks like a build setting is reported and kept",
+			args:  []string{"-ENABLE_BITCODE=NO"},
+			want:  Options{{Kind: UserDefault, Name: "-ENABLE_BITCODE", Value: "NO"}},
+			diags: []DiagnosticKind{SuspiciousUserDefault},
 		},
 		{
 			name: "build settings, any case, split at the first equals sign",
@@ -99,9 +101,10 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
-			name: "any other value flag takes a following flag as its value, as xcodebuild does",
-			args: []string{"-derivedDataPath", "-quiet", "-scheme", "-skipMacroValidation"},
-			want: Options{{Kind: ValueOption, Name: "-derivedDataPath", Value: "-quiet", tookFlag: true}, {Kind: ValueOption, Name: "-scheme", Value: "-skipMacroValidation", tookFlag: true}},
+			name:  "any other value flag takes a following flag as its value, as xcodebuild does",
+			args:  []string{"-derivedDataPath", "-quiet", "-scheme", "-skipMacroValidation"},
+			want:  Options{{Kind: ValueOption, Name: "-derivedDataPath", Value: "-quiet", tookFlag: true}, {Kind: ValueOption, Name: "-scheme", Value: "-skipMacroValidation", tookFlag: true}},
+			diags: []DiagnosticKind{MissingValue, MissingValue},
 		},
 		{
 			// "" from an unset env var, a bare word from an unquoted value, a value flag as the last
@@ -135,6 +138,7 @@ func TestParse(t *testing.T) {
 				{Kind: UserDefault, Name: "-destination\vgeneric/platform", Value: "iOS"},
 				{Kind: UserDefault, Name: "-destination\u00a0generic/platform", Value: "iOS"},
 			},
+			diags: []DiagnosticKind{SuspiciousUserDefault, SuspiciousUserDefault, SuspiciousUserDefault, SuspiciousUserDefault},
 		},
 		{
 			name: "values may contain spaces",
@@ -144,6 +148,7 @@ func TestParse(t *testing.T) {
 				{Kind: UserDefault, Name: "-PROVISIONING_PROFILE_SPECIFIER", Value: "match AppStore com.example"},
 				{Kind: ValueOption, Name: "-destination", Value: "platform=iOS Simulator,name=iPhone 15"},
 			},
+			diags: []DiagnosticKind{SuspiciousUserDefault},
 		},
 		{
 			name: "a path value named like an action stays the value",
@@ -159,6 +164,12 @@ func TestParse(t *testing.T) {
 			got := parse(tt.args)
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.args, got.Args(), "parsing must round-trip")
+
+			var kinds []DiagnosticKind
+			for _, d := range got.Diagnostics() {
+				kinds = append(kinds, d.Kind)
+			}
+			require.Equal(t, tt.diags, kinds)
 		})
 	}
 }
@@ -175,6 +186,7 @@ func TestOptions_Filter(t *testing.T) {
 		"BUNDLE_IDENTIFIER=io.bitrise.sample",
 		"-quiet",
 	})
+	require.Empty(t, opts.Diagnostics())
 
 	kept := opts.Filter(func(o Option) bool { return o.Kind == BuildSetting || slices.Contains(spmFlags, o.Name) })
 

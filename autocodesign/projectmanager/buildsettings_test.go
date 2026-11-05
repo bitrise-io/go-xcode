@@ -25,13 +25,12 @@ import (
 // target is read from the project; in compat mode both are read. A project is only ever read
 // from the project.
 
-const testProjectPath = "/repo/App.xcodeproj"
-
 var testOptions = []string{"-skipMacroValidation", "-onlyUsePackageVersionsFromResolvedFile"}
 
-// settingsHelper builds a ProjectHelper over xcodeproj's minimal fixture, whose target settings
-// come from projectSettings. Given workspaceSettings, the helper also holds a workspace, written
-// to a temp dir, whose scheme settings come from workspaceSettings; its path is XcWorkspace.Path.
+// settingsHelper builds a ProjectHelper over xcodeproj's minimal fixture, written to a temp dir,
+// whose target settings come from projectSettings; its path is XcProj.Path(). Given
+// workspaceSettings, the helper also holds a workspace, written to a temp dir, whose scheme
+// settings come from workspaceSettings; its path is XcWorkspace.Path.
 func settingsHelper(t *testing.T, workspaceSettings xcworkspace.BuildSettingsProvider, compat bool, projectSettings xcodeproj.BuildSettingsProvider) *ProjectHelper {
 	t.Helper()
 	content, err := os.ReadFile(filepath.Join("..", "..", "xcodeproject", "xcodeproj", "testdata", "minimal.pbxproj"))
@@ -43,7 +42,10 @@ func settingsHelper(t *testing.T, workspaceSettings xcworkspace.BuildSettingsPro
 	pathModifier := pathutil.NewPathModifier()
 	userProvider := xcodeproj.NewUserProvider()
 	projectFactory := xcodeproj.NewFactory(logger, projectSettings, fileManager, plistHandler, pathModifier, pathutil.NewPathProvider(), userProvider, xcodeproj.NewDirCreator())
-	project, err := projectFactory.Parse(content, testProjectPath)
+	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
+	require.NoError(t, os.MkdirAll(projectPath, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), content, 0o644))
+	project, err := projectFactory.Open(projectPath)
 	require.NoError(t, err)
 
 	var workspace *xcworkspace.Workspace
@@ -99,8 +101,8 @@ func TestFetchBuildSettings_workspaceFailureFallsBackToTheProject(t *testing.T) 
 	projectOnly := serialized.Object{"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.app.extension"}
 	workspaceSettings := xcworkspacemocks.NewBuildSettingsProvider(t)
 	projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
-	projectSettings.On("TargetBuildSettings", testProjectPath, "Extension", "Release", testOptions).Return(projectOnly, nil).Once()
 	helper := settingsHelper(t, workspaceSettings, false, projectSettings)
+	projectSettings.On("TargetBuildSettings", helper.XcProj.Path(), "Extension", "Release", testOptions).Return(projectOnly, nil).Once()
 	workspaceSettings.On("SchemeBuildSettings", helper.XcWorkspace.Path, "Extension", "Release", testOptions).Return(nil, errors.New("xcodebuild: error: does not contain a scheme named Extension")).Once()
 
 	got, err := helper.fetchBuildSettings("Extension", "Release")
@@ -113,8 +115,8 @@ func TestFetchBuildSettings_compatModeReadsBoth(t *testing.T) {
 	projectOnly := serialized.Object{"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.app"}
 	workspaceSettings := xcworkspacemocks.NewBuildSettingsProvider(t)
 	projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
-	projectSettings.On("TargetBuildSettings", testProjectPath, "App", "Release", testOptions).Return(projectOnly, nil).Once()
 	helper := settingsHelper(t, workspaceSettings, true, projectSettings)
+	projectSettings.On("TargetBuildSettings", helper.XcProj.Path(), "App", "Release", testOptions).Return(projectOnly, nil).Once()
 	workspaceSettings.On("SchemeBuildSettings", helper.XcWorkspace.Path, "App", "Release", testOptions).Return(fromWorkspace, nil).Once()
 
 	got, err := helper.fetchBuildSettings("App", "Release")
@@ -124,8 +126,9 @@ func TestFetchBuildSettings_compatModeReadsBoth(t *testing.T) {
 
 func TestReadSchemeBuildSettingString_missingKeyIsSerializedErrKeyNotFound(t *testing.T) {
 	projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
-	projectSettings.On("TargetBuildSettings", testProjectPath, "App", "Release", testOptions).Return(serialized.Object{"SDKROOT": "iphoneos"}, nil).Once()
-	project := Project{logger: log.NewLogger(), projHelper: *settingsHelper(t, nil, false, projectSettings)} // no workspace
+	helper := settingsHelper(t, nil, false, projectSettings) // no workspace
+	projectSettings.On("TargetBuildSettings", helper.XcProj.Path(), "App", "Release", testOptions).Return(serialized.Object{"SDKROOT": "iphoneos"}, nil).Once()
+	project := Project{logger: log.NewLogger(), projHelper: *helper}
 
 	_, err := project.ReadSchemeBuildSettingString("PRODUCT_NAME")
 	require.ErrorIs(t, err, serialized.ErrKeyNotFound, "a step tells a setting xcodebuild did not print from a failed read by this error")
@@ -142,10 +145,10 @@ func TestTargetBundleID_fallsBackToTheInfoPlist(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
-			projectSettings.On("TargetBuildSettings", testProjectPath, "App", "Release", testOptions).Return(settings, nil).Once()
-			plistHandler := plistmocks.NewFileHandler(t)
-			plistHandler.On("Read", "/repo/App/Info.plist").Return(plistutil.PlistData{"CFBundleIdentifier": tt.plist}, 0, nil).Once()
 			helper := settingsHelper(t, nil, false, projectSettings) // no workspace
+			projectSettings.On("TargetBuildSettings", helper.XcProj.Path(), "App", "Release", testOptions).Return(settings, nil).Once()
+			plistHandler := plistmocks.NewFileHandler(t)
+			plistHandler.On("Read", filepath.Join(filepath.Dir(helper.XcProj.Path()), "App", "Info.plist")).Return(plistutil.PlistData{"CFBundleIdentifier": tt.plist}, 0, nil).Once()
 			helper.plistFileHandler = plistHandler
 
 			got, err := helper.TargetBundleID("App", "Release")
@@ -158,9 +161,9 @@ func TestTargetBundleID_fallsBackToTheInfoPlist(t *testing.T) {
 func TestFetchBuildSettings_project(t *testing.T) {
 	projectOnly := serialized.Object{"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.app"}
 	projectSettings := xcodeprojmocks.NewBuildSettingsProvider(t)
-	projectSettings.On("TargetBuildSettings", testProjectPath, "App", "Release", testOptions).Return(projectOnly, nil).Once()
-	projectSettings.On("TargetBuildSettings", testProjectPath, "Extension", "Release", testOptions).Return(projectOnly, nil).Once()
 	helper := settingsHelper(t, nil, false, projectSettings) // no workspace: nothing to resolve a scheme in
+	projectSettings.On("TargetBuildSettings", helper.XcProj.Path(), "App", "Release", testOptions).Return(projectOnly, nil).Once()
+	projectSettings.On("TargetBuildSettings", helper.XcProj.Path(), "Extension", "Release", testOptions).Return(projectOnly, nil).Once()
 
 	for _, target := range []string{"App", "Extension"} {
 		got, err := helper.fetchBuildSettings(target, "Release")

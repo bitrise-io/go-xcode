@@ -19,49 +19,49 @@ func TestTarget_productPredicates(t *testing.T) {
 	}{
 		{
 			name:         "application",
-			target:       Target{isa: nativeTargetISA, productPath: "App.app", productType: "com.apple.product-type.application"},
+			target:       Target{kind: nativeTargetKind, productPath: "App.app", productType: "com.apple.product-type.application"},
 			isExecutable: true,
 			isNative:     true,
 		},
 		{
 			name:         "app extension",
-			target:       Target{isa: nativeTargetISA, productPath: "Today.appex", productType: "com.apple.product-type.app-extension"},
+			target:       Target{kind: nativeTargetKind, productPath: "Today.appex", productType: "com.apple.product-type.app-extension"},
 			isExecutable: true,
 			isNative:     true,
 		},
 		{
 			name:         "app clip",
-			target:       Target{isa: nativeTargetISA, productPath: "Clip.app", productType: appClipProductType},
+			target:       Target{kind: nativeTargetKind, productPath: "Clip.app", productType: appClipProductType},
 			isExecutable: true,
 			isAppClip:    true,
 			isNative:     true,
 		},
 		{
 			name:     "unit test bundle",
-			target:   Target{isa: nativeTargetISA, productPath: "Tests.xctest", productType: "com.apple.product-type.bundle.unit-test"},
+			target:   Target{kind: nativeTargetKind, productPath: "Tests.xctest", productType: "com.apple.product-type.bundle.unit-test"},
 			isTest:   true,
 			isNative: true,
 		},
 		{
 			name:     "ui test bundle",
-			target:   Target{isa: nativeTargetISA, productPath: "UITests.xctest", productType: "com.apple.product-type.bundle.ui-testing"},
+			target:   Target{kind: nativeTargetKind, productPath: "UITests.xctest", productType: "com.apple.product-type.bundle.ui-testing"},
 			isUITest: true,
 			isTest:   true,
 			isNative: true,
 		},
 		{
 			name:     "OCTest bundle",
-			target:   Target{isa: nativeTargetISA, productPath: "Legacy.octest", productType: "com.apple.product-type.bundle"},
+			target:   Target{kind: nativeTargetKind, productPath: "Legacy.octest", productType: "com.apple.product-type.bundle"},
 			isTest:   true,
 			isNative: true,
 		},
 		{
 			name:   "aggregate target produces nothing",
-			target: Target{isa: aggregateTargetISA},
+			target: Target{kind: aggregateTargetKind},
 		},
 		{
 			name:     "static library is not executable",
-			target:   Target{isa: nativeTargetISA, productPath: "libThing.a", productType: "com.apple.product-type.library.static"},
+			target:   Target{kind: nativeTargetKind, productPath: "libThing.a", productType: "com.apple.product-type.library.static"},
 			isNative: true,
 		},
 	}
@@ -93,13 +93,13 @@ func TestParseTarget_fromFixture(t *testing.T) {
 	require.True(t, ok)
 
 	assert.Equal(t, appTargetID, target.ID)
-	assert.Equal(t, nativeTargetISA, target.isa)
+	assert.Equal(t, nativeTargetKind, target.kind)
 	assert.Equal(t, "com.apple.product-type.application", target.productType)
 	assert.Equal(t, "XcodeProj.app", target.productPath)
 	assert.Equal(t, []string{todayExtensionTarget}, target.dependencyTargetIDs)
 	assert.Equal(t, "Release", target.DefaultConfigurationName)
 	require.Len(t, target.BuildConfigurations, 2)
-	assert.NotEmpty(t, target.buildPhaseIDs)
+	assert.NotEmpty(t, project.buildPhaseIDs[target.ID])
 }
 
 func TestParseTarget_unknownTargetType(t *testing.T) {
