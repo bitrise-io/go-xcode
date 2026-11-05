@@ -24,7 +24,7 @@ func forceCodeSignOptions(target, configuration string) ForceCodeSignOptions {
 	return opts
 }
 
-func requireBuildSetting(t *testing.T, project *XcodeProj, target, configuration, key, want string) {
+func requireBuildSetting(t *testing.T, project XcodeProj, target, configuration, key, want string) {
 	t.Helper()
 
 	buildSettings, err := targetBuildSettings(requireTarget(t, project, target), configuration)
@@ -35,7 +35,20 @@ func requireBuildSetting(t *testing.T, project *XcodeProj, target, configuration
 	assert.Equal(t, want, got, key)
 }
 
-func requireTarget(t *testing.T, project *XcodeProj, name string) Target {
+// openPBXProj opens the project at projectPath, which must be in the property list format.
+func openPBXProj(t *testing.T, projectPath string) *PBXProj {
+	t.Helper()
+
+	project, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+
+	pbxProj, ok := project.(*PBXProj)
+	require.True(t, ok, "%s is not a project.pbxproj project", projectPath)
+
+	return pbxProj
+}
+
+func requireTarget(t *testing.T, project XcodeProj, name string) Target {
 	t.Helper()
 	target, ok := project.TargetByName(name)
 	require.True(t, ok, "target %s not found", name)
@@ -169,20 +182,15 @@ func TestXcodeProj_SetBuildSetting_errors(t *testing.T) {
 	require.ErrorContains(t, project.SetBuildSetting("XcodeProj", "Nope", "K", "V"), "Nope")
 }
 
-func TestWriteBuildSettingForAllSDKs(t *testing.T) {
+func TestKeysForAllSDKs(t *testing.T) {
 	buildSettings := serialized.Object{
-		"CODE_SIGN_IDENTITY":                "old",
 		"CODE_SIGN_IDENTITY[sdk=iphoneos*]": "old",
 		"CODE_SIGN_IDENTITY_OTHER":          "untouched",
 	}
 
-	writeBuildSettingForAllSDKs(buildSettings, "CODE_SIGN_IDENTITY", "new")
+	keys := keysForAllSDKs(buildSettings, "CODE_SIGN_IDENTITY")
 
-	assert.Equal(t, serialized.Object{
-		"CODE_SIGN_IDENTITY":                "new",
-		"CODE_SIGN_IDENTITY[sdk=iphoneos*]": "new",
-		"CODE_SIGN_IDENTITY_OTHER":          "untouched",
-	}, buildSettings)
+	assert.ElementsMatch(t, []string{"CODE_SIGN_IDENTITY", "CODE_SIGN_IDENTITY[sdk=iphoneos*]"}, keys)
 }
 
 func TestXcodeProj_Save(t *testing.T) {
@@ -217,7 +225,7 @@ func TestXcodeProj_Save_newFileGetsDefaultMode(t *testing.T) {
 	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
 	require.NoError(t, os.MkdirAll(projectPath, 0755))
 
-	project, err := testFactory().Parse(content, projectPath)
+	project, err := testFactory().newPBXProj(content, projectPath)
 	require.NoError(t, err)
 	require.NoError(t, project.Save())
 
@@ -234,8 +242,7 @@ func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), content, 0644))
 
-	project, err := testFactory().Open(projectPath)
-	require.NoError(t, err)
+	project := openPBXProj(t, projectPath)
 
 	objects, ok := project.rawProj.Object("objects")
 	require.True(t, ok)
@@ -246,31 +253,10 @@ func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
 
 	require.NoError(t, project.Save())
 
-	reopened, err := testFactory().Open(projectPath)
-	require.NoError(t, err)
+	reopened := openPBXProj(t, projectPath)
 	require.Len(t, reopened.Targets(), 1)
 
 	reopenedObjects, ok := reopened.rawProj.Object("objects")
 	require.True(t, ok)
 	assert.True(t, reopenedObjects.Has("BB00000000000000000000A1"))
-}
-
-// Save rebuilds the file from the bytes given to Parse, so Parse must not keep the caller's buffer.
-func TestFactory_Parse_copiesContent(t *testing.T) {
-	content, err := os.ReadFile(filepath.Join("testdata", "without-target-attributes.pbxproj"))
-	require.NoError(t, err)
-	want, err := os.ReadFile(filepath.Join("testdata", "without-target-attributes-modified.pbxproj"))
-	require.NoError(t, err)
-
-	project, err := testFactory().Parse(content, "/projects/App.xcodeproj")
-	require.NoError(t, err)
-
-	for i := range content {
-		content[i] = 'x'
-	}
-
-	require.NoError(t, project.ForceCodeSign(forceCodeSignOptions("TargetWithouthTargetAttributes", "Debug")))
-	got, err := project.perObjectModify()
-	require.NoError(t, err)
-	assert.Equal(t, string(want), string(got))
 }

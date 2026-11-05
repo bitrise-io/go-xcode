@@ -1,8 +1,10 @@
-// Package xcproj decodes project.xcproj, the JSON project file Xcode 27 writes inside an
-// .xcodeproj bundle in place of project.pbxproj.
+// Package xcproj reads and edits project.xcproj, the JSON project file Xcode 27 writes inside
+// an .xcodeproj bundle in place of project.pbxproj.
 package xcproj
 
 import (
+	"bytes"
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -18,6 +20,16 @@ const (
 	TargetKindAggregate           = "aggregate"
 	TargetKindExternalBuildSystem = "external-build-system"
 )
+
+// A reference written without a kind is a file reference.
+const (
+	ReferenceKindFile   = "file-reference"
+	ReferenceKindGroup  = "group"
+	ReferenceKindFolder = "folder"
+)
+
+// BuildPhaseKindResources names the Copy Resources phase in a build phase reference.
+const BuildPhaseKindResources = "resources"
 
 const (
 	localTargetDependencyKind = "localTarget"
@@ -39,6 +51,32 @@ type Project struct {
 	BuildSettings serialized.Object
 
 	Targets []Target
+
+	Files []Reference
+}
+
+// Reference is a file reference, a group or a folder of the file tree.
+type Reference struct {
+	Kind string
+
+	// Path is relative to the parent group, unless it starts with / or ~, or with a base such as
+	// <PROJECT>/. A group without one takes its parent's directory.
+	Path string
+
+	// Targets is set only for a folder.
+	Targets []string
+
+	// BuildPhases leaves out a build phase referenced by object ID: Xcode writes one only when the
+	// name would be ambiguous, and build phases are not decoded.
+	BuildPhases []BuildPhaseReference
+
+	Children []Reference
+}
+
+// BuildPhaseReference is the target and kind part of a build phase name path.
+type BuildPhaseReference struct {
+	Target string
+	Kind   string
 }
 
 // Configuration is one build configuration of the project.
@@ -78,6 +116,7 @@ type rawProject struct {
 	Configurations       []rawConfiguration `json:"configurations"`
 	BuildSettings        serialized.Object  `json:"build-settings"`
 	Targets              []rawTarget        `json:"targets"`
+	Files                []rawReference     `json:"files"`
 }
 
 // rawConfiguration is written as a bare name unless it has an ID or an xcconfig file.
@@ -96,6 +135,21 @@ type rawTarget struct {
 	TestHostTarget  string                `json:"test-host-target"`
 	Dependencies    []rawDependency       `json:"dependencies"`
 	BuildSettings   serialized.Object     `json:"build-settings"`
+}
+
+// rawReference holds target-membership raw, because a folder lists target names and a file
+// reference lists build files.
+type rawReference struct {
+	Kind             string            `json:"kind"`
+	Path             string            `json:"path"`
+	TargetMembership []json.RawMessage `json:"target-membership"`
+	Children         []rawReference    `json:"children"`
+}
+
+// rawBuildFile is written as a bare build phase reference unless it carries build file
+// properties.
+type rawBuildFile struct {
+	BuildPhase rawGroupTreeReference `json:"build-phase"`
 }
 
 // rawGroupTreeReference is written as an id:-prefixed object ID, a /-joined name path, or, when
@@ -119,7 +173,7 @@ type rawDependency struct {
 
 // Decode parses the content of a project.xcproj file.
 func Decode(content []byte) (Project, error) {
-	standard, err := hujson.Standardize(content)
+	standard, err := hujson.Standardize(bytes.Clone(content))
 	if err != nil {
 		return Project{}, fmt.Errorf("failed to parse project.xcproj (Xcode writes JSON with comments and trailing commas; other JSON5 syntax, such as unquoted keys or single-quoted strings, is not supported): %w", err)
 	}
@@ -176,6 +230,16 @@ func (r *rawGroupTreeReference) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// UnmarshalJSON implements json.Unmarshaler.
+func (b *rawBuildFile) UnmarshalJSON(data []byte) error {
+	if err := json.Unmarshal(data, &b.BuildPhase); err == nil {
+		return nil
+	}
+
+	type buildFileObject rawBuildFile
+	return json.Unmarshal(data, (*buildFileObject)(b))
+}
+
 // UnmarshalJSON accepts a bare name or an object.
 func (c *rawNamePathComponent) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &c.Name); err == nil {
@@ -196,12 +260,29 @@ func (r rawProject) project() (Project, error) {
 	}
 
 	targets := make([]Target, 0, len(r.Targets))
+	names := make(map[string]bool, len(r.Targets))
 	for i, rawTarget := range r.Targets {
 		target, err := rawTarget.target()
 		if err != nil {
 			return Project{}, fmt.Errorf("target %d: %w", i, err)
 		}
+		if names[target.Name] {
+			return Project{}, fmt.Errorf("target %d: another target is also named %s", i, target.Name)
+		}
+		names[target.Name] = true
 		targets = append(targets, target)
+	}
+	for _, target := range targets {
+		for _, dependency := range target.Dependencies {
+			if !names[dependency] {
+				return Project{}, fmt.Errorf("target %s depends on unknown target %s", target.Name, dependency)
+			}
+		}
+	}
+
+	files, err := references(r.Files)
+	if err != nil {
+		return Project{}, err
 	}
 
 	return Project{
@@ -209,6 +290,7 @@ func (r rawProject) project() (Project, error) {
 		Configurations:       configurations,
 		BuildSettings:        nonNil(r.BuildSettings),
 		Targets:              targets,
+		Files:                files,
 	}, nil
 }
 
@@ -256,6 +338,60 @@ func (r rawTarget) target() (Target, error) {
 		Dependencies:   dependencies,
 		BuildSettings:  nonNil(r.BuildSettings),
 	}, nil
+}
+
+func references(rawReferences []rawReference) ([]Reference, error) {
+	if rawReferences == nil {
+		return nil, nil
+	}
+
+	references := make([]Reference, 0, len(rawReferences))
+	for _, rawReference := range rawReferences {
+		reference, err := rawReference.reference()
+		if err != nil {
+			return nil, err
+		}
+		references = append(references, reference)
+	}
+	return references, nil
+}
+
+func (r rawReference) reference() (Reference, error) {
+	reference := Reference{Kind: cmp.Or(r.Kind, ReferenceKindFile), Path: r.Path}
+
+	for _, membership := range r.TargetMembership {
+		if reference.Kind == ReferenceKindFolder {
+			var target string
+			if err := json.Unmarshal(membership, &target); err != nil {
+				return Reference{}, fmt.Errorf("folder %s has an invalid target membership: %w", r.Path, err)
+			}
+			reference.Targets = append(reference.Targets, target)
+			continue
+		}
+
+		var buildFile rawBuildFile
+		if err := json.Unmarshal(membership, &buildFile); err != nil {
+			return Reference{}, fmt.Errorf("file %s has an invalid target membership: %w", r.Path, err)
+		}
+		if buildFile.BuildPhase.ID != "" {
+			continue
+		}
+		namePath := buildFile.BuildPhase.NamePath
+		// The name path is the target, the build phase kind and, when the kind is not unique, the
+		// build phase name.
+		if len(namePath) < 2 || len(namePath) > 3 {
+			return Reference{}, fmt.Errorf("file %s has an invalid build phase reference: %s", r.Path, membership)
+		}
+		reference.BuildPhases = append(reference.BuildPhases, BuildPhaseReference{Target: namePath[0], Kind: namePath[1]})
+	}
+
+	children, err := references(r.Children)
+	if err != nil {
+		return Reference{}, err
+	}
+	reference.Children = children
+
+	return reference, nil
 }
 
 // nonNil keeps an absent settings map from reading differently than an empty one.

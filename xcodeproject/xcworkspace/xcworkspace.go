@@ -240,13 +240,13 @@ func (w *Workspace) ProjectFileLocations() ([]string, error) {
 
 // Projects opens the projects the workspace references, in ProjectFileLocations order. A referenced
 // project missing from disk is skipped, as xcodebuild -list skips it and its schemes.
-func (w *Workspace) Projects() ([]*xcodeproj.XcodeProj, error) {
+func (w *Workspace) Projects() ([]xcodeproj.XcodeProj, error) {
 	locations, err := w.ProjectFileLocations()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project locations from workspace: %w", err)
 	}
 
-	var projects []*xcodeproj.XcodeProj
+	var projects []xcodeproj.XcodeProj
 	for _, location := range locations {
 		project, ok, err := w.openProject(location)
 		if err != nil {
@@ -265,7 +265,7 @@ func (w *Workspace) Projects() ([]*xcodeproj.XcodeProj, error) {
 // openProject opens the referenced project at location. ok is false when the project is missing from
 // disk, which xcodebuild -list skips too, but which usually means a generated project was not
 // generated, so it is worth a warning.
-func (w *Workspace) openProject(location string) (project *xcodeproj.XcodeProj, ok bool, err error) {
+func (w *Workspace) openProject(location string) (project xcodeproj.XcodeProj, ok bool, err error) {
 	exists, err := w.pathChecker.IsPathExists(location)
 	if err != nil {
 		return nil, false, fmt.Errorf("failed to check if project (%s) exists: %w", location, err)

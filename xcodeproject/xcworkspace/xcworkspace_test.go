@@ -211,7 +211,7 @@ func TestWorkspace_Projects(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Len(t, projects, 1, "the missing XcodeProj.xcodeproj is skipped")
-	assert.Equal(t, subProjectPath, projects[0].Path)
+	assert.Equal(t, subProjectPath, projects[0].Path())
 }
 
 func TestWorkspace_Projects_malformedProject(t *testing.T) {

@@ -100,17 +100,22 @@ func TestDecode(t *testing.T) {
 				{"kind": "localTarget", "target": "Clip"},
 				{"kind": "remoteTarget", "project": "Other.xcodeproj", "target": "Lib", "target-id": "B2"},
 				{"kind": "package", "product-name": "Alamofire"},
-			]}]}`,
+			]}, {"name": "Framework", "id": "F1"}, {"name": "Widget", "id": "W1"}, {"name": "Clip", "id": "C1"}]}`,
 			want: Project{
 				Configurations: []Configuration{},
 				BuildSettings:  serialized.Object{},
-				Targets: []Target{{
-					ID:            "A1",
-					Name:          "App",
-					Kind:          TargetKindAggregate,
-					Dependencies:  []string{"Framework", "Widget", "Clip"},
-					BuildSettings: serialized.Object{},
-				}},
+				Targets: []Target{
+					{
+						ID:            "A1",
+						Name:          "App",
+						Kind:          TargetKindAggregate,
+						Dependencies:  []string{"Framework", "Widget", "Clip"},
+						BuildSettings: serialized.Object{},
+					},
+					{ID: "F1", Name: "Framework", Kind: TargetKindNative, BuildSettings: serialized.Object{}},
+					{ID: "W1", Name: "Widget", Kind: TargetKindNative, BuildSettings: serialized.Object{}},
+					{ID: "C1", Name: "Clip", Kind: TargetKindNative, BuildSettings: serialized.Object{}},
+				},
 			},
 		},
 		{
@@ -159,6 +164,39 @@ func TestDecode(t *testing.T) {
 			},
 		},
 		{
+			name: "file tree",
+			content: `{"files": [
+				{"kind": "folder", "path": "App", "target-membership": ["App", "Widget"]},
+				{"kind": "group", "path": "Branding", "children": [
+					{"path": "Icons.xcassets", "target-membership": [
+						"App/resources",
+						["Widget", "copy", {"name": "Embed/Assets"}],
+						{"build-phase": "Clip/resources", "platforms": ["ios"]},
+						"id:B2",
+					]},
+				]},
+				{"kind": "variant-group", "path": "Localizable.strings"},
+			]}`,
+			want: Project{
+				Configurations: []Configuration{},
+				BuildSettings:  serialized.Object{},
+				Targets:        []Target{},
+				Files: []Reference{
+					{Kind: ReferenceKindFolder, Path: "App", Targets: []string{"App", "Widget"}},
+					{Kind: ReferenceKindGroup, Path: "Branding", Children: []Reference{{
+						Kind: ReferenceKindFile,
+						Path: "Icons.xcassets",
+						BuildPhases: []BuildPhaseReference{
+							{Target: "App", Kind: BuildPhaseKindResources},
+							{Target: "Widget", Kind: "copy"},
+							{Target: "Clip", Kind: BuildPhaseKindResources},
+						},
+					}}},
+					{Kind: "variant-group", Path: "Localizable.strings"},
+				},
+			},
+		},
+		{
 			name:    "comments",
 			content: "// header\n{\n  /* block */ \"default-configuration\": \"Debug\", // trailing\n}",
 			want: Project{
@@ -184,6 +222,16 @@ func TestDecode(t *testing.T) {
 			wantErr: "target 0: target App has no id",
 		},
 		{
+			name:    "duplicate target name",
+			content: `{"targets": [{"name": "App", "id": "A1"}, {"name": "App", "id": "A2"}]}`,
+			wantErr: "target 1: another target is also named App",
+		},
+		{
+			name:    "unknown dependency",
+			content: `{"targets": [{"name": "Lib", "id": "L1"}, {"name": "App", "id": "A1", "dependencies": ["Lib", "Gone"]}]}`,
+			wantErr: "target App depends on unknown target Gone",
+		},
+		{
 			name:    "unknown target kind",
 			content: `{"targets": [{"name": "App", "id": "A1", "kind": "legacy"}]}`,
 			wantErr: "target 0: target App has unknown kind: legacy",
@@ -192,6 +240,21 @@ func TestDecode(t *testing.T) {
 			name:    "local dependency without a target",
 			content: `{"targets": [{"name": "App", "id": "A1", "dependencies": [{"platforms": ["ios"]}]}]}`,
 			wantErr: "target 0: target App has a dependency with no target",
+		},
+		{
+			name:    "build phase reference without a kind",
+			content: `{"files": [{"path": "Icons.xcassets", "target-membership": ["App"]}]}`,
+			wantErr: `file Icons.xcassets has an invalid build phase reference: "App"`,
+		},
+		{
+			name:    "build phase reference with too many parts",
+			content: `{"files": [{"path": "Icons.xcassets", "target-membership": ["App/copy/Embed/Assets"]}]}`,
+			wantErr: `file Icons.xcassets has an invalid build phase reference: "App/copy/Embed/Assets"`,
+		},
+		{
+			name:    "folder membership of the wrong type",
+			content: `{"files": [{"kind": "folder", "path": "App", "target-membership": [1]}]}`,
+			wantErr: "folder App has an invalid target membership",
 		},
 		{
 			name:    "wrong value type",
