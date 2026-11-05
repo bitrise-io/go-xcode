@@ -297,3 +297,92 @@ func TestParseTestCase_identifierProperty(t *testing.T) {
 		})
 	}
 }
+
+func TestParseTestBundle_parametrizedRetries(t *testing.T) {
+	data := &model3.TestData{
+		TestNodes: []model3.TestNode{
+			{
+				Type: model3.TestNodeTypeTestPlan,
+				Name: "TP1",
+				Children: []model3.TestNode{
+					{
+						Type: model3.TestNodeTypeUnitTestBundle,
+						Name: "ProductTests",
+						Children: []model3.TestNode{
+							{
+								Type: model3.TestNodeTypeTestSuite,
+								Name: "ProductTests",
+								Children: []model3.TestNode{
+									{
+										Type:       model3.TestNodeTypeTestCase,
+										Identifier: "ProductTests/measurements(asset:)",
+										Name:       "measurements(asset:)",
+										Result:     model3.TestResultFailed,
+										Children: []model3.TestNode{
+											{
+												Type:   model3.TestNodeTypeArguments,
+												Name:   ".shirts",
+												Result: model3.TestResultFailed,
+												Children: []model3.TestNode{
+													{
+														Type:     model3.TestNodeTypeRepetition,
+														Name:     "First Run",
+														Result:   model3.TestResultFailed,
+														Duration: "1s",
+														Children: []model3.TestNode{{Type: model3.TestNodeTypeFailureMessage, Name: "boom"}},
+													},
+													{Type: model3.TestNodeTypeRepetition, Name: "Retry 1", Result: model3.TestResultPassed, Duration: "2s"},
+												},
+											},
+											{
+												Type:   model3.TestNodeTypeArguments,
+												Name:   ".dresses",
+												Result: model3.TestResultPassed,
+												Children: []model3.TestNode{
+													{Type: model3.TestNodeTypeRepetition, Name: "First Run", Result: model3.TestResultPassed, Duration: "1s"},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	summary, _, err := model3.Convert(data)
+	require.NoError(t, err)
+
+	suite := parseTestBundle(summary.TestPlans[0].TestBundles[0])
+	report, err := connectAttachmentsToTestCases(testreport.TestReport{TestSuites: []testreport.TestSuite{suite}}, map[string][]string{
+		"ProductTests/measurements(asset:) (1)": {"first.png"},
+		"ProductTests/measurements(asset:) (2)": {"second.png"},
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, []testreport.TestSuite{
+		{
+			Name:     "ProductTests",
+			Tests:    2,
+			Failures: 1,
+			Time:     3,
+			TestCases: []testreport.TestCase{
+				{
+					Name:       "measurements(asset:)",
+					ClassName:  "ProductTests",
+					Time:       1,
+					Failure:    &testreport.Failure{Value: ".shirts: boom\n"},
+					Properties: &testreport.Properties{Property: []testreport.Property{{Name: "attachment_0", Value: "first.png"}}},
+				},
+				{
+					Name:       "measurements(asset:)",
+					ClassName:  "ProductTests",
+					Time:       2,
+					Properties: &testreport.Properties{Property: []testreport.Property{{Name: "attachment_0", Value: "second.png"}}},
+				},
+			},
+		},
+	}, report.TestSuites)
+}
