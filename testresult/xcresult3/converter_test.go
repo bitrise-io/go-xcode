@@ -275,6 +275,30 @@ German: swift_testingTests.swift:20: Expectation failed: true == false - // This
 			require.Regexp(t, `^(?:(?:Dark|Light) Appearance, [^:]+: .*XCTAssertTrue failed\n){4}$`, testCase.Failure.Value)
 		}
 	})
+
+	t.Run("xcresult3-flaky-ui-configuration.xcresult", func(t *testing.T) {
+		xcresultPath := setupTestData(t, "xcresult3-flaky-ui-configuration.xcresult")
+		t.Log("xcresultPath: ", xcresultPath)
+
+		c := Converter{xcresultPth: xcresultPath}
+		junitXML, err := c.Convert()
+		require.NoError(t, err)
+
+		// testLaunch() fails in one UI configuration on the first run and passes there on the retry,
+		// while the test case itself keeps a Failed result.
+		require.Len(t, junitXML.TestSuites, 1)
+		testCases := junitXML.TestSuites[0].TestCases
+		require.Len(t, testCases, 2)
+
+		require.Equal(t, "testLaunch()", testCases[0].Name)
+		require.Equal(t, "BullsEyeLaunchTests", testCases[0].ClassName)
+		require.NotNil(t, testCases[0].Failure)
+		require.Regexp(t, `^Light Appearance, Portrait: .*XCTAssertTrue failed`, testCases[0].Failure.Value)
+
+		require.Equal(t, "testLaunch()", testCases[1].Name)
+		require.Equal(t, "BullsEyeLaunchTests", testCases[1].ClassName)
+		require.Nil(t, testCases[1].Failure)
+	})
 }
 
 func BenchmarkConverter_XML(b *testing.B) {
