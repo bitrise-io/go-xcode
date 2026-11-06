@@ -298,6 +298,7 @@ German: swift_testingTests.swift:20: Expectation failed: true == false - // This
 		require.Equal(t, "testLaunch()", testCases[1].Name)
 		require.Equal(t, "BullsEyeLaunchTests", testCases[1].ClassName)
 		require.Nil(t, testCases[1].Failure)
+		require.Nil(t, testCases[1].Skipped)
 	})
 }
 
