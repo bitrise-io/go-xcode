@@ -16,6 +16,9 @@ func FindXcodebuildErrors(out string) []string {
 
 	scanner := bufio.NewScanner(strings.NewReader(out))
 	scanner.Split(bufio.ScanLines)
+	// xcodebuild echoes command lines well over the default 64KB token limit; one such line would make Scan
+	// fail and drop every error found so far.
+	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
 	for scanner.Scan() {
 		line := scanner.Text()
 
