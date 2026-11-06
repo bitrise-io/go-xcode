@@ -230,6 +230,31 @@ func TestSelectConnectionCredentials(t *testing.T) {
 	}
 	testNoInputs := ConnectionOverrideInputs{}
 
+	testAppleIDInputs := ConnectionOverrideInputs{
+		AppleIDUsername:            "input@bitrise.io",
+		AppleIDPassword:            "input-password",
+		AppleIDAppSpecificPassword: "input-app-specific-password",
+	}
+	testAppleIDInputsWithAPIKey := ConnectionOverrideInputs{
+		APIKeyPath:                 stepconf.Secret(localKeyPath),
+		APIKeyID:                   "TestKeyIDFromInput",
+		APIKeyIssuerID:             "TestKeyIssuerIDFromInput",
+		AppleIDUsername:            "input@bitrise.io",
+		AppleIDPassword:            "input-password",
+		AppleIDAppSpecificPassword: "input-app-specific-password",
+	}
+	testWantsSessionNoInputs := ConnectionOverrideInputs{
+		WantsFastlaneSession: true,
+	}
+
+	expiredSessionDate := time.Now().Add(-1 * time.Hour)
+	testAppleIDConnectionExpiredSession := devportalservice.AppleIDConnection{
+		AppleID:             "test@bitrise.io",
+		Password:            "testpw",
+		AppSpecificPassword: "testapppw",
+		SessionExpiryDate:   &expiredSessionDate,
+	}
+
 	tests := []struct {
 		name              string
 		authType          AuthType
@@ -380,6 +405,125 @@ func TestSelectConnectionCredentials(t *testing.T) {
 			},
 			inputs:  testNoInputs,
 			wantErr: true,
+		},
+		{
+			name:     "Apple ID auth, WantsFastlaneSession=true, no inputs, valid Bitrise connection",
+			authType: AppleIDAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     &testAppleIDConnection,
+				APIKeyConnection:      nil,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs: testWantsSessionNoInputs,
+			want: devportalservice.Credentials{
+				AppleID: &devportalservice.AppleID{
+					Username:            "test@bitrise.io",
+					Password:            "testpw",
+					Session:             "",
+					AppSpecificPassword: "testapppw",
+				},
+				APIKey: nil,
+			},
+		},
+		{
+			name:     "Apple ID auth, WantsFastlaneSession=true, no inputs, expired session connection",
+			authType: AppleIDAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     &testAppleIDConnectionExpiredSession,
+				APIKeyConnection:      nil,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs: testWantsSessionNoInputs,
+			want: devportalservice.Credentials{
+				AppleID: &devportalservice.AppleID{
+					Username:            "test@bitrise.io",
+					Password:            "testpw",
+					Session:             "",
+					AppSpecificPassword: "testapppw",
+				},
+				APIKey: nil,
+			},
+		},
+		{
+			name:              "Apple ID auth, Apple ID inputs, no Bitrise connection",
+			authType:          AppleIDAuth,
+			bitriseConnection: nil,
+			inputs:            testAppleIDInputs,
+			want: devportalservice.Credentials{
+				AppleID: &devportalservice.AppleID{
+					Username:            "input@bitrise.io",
+					Password:            "input-password",
+					Session:             "",
+					AppSpecificPassword: "input-app-specific-password",
+				},
+				APIKey: nil,
+			},
+		},
+		{
+			name:     "Apple ID auth, Apple ID inputs override valid Bitrise connection (connection NOT consulted)",
+			authType: AppleIDAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     &testAppleIDConnection,
+				APIKeyConnection:      nil,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs: testAppleIDInputs,
+			want: devportalservice.Credentials{
+				AppleID: &devportalservice.AppleID{
+					Username:            "input@bitrise.io",
+					Password:            "input-password",
+					Session:             "",
+					AppSpecificPassword: "input-app-specific-password",
+				},
+				APIKey: nil,
+			},
+		},
+		{
+			name:     "Apple ID auth, Apple ID inputs ignore WantsFastlaneSession (inputs path never fetches session)",
+			authType: AppleIDAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     &testAppleIDConnection,
+				APIKeyConnection:      nil,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs: ConnectionOverrideInputs{
+				AppleIDUsername:            "input@bitrise.io",
+				AppleIDPassword:            "input-password",
+				AppleIDAppSpecificPassword: "input-app-specific-password",
+				WantsFastlaneSession:       true,
+			},
+			want: devportalservice.Credentials{
+				AppleID: &devportalservice.AppleID{
+					Username:            "input@bitrise.io",
+					Password:            "input-password",
+					Session:             "",
+					AppSpecificPassword: "input-app-specific-password",
+				},
+				APIKey: nil,
+			},
+		},
+		{
+			name:     "API key inputs take precedence over Apple ID inputs under APIKey auth",
+			authType: APIKeyAuth,
+			bitriseConnection: &devportalservice.AppleDeveloperConnection{
+				AppleIDConnection:     &testAppleIDConnection,
+				APIKeyConnection:      &testAPIKeyConnection,
+				TestDevices:           nil,
+				DuplicatedTestDevices: nil,
+			},
+			inputs: testAppleIDInputsWithAPIKey,
+			want: devportalservice.Credentials{
+				AppleID: nil,
+				APIKey: &devportalservice.APIKeyConnection{
+					KeyID:      "TestKeyIDFromInput",
+					IssuerID:   "TestKeyIssuerIDFromInput",
+					PrivateKey: "private key contents",
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
