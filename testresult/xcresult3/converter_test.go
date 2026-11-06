@@ -35,7 +35,7 @@ func runTests(m *testing.M) int {
 	}(dir)
 
 	cmdFactory := command.NewFactory(env.NewRepository())
-	cmd := cmdFactory.Create("git", []string{"clone", "--depth=1", sampleArtifactsGitURI, dir}, nil)
+	cmd := cmdFactory.Create("git", []string{"clone", "--depth=1", "--branch=strip-diagnostics", sampleArtifactsGitURI, dir}, nil)
 	if out, err := cmd.RunAndReturnTrimmedCombinedOutput(); err != nil {
 		fmt.Printf("git clone failed: %s\n%s\n", err, out)
 		return 1
