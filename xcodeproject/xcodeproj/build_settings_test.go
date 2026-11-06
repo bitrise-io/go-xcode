@@ -17,10 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func projectWithProvider(t *testing.T, provider BuildSettingsProvider) *baseProj {
+func projectWithProvider(t *testing.T, provider BuildSettingsProvider) *xcodeProject {
 	t.Helper()
 
-	return &baseProj{
+	return &xcodeProject{
 		name:             "App",
 		path:             "/projects/App.xcodeproj",
 		logger:           log.NewLogger(),
@@ -29,7 +29,7 @@ func projectWithProvider(t *testing.T, provider BuildSettingsProvider) *baseProj
 	}
 }
 
-func projectWithBuildSettings(t *testing.T, settings serialized.Object) *baseProj {
+func projectWithBuildSettings(t *testing.T, settings serialized.Object) *xcodeProject {
 	t.Helper()
 
 	provider := mocks.NewBuildSettingsProvider(t)
@@ -39,9 +39,9 @@ func projectWithBuildSettings(t *testing.T, settings serialized.Object) *basePro
 }
 
 // expectPlistRead makes reading the plist at pth, relative to the project directory, return data and err.
-func expectPlistRead(project *baseProj, pth string, data plistutil.PlistData, err error) {
-	handler := project.plistFileHandler.(*plistmocks.FileHandler)
-	handler.On("Read", filepath.Join(filepath.Dir(project.Path()), pth)).Return(data, plist.XMLFormat, err).Once()
+func expectPlistRead(p *xcodeProject, pth string, data plistutil.PlistData, err error) {
+	handler := p.plistFileHandler.(*plistmocks.FileHandler)
+	handler.On("Read", filepath.Join(filepath.Dir(p.Path()), pth)).Return(data, plist.XMLFormat, err).Once()
 }
 
 func TestXcodeProj_TargetBuildSettings(t *testing.T) {

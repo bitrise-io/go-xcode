@@ -21,9 +21,9 @@ func catalystPBXProj(t *testing.T) []byte {
 	return []byte("// !$*UTF8*$!\n{\n\tobjects = " + string(objects) + ";\n\trootObject = 13917C0A243F43D00087912B;\n}\n")
 }
 
-func projectObjects(t *testing.T, project *baseProj) serialized.Object {
+func projectObjects(t *testing.T, p *xcodeProject) serialized.Object {
 	t.Helper()
-	objects, ok := pbxFile(t, project).rawProj.Object("objects")
+	objects, ok := pbxFile(t, p).rawProj.Object("objects")
 	require.True(t, ok)
 	return objects
 }

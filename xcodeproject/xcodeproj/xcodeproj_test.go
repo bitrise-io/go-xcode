@@ -57,7 +57,7 @@ func writeProjectFiles(t *testing.T, files map[string][]byte) string {
 	return projectPath
 }
 
-func parseFixture(t *testing.T, name string) *baseProj {
+func parseFixture(t *testing.T, name string) *xcodeProject {
 	t.Helper()
 
 	content, err := os.ReadFile(filepath.Join("testdata", name))
@@ -213,7 +213,7 @@ func TestXcodeProj_DependentTargetsOfTarget(t *testing.T) {
 }
 
 func TestXcodeProj_DependentTargetsOfTarget_unresolvableDependencyIsSkipped(t *testing.T) {
-	project := &baseProj{
+	project := &xcodeProject{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B", "GONE"}},
@@ -225,7 +225,7 @@ func TestXcodeProj_DependentTargetsOfTarget_unresolvableDependencyIsSkipped(t *t
 }
 
 func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
-	project := &baseProj{
+	project := &xcodeProject{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B"}},
@@ -238,7 +238,7 @@ func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
 }
 
 func TestXcodeProj_DependentTargetsOfTarget_sharedDependency(t *testing.T) {
-	project := &baseProj{
+	project := &xcodeProject{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B", "C"}},

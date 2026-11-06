@@ -46,26 +46,30 @@ func requireBuildSettings(t *testing.T, target Target, configuration string) ser
 }
 
 // openPBXProj opens the project at projectPath, which must be in the property list format.
-func openPBXProj(t *testing.T, projectPath string) *baseProj {
+func openPBXProj(t *testing.T, projectPath string) *xcodeProject {
 	t.Helper()
 
-	project, err := testFactory().Open(projectPath)
+	opened, err := testFactory().Open(projectPath)
 	require.NoError(t, err)
 
-	baseProject, ok := project.(*baseProj)
-	require.True(t, ok)
-	pbxFile(t, baseProject)
+	p := opened.(*xcodeProject)
+	pbxFile(t, p)
 
-	return baseProject
+	return p
 }
 
-func pbxFile(t *testing.T, project *baseProj) *pbxprojFile {
+func pbxFile(t *testing.T, p *xcodeProject) *pbxprojFile {
 	t.Helper()
 
-	file, ok := project.file.(*pbxprojFile)
-	require.True(t, ok, "%s is not a project.pbxproj project", project.Path())
+	file, ok := p.file.(*pbxprojFile)
+	require.True(t, ok, "%s is not a project.pbxproj project", p.Path())
 
 	return file
+}
+
+// projectFileOf returns the format-specific part of an opened project.
+func projectFileOf(p XcodeProj) projectFile {
+	return p.(*xcodeProject).file
 }
 
 func requireTarget(t *testing.T, project XcodeProj, name string) Target {

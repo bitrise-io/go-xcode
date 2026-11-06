@@ -27,7 +27,7 @@ type ForceCodeSignOptions struct {
 // and PROVISIONING_PROFILE, including their existing [sdk=...] variants, clears
 // PROVISIONING_PROFILE_SPECIFIER, and records manual signing where the format has a place for it
 // outside the build settings.
-func (p *baseProj) ForceCodeSign(opts ForceCodeSignOptions) error {
+func (p *xcodeProject) ForceCodeSign(opts ForceCodeSignOptions) error {
 	target, configuration, err := p.targetConfiguration(opts.TargetName, opts.Configuration)
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func (p *baseProj) ForceCodeSign(opts ForceCodeSignOptions) error {
 }
 
 // SetBuildSetting implements XcodeProj.
-func (p *baseProj) SetBuildSetting(targetName, configurationName, key string, value any) error {
+func (p *xcodeProject) SetBuildSetting(targetName, configurationName, key string, value any) error {
 	target, configuration, err := p.targetConfiguration(targetName, configurationName)
 	if err != nil {
 		return err
@@ -58,7 +58,7 @@ func (p *baseProj) SetBuildSetting(targetName, configurationName, key string, va
 
 // setBuildSetting writes to the project file first and to memory only if the file accepted the
 // value, so a rejected edit leaves the two in agreement.
-func (p *baseProj) setBuildSetting(target Target, configuration BuildConfiguration, key string, value any) error {
+func (p *xcodeProject) setBuildSetting(target Target, configuration BuildConfiguration, key string, value any) error {
 	if err := p.file.setBuildSetting(target, configuration, key, value); err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (p *baseProj) setBuildSetting(target Target, configuration BuildConfigurati
 }
 
 // Save implements XcodeProj.
-func (p *baseProj) Save() error {
+func (p *xcodeProject) Save() error {
 	content, err := p.file.content()
 	if err != nil {
 		return err
@@ -81,7 +81,7 @@ func (p *baseProj) Save() error {
 	return nil
 }
 
-func (p *baseProj) targetConfiguration(targetName, configurationName string) (Target, BuildConfiguration, error) {
+func (p *xcodeProject) targetConfiguration(targetName, configurationName string) (Target, BuildConfiguration, error) {
 	target, ok := p.TargetByName(targetName)
 	if !ok {
 		return Target{}, BuildConfiguration{}, fmt.Errorf("failed to find target with name: %s", targetName)

@@ -113,8 +113,8 @@ type projectFile interface {
 	assetCatalogPaths(target Target) ([]string, error)
 }
 
-// baseProj implements XcodeProj for both project file formats.
-type baseProj struct {
+// xcodeProject implements XcodeProj for both project file formats.
+type xcodeProject struct {
 	name string
 	path string
 
@@ -195,7 +195,7 @@ func (f Factory) Open(pth string) (XcodeProj, error) {
 		}
 		project, err := f.newPBXProj(content, absPth)
 		if err != nil {
-			// Returning the nil *baseProj would make a non-nil XcodeProj.
+			// Returning the nil *xcodeProject would make a non-nil XcodeProj.
 			return nil, err
 		}
 		return project, nil
@@ -241,8 +241,8 @@ func (f Factory) readProjectFile(pth string) ([]byte, error) {
 	return content, nil
 }
 
-func (f Factory) newBaseProj(projectPath string) baseProj {
-	return baseProj{
+func (f Factory) newXcodeProject(projectPath string) xcodeProject {
+	return xcodeProject{
 		name:             strings.TrimSuffix(filepath.Base(projectPath), filepath.Ext(projectPath)),
 		path:             projectPath,
 		logger:           f.logger,
@@ -258,22 +258,22 @@ func (f Factory) newBaseProj(projectPath string) baseProj {
 }
 
 // Name implements XcodeProj.
-func (p *baseProj) Name() string {
+func (p *xcodeProject) Name() string {
 	return p.name
 }
 
 // Path implements XcodeProj.
-func (p *baseProj) Path() string {
+func (p *xcodeProject) Path() string {
 	return p.path
 }
 
 // Targets implements XcodeProj.
-func (p *baseProj) Targets() []Target {
+func (p *xcodeProject) Targets() []Target {
 	return p.targets
 }
 
 // Target implements XcodeProj.
-func (p *baseProj) Target(id string) (Target, bool) {
+func (p *xcodeProject) Target(id string) (Target, bool) {
 	for _, target := range p.targets {
 		if target.ID == id {
 			return target, true
@@ -283,7 +283,7 @@ func (p *baseProj) Target(id string) (Target, bool) {
 }
 
 // TargetByName implements XcodeProj.
-func (p *baseProj) TargetByName(name string) (Target, bool) {
+func (p *xcodeProject) TargetByName(name string) (Target, bool) {
 	for _, target := range p.targets {
 		if target.Name == name {
 			return target, true
@@ -293,23 +293,23 @@ func (p *baseProj) TargetByName(name string) (Target, bool) {
 }
 
 // BuildConfigurations implements XcodeProj.
-func (p *baseProj) BuildConfigurations() []BuildConfiguration {
+func (p *xcodeProject) BuildConfigurations() []BuildConfiguration {
 	return p.buildConfigurations
 }
 
 // DefaultConfigurationName implements XcodeProj.
-func (p *baseProj) DefaultConfigurationName() string {
+func (p *xcodeProject) DefaultConfigurationName() string {
 	return p.defaultConfigurationName
 }
 
 // DependentTargetsOfTarget implements XcodeProj.
-func (p *baseProj) DependentTargetsOfTarget(target Target) []Target {
+func (p *xcodeProject) DependentTargetsOfTarget(target Target) []Target {
 	// visited guards against dependency cycles in malformed project files.
 	visited := map[string]bool{target.ID: true}
 	return deduplicateTargets(p.dependentTargetsOfTarget(target, visited))
 }
 
-func (p *baseProj) dependentTargetsOfTarget(target Target, visited map[string]bool) []Target {
+func (p *xcodeProject) dependentTargetsOfTarget(target Target, visited map[string]bool) []Target {
 	var dependents []Target
 
 	for _, dependencyTargetID := range target.dependencyTargetIDs {

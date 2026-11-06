@@ -20,7 +20,7 @@ const (
 )
 
 // Schemes implements XcodeProj.
-func (p *baseProj) Schemes() ([]xcscheme.Scheme, error) {
+func (p *xcodeProject) Schemes() ([]xcscheme.Scheme, error) {
 	p.logger.TDebugf("Searching schemes in project: %s", p.path)
 
 	schemes, found, err := p.existingOrManagedSchemes()
@@ -43,7 +43,7 @@ func (p *baseProj) Schemes() ([]xcscheme.Scheme, error) {
 }
 
 // SchemesWithAutocreateOverride implements XcodeProj.
-func (p *baseProj) SchemesWithAutocreateOverride(autocreateEnabled bool) ([]xcscheme.Scheme, error) {
+func (p *xcodeProject) SchemesWithAutocreateOverride(autocreateEnabled bool) ([]xcscheme.Scheme, error) {
 	p.logger.TDebugf("Searching schemes in project: %s", p.path)
 
 	schemes, found, err := p.existingOrManagedSchemes()
@@ -62,7 +62,7 @@ func (p *baseProj) SchemesWithAutocreateOverride(autocreateEnabled bool) ([]xcsc
 }
 
 // Scheme implements XcodeProj.
-func (p *baseProj) Scheme(name string) (xcscheme.Scheme, string, error) {
+func (p *xcodeProject) Scheme(name string) (xcscheme.Scheme, string, error) {
 	schemes, err := p.Schemes()
 	if err != nil {
 		return xcscheme.Scheme{}, "", err
@@ -79,7 +79,7 @@ func (p *baseProj) Scheme(name string) (xcscheme.Scheme, string, error) {
 }
 
 // existingOrManagedSchemes returns found=false when the caller must decide by the autocreate option.
-func (p *baseProj) existingOrManagedSchemes() (schemes []xcscheme.Scheme, found bool, err error) {
+func (p *xcodeProject) existingOrManagedSchemes() (schemes []xcscheme.Scheme, found bool, err error) {
 	schemes, err = p.visibleSchemes()
 	if err != nil {
 		return nil, false, err
@@ -103,7 +103,7 @@ func (p *baseProj) existingOrManagedSchemes() (schemes []xcscheme.Scheme, found 
 	return nil, false, nil
 }
 
-func (p *baseProj) defaultSchemes() []xcscheme.Scheme {
+func (p *xcodeProject) defaultSchemes() []xcscheme.Scheme {
 	schemes := p.generateSchemes()
 	for i := range schemes {
 		schemes[i].IsShared = true
@@ -111,7 +111,7 @@ func (p *baseProj) defaultSchemes() []xcscheme.Scheme {
 	return schemes
 }
 
-func (p *baseProj) visibleSchemes() ([]xcscheme.Scheme, error) {
+func (p *xcodeProject) visibleSchemes() ([]xcscheme.Scheme, error) {
 	shared, err := p.readSchemes(p.sharedSchemesDir())
 	if err != nil {
 		return nil, err
@@ -133,11 +133,11 @@ func (p *baseProj) visibleSchemes() ([]xcscheme.Scheme, error) {
 	return append(shared, user...), nil
 }
 
-func (p *baseProj) sharedSchemesDir() string {
+func (p *xcodeProject) sharedSchemesDir() string {
 	return filepath.Join(p.path, "xcshareddata", "xcschemes")
 }
 
-func (p *baseProj) userSchemesDir() (string, error) {
+func (p *xcodeProject) userSchemesDir() (string, error) {
 	username, err := p.userProvider.CurrentUserName()
 	if err != nil {
 		return "", fmt.Errorf("failed to get the current user: %w", err)
@@ -146,7 +146,7 @@ func (p *baseProj) userSchemesDir() (string, error) {
 	return filepath.Join(p.path, "xcuserdata", username+".xcuserdatad", "xcschemes"), nil
 }
 
-func (p *baseProj) readSchemes(dir string) ([]xcscheme.Scheme, error) {
+func (p *xcodeProject) readSchemes(dir string) ([]xcscheme.Scheme, error) {
 	names, err := p.fileManager.ReadDirEntryNames(dir)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
@@ -172,7 +172,7 @@ func (p *baseProj) readSchemes(dir string) ([]xcscheme.Scheme, error) {
 	return schemes, nil
 }
 
-func (p *baseProj) isUserSchemeManagementFileExist() (bool, error) {
+func (p *xcodeProject) isUserSchemeManagementFileExist() (bool, error) {
 	userDir, err := p.userSchemesDir()
 	if err != nil {
 		return false, err
@@ -188,7 +188,7 @@ func (p *baseProj) isUserSchemeManagementFileExist() (bool, error) {
 }
 
 // isAutocreateSchemesEnabled defaults to true when the settings file or the key is missing.
-func (p *baseProj) isAutocreateSchemesEnabled() (bool, error) {
+func (p *xcodeProject) isAutocreateSchemesEnabled() (bool, error) {
 	pth := filepath.Join(p.path, "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings")
 
 	data, _, err := p.plistFileHandler.Read(pth)

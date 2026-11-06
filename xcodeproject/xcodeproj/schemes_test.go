@@ -29,7 +29,7 @@ const minimalSchemeXML = `<?xml version="1.0" encoding="UTF-8"?>
 </Scheme>
 `
 
-func schemesProject(t *testing.T, fixture string, user UserProvider) *baseProj {
+func schemesProject(t *testing.T, fixture string, user UserProvider) *xcodeProject {
 	t.Helper()
 
 	projectPath := filepath.Join(t.TempDir(), "XcodeProj.xcodeproj")
@@ -51,17 +51,17 @@ func writeFile(t *testing.T, pth, content string) {
 	require.NoError(t, os.WriteFile(pth, []byte(content), 0644))
 }
 
-func sharedSchemePath(project *baseProj, name string) string {
-	return filepath.Join(project.Path(), "xcshareddata", "xcschemes", name+".xcscheme")
+func sharedSchemePath(p *xcodeProject, name string) string {
+	return filepath.Join(p.Path(), "xcshareddata", "xcschemes", name+".xcscheme")
 }
 
-func userSchemesPath(project *baseProj, file string) string {
-	return filepath.Join(project.Path(), "xcuserdata", testUserName+".xcuserdatad", "xcschemes", file)
+func userSchemesPath(p *xcodeProject, file string) string {
+	return filepath.Join(p.Path(), "xcuserdata", testUserName+".xcuserdatad", "xcschemes", file)
 }
 
-func writeAutocreateSetting(t *testing.T, project *baseProj, value string) {
+func writeAutocreateSetting(t *testing.T, p *xcodeProject, value string) {
 	t.Helper()
-	writeFile(t, filepath.Join(project.Path(), "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings"),
+	writeFile(t, filepath.Join(p.Path(), "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings"),
 		`<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -178,7 +178,7 @@ func TestXcodeProj_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
 }
 
 func TestXcodeProj_Schemes_autocreateWithNothingToGenerate(t *testing.T) {
-	project := &baseProj{
+	project := &xcodeProject{
 		path:             filepath.Join(t.TempDir(), "Tests.xcodeproj"),
 		logger:           log.NewLogger(),
 		fileManager:      fileutil.NewFileManager(),

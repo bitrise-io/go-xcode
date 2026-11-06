@@ -40,7 +40,7 @@ func openXCProjFixtureFile(t *testing.T, name string) XcodeProj {
 func TestXCProj_Targets(t *testing.T) {
 	project := openXCProjFixture(t)
 
-	require.IsType(t, &xcprojFile{}, project.(*baseProj).file)
+	require.IsType(t, &xcprojFile{}, projectFileOf(project))
 	assert.Equal(t, "App", project.Name())
 
 	targets := project.Targets()

@@ -18,7 +18,7 @@ const appIconSetNameBuildSettingKey = "ASSETCATALOG_COMPILER_APPICON_NAME"
 var buildSettingReferenceRegexp = regexp.MustCompile(`\$\{(.+)\}`)
 
 // AppIconSetPaths implements XcodeProj.
-func (p *baseProj) AppIconSetPaths() (map[string][]string, error) {
+func (p *xcodeProject) AppIconSetPaths() (map[string][]string, error) {
 	targetToAppIcons := map[string][]string{}
 	for _, target := range p.targets {
 		appIconSetNames := appIconSetNames(target)
@@ -49,7 +49,7 @@ func (p *baseProj) AppIconSetPaths() (map[string][]string, error) {
 	return targetToAppIcons, nil
 }
 
-func (p *baseProj) globAppIconSets(catalogPaths []string, appIconSetName string) ([]string, error) {
+func (p *xcodeProject) globAppIconSets(catalogPaths []string, appIconSetName string) ([]string, error) {
 	pattern := buildSettingReferenceRegexp.ReplaceAllString(appIconSetName, "*")
 
 	var icons []string
