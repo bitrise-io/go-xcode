@@ -12,20 +12,13 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/internal/xcproj"
 )
 
-const (
-	assetCatalogExtension = ".xcassets"
-	projectPathBase       = "<PROJECT>/"
-)
+const projectPathBase = "<PROJECT>/"
 
 var filePathUnescaper = strings.NewReplacer(`\\`, `\`, `\<`, `<`)
 
 // assetCatalogPaths looks for asset catalogs in the target's resources build phase and, on disk, in
 // the target's synchronized folders.
 func (p *xcprojFile) assetCatalogPaths(target Target) ([]string, error) {
-	if !target.isNativeTarget() {
-		return nil, nil
-	}
-
 	resources := xcproj.BuildPhaseReference{Target: target.Name, Kind: xcproj.BuildPhaseKindResources}
 	projectDir := filepath.Dir(p.path)
 

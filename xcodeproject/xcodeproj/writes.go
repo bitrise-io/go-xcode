@@ -2,11 +2,8 @@ package xcodeproj
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
-	"sort"
 
-	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-xcode/v2/internal/filewriter"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
@@ -118,108 +115,4 @@ func keysForAllSDKs(buildSettings serialized.Object, key string) []string {
 	}
 
 	return keys
-}
-
-type objectChange struct {
-	start, end int
-	content    []byte
-}
-
-// perObjectModify splices re-serialised changed objects into the original bytes.
-// The original and annotated trees are decoded from originalContents here rather than kept from
-// parse time, so an opened project holds no extra copies of the tree; Save is called rarely.
-func (p *pbxprojFile) perObjectModify() ([]byte, error) {
-	var annotated serialized.Object
-	if _, err := plist.UnmarshalWithCustomAnnotation(p.originalContents, &annotated); err != nil {
-		return nil, fmt.Errorf("failed to decode original project: %w", err)
-	}
-
-	original, _, err := decodePBXProj(p.originalContents)
-	if err != nil {
-		return nil, err
-	}
-
-	objectsModified, ok := p.rawProj.Object("objects")
-	if !ok {
-		return nil, fmt.Errorf("failed to parse project: no objects")
-	}
-	objectsOriginal, ok := original.Object("objects")
-	if !ok {
-		return nil, fmt.Errorf("failed to parse original project: no objects")
-	}
-	objectsAnnotated, ok := annotated.Object("objects")
-	if !ok {
-		return nil, fmt.Errorf("failed to parse annotated project: no objects")
-	}
-
-	var changes []objectChange
-	for id := range objectsModified {
-		objectModified, ok := objectsModified.Object(id)
-		if !ok {
-			return nil, fmt.Errorf("object %s is not a dictionary", id)
-		}
-
-		objectOriginal, ok := objectsOriginal.Object(id)
-		if !ok {
-			return nil, fmt.Errorf("new object added, not in original project: %s", id)
-		}
-
-		if reflect.DeepEqual(objectOriginal, objectModified) {
-			continue
-		}
-
-		objectAnnotated, ok := objectsAnnotated.Object(id)
-		if !ok {
-			return nil, fmt.Errorf("new object added, not in original annotated project: %s", id)
-		}
-
-		position, ok := objectAnnotated.Object(customAnnotationKey)
-		if !ok {
-			return nil, fmt.Errorf("no raw object position available for %s", id)
-		}
-		start, ok := position.Int64(startKey)
-		if !ok {
-			return nil, fmt.Errorf("no raw object start position available for %s", id)
-		}
-		end, ok := position.Int64(endKey)
-		if !ok {
-			return nil, fmt.Errorf("no raw object end position available for %s", id)
-		}
-
-		content, err := plist.MarshalIndent(objectModified, p.format, "\t")
-		if err != nil {
-			return nil, fmt.Errorf("could not marshal object %s: %w", id, err)
-		}
-
-		changes = append(changes, objectChange{start: int(start), end: int(end), content: content})
-	}
-
-	if len(changes) == 0 {
-		return p.originalContents, nil
-	}
-
-	sort.Slice(changes, func(i, j int) bool {
-		if changes[i].start == changes[j].start {
-			return changes[i].end < changes[j].end
-		}
-		return changes[i].start < changes[j].start
-	})
-
-	var result []byte
-	previousEnd := 0
-	for i, change := range changes {
-		if i < len(changes)-1 && change.end >= changes[i+1].start {
-			return nil, fmt.Errorf("overlapping changes: %d, %d", change.end, changes[i+1].start)
-		}
-
-		result = append(result, p.originalContents[previousEnd:change.start]...)
-		result = append(result, change.content...)
-		previousEnd = change.end
-	}
-
-	if previousEnd <= len(p.originalContents)-1 {
-		result = append(result, p.originalContents[previousEnd:]...)
-	}
-
-	return result, nil
 }

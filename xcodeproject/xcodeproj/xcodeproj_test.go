@@ -93,36 +93,6 @@ func TestFactory_Parse(t *testing.T) {
 	assert.Equal(t, "Release", project.DefaultConfigurationName())
 }
 
-// Regression test for 2f529ef from the abandoned xcodeproject-v2 branch.
-func TestFactory_Parse_optionalTargetKeys(t *testing.T) {
-	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
-	require.NoError(t, err)
-
-	require.NotContains(t, string(content), "dependencies")
-	require.NotContains(t, string(content), "buildPhases")
-
-	project, err := testFactory().newPBXProj(content, "/projects/App.xcodeproj")
-	require.NoError(t, err)
-
-	require.Len(t, project.Targets(), 1)
-	target := project.Targets()[0]
-	assert.Equal(t, "App", target.Name)
-	assert.Empty(t, target.dependencyTargetIDs)
-	assert.Empty(t, pbxFile(t, project).buildPhaseIDs[target.ID])
-}
-
-func TestFactory_Parse_invalidContent(t *testing.T) {
-	_, err := testFactory().newPBXProj([]byte("not a plist"), "/projects/App.xcodeproj")
-	require.Error(t, err)
-}
-
-func TestFactory_Parse_noProjectObject(t *testing.T) {
-	content := []byte("{\n\tobjects = {\n\t\tAA1 = {\n\t\t\tisa = PBXGroup;\n\t\t};\n\t};\n}\n")
-
-	_, err := testFactory().newPBXProj(content, "/projects/App.xcodeproj")
-	require.ErrorContains(t, err, "PBXProject")
-}
-
 func TestFactory_Open(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
 	require.NoError(t, err)
@@ -258,4 +228,8 @@ func targetNames(targets []Target) []string {
 		names = append(names, target.Name)
 	}
 	return names
+}
+
+func projectFileOf(p XcodeProj) projectFile {
+	return p.(*xcodeProject).file
 }

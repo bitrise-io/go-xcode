@@ -193,22 +193,22 @@ func (f Factory) Open(pth string) (XcodeProj, error) {
 		if err != nil {
 			return nil, err
 		}
-		project, err := f.newPBXProj(content, absPth)
+		opened, err := f.newPBXProj(content, absPth)
 		if err != nil {
 			// Returning the nil *xcodeProject would make a non-nil XcodeProj.
 			return nil, err
 		}
-		return project, nil
+		return opened, nil
 	case hasXCProj:
 		content, err := f.readProjectFile(xcProjPath)
 		if err != nil {
 			return nil, err
 		}
-		project, err := f.newXCProj(content, absPth)
+		opened, err := f.newXCProj(content, absPth)
 		if err != nil {
 			return nil, err
 		}
-		return project, nil
+		return opened, nil
 	default:
 		return nil, fmt.Errorf("found neither %s nor %s in %s: %w", pbxProjFileName, xcProjFileName, absPth, fs.ErrNotExist)
 	}

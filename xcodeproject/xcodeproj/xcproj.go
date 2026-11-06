@@ -23,7 +23,7 @@ var (
 // xcprojFile is project.xcproj, the JSON format.
 type xcprojFile struct {
 	fileManager fileutil.FileManager
-	// path is the project bundle's path, which <PROJECT>/ file paths resolve against.
+	// path is the project bundle's path; <PROJECT>/ file paths resolve against its directory.
 	path string
 
 	original           []byte
@@ -70,14 +70,14 @@ func (p *xcprojFile) content() ([]byte, error) {
 }
 
 func parseXCProj(content []byte, base xcodeProject) (*xcodeProject, error) {
-	project, err := xcproj.Decode(content)
+	decoded, err := xcproj.Decode(content)
 	if err != nil {
 		return nil, err
 	}
 
-	base.targets = xcprojTargets(project, base.logger)
-	base.buildConfigurations = xcprojBuildConfigurations(project.Configurations, project.BuildSettings)
-	base.defaultConfigurationName = project.DefaultConfiguration
+	base.targets = xcprojTargets(decoded, base.logger)
+	base.buildConfigurations = xcprojBuildConfigurations(decoded.Configurations, decoded.BuildSettings)
+	base.defaultConfigurationName = decoded.DefaultConfiguration
 
 	configurationNames := make([]string, 0, len(base.buildConfigurations))
 	for _, configuration := range base.buildConfigurations {
@@ -90,21 +90,21 @@ func parseXCProj(content []byte, base xcodeProject) (*xcodeProject, error) {
 		path:               base.path,
 		original:           content,
 		configurationNames: configurationNames,
-		files:              project.Files,
+		files:              decoded.Files,
 	}
 
 	return &base, nil
 }
 
-func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
-	idsByName := make(map[string]string, len(project.Targets))
-	for _, target := range project.Targets {
+func xcprojTargets(decoded xcproj.Project, logger log.Logger) []Target {
+	idsByName := make(map[string]string, len(decoded.Targets))
+	for _, target := range decoded.Targets {
 		idsByName[target.Name] = target.ID
 	}
-	filePathsByID := xcprojFilePathsByID(project.Files)
+	filePathsByID := xcprojFilePathsByID(decoded.Files)
 
-	targets := make([]Target, 0, len(project.Targets))
-	for _, target := range project.Targets {
+	targets := make([]Target, 0, len(decoded.Targets))
+	for _, target := range decoded.Targets {
 		var dependencyTargetIDs []string
 		for _, name := range target.Dependencies {
 			dependencyTargetIDs = append(dependencyTargetIDs, idsByName[name])
@@ -123,8 +123,8 @@ func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
 		targets = append(targets, Target{
 			ID:                       target.ID,
 			Name:                     target.Name,
-			BuildConfigurations:      xcprojBuildConfigurations(project.Configurations, target.BuildSettings),
-			DefaultConfigurationName: project.DefaultConfiguration,
+			BuildConfigurations:      xcprojBuildConfigurations(decoded.Configurations, target.BuildSettings),
+			DefaultConfigurationName: decoded.DefaultConfiguration,
 			kind:                     xcprojTargetKinds[target.Kind],
 			productType:              target.ProductType,
 			productPath:              productPath,

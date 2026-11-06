@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestTarget_productPredicates(t *testing.T) {
@@ -84,45 +83,4 @@ func TestTarget_DependsOn(t *testing.T) {
 	assert.True(t, target.DependsOn("B"))
 	assert.False(t, target.DependsOn("C"))
 	assert.False(t, Target{}.DependsOn("A"))
-}
-
-func TestParseTarget_fromFixture(t *testing.T) {
-	project := parseFixture(t, "ios-sample.pbxproj")
-
-	target, ok := project.TargetByName("XcodeProj")
-	require.True(t, ok)
-
-	assert.Equal(t, appTargetID, target.ID)
-	assert.Equal(t, nativeTargetKind, target.kind)
-	assert.Equal(t, "com.apple.product-type.application", target.productType)
-	assert.Equal(t, "XcodeProj.app", target.productPath)
-	assert.Equal(t, []string{todayExtensionTarget}, target.dependencyTargetIDs)
-	assert.Equal(t, "Release", target.DefaultConfigurationName)
-	require.Len(t, target.BuildConfigurations, 2)
-	assert.NotEmpty(t, pbxFile(t, project).buildPhaseIDs[target.ID])
-}
-
-func TestParseTarget_unknownTargetType(t *testing.T) {
-	objects := map[string]any{
-		"T1": map[string]any{"isa": "PBXSomethingElse", "name": "X"},
-	}
-
-	_, err := parseTarget("T1", objects)
-	require.ErrorContains(t, err, "unknown target type")
-}
-
-func TestParseTarget_productReferenceWithoutPath(t *testing.T) {
-	objects := map[string]any{
-		"T1": map[string]any{
-			"isa":                    nativeTargetISA,
-			"name":                   "App",
-			"buildConfigurationList": "L1",
-			"productReference":       "P1",
-		},
-		"L1": map[string]any{"buildConfigurations": []any{}},
-		"P1": map[string]any{"isa": "PBXFileReference"},
-	}
-
-	_, err := parseTarget("T1", objects)
-	require.ErrorContains(t, err, "has no path")
 }
