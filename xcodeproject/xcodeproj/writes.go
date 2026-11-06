@@ -2,7 +2,6 @@ package xcodeproj
 
 import (
 	"fmt"
-	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
@@ -26,82 +25,75 @@ type ForceCodeSignOptions struct {
 
 // ForceCodeSign implements XcodeProj. It sets CODE_SIGN_STYLE, DEVELOPMENT_TEAM, CODE_SIGN_IDENTITY
 // and PROVISIONING_PROFILE, including their existing [sdk=...] variants, clears
-// PROVISIONING_PROFILE_SPECIFIER, and updates the target's TargetAttributes entry if there is one.
-func (p *PBXProj) ForceCodeSign(opts ForceCodeSignOptions) error {
-	target, ok := p.TargetByName(opts.TargetName)
-	if !ok {
-		return fmt.Errorf("failed to find target with name: %s", opts.TargetName)
-	}
-
-	buildSettings, err := targetBuildSettings(target, opts.Configuration)
+// PROVISIONING_PROFILE_SPECIFIER, and records manual signing where the format has a place for it
+// outside the build settings.
+func (p *baseProj) ForceCodeSign(opts ForceCodeSignOptions) error {
+	target, configuration, err := p.targetConfiguration(opts.TargetName, opts.Configuration)
 	if err != nil {
 		return err
 	}
 
 	for key, value := range forcedCodeSignBuildSettings(opts) {
-		for _, sdkKey := range keysForAllSDKs(buildSettings, key) {
-			buildSettings[sdkKey] = value
+		for _, sdkKey := range keysForAllSDKs(configuration.buildSettings, key) {
+			if err := p.setBuildSetting(target, configuration, sdkKey, value); err != nil {
+				return err
+			}
 		}
 	}
 
-	if attributes, ok := p.targetAttributes.Object(target.ID); ok {
-		attributes["ProvisioningStyle"] = "Manual"
-		attributes["DevelopmentTeam"] = opts.DevelopmentTeam
-		attributes["DevelopmentTeamName"] = ""
-	}
+	p.file.setManualSigning(target, opts.DevelopmentTeam)
 
 	return nil
 }
 
-// SetBuildSetting implements XcodeProj. It writes the value into the configuration's
-// XCBuildConfiguration, whose build settings targets fetched earlier share.
-func (p *PBXProj) SetBuildSetting(targetName, configurationName, key string, value any) error {
-	target, ok := p.TargetByName(targetName)
-	if !ok {
-		return fmt.Errorf("failed to find target with name: %s", targetName)
-	}
-
-	buildSettings, err := targetBuildSettings(target, configurationName)
+// SetBuildSetting implements XcodeProj.
+func (p *baseProj) SetBuildSetting(targetName, configurationName, key string, value any) error {
+	target, configuration, err := p.targetConfiguration(targetName, configurationName)
 	if err != nil {
 		return err
 	}
 
-	buildSettings[key] = value
+	return p.setBuildSetting(target, configuration, key, value)
+}
+
+// setBuildSetting writes to the project file first and to memory only if the file accepted the
+// value, so a rejected edit leaves the two in agreement.
+func (p *baseProj) setBuildSetting(target Target, configuration BuildConfiguration, key string, value any) error {
+	if err := p.file.setBuildSetting(target, configuration, key, value); err != nil {
+		return err
+	}
+	configuration.buildSettings[key] = value
 
 	return nil
 }
 
-// Save implements XcodeProj. It rewrites only the changed objects of project.pbxproj, so the rest
-// of the file stays byte for byte. If that is not possible, it writes the whole file and logs a
-// warning.
-func (p *PBXProj) Save() error {
-	pth := filepath.Join(p.path, pbxProjFileName)
-
-	content, err := p.perObjectModify()
+// Save implements XcodeProj.
+func (p *baseProj) Save() error {
+	content, err := p.file.content()
 	if err != nil {
-		p.logger.Warnf("failed to modify project in-place: %v", err)
-
-		content, err = plist.MarshalIndent(p.rawProj, p.format, "\t")
-		if err != nil {
-			return fmt.Errorf("failed to marshal .pbxproj: %w", err)
-		}
+		return err
 	}
 
-	if err := filewriter.WriteKeepingMode(p.fileManager, pth, content, newProjectFileMode); err != nil {
-		return fmt.Errorf("failed to write %s: %w", pth, err)
+	if err := filewriter.WriteKeepingMode(p.fileManager, p.filePath, content, newProjectFileMode); err != nil {
+		return fmt.Errorf("failed to write %s: %w", p.filePath, err)
 	}
 
 	return nil
 }
 
-func targetBuildSettings(target Target, configurationName string) (serialized.Object, error) {
+func (p *baseProj) targetConfiguration(targetName, configurationName string) (Target, BuildConfiguration, error) {
+	target, ok := p.TargetByName(targetName)
+	if !ok {
+		return Target{}, BuildConfiguration{}, fmt.Errorf("failed to find target with name: %s", targetName)
+	}
+
 	for _, configuration := range target.BuildConfigurations {
 		if configuration.Name == configurationName {
-			return configuration.buildSettings, nil
+			return target, configuration, nil
 		}
 	}
 
-	return nil, fmt.Errorf("failed to find build configuration %s of target %s", configurationName, target.Name)
+	return Target{}, BuildConfiguration{}, fmt.Errorf("failed to find build configuration %s of target %s", configurationName, target.Name)
 }
 
 func forcedCodeSignBuildSettings(opts ForceCodeSignOptions) map[string]string {
@@ -136,7 +128,7 @@ type objectChange struct {
 // perObjectModify splices re-serialised changed objects into the original bytes.
 // The original and annotated trees are decoded from originalContents here rather than kept from
 // parse time, so an opened project holds no extra copies of the tree; Save is called rarely.
-func (p *PBXProj) perObjectModify() ([]byte, error) {
+func (p *pbxprojFile) perObjectModify() ([]byte, error) {
 	var annotated serialized.Object
 	if _, err := plist.UnmarshalWithCustomAnnotation(p.originalContents, &annotated); err != nil {
 		return nil, fmt.Errorf("failed to decode original project: %w", err)

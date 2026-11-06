@@ -32,8 +32,8 @@ type projectModel struct {
 func TestXcodeProj_formatParity(t *testing.T) {
 	pbxProj := openParityFixture(t, pbxProjFileName)
 	xcProj := openParityFixture(t, xcProjFileName)
-	require.IsType(t, &PBXProj{}, pbxProj)
-	require.IsType(t, &XCProj{}, xcProj)
+	require.IsType(t, &pbxprojFile{}, pbxProj.(*baseProj).file)
+	require.IsType(t, &xcprojFile{}, xcProj.(*baseProj).file)
 
 	want := readProjectModel(t, pbxProj)
 	assert.Equal(t, "BullsEye", want.name)
@@ -58,7 +58,7 @@ func TestXcodeProj_formatParity(t *testing.T) {
 		require.NoError(t, project.Save())
 		reopened, err := testFactory().Open(project.Path())
 		require.NoError(t, err)
-		assert.Equal(t, want, readProjectModel(t, reopened), "%T after Save", project)
+		assert.Equal(t, want, readProjectModel(t, reopened), "%T after Save", project.(*baseProj).file)
 	}
 }
 

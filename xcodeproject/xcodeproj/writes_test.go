@@ -27,25 +27,45 @@ func forceCodeSignOptions(target, configuration string) ForceCodeSignOptions {
 func requireBuildSetting(t *testing.T, project XcodeProj, target, configuration, key, want string) {
 	t.Helper()
 
-	buildSettings, err := targetBuildSettings(requireTarget(t, project, target), configuration)
-	require.NoError(t, err)
-
-	got, ok := buildSettings.String(key)
+	got, ok := requireBuildSettings(t, requireTarget(t, project, target), configuration).String(key)
 	require.True(t, ok, "build setting %s is missing", key)
 	assert.Equal(t, want, got, key)
 }
 
+func requireBuildSettings(t *testing.T, target Target, configuration string) serialized.Object {
+	t.Helper()
+
+	for _, buildConfiguration := range target.BuildConfigurations {
+		if buildConfiguration.Name == configuration {
+			return buildConfiguration.buildSettings
+		}
+	}
+
+	require.Failf(t, "build configuration not found", "%s of target %s", configuration, target.Name)
+	return nil
+}
+
 // openPBXProj opens the project at projectPath, which must be in the property list format.
-func openPBXProj(t *testing.T, projectPath string) *PBXProj {
+func openPBXProj(t *testing.T, projectPath string) *baseProj {
 	t.Helper()
 
 	project, err := testFactory().Open(projectPath)
 	require.NoError(t, err)
 
-	pbxProj, ok := project.(*PBXProj)
-	require.True(t, ok, "%s is not a project.pbxproj project", projectPath)
+	baseProject, ok := project.(*baseProj)
+	require.True(t, ok)
+	pbxFile(t, baseProject)
 
-	return pbxProj
+	return baseProject
+}
+
+func pbxFile(t *testing.T, project *baseProj) *pbxprojFile {
+	t.Helper()
+
+	file, ok := project.file.(*pbxprojFile)
+	require.True(t, ok, "%s is not a project.pbxproj project", project.Path())
+
+	return file
 }
 
 func requireTarget(t *testing.T, project XcodeProj, name string) Target {
@@ -61,7 +81,7 @@ func TestXcodeProj_ForceCodeSign(t *testing.T) {
 	require.NoError(t, project.ForceCodeSign(forceCodeSignOptions("Target", "Debug")))
 
 	target := requireTarget(t, project, "Target")
-	attributes, ok := project.targetAttributes.Object(target.ID)
+	attributes, ok := pbxFile(t, project).targetAttributes.Object(target.ID)
 	require.True(t, ok)
 	assert.Equal(t, "Manual", attributes["ProvisioningStyle"])
 	assert.Equal(t, "ABCD1234", attributes["DevelopmentTeam"])
@@ -87,7 +107,7 @@ func TestXcodeProj_ForceCodeSign_targetWithoutTargetAttributes(t *testing.T) {
 	requireBuildSetting(t, project, "TargetWithouthTargetAttributes", "Debug", "PROVISIONING_PROFILE", "asdf56b6-e75a-4f86-bf25-101bfc2fasdf")
 
 	target := requireTarget(t, project, "TargetWithouthTargetAttributes")
-	_, ok := project.targetAttributes.Object(target.ID)
+	_, ok := pbxFile(t, project).targetAttributes.Object(target.ID)
 	assert.False(t, ok, "no TargetAttributes entry may be created for a target that had none")
 }
 
@@ -135,7 +155,7 @@ func TestXcodeProj_perObjectModify(t *testing.T) {
 			project := parseFixture(t, tt.fixture)
 			require.NoError(t, project.ForceCodeSign(forceCodeSignOptions(tt.target, tt.configuration)))
 
-			got, err := project.perObjectModify()
+			got, err := pbxFile(t, project).perObjectModify()
 			require.NoError(t, err)
 
 			want, err := os.ReadFile(filepath.Join("testdata", tt.want))
@@ -148,7 +168,7 @@ func TestXcodeProj_perObjectModify(t *testing.T) {
 func TestXcodeProj_perObjectModify_noChangesReturnsOriginalBytes(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
-	got, err := project.perObjectModify()
+	got, err := pbxFile(t, project).perObjectModify()
 	require.NoError(t, err)
 
 	want, err := os.ReadFile(filepath.Join("testdata", "ios-sample.pbxproj"))
@@ -170,9 +190,7 @@ func TestXcodeProj_SetBuildSetting(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "2.0", value, "a Target fetched before the write must see it")
 
-	buildSettings, err := targetBuildSettings(requireTarget(t, project, "XcodeProj"), "Debug")
-	require.NoError(t, err)
-	assert.NotEqual(t, "2.0", buildSettings["MARKETING_VERSION"])
+	assert.NotEqual(t, "2.0", requireBuildSettings(t, requireTarget(t, project, "XcodeProj"), "Debug")["MARKETING_VERSION"])
 }
 
 func TestXcodeProj_SetBuildSetting_errors(t *testing.T) {
@@ -244,11 +262,11 @@ func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
 
 	project := openPBXProj(t, projectPath)
 
-	objects, ok := project.rawProj.Object("objects")
+	objects, ok := pbxFile(t, project).rawProj.Object("objects")
 	require.True(t, ok)
 	objects["BB00000000000000000000A1"] = map[string]any{"isa": "PBXGroup", "children": []any{}, "sourceTree": "<group>"}
 
-	_, err = project.perObjectModify()
+	_, err = pbxFile(t, project).perObjectModify()
 	require.ErrorContains(t, err, "new object added")
 
 	require.NoError(t, project.Save())
@@ -256,7 +274,7 @@ func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
 	reopened := openPBXProj(t, projectPath)
 	require.Len(t, reopened.Targets(), 1)
 
-	reopenedObjects, ok := reopened.rawProj.Object("objects")
+	reopenedObjects, ok := pbxFile(t, reopened).rawProj.Object("objects")
 	require.True(t, ok)
 	assert.True(t, reopenedObjects.Has("BB00000000000000000000A1"))
 }

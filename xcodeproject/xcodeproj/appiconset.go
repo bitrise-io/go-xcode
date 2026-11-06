@@ -17,20 +17,8 @@ const appIconSetNameBuildSettingKey = "ASSETCATALOG_COMPILER_APPICON_NAME"
 
 var buildSettingReferenceRegexp = regexp.MustCompile(`\$\{(.+)\}`)
 
-// AppIconSetPaths implements XcodeProj. It looks for asset catalogs in the targets' resources
-// build phases.
-func (p *PBXProj) AppIconSetPaths() (map[string][]string, error) {
-	objects, ok := p.rawProj.Object("objects")
-	if !ok {
-		return nil, fmt.Errorf("failed to parse project: no objects")
-	}
-
-	return p.appIconSetPaths(func(target Target) ([]string, error) {
-		return p.assetCatalogPaths(target, objects)
-	})
-}
-
-func (p *baseProj) appIconSetPaths(catalogPaths func(Target) ([]string, error)) (map[string][]string, error) {
+// AppIconSetPaths implements XcodeProj.
+func (p *baseProj) AppIconSetPaths() (map[string][]string, error) {
 	targetToAppIcons := map[string][]string{}
 	for _, target := range p.targets {
 		appIconSetNames := appIconSetNames(target)
@@ -38,7 +26,7 @@ func (p *baseProj) appIconSetPaths(catalogPaths func(Target) ([]string, error)) 
 			continue
 		}
 
-		catalogs, err := catalogPaths(target)
+		catalogs, err := p.file.assetCatalogPaths(target)
 		if err != nil {
 			return nil, err
 		} else if len(catalogs) == 0 {
@@ -78,7 +66,12 @@ func (p *baseProj) globAppIconSets(catalogPaths []string, appIconSetName string)
 
 // TODO: catalogs in the target's synchronized folders (PBXFileSystemSynchronizedRootGroup) are not
 // found.
-func (p *PBXProj) assetCatalogPaths(target Target, objects serialized.Object) ([]string, error) {
+func (p *pbxprojFile) assetCatalogPaths(target Target) ([]string, error) {
+	objects, ok := p.rawProj.Object("objects")
+	if !ok {
+		return nil, fmt.Errorf("failed to parse project: no objects")
+	}
+
 	catalogs, err := assetCatalogs(target, p.buildPhaseIDs[target.ID], objects)
 	if err != nil {
 		return nil, err

@@ -2,6 +2,7 @@ package xcodeproj
 
 import (
 	"fmt"
+	"maps"
 
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
@@ -11,7 +12,11 @@ type BuildConfiguration struct {
 	ID   string
 	Name string
 
-	// buildSettings is shared with the raw project tree, so writes to it reach Save.
+	// buildSettings is the project's in-memory copy, shared by every copy of the Target, so a
+	// Target fetched before SetBuildSetting sees the change. Only SetBuildSetting writes it, after
+	// the project file accepted the value. It is not the project file's own representation: for
+	// project.pbxproj it is a shallow clone, so nested values such as arrays are still shared with
+	// the raw tree and must not be modified in place.
 	buildSettings serialized.Object
 }
 
@@ -40,7 +45,7 @@ func parseBuildConfiguration(id string, objects serialized.Object) (BuildConfigu
 	return BuildConfiguration{
 		ID:            id,
 		Name:          name,
-		buildSettings: buildSettings,
+		buildSettings: maps.Clone(buildSettings),
 	}, nil
 }
 

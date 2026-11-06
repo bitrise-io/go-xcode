@@ -104,10 +104,23 @@ type Factory struct {
 	schemeFactory    xcscheme.Factory
 }
 
-// baseProj is what's common in the PBXProj and XCProj implementations.
+// projectFile is the format-specific part of a project: how edits reach the project file and where
+// asset catalogs come from. Everything else is the same for both formats.
+type projectFile interface {
+	setBuildSetting(target Target, configuration BuildConfiguration, key string, value any) error
+	setManualSigning(target Target, developmentTeam string)
+	content() ([]byte, error)
+	assetCatalogPaths(target Target) ([]string, error)
+}
+
+// baseProj implements XcodeProj for both project file formats.
 type baseProj struct {
 	name string
 	path string
+
+	file projectFile
+	// filePath is where Save writes file: <path>/project.pbxproj or <path>/project.xcproj.
+	filePath string
 
 	logger           log.Logger
 	buildSettings    BuildSettingsProvider
@@ -182,7 +195,7 @@ func (f Factory) Open(pth string) (XcodeProj, error) {
 		}
 		project, err := f.newPBXProj(content, absPth)
 		if err != nil {
-			// Returning the nil *PBXProj would make a non-nil XcodeProj.
+			// Returning the nil *baseProj would make a non-nil XcodeProj.
 			return nil, err
 		}
 		return project, nil

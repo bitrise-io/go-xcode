@@ -99,7 +99,7 @@ func TestParseTarget_fromFixture(t *testing.T) {
 	assert.Equal(t, []string{todayExtensionTarget}, target.dependencyTargetIDs)
 	assert.Equal(t, "Release", target.DefaultConfigurationName)
 	require.Len(t, target.BuildConfigurations, 2)
-	assert.NotEmpty(t, project.buildPhaseIDs[target.ID])
+	assert.NotEmpty(t, pbxFile(t, project).buildPhaseIDs[target.ID])
 }
 
 func TestParseTarget_unknownTargetType(t *testing.T) {

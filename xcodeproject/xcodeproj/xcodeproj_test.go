@@ -57,7 +57,7 @@ func writeProjectFiles(t *testing.T, files map[string][]byte) string {
 	return projectPath
 }
 
-func parseFixture(t *testing.T, name string) *PBXProj {
+func parseFixture(t *testing.T, name string) *baseProj {
 	t.Helper()
 
 	content, err := os.ReadFile(filepath.Join("testdata", name))
@@ -108,7 +108,7 @@ func TestFactory_Parse_optionalTargetKeys(t *testing.T) {
 	target := project.Targets()[0]
 	assert.Equal(t, "App", target.Name)
 	assert.Empty(t, target.dependencyTargetIDs)
-	assert.Empty(t, project.buildPhaseIDs[target.ID])
+	assert.Empty(t, pbxFile(t, project).buildPhaseIDs[target.ID])
 }
 
 func TestFactory_Parse_invalidContent(t *testing.T) {

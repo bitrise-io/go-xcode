@@ -29,7 +29,7 @@ const minimalSchemeXML = `<?xml version="1.0" encoding="UTF-8"?>
 </Scheme>
 `
 
-func schemesProject(t *testing.T, fixture string, user UserProvider) *PBXProj {
+func schemesProject(t *testing.T, fixture string, user UserProvider) *baseProj {
 	t.Helper()
 
 	projectPath := filepath.Join(t.TempDir(), "XcodeProj.xcodeproj")
@@ -51,15 +51,15 @@ func writeFile(t *testing.T, pth, content string) {
 	require.NoError(t, os.WriteFile(pth, []byte(content), 0644))
 }
 
-func sharedSchemePath(project *PBXProj, name string) string {
+func sharedSchemePath(project *baseProj, name string) string {
 	return filepath.Join(project.Path(), "xcshareddata", "xcschemes", name+".xcscheme")
 }
 
-func userSchemesPath(project *PBXProj, file string) string {
+func userSchemesPath(project *baseProj, file string) string {
 	return filepath.Join(project.Path(), "xcuserdata", testUserName+".xcuserdatad", "xcschemes", file)
 }
 
-func writeAutocreateSetting(t *testing.T, project *PBXProj, value string) {
+func writeAutocreateSetting(t *testing.T, project *baseProj, value string) {
 	t.Helper()
 	writeFile(t, filepath.Join(project.Path(), "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings"),
 		`<?xml version="1.0" encoding="UTF-8"?>

@@ -2,6 +2,7 @@ package xcodeproj
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/bitrise-io/go-plist"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
@@ -9,7 +10,7 @@ import (
 
 const pbxProjectISA = "PBXProject"
 
-func parsePBXProj(content []byte, base baseProj) (*PBXProj, error) {
+func parsePBXProj(content []byte, base baseProj) (*baseProj, error) {
 	rawProj, format, err := decodePBXProj(content)
 	if err != nil {
 		return nil, err
@@ -48,16 +49,19 @@ func parsePBXProj(content []byte, base baseProj) (*PBXProj, error) {
 	base.targets = targets
 	base.buildConfigurations = buildConfigurations
 	base.defaultConfigurationName = defaultConfigurationName
-
-	return &PBXProj{
-		baseProj:         base,
+	base.filePath = filepath.Join(base.path, pbxProjFileName)
+	base.file = &pbxprojFile{
+		logger:           base.logger,
+		path:             base.path,
 		rawProj:          rawProj,
 		format:           format,
 		originalContents: content,
 		projectID:        projectID,
 		targetAttributes: targetAttributes,
 		buildPhaseIDs:    buildPhaseIDs,
-	}, nil
+	}
+
+	return &base, nil
 }
 
 func decodePBXProj(content []byte) (serialized.Object, int, error) {

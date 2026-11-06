@@ -6,8 +6,8 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
-	"github.com/bitrise-io/go-xcode/v2/internal/filewriter"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/internal/xcproj"
 )
@@ -20,100 +20,56 @@ var (
 	}
 )
 
-// XCProj is a project whose project file is project.xcproj, the JSON format.
-type XCProj struct {
-	baseProj
+// xcprojFile is project.xcproj, the JSON format.
+type xcprojFile struct {
+	fileManager fileutil.FileManager
+	// path is the project bundle's path, which <PROJECT>/ file paths resolve against.
+	path string
 
-	content []byte
-	editor  *xcproj.Editor
-	files   []xcproj.Reference
+	original           []byte
+	configurationNames []string
+	// editor is created by the first edit; until then content returns original.
+	editor *xcproj.Editor
+	files  []xcproj.Reference
 }
 
-func (f Factory) newXCProj(content []byte, projectPath string) (*XCProj, error) {
+func (f Factory) newXCProj(content []byte, projectPath string) (*baseProj, error) {
 	return parseXCProj(content, f.newBaseProj(projectPath))
 }
 
-// ForceCodeSign implements XcodeProj. It leaves legacy-team-id and legacy-provisioning-style
-// alone, as Xcode ignores them.
-func (p *XCProj) ForceCodeSign(opts ForceCodeSignOptions) error {
-	target, ok := p.TargetByName(opts.TargetName)
-	if !ok {
-		return fmt.Errorf("failed to find target with name: %s", opts.TargetName)
-	}
-
-	buildSettings, err := targetBuildSettings(target, opts.Configuration)
-	if err != nil {
-		return err
-	}
-
-	for key, value := range forcedCodeSignBuildSettings(opts) {
-		for _, sdkKey := range keysForAllSDKs(buildSettings, key) {
-			if err := p.SetBuildSetting(opts.TargetName, opts.Configuration, sdkKey, value); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-// SetBuildSetting implements XcodeProj. Only string values are supported.
+// setBuildSetting supports only string values.
 //
 // TODO: a key with a [config=...] condition is rejected here but accepted by
-// PBXProj.SetBuildSetting; make the two formats agree.
-func (p *XCProj) SetBuildSetting(targetName, configurationName, key string, value any) error {
+// pbxprojFile.setBuildSetting; make the two formats agree.
+func (p *xcprojFile) setBuildSetting(target Target, configuration BuildConfiguration, key string, value any) error {
 	stringValue, ok := value.(string)
 	if !ok {
 		return fmt.Errorf("failed to set build setting %s: a %T value is not supported for project.xcproj, only a string", key, value)
 	}
 
-	target, ok := p.TargetByName(targetName)
-	if !ok {
-		return fmt.Errorf("failed to find target with name: %s", targetName)
-	}
-
-	buildSettings, err := targetBuildSettings(target, configurationName)
-	if err != nil {
-		return err
-	}
-
 	if p.editor == nil {
-		configurationNames := make([]string, 0, len(p.buildConfigurations))
-		for _, configuration := range p.buildConfigurations {
-			configurationNames = append(configurationNames, configuration.Name)
-		}
-
-		editor, err := xcproj.NewEditor(p.content, configurationNames)
+		editor, err := xcproj.NewEditor(p.original, p.configurationNames)
 		if err != nil {
 			return err
 		}
 		p.editor = editor
 	}
 
-	if err := p.editor.SetTargetBuildSetting(targetName, configurationName, key, stringValue); err != nil {
-		return err
-	}
-	buildSettings[key] = stringValue
-
-	return nil
+	return p.editor.SetTargetBuildSetting(target.Name, configuration.Name, key, stringValue)
 }
 
-// Save implements XcodeProj.
-func (p *XCProj) Save() error {
-	content := p.content
-	if p.editor != nil {
-		content = p.editor.Content()
-	}
+// setManualSigning leaves legacy-team-id and legacy-provisioning-style alone, as Xcode ignores
+// them.
+func (p *xcprojFile) setManualSigning(Target, string) {}
 
-	pth := filepath.Join(p.path, xcProjFileName)
-	if err := filewriter.WriteKeepingMode(p.fileManager, pth, content, newProjectFileMode); err != nil {
-		return fmt.Errorf("failed to write %s: %w", pth, err)
+func (p *xcprojFile) content() ([]byte, error) {
+	if p.editor == nil {
+		return p.original, nil
 	}
-
-	return nil
+	return p.editor.Content(), nil
 }
 
-func parseXCProj(content []byte, base baseProj) (*XCProj, error) {
+func parseXCProj(content []byte, base baseProj) (*baseProj, error) {
 	project, err := xcproj.Decode(content)
 	if err != nil {
 		return nil, err
@@ -123,11 +79,21 @@ func parseXCProj(content []byte, base baseProj) (*XCProj, error) {
 	base.buildConfigurations = xcprojBuildConfigurations(project.Configurations, project.BuildSettings)
 	base.defaultConfigurationName = project.DefaultConfiguration
 
-	return &XCProj{
-		baseProj: base,
-		content:  content,
-		files:    project.Files,
-	}, nil
+	configurationNames := make([]string, 0, len(base.buildConfigurations))
+	for _, configuration := range base.buildConfigurations {
+		configurationNames = append(configurationNames, configuration.Name)
+	}
+
+	base.filePath = filepath.Join(base.path, xcProjFileName)
+	base.file = &xcprojFile{
+		fileManager:        base.fileManager,
+		path:               base.path,
+		original:           content,
+		configurationNames: configurationNames,
+		files:              project.Files,
+	}
+
+	return &base, nil
 }
 
 func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
