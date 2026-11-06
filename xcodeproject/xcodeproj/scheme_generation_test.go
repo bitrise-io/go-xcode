@@ -19,7 +19,7 @@ func TestXcodeProj_RecreateSchemes(t *testing.T) {
 	require.NoError(t, err)
 
 	// No file manager or user provider: generating schemes must not touch the filesystem.
-	project, err := NewFactory(log.NewLogger(), nil, nil, nil, nil, nil, nil, nil).Parse(content, "test_path/test.xcodeproj")
+	project, err := NewFactory(log.NewLogger(), nil, nil, nil, nil, nil, nil, nil).newPBXProj(content, "test_path/test.xcodeproj")
 	require.NoError(t, err)
 
 	want := []xcscheme.Scheme{

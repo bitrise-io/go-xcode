@@ -1,6 +1,7 @@
 package xcodeproj
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -27,19 +28,42 @@ func testFactory() Factory {
 		fileutil.NewFileManager(),
 		plistutil.NewFileHandler(fileutil.NewFileManager()),
 		pathutil.NewPathModifier(),
-		nil, // path provider is only needed for app icon lookup
+		pathutil.NewPathProvider(),
 		NewUserProvider(),
 		NewDirCreator(),
 	)
 }
 
-func parseFixture(t *testing.T, name string) *XcodeProj {
+func openProjectFiles(t *testing.T, files map[string][]byte) XcodeProj {
+	t.Helper()
+
+	projectPath := writeProjectFiles(t, files)
+	project, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+
+	return project
+}
+
+func writeProjectFiles(t *testing.T, files map[string][]byte) string {
+	t.Helper()
+
+	// Real directory: a faked FileManager would have to return a real *os.File anyway.
+	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
+	require.NoError(t, os.MkdirAll(projectPath, 0755))
+	for name, content := range files {
+		require.NoError(t, os.WriteFile(filepath.Join(projectPath, name), content, 0644))
+	}
+
+	return projectPath
+}
+
+func parseFixture(t *testing.T, name string) *PBXProj {
 	t.Helper()
 
 	content, err := os.ReadFile(filepath.Join("testdata", name))
 	require.NoError(t, err)
 
-	project, err := testFactory().Parse(content, "/projects/XcodeProj.xcodeproj")
+	project, err := testFactory().newPBXProj(content, "/projects/XcodeProj.xcodeproj")
 	require.NoError(t, err)
 
 	return project
@@ -54,8 +78,8 @@ func TestIsXcodeProj(t *testing.T) {
 func TestFactory_Parse(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
-	assert.Equal(t, "XcodeProj", project.Name)
-	assert.Equal(t, "/projects/XcodeProj.xcodeproj", project.Path)
+	assert.Equal(t, "XcodeProj", project.Name())
+	assert.Equal(t, "/projects/XcodeProj.xcodeproj", project.Path())
 
 	var targetNames []string
 	for _, target := range project.Targets() {
@@ -77,48 +101,77 @@ func TestFactory_Parse_optionalTargetKeys(t *testing.T) {
 	require.NotContains(t, string(content), "dependencies")
 	require.NotContains(t, string(content), "buildPhases")
 
-	project, err := testFactory().Parse(content, "/projects/App.xcodeproj")
+	project, err := testFactory().newPBXProj(content, "/projects/App.xcodeproj")
 	require.NoError(t, err)
 
 	require.Len(t, project.Targets(), 1)
 	target := project.Targets()[0]
 	assert.Equal(t, "App", target.Name)
 	assert.Empty(t, target.dependencyTargetIDs)
-	assert.Empty(t, target.buildPhaseIDs)
+	assert.Empty(t, project.buildPhaseIDs[target.ID])
 }
 
 func TestFactory_Parse_invalidContent(t *testing.T) {
-	_, err := testFactory().Parse([]byte("not a plist"), "/projects/App.xcodeproj")
+	_, err := testFactory().newPBXProj([]byte("not a plist"), "/projects/App.xcodeproj")
 	require.Error(t, err)
 }
 
 func TestFactory_Parse_noProjectObject(t *testing.T) {
 	content := []byte("{\n\tobjects = {\n\t\tAA1 = {\n\t\t\tisa = PBXGroup;\n\t\t};\n\t};\n}\n")
 
-	_, err := testFactory().Parse(content, "/projects/App.xcodeproj")
+	_, err := testFactory().newPBXProj(content, "/projects/App.xcodeproj")
 	require.ErrorContains(t, err, "PBXProject")
 }
 
 func TestFactory_Open(t *testing.T) {
-	// Real directory: a faked FileManager would have to return a real *os.File anyway.
-	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
-	require.NoError(t, os.MkdirAll(projectPath, 0755))
-
 	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(filepath.Join(projectPath, "project.pbxproj"), content, 0644))
+	projectPath := writeProjectFiles(t, map[string][]byte{pbxProjFileName: content})
 
 	project, err := testFactory().Open(projectPath)
 	require.NoError(t, err)
 
-	assert.Equal(t, "App", project.Name)
-	assert.Equal(t, projectPath, project.Path)
+	assert.Equal(t, "App", project.Name())
+	assert.Equal(t, projectPath, project.Path())
 	require.Len(t, project.Targets(), 1)
+}
+
+func TestFactory_Open_bothProjectFiles(t *testing.T) {
+	pbxProj, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
+	require.NoError(t, err)
+	projectPath := writeProjectFiles(t, map[string][]byte{
+		pbxProjFileName: pbxProj,
+		xcProjFileName:  []byte("not read"),
+	})
+
+	project, err := testFactory().Open(projectPath)
+	require.ErrorContains(t, err, "found both project.pbxproj and project.xcproj")
+	assert.True(t, project == nil, "got a non-nil %T", project)
 }
 
 func TestFactory_Open_missingProject(t *testing.T) {
 	_, err := testFactory().Open(filepath.Join(t.TempDir(), "Missing.xcodeproj"))
+	require.ErrorContains(t, err, "found neither project.pbxproj nor project.xcproj")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestFactory_Open_unreadableProjectFile(t *testing.T) {
+	projectPath := writeProjectFiles(t, map[string][]byte{})
+	require.NoError(t, os.Mkdir(filepath.Join(projectPath, pbxProjFileName), 0755))
+
+	project, err := testFactory().Open(projectPath)
+	require.ErrorContains(t, err, pbxProjFileName)
+	assert.NotErrorIs(t, err, fs.ErrNotExist)
+	assert.True(t, project == nil, "got a non-nil %T", project)
+}
+
+func TestFactory_Open_invalidProjectReturnsNilProject(t *testing.T) {
+	projectPath := writeProjectFiles(t, map[string][]byte{pbxProjFileName: []byte("{}")})
+
+	project, err := testFactory().Open(projectPath)
 	require.Error(t, err)
+	// Not assert.Nil: it also accepts an interface holding a nil pointer, which is what this guards.
+	assert.True(t, project == nil, "got a non-nil %T", project)
 }
 
 func TestXcodeProj_Target(t *testing.T) {
@@ -160,7 +213,7 @@ func TestXcodeProj_DependentTargetsOfTarget(t *testing.T) {
 }
 
 func TestXcodeProj_DependentTargetsOfTarget_unresolvableDependencyIsSkipped(t *testing.T) {
-	project := &XcodeProj{
+	project := &baseProj{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B", "GONE"}},
@@ -172,7 +225,7 @@ func TestXcodeProj_DependentTargetsOfTarget_unresolvableDependencyIsSkipped(t *t
 }
 
 func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
-	project := &XcodeProj{
+	project := &baseProj{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B"}},
@@ -185,7 +238,7 @@ func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
 }
 
 func TestXcodeProj_DependentTargetsOfTarget_sharedDependency(t *testing.T) {
-	project := &XcodeProj{
+	project := &baseProj{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B", "C"}},
@@ -197,38 +250,6 @@ func TestXcodeProj_DependentTargetsOfTarget_sharedDependency(t *testing.T) {
 	}
 
 	assert.Equal(t, []string{"B", "D", "E", "C"}, targetNames(project.DependentTargetsOfTarget(project.targets[0])))
-}
-
-func TestXcodeProj_TargetDevelopmentTeam(t *testing.T) {
-	t.Run("target with a development team", func(t *testing.T) {
-		project := parseFixture(t, "minimal.pbxproj")
-
-		team, ok := project.TargetDevelopmentTeam("AA00000000000000000000E1")
-		require.True(t, ok)
-		assert.Equal(t, "TEAM123456", team)
-	})
-
-	t.Run("target has attributes but no development team", func(t *testing.T) {
-		project := parseFixture(t, "ios-sample.pbxproj")
-
-		_, ok := project.TargetDevelopmentTeam(uiTestTargetID)
-		assert.False(t, ok)
-	})
-
-	t.Run("target absent from TargetAttributes", func(t *testing.T) {
-		project := parseFixture(t, "without-target-attributes.pbxproj")
-
-		_, ok := project.TargetDevelopmentTeam("13BD6332256BE7BF00F72361")
-		assert.False(t, ok)
-	})
-
-	t.Run("project without TargetAttributes at all", func(t *testing.T) {
-		project := parseFixture(t, "minimal.pbxproj")
-		project.targetAttributes = nil
-
-		_, ok := project.TargetDevelopmentTeam("AA00000000000000000000E1")
-		assert.False(t, ok)
-	})
 }
 
 func targetNames(targets []Target) []string {

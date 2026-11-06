@@ -2,9 +2,18 @@ package model3
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 )
+
+// Repetitions named otherwise come from running a test a fixed number of times, where every run counts.
+const retryRepetitionPrefix = "Retry "
+
+type argumentRuns struct {
+	name string
+	runs []TestNode
+}
 
 // Convert converts TestData into a TestSummary and a list of warnings.
 func Convert(data *TestData) (*TestSummary, []string, error) {
@@ -93,6 +102,14 @@ func extractTestCases(nodes []TestNode, fallbackName string) ([]TestCaseWithRetr
 		}
 		warnings = append(warnings, retryWarnings...)
 
+		argumentRetries, argumentsResult, argumentWarnings := extractArgumentRetries(testCaseNode, fallbackName)
+		warnings = append(warnings, argumentWarnings...)
+		if len(argumentRetries) > 0 {
+			retries = argumentRetries
+			// The test case's own result can stay failed after a retry passes.
+			testCase.Result = argumentsResult
+		}
+
 		testCases = append(testCases, TestCaseWithRetries{
 			TestCase: testCase,
 			Retries:  retries,
@@ -116,14 +133,14 @@ func extractDuration(text string) time.Duration {
 	return duration
 }
 
-func extractFailureMessageFromTestPlanConfigs(testPlanConfigNodes []TestNode) (string, []string) {
+func extractFailureMessageFromChildren(nodes []TestNode) (string, []string) {
 	var warnings []string
 	failureMessage := ""
 
-	for _, testPlanConfigNode := range testPlanConfigNodes {
-		msg, wrns := extractFailureMessage(testPlanConfigNode)
+	for _, node := range nodes {
+		msg, wrns := extractFailureMessage(node)
 		if msg != "" {
-			failureMessage += fmt.Sprintf("%s: %s\n", testPlanConfigNode.Name, msg)
+			failureMessage += fmt.Sprintf("%s: %s\n", node.Name, msg)
 		}
 		if wrns != nil {
 			warnings = append(warnings, wrns...)
@@ -143,8 +160,8 @@ func extractFailureMessage(testNode TestNode) (string, []string) {
 	if lastChild.Type == TestNodeTypeRepetition {
 		return extractFailureMessage(lastChild)
 	}
-	if lastChild.Type == TestNodeTypeTestPlanConfig {
-		return extractFailureMessageFromTestPlanConfigs(testNode.Children)
+	if lastChild.Type == TestNodeTypeTestPlanConfig || lastChild.Type == TestNodeTypeArguments {
+		return extractFailureMessageFromChildren(testNode.Children)
 	}
 
 	var warnings []string
@@ -196,13 +213,6 @@ func extractTestCase(testNode TestNode, customNodeIdentifier, customName, fallba
 		name = customName
 	}
 
-	className := strings.Split(nodeIdentifier, "/")[0]
-	if className == "" {
-		// In rare cases the identifier is an empty string, so we need to use the test suite name which is the
-		// same as the first part of the identifier in normal cases.
-		className = fallbackClassName
-	}
-
 	message, failureMessageWarnings := extractFailureMessage(testNode)
 	if len(failureMessageWarnings) > 0 {
 		warnings = append(warnings, failureMessageWarnings...)
@@ -210,10 +220,148 @@ func extractTestCase(testNode TestNode, customNodeIdentifier, customName, fallba
 
 	return TestCase{
 		Name:       name,
-		ClassName:  className,
+		ClassName:  extractClassName(nodeIdentifier, fallbackClassName),
 		Identifier: nodeIdentifier,
 		Time:       extractDuration(testNode.Duration),
 		Result:     testNode.Result,
 		Message:    message,
 	}, warnings
+}
+
+func extractClassName(nodeIdentifier, fallbackClassName string) string {
+	className := strings.Split(nodeIdentifier, "/")[0]
+	if className == "" {
+		// In rare cases the identifier is an empty string, so we need to use the test suite name which is the
+		// same as the first part of the identifier in normal cases.
+		className = fallbackClassName
+	}
+
+	return className
+}
+
+func extractArgumentRetries(testNode TestNode, fallbackName string) ([]TestCase, TestResult, []string) {
+	var arguments []argumentRuns
+	hasRepetitions := false
+	retryMode := false
+
+	for _, argument := range testNode.Children {
+		if argument.Type != TestNodeTypeArguments {
+			continue
+		}
+
+		var runs []TestNode
+		for _, repetition := range argument.Children {
+			if repetition.Type != TestNodeTypeRepetition {
+				continue
+			}
+			if strings.HasPrefix(repetition.Name, retryRepetitionPrefix) {
+				retryMode = true
+			}
+			runs = append(runs, repetition)
+		}
+
+		if len(runs) > 0 {
+			hasRepetitions = true
+		} else {
+			runs = []TestNode{argument}
+		}
+		arguments = append(arguments, argumentRuns{name: argument.Name, runs: runs})
+	}
+
+	if !hasRepetitions {
+		return nil, "", nil
+	}
+
+	attemptCount := 0
+	for _, argument := range arguments {
+		attemptCount = max(attemptCount, len(argument.runs))
+	}
+
+	var results []TestResult
+	for i, argument := range arguments {
+		results = append(results, argumentResult(argument.runs, retryMode))
+		if !retryMode {
+			continue
+		}
+
+		// In retry mode, the last attempt must carry every argument's final outcome.
+		carried := argument.runs[len(argument.runs)-1]
+		carried.Duration = ""
+		for len(arguments[i].runs) < attemptCount {
+			arguments[i].runs = append(arguments[i].runs, carried)
+		}
+	}
+
+	var retries []TestCase
+	var warnings []string
+	for i := range attemptCount {
+		retry, attemptWarnings := mergeArgumentAttempt(testNode, arguments, i, fallbackName)
+		warnings = append(warnings, attemptWarnings...)
+		retries = append(retries, retry)
+	}
+
+	return retries, mergeResults(results), warnings
+}
+
+func argumentResult(runs []TestNode, retryMode bool) TestResult {
+	last := runs[len(runs)-1].Result
+	if retryMode {
+		return last
+	}
+
+	failed := slices.ContainsFunc(runs, func(run TestNode) bool {
+		return run.Result == TestResultFailed
+	})
+	if failed {
+		return TestResultFailed
+	}
+
+	return last
+}
+
+func mergeArgumentAttempt(testNode TestNode, arguments []argumentRuns, index int, fallbackName string) (TestCase, []string) {
+	var message string
+	var warnings []string
+	// Arguments run in parallel, so the slowest one is the time of the attempt.
+	var duration time.Duration
+	var results []TestResult
+
+	for _, argument := range arguments {
+		if index >= len(argument.runs) {
+			continue
+		}
+		attempt := argument.runs[index]
+
+		msg, msgWarnings := extractFailureMessage(attempt)
+		warnings = append(warnings, msgWarnings...)
+		if msg != "" {
+			message += fmt.Sprintf("%s: %s\n", argument.name, msg)
+		}
+
+		duration = max(duration, extractDuration(attempt.Duration))
+		results = append(results, attempt.Result)
+	}
+
+	return TestCase{
+		Name:       testNode.Name,
+		ClassName:  extractClassName(testNode.Identifier, fallbackName),
+		Identifier: testNode.Identifier,
+		Time:       duration,
+		Result:     mergeResults(results),
+		Message:    message,
+	}, warnings
+}
+
+func mergeResults(results []TestResult) TestResult {
+	if slices.Contains(results, TestResultFailed) {
+		return TestResultFailed
+	}
+	mixed := slices.ContainsFunc(results, func(result TestResult) bool {
+		return result != results[0]
+	})
+	if mixed {
+		return TestResultPassed
+	}
+
+	return results[0]
 }

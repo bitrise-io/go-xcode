@@ -299,3 +299,303 @@ func TestConversion(t *testing.T) {
 		})
 	}
 }
+
+func TestConversion_repetitions(t *testing.T) {
+	const (
+		identifier = "ProductTests/measurements(asset:)"
+		name       = "measurements(asset:)"
+		className  = "ProductTests"
+	)
+
+	tests := []struct {
+		name     string
+		testCase TestNode
+		want     TestCaseWithRetries
+	}{
+		{
+			name: "retried test case without arguments",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultPassed, Duration: "3s",
+				Children: []TestNode{
+					repetition("First Run", TestResultFailed, "1s", "boom"),
+					repetition("Retry 1", TestResultPassed, "2s", ""),
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultPassed, 3*time.Second, ""),
+				Retries: []TestCase{
+					testCase(TestResultFailed, time.Second, "boom"),
+					testCase(TestResultPassed, 2*time.Second, ""),
+				},
+			},
+		},
+		{
+			name: "parametrized test passes on retry",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "5s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultFailed, "",
+						repetition("First Run", TestResultFailed, "1s", "shirts failed"),
+						repetition("Retry 1", TestResultPassed, "2s", ""),
+					),
+					arguments(".dresses", TestResultPassed, "",
+						repetition("First Run", TestResultPassed, "3s", ""),
+					),
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultPassed, 5*time.Second, ""),
+				Retries: []TestCase{
+					testCase(TestResultFailed, 3*time.Second, ".shirts: shirts failed\n"),
+					testCase(TestResultPassed, 2*time.Second, ""),
+				},
+			},
+		},
+		{
+			name: "parametrized test fails on every retry",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "3s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultFailed, "",
+						repetition("First Run", TestResultFailed, "1s", "first"),
+						repetition("Retry 1", TestResultFailed, "1s", "second"),
+					),
+					arguments(".dresses", TestResultPassed, "",
+						repetition("First Run", TestResultPassed, "1s", ""),
+					),
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultFailed, 3*time.Second, ".shirts: second\n"),
+				Retries: []TestCase{
+					testCase(TestResultFailed, time.Second, ".shirts: first\n"),
+					testCase(TestResultFailed, time.Second, ".shirts: second\n"),
+				},
+			},
+		},
+		{
+			name: "parametrized test run a fixed number of times fails when any run fails",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "2s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultFailed, "",
+						repetition("Repetition 1", TestResultFailed, "1s", "boom"),
+						repetition("Repetition 2", TestResultPassed, "1s", ""),
+					),
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultFailed, 2*time.Second, ""),
+				Retries: []TestCase{
+					testCase(TestResultFailed, time.Second, ".shirts: boom\n"),
+					testCase(TestResultPassed, time.Second, ""),
+				},
+			},
+		},
+		{
+			name: "parametrized test without repetitions keeps its own result",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "2s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultFailed, "boom"),
+					arguments(".dresses", TestResultPassed, ""),
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultFailed, 2*time.Second, ".shirts: boom\n"),
+			},
+		},
+		{
+			name: "retried test carries an argument without repetitions into every attempt",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "6s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultFailed, "",
+						repetition("First Run", TestResultFailed, "1s", "boom"),
+						repetition("Retry 1", TestResultPassed, "1s", ""),
+					),
+					{Type: TestNodeTypeArguments, Name: ".dresses", Result: TestResultPassed, Duration: "4s"},
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultPassed, 6*time.Second, ""),
+				Retries: []TestCase{
+					testCase(TestResultFailed, 4*time.Second, ".shirts: boom\n"),
+					testCase(TestResultPassed, time.Second, ""),
+				},
+			},
+		},
+		{
+			name: "failed argument without repetitions fails the retried test",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "6s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultFailed, "",
+						repetition("First Run", TestResultFailed, "1s", "shirts failed"),
+						repetition("Retry 1", TestResultPassed, "1s", ""),
+					),
+					{
+						Type: TestNodeTypeArguments, Name: ".dresses", Result: TestResultFailed, Duration: "4s",
+						Children: []TestNode{{Type: TestNodeTypeFailureMessage, Name: "dresses failed"}},
+					},
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultFailed, 6*time.Second, ".dresses: dresses failed\n"),
+				Retries: []TestCase{
+					testCase(TestResultFailed, 4*time.Second, ".shirts: shirts failed\n.dresses: dresses failed\n"),
+					testCase(TestResultFailed, time.Second, ".dresses: dresses failed\n"),
+				},
+			},
+		},
+		{
+			name: "arguments retried a different number of times",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "9s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultFailed, "",
+						repetition("First Run", TestResultFailed, "1s", "shirts first"),
+						repetition("Retry 1", TestResultFailed, "1s", "shirts second"),
+						repetition("Retry 2", TestResultPassed, "1s", ""),
+					),
+					arguments(".dresses", TestResultFailed, "",
+						repetition("First Run", TestResultFailed, "2s", "dresses first"),
+						repetition("Retry 1", TestResultPassed, "2s", ""),
+					),
+					arguments(".shoes", TestResultPassed, "",
+						repetition("First Run", TestResultPassed, "3s", ""),
+					),
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultPassed, 9*time.Second, ""),
+				Retries: []TestCase{
+					testCase(TestResultFailed, 3*time.Second, ".shirts: shirts first\n.dresses: dresses first\n"),
+					testCase(TestResultFailed, 2*time.Second, ".shirts: shirts second\n"),
+					testCase(TestResultPassed, time.Second, ""),
+				},
+			},
+		},
+		{
+			name: "argument without repetitions joins only the first run of a test run a fixed number of times",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultFailed, Duration: "6s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultPassed, "",
+						repetition("Repetition 1", TestResultPassed, "1s", ""),
+						repetition("Repetition 2", TestResultPassed, "1s", ""),
+						repetition("Repetition 3", TestResultPassed, "1s", ""),
+					),
+					{
+						Type: TestNodeTypeArguments, Name: ".dresses", Result: TestResultFailed, Duration: "4s",
+						Children: []TestNode{{Type: TestNodeTypeFailureMessage, Name: "dresses failed"}},
+					},
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultFailed, 6*time.Second, ".dresses: dresses failed\n"),
+				Retries: []TestCase{
+					testCase(TestResultFailed, 4*time.Second, ".dresses: dresses failed\n"),
+					testCase(TestResultPassed, time.Second, ""),
+					testCase(TestResultPassed, time.Second, ""),
+				},
+			},
+		},
+		{
+			name: "attempt with passed and skipped arguments is passed",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultPassed, Duration: "2s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultPassed, "",
+						repetition("Repetition 1", TestResultPassed, "1s", ""),
+					),
+					arguments(".dresses", TestResultSkipped, "",
+						repetition("Repetition 1", TestResultSkipped, "1s", ""),
+					),
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultPassed, 2*time.Second, ""),
+				Retries: []TestCase{
+					testCase(TestResultPassed, time.Second, ""),
+				},
+			},
+		},
+		{
+			name: "attempt with only skipped arguments is skipped",
+			testCase: TestNode{
+				Type: TestNodeTypeTestCase, Identifier: identifier, Name: name, Result: TestResultSkipped, Duration: "2s",
+				Children: []TestNode{
+					arguments(".shirts", TestResultSkipped, "",
+						repetition("Repetition 1", TestResultSkipped, "1s", ""),
+					),
+					arguments(".dresses", TestResultSkipped, "",
+						repetition("Repetition 1", TestResultSkipped, "1s", ""),
+					),
+				},
+			},
+			want: TestCaseWithRetries{
+				TestCase: testCase(TestResultSkipped, 2*time.Second, ""),
+				Retries: []TestCase{
+					testCase(TestResultSkipped, time.Second, ""),
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			data := &TestData{
+				TestNodes: []TestNode{
+					{
+						Type: TestNodeTypeTestPlan,
+						Name: "TP1",
+						Children: []TestNode{
+							{
+								Type: TestNodeTypeUnitTestBundle,
+								Name: "TB1",
+								Children: []TestNode{
+									{Type: TestNodeTypeTestSuite, Name: className, Children: []TestNode{test.testCase}},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			got, _, err := Convert(data)
+			require.NoError(t, err)
+
+			require.Equal(t, []TestCaseWithRetries{test.want}, got.TestPlans[0].TestBundles[0].TestSuites[0].TestCases)
+		})
+	}
+}
+
+func testCase(result TestResult, duration time.Duration, message string) TestCase {
+	return TestCase{
+		Name:       "measurements(asset:)",
+		ClassName:  "ProductTests",
+		Identifier: "ProductTests/measurements(asset:)",
+		Time:       duration,
+		Result:     result,
+		Message:    message,
+	}
+}
+
+func arguments(name string, result TestResult, failureMessage string, repetitions ...TestNode) TestNode {
+	node := TestNode{Type: TestNodeTypeArguments, Name: name, Result: result, Children: repetitions}
+	if failureMessage != "" {
+		node.Children = append(node.Children, TestNode{Type: TestNodeTypeFailureMessage, Name: failureMessage})
+	}
+
+	return node
+}
+
+func repetition(name string, result TestResult, duration, failureMessage string) TestNode {
+	node := TestNode{Type: TestNodeTypeRepetition, Name: name, Result: result, Duration: duration}
+	if failureMessage != "" {
+		node.Children = []TestNode{{Type: TestNodeTypeFailureMessage, Name: failureMessage}}
+	}
+
+	return node
+}

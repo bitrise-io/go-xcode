@@ -248,6 +248,58 @@ German: swift_testingTests.swift:20: Expectation failed: true == false - // This
 `,
 		)
 	})
+
+	t.Run("xcresult3-device-configuration-tests.xcresult", func(t *testing.T) {
+		xcresultPath := setupTestData(t, "xcresult3-device-configuration-tests.xcresult")
+		t.Log("xcresultPath: ", xcresultPath)
+
+		c := Converter{xcresultPth: xcresultPath}
+		junitXML, err := c.Convert()
+		require.NoError(t, err)
+
+		// testLaunch() runs for each UI configuration and fails in all of them, on the first run and on both retries.
+		var launchTests []testreport.TestCase
+		for _, testSuite := range junitXML.TestSuites {
+			for _, testCase := range testSuite.TestCases {
+				if testCase.ClassName == "DarkAndLightModeUITestsLaunchTests" {
+					launchTests = append(launchTests, testCase)
+				}
+			}
+		}
+
+		require.Len(t, launchTests, 3)
+		for _, testCase := range launchTests {
+			require.Equal(t, "testLaunch()", testCase.Name)
+			require.NotNil(t, testCase.Failure)
+			// The configuration names and the file prefix of the message vary with the Xcode version.
+			require.Regexp(t, `^(?:(?:Dark|Light) Appearance, [^:]+: .*XCTAssertTrue failed\n){4}$`, testCase.Failure.Value)
+		}
+	})
+
+	t.Run("xcresult3-flaky-ui-configuration.xcresult", func(t *testing.T) {
+		xcresultPath := setupTestData(t, "xcresult3-flaky-ui-configuration.xcresult")
+		t.Log("xcresultPath: ", xcresultPath)
+
+		c := Converter{xcresultPth: xcresultPath}
+		junitXML, err := c.Convert()
+		require.NoError(t, err)
+
+		// testLaunch() fails in one UI configuration on the first run and passes there on the retry,
+		// while the test case itself keeps a Failed result.
+		require.Len(t, junitXML.TestSuites, 1)
+		testCases := junitXML.TestSuites[0].TestCases
+		require.Len(t, testCases, 2)
+
+		require.Equal(t, "testLaunch()", testCases[0].Name)
+		require.Equal(t, "BullsEyeLaunchTests", testCases[0].ClassName)
+		require.NotNil(t, testCases[0].Failure)
+		require.Regexp(t, `^Light Appearance, Portrait: .*XCTAssertTrue failed`, testCases[0].Failure.Value)
+
+		require.Equal(t, "testLaunch()", testCases[1].Name)
+		require.Equal(t, "BullsEyeLaunchTests", testCases[1].ClassName)
+		require.Nil(t, testCases[1].Failure)
+		require.Nil(t, testCases[1].Skipped)
+	})
 }
 
 func BenchmarkConverter_XML(b *testing.B) {
@@ -296,4 +348,93 @@ func TestParseTestCase_identifierProperty(t *testing.T) {
 			}, properties)
 		})
 	}
+}
+
+func TestParseTestBundle_parametrizedRetries(t *testing.T) {
+	data := &model3.TestData{
+		TestNodes: []model3.TestNode{
+			{
+				Type: model3.TestNodeTypeTestPlan,
+				Name: "TP1",
+				Children: []model3.TestNode{
+					{
+						Type: model3.TestNodeTypeUnitTestBundle,
+						Name: "ProductTests",
+						Children: []model3.TestNode{
+							{
+								Type: model3.TestNodeTypeTestSuite,
+								Name: "ProductTests",
+								Children: []model3.TestNode{
+									{
+										Type:       model3.TestNodeTypeTestCase,
+										Identifier: "ProductTests/measurements(asset:)",
+										Name:       "measurements(asset:)",
+										Result:     model3.TestResultFailed,
+										Children: []model3.TestNode{
+											{
+												Type:   model3.TestNodeTypeArguments,
+												Name:   ".shirts",
+												Result: model3.TestResultFailed,
+												Children: []model3.TestNode{
+													{
+														Type:     model3.TestNodeTypeRepetition,
+														Name:     "First Run",
+														Result:   model3.TestResultFailed,
+														Duration: "1s",
+														Children: []model3.TestNode{{Type: model3.TestNodeTypeFailureMessage, Name: "boom"}},
+													},
+													{Type: model3.TestNodeTypeRepetition, Name: "Retry 1", Result: model3.TestResultPassed, Duration: "2s"},
+												},
+											},
+											{
+												Type:   model3.TestNodeTypeArguments,
+												Name:   ".dresses",
+												Result: model3.TestResultPassed,
+												Children: []model3.TestNode{
+													{Type: model3.TestNodeTypeRepetition, Name: "First Run", Result: model3.TestResultPassed, Duration: "1s"},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	summary, _, err := model3.Convert(data)
+	require.NoError(t, err)
+
+	suite := parseTestBundle(summary.TestPlans[0].TestBundles[0])
+	report, err := connectAttachmentsToTestCases(testreport.TestReport{TestSuites: []testreport.TestSuite{suite}}, map[string][]string{
+		"ProductTests/measurements(asset:) (1)": {"first.png"},
+		"ProductTests/measurements(asset:) (2)": {"second.png"},
+	})
+	require.NoError(t, err)
+
+	require.Equal(t, []testreport.TestSuite{
+		{
+			Name:     "ProductTests",
+			Tests:    2,
+			Failures: 1,
+			Time:     3,
+			TestCases: []testreport.TestCase{
+				{
+					Name:       "measurements(asset:)",
+					ClassName:  "ProductTests",
+					Time:       1,
+					Failure:    &testreport.Failure{Value: ".shirts: boom\n"},
+					Properties: &testreport.Properties{Property: []testreport.Property{{Name: "attachment_0", Value: "first.png"}}},
+				},
+				{
+					Name:       "measurements(asset:)",
+					ClassName:  "ProductTests",
+					Time:       2,
+					Properties: &testreport.Properties{Property: []testreport.Property{{Name: "attachment_0", Value: "second.png"}}},
+				},
+			},
+		},
+	}, report.TestSuites)
 }

@@ -9,7 +9,7 @@ import (
 
 const pbxProjectISA = "PBXProject"
 
-func parsePBXProj(content []byte) (*XcodeProj, error) {
+func parsePBXProj(content []byte, base baseProj) (*PBXProj, error) {
 	rawProj, format, err := decodePBXProj(content)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func parsePBXProj(content []byte) (*XcodeProj, error) {
 		return nil, fmt.Errorf("failed to parse project build configuration list: %w", err)
 	}
 
-	targets, err := parseTargets(rawProject, objects)
+	targets, buildPhaseIDs, err := parseTargets(rawProject, objects)
 	if err != nil {
 		return nil, err
 	}
@@ -45,15 +45,18 @@ func parsePBXProj(content []byte) (*XcodeProj, error) {
 		targetAttributes, _ = attributes.Object("TargetAttributes")
 	}
 
-	return &XcodeProj{
-		rawProj:                  rawProj,
-		format:                   format,
-		originalContents:         content,
-		projectID:                projectID,
-		targets:                  targets,
-		buildConfigurations:      buildConfigurations,
-		defaultConfigurationName: defaultConfigurationName,
-		targetAttributes:         targetAttributes,
+	base.targets = targets
+	base.buildConfigurations = buildConfigurations
+	base.defaultConfigurationName = defaultConfigurationName
+
+	return &PBXProj{
+		baseProj:         base,
+		rawProj:          rawProj,
+		format:           format,
+		originalContents: content,
+		projectID:        projectID,
+		targetAttributes: targetAttributes,
+		buildPhaseIDs:    buildPhaseIDs,
 	}, nil
 }
 
@@ -88,28 +91,34 @@ func findProject(objects serialized.Object) (string, serialized.Object, error) {
 	return "", nil, fmt.Errorf("failed to find PBXProject in project.pbxproj")
 }
 
-func parseTargets(rawProject, objects serialized.Object) ([]Target, error) {
+// parseTargets returns the project's targets and the build phase IDs of each, by target ID.
+func parseTargets(rawProject, objects serialized.Object) ([]Target, map[string][]string, error) {
 	targetIDs, ok := rawProject.StringSlice("targets")
 	if !ok {
-		return nil, fmt.Errorf("project has no targets")
+		return nil, nil, fmt.Errorf("project has no targets")
 	}
 
 	var targets []Target
+	buildPhaseIDs := map[string][]string{}
 	for _, targetID := range targetIDs {
-		// The targets list can reference targets that were removed.
-		if _, ok := objects.Object(targetID); !ok {
+		rawTarget, ok := objects.Object(targetID)
+		if !ok {
+			// The targets list can reference targets that were removed.
 			continue
 		}
 
 		target, err := parseTarget(targetID, objects)
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse target %s: %w", targetID, err)
+			return nil, nil, fmt.Errorf("failed to parse target %s: %w", targetID, err)
 		}
 
 		targets = append(targets, target)
+		if ids, ok := rawTarget.StringSlice("buildPhases"); ok {
+			buildPhaseIDs[targetID] = ids
+		}
 	}
 
-	return targets, nil
+	return targets, buildPhaseIDs, nil
 }
 
 // removeCustomInfoObject strips the byte positions UnmarshalWithCustomAnnotation stores under

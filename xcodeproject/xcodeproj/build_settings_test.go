@@ -17,19 +17,19 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func projectWithProvider(t *testing.T, provider BuildSettingsProvider) *XcodeProj {
+func projectWithProvider(t *testing.T, provider BuildSettingsProvider) *baseProj {
 	t.Helper()
 
-	return &XcodeProj{
-		Name:             "App",
-		Path:             "/projects/App.xcodeproj",
+	return &baseProj{
+		name:             "App",
+		path:             "/projects/App.xcodeproj",
 		logger:           log.NewLogger(),
 		buildSettings:    provider,
 		plistFileHandler: plistmocks.NewFileHandler(t),
 	}
 }
 
-func projectWithBuildSettings(t *testing.T, settings serialized.Object) *XcodeProj {
+func projectWithBuildSettings(t *testing.T, settings serialized.Object) *baseProj {
 	t.Helper()
 
 	provider := mocks.NewBuildSettingsProvider(t)
@@ -39,15 +39,15 @@ func projectWithBuildSettings(t *testing.T, settings serialized.Object) *XcodePr
 }
 
 // expectPlistRead makes reading the plist at pth, relative to the project directory, return data and err.
-func expectPlistRead(project *XcodeProj, pth string, data plistutil.PlistData, err error) {
+func expectPlistRead(project *baseProj, pth string, data plistutil.PlistData, err error) {
 	handler := project.plistFileHandler.(*plistmocks.FileHandler)
-	handler.On("Read", filepath.Join(filepath.Dir(project.Path), pth)).Return(data, plist.XMLFormat, err).Once()
+	handler.On("Read", filepath.Join(filepath.Dir(project.Path()), pth)).Return(data, plist.XMLFormat, err).Once()
 }
 
 func TestXcodeProj_TargetBuildSettings(t *testing.T) {
 	provider := mocks.NewBuildSettingsProvider(t)
 	project := projectWithProvider(t, provider)
-	provider.On("TargetBuildSettings", project.Path, "App", "Release", []string{"-destination", "generic/platform=iOS"}).
+	provider.On("TargetBuildSettings", project.Path(), "App", "Release", []string{"-destination", "generic/platform=iOS"}).
 		Return(serialized.Object{"SDKROOT": "iphoneos"}, nil).Once()
 
 	settings, err := project.TargetBuildSettings("App", "Release", "-destination", "generic/platform=iOS")
@@ -170,7 +170,7 @@ func TestXcodeProj_TargetInfoplistPath(t *testing.T) {
 
 		pth, err := project.TargetInfoplistPath("App", "Release")
 		require.NoError(t, err)
-		assert.Equal(t, filepath.Join(filepath.Dir(project.Path), "App", "Info.plist"), pth)
+		assert.Equal(t, filepath.Join(filepath.Dir(project.Path()), "App", "Info.plist"), pth)
 	})
 
 	t.Run("absolute paths are returned unchanged", func(t *testing.T) {

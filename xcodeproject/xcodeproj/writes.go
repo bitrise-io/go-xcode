@@ -12,8 +12,8 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// newPBXProjFileMode is the mode of a newly created project.pbxproj; an existing one keeps its mode.
-const newPBXProjFileMode = 0644
+// newProjectFileMode is the mode of a newly created project file; an existing one keeps its mode.
+const newProjectFileMode = 0644
 
 // ForceCodeSignOptions are the manual code signing settings ForceCodeSign applies.
 type ForceCodeSignOptions struct {
@@ -24,11 +24,10 @@ type ForceCodeSignOptions struct {
 	ProvisioningProfileUUID string
 }
 
-// ForceCodeSign switches a target configuration to manual code signing. Call Save to persist it.
-// It sets CODE_SIGN_STYLE, DEVELOPMENT_TEAM, CODE_SIGN_IDENTITY and PROVISIONING_PROFILE, including
-// their existing [sdk=...] variants, clears PROVISIONING_PROFILE_SPECIFIER, and updates the
-// target's TargetAttributes entry if there is one.
-func (p *XcodeProj) ForceCodeSign(opts ForceCodeSignOptions) error {
+// ForceCodeSign implements XcodeProj. It sets CODE_SIGN_STYLE, DEVELOPMENT_TEAM, CODE_SIGN_IDENTITY
+// and PROVISIONING_PROFILE, including their existing [sdk=...] variants, clears
+// PROVISIONING_PROFILE_SPECIFIER, and updates the target's TargetAttributes entry if there is one.
+func (p *PBXProj) ForceCodeSign(opts ForceCodeSignOptions) error {
 	target, ok := p.TargetByName(opts.TargetName)
 	if !ok {
 		return fmt.Errorf("failed to find target with name: %s", opts.TargetName)
@@ -39,15 +38,10 @@ func (p *XcodeProj) ForceCodeSign(opts ForceCodeSignOptions) error {
 		return err
 	}
 
-	forced := map[string]string{
-		"CODE_SIGN_STYLE":                "Manual",
-		"DEVELOPMENT_TEAM":               opts.DevelopmentTeam,
-		"CODE_SIGN_IDENTITY":             opts.CodesignIdentity,
-		"PROVISIONING_PROFILE_SPECIFIER": "",
-		"PROVISIONING_PROFILE":           opts.ProvisioningProfileUUID,
-	}
-	for key, value := range forced {
-		writeBuildSettingForAllSDKs(buildSettings, key, value)
+	for key, value := range forcedCodeSignBuildSettings(opts) {
+		for _, sdkKey := range keysForAllSDKs(buildSettings, key) {
+			buildSettings[sdkKey] = value
+		}
 	}
 
 	if attributes, ok := p.targetAttributes.Object(target.ID); ok {
@@ -59,10 +53,9 @@ func (p *XcodeProj) ForceCodeSign(opts ForceCodeSignOptions) error {
 	return nil
 }
 
-// SetBuildSetting sets a build setting of a target configuration, such as CURRENT_PROJECT_VERSION or
-// PRODUCT_BUNDLE_IDENTIFIER, in the project file. Several settings can be set before one Save
-// persists them. Targets fetched earlier see the change, as they share the build settings.
-func (p *XcodeProj) SetBuildSetting(targetName, configurationName, key string, value any) error {
+// SetBuildSetting implements XcodeProj. It writes the value into the configuration's
+// XCBuildConfiguration, whose build settings targets fetched earlier share.
+func (p *PBXProj) SetBuildSetting(targetName, configurationName, key string, value any) error {
 	target, ok := p.TargetByName(targetName)
 	if !ok {
 		return fmt.Errorf("failed to find target with name: %s", targetName)
@@ -78,10 +71,11 @@ func (p *XcodeProj) SetBuildSetting(targetName, configurationName, key string, v
 	return nil
 }
 
-// Save writes project.pbxproj, rewriting only the changed objects so the rest of the file stays
-// byte for byte. If that is not possible, it writes the whole file and logs a warning.
-func (p *XcodeProj) Save() error {
-	pth := filepath.Join(p.Path, pbxProjFileName)
+// Save implements XcodeProj. It rewrites only the changed objects of project.pbxproj, so the rest
+// of the file stays byte for byte. If that is not possible, it writes the whole file and logs a
+// warning.
+func (p *PBXProj) Save() error {
+	pth := filepath.Join(p.path, pbxProjFileName)
 
 	content, err := p.perObjectModify()
 	if err != nil {
@@ -93,7 +87,7 @@ func (p *XcodeProj) Save() error {
 		}
 	}
 
-	if err := filewriter.WriteKeepingMode(p.fileManager, pth, content, newPBXProjFileMode); err != nil {
+	if err := filewriter.WriteKeepingMode(p.fileManager, pth, content, newProjectFileMode); err != nil {
 		return fmt.Errorf("failed to write %s: %w", pth, err)
 	}
 
@@ -110,16 +104,28 @@ func targetBuildSettings(target Target, configurationName string) (serialized.Ob
 	return nil, fmt.Errorf("failed to find build configuration %s of target %s", configurationName, target.Name)
 }
 
-// writeBuildSettingForAllSDKs also updates the existing [sdk=...] variants of key.
-func writeBuildSettingForAllSDKs(buildSettings serialized.Object, key, value string) {
-	buildSettings[key] = value
+func forcedCodeSignBuildSettings(opts ForceCodeSignOptions) map[string]string {
+	return map[string]string{
+		"CODE_SIGN_STYLE":                "Manual",
+		"DEVELOPMENT_TEAM":               opts.DevelopmentTeam,
+		"CODE_SIGN_IDENTITY":             opts.CodesignIdentity,
+		"PROVISIONING_PROFILE_SPECIFIER": "",
+		"PROVISIONING_PROFILE":           opts.ProvisioningProfileUUID,
+	}
+}
+
+// key is returned even when buildSettings does not have it yet.
+func keysForAllSDKs(buildSettings serialized.Object, key string) []string {
+	keys := []string{key}
 
 	sdkVariant := regexp.MustCompile(fmt.Sprintf(`^%s\[sdk=.*\]$`, regexp.QuoteMeta(key)))
 	for existingKey := range buildSettings {
 		if sdkVariant.MatchString(existingKey) {
-			buildSettings[existingKey] = value
+			keys = append(keys, existingKey)
 		}
 	}
+
+	return keys
 }
 
 type objectChange struct {
@@ -130,7 +136,7 @@ type objectChange struct {
 // perObjectModify splices re-serialised changed objects into the original bytes.
 // The original and annotated trees are decoded from originalContents here rather than kept from
 // parse time, so an opened project holds no extra copies of the tree; Save is called rarely.
-func (p *XcodeProj) perObjectModify() ([]byte, error) {
+func (p *PBXProj) perObjectModify() ([]byte, error) {
 	var annotated serialized.Object
 	if _, err := plist.UnmarshalWithCustomAnnotation(p.originalContents, &annotated); err != nil {
 		return nil, fmt.Errorf("failed to decode original project: %w", err)
