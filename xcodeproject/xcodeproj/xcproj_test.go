@@ -291,6 +291,33 @@ func TestXCProj_SetBuildSetting(t *testing.T) {
 	assert.Equal(t, os.FileMode(0664), info.Mode().Perm(), "an existing file keeps its mode")
 }
 
+func TestXCProj_SetBuildSetting_targetWithoutBuildSettings(t *testing.T) {
+	content, err := os.ReadFile(filepath.Join("internal", "xcproj", "testdata", "ios-sample-twin-and-xcconfig-targets.xcproj"))
+	require.NoError(t, err)
+	projectPath := writeProjectFiles(t, map[string][]byte{xcProjFileName: content})
+
+	project, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+
+	const target = "XcconfigOnly"
+	require.NoError(t, project.ForceCodeSign(forceCodeSignOptions(target, "Release")))
+	require.NoError(t, project.SetBuildSetting(target, "Debug", "CURRENT_PROJECT_VERSION", "2"))
+	require.NoError(t, project.Save())
+
+	reopened, err := testFactory().Open(projectPath)
+	require.NoError(t, err)
+	assert.Equal(t, reopened.Targets(), project.Targets())
+
+	requireBuildSetting(t, reopened, target, "Release", "CODE_SIGN_STYLE", "Manual")
+	requireBuildSetting(t, reopened, target, "Release", "PROVISIONING_PROFILE", testForceCodeSignOptions.ProvisioningProfileUUID)
+	requireBuildSetting(t, reopened, target, "Debug", "CURRENT_PROJECT_VERSION", "2")
+
+	debug, err := targetBuildSettings(requireTarget(t, reopened, target), "Debug")
+	require.NoError(t, err)
+	_, ok := debug.String("CODE_SIGN_STYLE")
+	assert.False(t, ok, "the Release edit leaves Debug alone")
+}
+
 func TestXCProj_Save_noEdit(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("internal", "xcproj", "testdata", xcprojFixtureFileName))
 	require.NoError(t, err)
@@ -339,14 +366,6 @@ func TestXCProj_SetBuildSetting_errors(t *testing.T) {
 			wantErr:       "failed to find build configuration Release of target App",
 		},
 		{
-			name:          "target without build settings",
-			target:        "Lib",
-			configuration: "Debug",
-			key:           "KEY",
-			value:         "value",
-			wantErr:       "target Lib has no build settings: adding the first build setting to project.xcproj is not supported",
-		},
-		{
 			name:          "key with a configuration condition",
 			target:        "App",
 			configuration: "Debug",
@@ -358,8 +377,7 @@ func TestXCProj_SetBuildSetting_errors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			content := []byte(`{"configurations": ["Debug"], "targets": [
-				{"name": "App", "id": "A1", "build-settings": {"A": "1"}},
-				{"name": "Lib", "id": "L1"}
+				{"name": "App", "id": "A1", "build-settings": {"A": "1"}}
 			]}`)
 			project := openProjectFiles(t, map[string][]byte{xcProjFileName: content})
 
