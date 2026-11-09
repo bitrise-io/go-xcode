@@ -2,6 +2,7 @@ package xcodeproj
 
 import (
 	"fmt"
+	"maps"
 	"path"
 	"path/filepath"
 
@@ -134,8 +135,7 @@ func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
 	for _, target := range project.Targets {
 		idsByName[target.Name] = target.ID
 	}
-	filePathsByID := map[string]string{}
-	collectXCProjFilePathsByID(project.Files, filePathsByID)
+	filePathsByID := xcprojFilePathsByID(project.Files)
 
 	targets := make([]Target, 0, len(project.Targets))
 	for _, target := range project.Targets {
@@ -169,20 +169,22 @@ func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
 	return targets
 }
 
-func collectXCProjFilePathsByID(references []xcproj.Reference, pathsByID map[string]string) {
+func xcprojFilePathsByID(references []xcproj.Reference) map[string]string {
+	pathsByID := map[string]string{}
 	for _, reference := range references {
 		if reference.ID != "" {
 			pathsByID[reference.ID] = reference.Path
 		}
-		collectXCProjFilePathsByID(reference.Children, pathsByID)
+		maps.Copy(pathsByID, xcprojFilePathsByID(reference.Children))
 	}
+	return pathsByID
 }
 
 // xcprojProductName falls back to the target name, PRODUCT_NAME's default, for a product file with
-// no name, such as <PRODUCTS>/.app, which Xcode writes when PRODUCT_NAME comes from an xcconfig file.
+// no name, such as <PRODUCTS>/.app.
 func xcprojProductName(targetName, fileName string) string {
-	if fileName == path.Ext(fileName) {
-		return targetName + fileName
+	if extension := path.Ext(fileName); extension != "" && fileName == extension {
+		return targetName + extension
 	}
 	return fileName
 }

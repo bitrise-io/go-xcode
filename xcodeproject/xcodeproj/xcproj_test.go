@@ -135,10 +135,6 @@ func TestXCProj_unknownDependency(t *testing.T) {
 func TestXCProj_productReferencedByID(t *testing.T) {
 	project := openXCProjFixtureFile(t, "ios-sample-twin-and-xcconfig-targets.xcproj")
 
-	products := map[string]string{}
-	for _, target := range project.Targets() {
-		products[target.Name] = target.productPath
-	}
 	assert.Equal(t, map[string]string{
 		xcprojAppTargetName:             "sample-apps-ios-json-xcproj.app",
 		xcprojAppTargetName + "Tests":   "sample-apps-ios-json-xcprojTests.xctest",
@@ -146,7 +142,7 @@ func TestXCProj_productReferencedByID(t *testing.T) {
 		"Twin":                          "Twin.app",
 		"TwinCopy":                      "Twin.app",
 		"XcconfigOnly":                  "XcconfigOnly.app",
-	}, products)
+	}, productPaths(project))
 
 	twin := requireTarget(t, project, "Twin")
 	assert.True(t, twin.IsExecutableProduct())
@@ -175,10 +171,6 @@ func TestXCProj_productReferencedByUnknownID(t *testing.T) {
 func TestXCProj_productWithoutName(t *testing.T) {
 	project := openXCProjFixtureFile(t, "products-without-name.xcproj")
 
-	products := map[string]string{}
-	for _, target := range project.Targets() {
-		products[target.Name] = target.productPath
-	}
 	assert.Equal(t, map[string]string{
 		"Reader":                       "Reader.app",
 		"ReaderTests":                  "ReaderTests.xctest",
@@ -189,7 +181,7 @@ func TestXCProj_productWithoutName(t *testing.T) {
 		"Reader iOS Widget Extension":  "Reader iOS Widget Extension.appex",
 		"Reader-iOSTests":              "Reader-iOSTests.xctest",
 		"Reader Share Extension":       "Reader Share Extension.appex",
-	}, products)
+	}, productPaths(project))
 
 	schemes := project.RecreateSchemes()
 	assert.Equal(t, "Reader.app", schemeBuildableNames(schemes)["Reader"])
@@ -201,6 +193,20 @@ func TestXCProj_productWithoutName(t *testing.T) {
 		}
 	}
 	assert.Equal(t, []string{"ReaderTests.xctest", "Reader-iOSTests.xctest"}, testables)
+}
+
+func TestXCProjProductName(t *testing.T) {
+	assert.Equal(t, "App.app", xcprojProductName("App", ".app"))
+	assert.Equal(t, "Other.app", xcprojProductName("App", "Other.app"))
+	assert.Empty(t, xcprojProductName("App", ""))
+}
+
+func productPaths(project XcodeProj) map[string]string {
+	paths := map[string]string{}
+	for _, target := range project.Targets() {
+		paths[target.Name] = target.productPath
+	}
+	return paths
 }
 
 func schemeBuildableNames(schemes []xcscheme.Scheme) map[string]string {
