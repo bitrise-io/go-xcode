@@ -133,7 +133,7 @@ func TestXCProj_unknownDependency(t *testing.T) {
 }
 
 func TestXCProj_productReferencedByID(t *testing.T) {
-	project := openXCProjFixtureFile(t, "ios-sample-gaps.xcproj")
+	project := openXCProjFixtureFile(t, "ios-sample-twin-and-xcconfig-targets.xcproj")
 
 	products := map[string]string{}
 	for _, target := range project.Targets() {
