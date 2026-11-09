@@ -36,10 +36,8 @@ func TestEditor_xcodeManualSigning(t *testing.T) {
 	assert.Equal(t, string(manual), string(editor.Content()))
 }
 
-// testdata/ios-sample-xcconfig-target-project-version.xcproj is what Xcode 27.2 wrote after
-// setting CURRENT_PROJECT_VERSION for every configuration of the XcconfigOnly target of
-// testdata/ios-sample-twin-and-xcconfig-targets.xcproj, which had no build settings. The editor
-// sets a single configuration, so its key carries [config=Release].
+// Xcode saved the setting for every configuration; the editor sets one, so its key carries
+// [config=Release].
 func TestEditor_xcodeFirstBuildSetting(t *testing.T) {
 	withoutSettings, err := os.ReadFile(filepath.Join("testdata", "ios-sample-twin-and-xcconfig-targets.xcproj"))
 	require.NoError(t, err)

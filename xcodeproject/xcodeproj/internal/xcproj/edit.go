@@ -9,7 +9,6 @@ import (
 	"github.com/tailscale/hujson"
 )
 
-// indentStep is how far Xcode indents each nesting level.
 const indentStep = "  "
 
 // Editor changes a project.xcproj in place, so every byte it does not change stays as Xcode
@@ -135,8 +134,8 @@ func configurationKey(key buildSettingKey, configuration string) string {
 	return key.String()
 }
 
-// addFirstBuildSetting adds a missing build-settings object where Xcode writes it: after the
-// members every target has, so before an external build system target's own members.
+// Xcode writes build-settings last among the common target members, so before an external
+// build system target's build-tool members.
 func addFirstBuildSetting(target *hujson.Object, key, value string) {
 	layout := target.Members[len(target.Members)-1]
 	indent := lineBreakAndIndent(layout.Name.BeforeExtra)
