@@ -146,6 +146,7 @@ func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
 
 		var productPath string
 		if len(target.Product) > 0 {
+			// The last element is the file name: "product": "Products/App.app" decodes to [Products App.app].
 			productPath = xcprojProductName(target.Name, target.Product[len(target.Product)-1])
 		} else if filePath, ok := filePathsByID[target.ProductID]; ok {
 			productPath = xcprojProductName(target.Name, path.Base(filePath))
