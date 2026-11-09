@@ -180,19 +180,19 @@ func TestXCProj_productWithoutName(t *testing.T) {
 		products[target.Name] = target.productPath
 	}
 	assert.Equal(t, map[string]string{
-		"NetNewsWire":                       "NetNewsWire.app",
-		"NetNewsWireTests":                  "NetNewsWireTests.xctest",
-		"NetNewsWire-iOS":                   "NetNewsWire-iOS.app",
-		"Subscribe to Feed":                 "Subscribe to Feed.appex",
-		"NetNewsWire iOS Share Extension":   "NetNewsWire iOS Share Extension.appex",
-		"NetNewsWire iOS Intents Extension": "NetNewsWire iOS Intents Extension.appex",
-		"NetNewsWire iOS Widget Extension":  "NetNewsWire iOS Widget Extension.appex",
-		"NetNewsWire-iOSTests":              "NetNewsWire-iOSTests.xctest",
-		"NetNewsWire Share Extension":       "NetNewsWire Share Extension.appex",
+		"Reader":                       "Reader.app",
+		"ReaderTests":                  "ReaderTests.xctest",
+		"Reader-iOS":                   "Reader-iOS.app",
+		"Reader Subscribe Extension":   "Reader Subscribe Extension.appex",
+		"Reader iOS Share Extension":   "Reader iOS Share Extension.appex",
+		"Reader iOS Intents Extension": "Reader iOS Intents Extension.appex",
+		"Reader iOS Widget Extension":  "Reader iOS Widget Extension.appex",
+		"Reader-iOSTests":              "Reader-iOSTests.xctest",
+		"Reader Share Extension":       "Reader Share Extension.appex",
 	}, products)
 
 	schemes := project.RecreateSchemes()
-	assert.Equal(t, "NetNewsWire.app", schemeBuildableNames(schemes)["NetNewsWire"])
+	assert.Equal(t, "Reader.app", schemeBuildableNames(schemes)["Reader"])
 
 	var testables []string
 	for _, scheme := range schemes {
@@ -200,7 +200,7 @@ func TestXCProj_productWithoutName(t *testing.T) {
 			testables = append(testables, testable.BuildableReference.BuildableName)
 		}
 	}
-	assert.Equal(t, []string{"NetNewsWireTests.xctest", "NetNewsWire-iOSTests.xctest"}, testables)
+	assert.Equal(t, []string{"ReaderTests.xctest", "Reader-iOSTests.xctest"}, testables)
 }
 
 func schemeBuildableNames(schemes []xcscheme.Scheme) map[string]string {
