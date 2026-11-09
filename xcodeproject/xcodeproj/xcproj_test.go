@@ -1,12 +1,17 @@
 package xcodeproj
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/bitrise-io/go-utils/v2/log"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/internal/xcproj"
+	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 )
 
 const (
@@ -20,7 +25,13 @@ const (
 func openXCProjFixture(t *testing.T) XcodeProj {
 	t.Helper()
 
-	content, err := os.ReadFile(filepath.Join("internal", "xcproj", "testdata", xcprojFixtureFileName))
+	return openXCProjFixtureFile(t, xcprojFixtureFileName)
+}
+
+func openXCProjFixtureFile(t *testing.T, name string) XcodeProj {
+	t.Helper()
+
+	content, err := os.ReadFile(filepath.Join("internal", "xcproj", "testdata", name))
 	require.NoError(t, err)
 
 	return openProjectFiles(t, map[string][]byte{xcProjFileName: content})
@@ -122,14 +133,82 @@ func TestXCProj_unknownDependency(t *testing.T) {
 }
 
 func TestXCProj_productReferencedByID(t *testing.T) {
-	project := openProjectFiles(t, map[string][]byte{
-		xcProjFileName: []byte(`{"targets": [{"name": "App", "id": "A1", "product-type": "application", "product": "id:P1"}]}`),
-	})
+	project := openXCProjFixtureFile(t, "ios-sample-gaps.xcproj")
 
-	require.Len(t, project.Targets(), 1)
-	app := project.Targets()[0]
-	assert.Empty(t, app.productPath)
-	assert.False(t, app.IsExecutableProduct())
+	products := map[string]string{}
+	for _, target := range project.Targets() {
+		products[target.Name] = target.productPath
+	}
+	assert.Equal(t, map[string]string{
+		xcprojAppTargetName:             "sample-apps-ios-json-xcproj.app",
+		xcprojAppTargetName + "Tests":   "sample-apps-ios-json-xcprojTests.xctest",
+		xcprojAppTargetName + "UITests": "sample-apps-ios-json-xcprojUITests.xctest",
+		"Twin":                          "Twin.app",
+		"TwinCopy":                      "Twin.app",
+		"XcconfigOnly":                  "XcconfigOnly.app",
+	}, products)
+
+	twin := requireTarget(t, project, "Twin")
+	assert.True(t, twin.IsExecutableProduct())
+
+	assert.Equal(t, map[string]string{
+		xcprojAppTargetName: "sample-apps-ios-json-xcproj.app",
+		"Twin":              "Twin.app",
+		"TwinCopy":          "Twin.app",
+		"XcconfigOnly":      "XcconfigOnly.app",
+	}, schemeBuildableNames(project.RecreateSchemes()))
+}
+
+func TestXCProj_productReferencedByUnknownID(t *testing.T) {
+	project, err := xcproj.Decode([]byte(`{"targets": [{"name": "App", "id": "A1", "product-type": "application", "product": "id:P1"}]}`))
+	require.NoError(t, err)
+	var output bytes.Buffer
+
+	targets := xcprojTargets(project, log.NewLogger(log.WithOutput(&output)))
+
+	require.Len(t, targets, 1)
+	assert.Empty(t, targets[0].productPath)
+	assert.False(t, targets[0].IsExecutableProduct())
+	assert.Contains(t, output.String(), "product of target App (A1) is referenced by ID P1, its path is unknown")
+}
+
+func TestXCProj_productWithoutName(t *testing.T) {
+	project := openXCProjFixtureFile(t, "products-without-name.xcproj")
+
+	products := map[string]string{}
+	for _, target := range project.Targets() {
+		products[target.Name] = target.productPath
+	}
+	assert.Equal(t, map[string]string{
+		"NetNewsWire":                       "NetNewsWire.app",
+		"NetNewsWireTests":                  "NetNewsWireTests.xctest",
+		"NetNewsWire-iOS":                   "NetNewsWire-iOS.app",
+		"Subscribe to Feed":                 "Subscribe to Feed.appex",
+		"NetNewsWire iOS Share Extension":   "NetNewsWire iOS Share Extension.appex",
+		"NetNewsWire iOS Intents Extension": "NetNewsWire iOS Intents Extension.appex",
+		"NetNewsWire iOS Widget Extension":  "NetNewsWire iOS Widget Extension.appex",
+		"NetNewsWire-iOSTests":              "NetNewsWire-iOSTests.xctest",
+		"NetNewsWire Share Extension":       "NetNewsWire Share Extension.appex",
+	}, products)
+
+	schemes := project.RecreateSchemes()
+	assert.Equal(t, "NetNewsWire.app", schemeBuildableNames(schemes)["NetNewsWire"])
+
+	var testables []string
+	for _, scheme := range schemes {
+		for _, testable := range scheme.TestAction.Testables {
+			testables = append(testables, testable.BuildableReference.BuildableName)
+		}
+	}
+	assert.Equal(t, []string{"NetNewsWireTests.xctest", "NetNewsWire-iOSTests.xctest"}, testables)
+}
+
+func schemeBuildableNames(schemes []xcscheme.Scheme) map[string]string {
+	names := map[string]string{}
+	for _, scheme := range schemes {
+		names[scheme.Name] = scheme.BuildAction.BuildActionEntries[0].BuildableReference.BuildableName
+	}
+	return names
 }
 
 func TestXCProj_targetKinds(t *testing.T) {

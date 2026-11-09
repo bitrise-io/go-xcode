@@ -2,6 +2,7 @@ package xcodeproj
 
 import (
 	"fmt"
+	"path"
 	"path/filepath"
 
 	"github.com/bitrise-io/go-utils/v2/log"
@@ -133,6 +134,8 @@ func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
 	for _, target := range project.Targets {
 		idsByName[target.Name] = target.ID
 	}
+	filePathsByID := map[string]string{}
+	collectXCProjFilePathsByID(project.Files, filePathsByID)
 
 	targets := make([]Target, 0, len(project.Targets))
 	for _, target := range project.Targets {
@@ -143,7 +146,9 @@ func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
 
 		var productPath string
 		if len(target.Product) > 0 {
-			productPath = target.Product[len(target.Product)-1]
+			productPath = xcprojProductName(target.Name, target.Product[len(target.Product)-1])
+		} else if filePath, ok := filePathsByID[target.ProductID]; ok {
+			productPath = xcprojProductName(target.Name, path.Base(filePath))
 		} else if target.ProductID != "" {
 			logger.Warnf("product of target %s (%s) is referenced by ID %s, its path is unknown", target.Name, target.ID, target.ProductID)
 		}
@@ -161,6 +166,24 @@ func xcprojTargets(project xcproj.Project, logger log.Logger) []Target {
 	}
 
 	return targets
+}
+
+func collectXCProjFilePathsByID(references []xcproj.Reference, pathsByID map[string]string) {
+	for _, reference := range references {
+		if reference.ID != "" {
+			pathsByID[reference.ID] = reference.Path
+		}
+		collectXCProjFilePathsByID(reference.Children, pathsByID)
+	}
+}
+
+// xcprojProductName falls back to the target name, PRODUCT_NAME's default, for a product file with
+// no name, such as <PRODUCTS>/.app, which Xcode writes when PRODUCT_NAME comes from an xcconfig file.
+func xcprojProductName(targetName, fileName string) string {
+	if fileName == path.Ext(fileName) {
+		return targetName + fileName
+	}
+	return fileName
 }
 
 func xcprojBuildConfigurations(configurations []xcproj.Configuration, settings serialized.Object) []BuildConfiguration {
