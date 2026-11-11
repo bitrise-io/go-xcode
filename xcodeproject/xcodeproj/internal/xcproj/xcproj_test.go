@@ -176,6 +176,9 @@ func TestDecode(t *testing.T) {
 					]},
 				]},
 				{"kind": "variant-group", "path": "Localizable.strings"},
+				{"kind": "group", "name": "Products", "children": [
+					{"path": "<PRODUCTS>/App.app", "id": "P1", "type": "wrapper.application", "index": false},
+				]},
 			]}`,
 			want: Project{
 				Configurations: []Configuration{},
@@ -193,6 +196,7 @@ func TestDecode(t *testing.T) {
 						},
 					}}},
 					{Kind: "variant-group", Path: "Localizable.strings"},
+					{Kind: ReferenceKindGroup, Children: []Reference{{ID: "P1", Kind: ReferenceKindFile, Path: "<PRODUCTS>/App.app"}}},
 				},
 			},
 		},
