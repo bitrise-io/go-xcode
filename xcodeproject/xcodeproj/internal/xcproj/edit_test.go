@@ -309,6 +309,41 @@ func TestEditor_SetTargetBuildSetting_firstSetting(t *testing.T) {
     },`,
 		},
 		{
+			name:       "keeps a block comment of an empty object",
+			targetName: "App",
+			target: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": { /* Settings come from App.xcconfig. */ },
+    },`,
+			want: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": { /* Settings come from App.xcconfig. */
+        "KEY[config=Release]": "value",
+      },
+    },`,
+		},
+		{
+			name:       "keeps a line comment of an empty object",
+			targetName: "App",
+			target: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": {
+        // Settings come from App.xcconfig.
+      },
+    },`,
+			want: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": {
+        // Settings come from App.xcconfig.
+        "KEY[config=Release]": "value",
+      },
+    },`,
+		},
+		{
 			name:       "adds the object before the external build system members",
 			targetName: "Tool",
 			target: `    {

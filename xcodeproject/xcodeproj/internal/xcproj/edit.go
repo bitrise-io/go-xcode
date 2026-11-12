@@ -156,6 +156,11 @@ func addFirstBuildSetting(target *hujson.Object, key, value string) {
 	}
 
 	if existing := memberValue(target, "build-settings"); existing != nil {
+		// A comment inside an empty object is kept in the object's closing whitespace.
+		if empty, ok := existing.Value.(*hujson.Object); ok {
+			name := &settings.Members[0].Name
+			name.BeforeExtra = append(bytes.Clone(bytes.TrimRightFunc(empty.AfterExtra, unicode.IsSpace)), name.BeforeExtra...)
+		}
 		existing.Value = settings
 		return
 	}
