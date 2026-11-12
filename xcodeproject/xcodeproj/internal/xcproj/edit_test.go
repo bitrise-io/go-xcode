@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,6 +34,24 @@ func TestEditor_xcodeManualSigning(t *testing.T) {
 	}
 
 	assert.Equal(t, string(manual), string(editor.Content()))
+}
+
+// Xcode saved the setting for every configuration; the editor sets one, so its key carries
+// [config=Release].
+func TestEditor_xcodeFirstBuildSetting(t *testing.T) {
+	withoutSettings, err := os.ReadFile(filepath.Join("testdata", "ios-sample-twin-and-xcconfig-targets.xcproj"))
+	require.NoError(t, err)
+	withSetting, err := os.ReadFile(filepath.Join("testdata", "ios-sample-xcconfig-target-project-version.xcproj"))
+	require.NoError(t, err)
+
+	editor := newEditor(t, withoutSettings)
+
+	require.NoError(t, editor.SetTargetBuildSetting("XcconfigOnly", "Release", "CURRENT_PROJECT_VERSION", "2"))
+
+	const xcodeSetting = `"CURRENT_PROJECT_VERSION": "2",`
+	require.Equal(t, 1, strings.Count(string(withSetting), xcodeSetting))
+	want := strings.Replace(string(withSetting), xcodeSetting, `"CURRENT_PROJECT_VERSION[config=Release]": "2",`, 1)
+	assert.Equal(t, want, string(editor.Content()))
 }
 
 func TestEditor_noEdit(t *testing.T) {
@@ -255,6 +274,142 @@ func TestEditor_SetTargetBuildSetting_splitShiftsMembers(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf(project, want), string(editor.Content()))
 }
 
+func TestEditor_SetTargetBuildSetting_firstSetting(t *testing.T) {
+	const project = `{
+  "configurations": [
+    "Debug",
+    "Release",
+  ],
+  "targets": [
+%s
+  ],
+}`
+	tests := []struct {
+		name       string
+		targetName string
+		target     string
+		want       string
+	}{
+		{
+			name:       "replaces an empty object",
+			targetName: "App",
+			target: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": {},
+      "build-phases": [],
+    },`,
+			want: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": {
+        "KEY[config=Release]": "value",
+      },
+      "build-phases": [],
+    },`,
+		},
+		{
+			name:       "keeps a block comment of an empty object",
+			targetName: "App",
+			target: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": { /* Settings come from App.xcconfig. */ },
+    },`,
+			want: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": { /* Settings come from App.xcconfig. */
+        "KEY[config=Release]": "value",
+      },
+    },`,
+		},
+		{
+			name:       "keeps a line comment of an empty object",
+			targetName: "App",
+			target: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": {
+        // Settings come from App.xcconfig.
+      },
+    },`,
+			want: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": {
+        // Settings come from App.xcconfig.
+        "KEY[config=Release]": "value",
+      },
+    },`,
+		},
+		{
+			name:       "adds the object before the external build system members",
+			targetName: "Tool",
+			target: `    {
+      "name": "Tool",
+      "id": "T1",
+      "kind": "external-build-system",
+      "build-tool-path": "/usr/bin/make",
+      "build-tool-arguments": "$(ACTION)",
+    },`,
+			want: `    {
+      "name": "Tool",
+      "id": "T1",
+      "kind": "external-build-system",
+      "build-settings": {
+        "KEY[config=Release]": "value",
+      },
+      "build-tool-path": "/usr/bin/make",
+      "build-tool-arguments": "$(ACTION)",
+    },`,
+		},
+		{
+			name:       "does not repeat a comment in front of the last member",
+			targetName: "App",
+			target: `    {
+      "name": "App",
+      "id": "T1",
+      // Settings come from App.xcconfig.
+      "build-phases": [],
+    },`,
+			want: `    {
+      "name": "App",
+      "id": "T1",
+      // Settings come from App.xcconfig.
+      "build-phases": [],
+      "build-settings": {
+        "KEY[config=Release]": "value",
+      },
+    },`,
+		},
+		{
+			name:       "keeps a target without a trailing comma",
+			targetName: "App",
+			target: `    {
+      "name": "App",
+      "id": "T1"
+    },`,
+			want: `    {
+      "name": "App",
+      "id": "T1",
+      "build-settings": {
+        "KEY[config=Release]": "value",
+      }
+    },`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			editor := newEditor(t, fmt.Appendf(nil, project, tt.target))
+
+			require.NoError(t, editor.SetTargetBuildSetting(tt.targetName, "Release", "KEY", "value"))
+
+			assert.Equal(t, fmt.Sprintf(project, tt.want), string(editor.Content()))
+		})
+	}
+}
+
 func TestEditor_SetTargetBuildSetting_errors(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -279,14 +434,6 @@ func TestEditor_SetTargetBuildSetting_errors(t *testing.T) {
 			configuration: "Debug",
 			key:           "KEY",
 			wantErr:       "project has no target Other",
-		},
-		{
-			name:          "target without build settings",
-			content:       `{"configurations": ["Debug"], "targets": [{"id": "T1", "name": "App"}]}`,
-			target:        "App",
-			configuration: "Debug",
-			key:           "KEY",
-			wantErr:       "target App has no build settings: adding the first build setting to project.xcproj is not supported",
 		},
 		{
 			name:          "project without targets",
