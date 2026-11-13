@@ -238,20 +238,38 @@ func SelectConnectionCredentials(
 	}
 
 	if authType == AppleIDAuth {
+		if inputs.AppleIDUsername != "" {
+			logger.Infof("Overriding Bitrise Apple Service connection with Step-provided Apple ID credentials (apple_id_username, apple_id_password, apple_id_app_specific_password)")
+
+			return devportalservice.Credentials{
+				AppleID: &devportalservice.AppleID{
+					Username:            inputs.AppleIDUsername,
+					Password:            string(inputs.AppleIDPassword),
+					Session:             "",
+					AppSpecificPassword: string(inputs.AppleIDAppSpecificPassword),
+				},
+				APIKey: nil,
+			}, nil
+		}
+
 		if bitriseConnection == nil || bitriseConnection.AppleIDConnection == nil {
 			logger.Warnf(devportalclient.NotConnectedWarning)
 			return devportalservice.Credentials{}, fmt.Errorf("Apple Service connection through Apple ID is not estabilished")
 		}
 
-		session, err := bitriseConnection.AppleIDConnection.FastlaneLoginSession()
-		if err != nil {
-			return devportalservice.Credentials{}, fmt.Errorf("failed to restore Apple ID login session: %w", err)
-		}
+		var session string
+		if inputs.WantsFastlaneSession {
+			var err error
+			session, err = bitriseConnection.AppleIDConnection.FastlaneLoginSession()
+			if err != nil {
+				return devportalservice.Credentials{}, fmt.Errorf("failed to restore Apple ID login session: %w", err)
+			}
 
-		if session != "" &&
-			bitriseConnection.AppleIDConnection.SessionExpiryDate != nil &&
-			bitriseConnection.AppleIDConnection.SessionExpiryDate.Before(time.Now()) {
-			logger.Warnf("Two-factor session has expired at: %s", bitriseConnection.AppleIDConnection.SessionExpiryDate.Format("2006-01-02 15:04"))
+			if session != "" &&
+				bitriseConnection.AppleIDConnection.SessionExpiryDate != nil &&
+				bitriseConnection.AppleIDConnection.SessionExpiryDate.Before(time.Now()) {
+				logger.Warnf("Two-factor session has expired at: %s", bitriseConnection.AppleIDConnection.SessionExpiryDate.Format("2006-01-02 15:04"))
+			}
 		}
 
 		logger.Donef("Using Apple Service connection with Apple ID.")
