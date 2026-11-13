@@ -75,3 +75,22 @@ var (
 	// On a test run, -enumerate-tests lists the tests and runs none, and the command succeeds.
 	listsTests = rejection{reason: "It makes xcodebuild list the tests instead of running them.", flags: []string{"-enumerate-tests"}}
 )
+
+// leaveOut splits a preparation command's copy of the step's options: the ones it takes, and
+// the ones that do not apply to it (build actions, the flags its policy rejects, anything
+// unparseable), reported in one informational line. The options still reach the step's main
+// command, which reports any that are wrong there.
+func leaveOut(policy actionPolicy, opts Options, what string) (Options, []Diagnostic) {
+	var kept, leftOut Options
+	for _, o := range opts {
+		if _, rejected := policy.rejects(o); o.Kind == Action || o.Kind == Unknown || rejected {
+			leftOut = append(leftOut, o)
+		} else {
+			kept = append(kept, o)
+		}
+	}
+	if len(leftOut) == 0 {
+		return kept, nil
+	}
+	return kept, []Diagnostic{report(LeftOut, leftOut[0], "%s left out of %s; the Step's main command gets the full xcodebuild_options.", leftOut.quoted(), what)}
+}
