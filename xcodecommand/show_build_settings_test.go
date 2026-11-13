@@ -50,3 +50,33 @@ func TestShowBuildSettings(t *testing.T) {
 		})
 	}
 }
+
+func TestShowBuildSettings_TargetOrScheme(t *testing.T) {
+	tests := []struct {
+		name    string
+		params  ShowBuildSettingsParams
+		wantErr string
+	}{
+		{
+			name:    "both",
+			params:  ShowBuildSettingsParams{ProjectPath: "App.xcodeproj", Target: "App", Scheme: "App"},
+			wantErr: "reading the build settings of App.xcodeproj takes a target or a scheme, not both",
+		},
+		{
+			name:    "neither",
+			params:  ShowBuildSettingsParams{ProjectPath: "App.xcodeproj"},
+			wantErr: "reading the build settings of App.xcodeproj needs a target or a scheme",
+		},
+		{
+			name:    "a target in a workspace",
+			params:  ShowBuildSettingsParams{ProjectPath: "App.xcworkspace/", Target: "App"},
+			wantErr: "reading the build settings of workspace App.xcworkspace/ needs a scheme",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ShowBuildSettings(tt.params)
+			require.EqualError(t, err, tt.wantErr)
+		})
+	}
+}

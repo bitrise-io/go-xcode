@@ -1,7 +1,12 @@
 package xcodecommand
 
+import (
+	"fmt"
+	"path/filepath"
+)
+
 // ShowBuildSettingsParams describes an `xcodebuild -showBuildSettings -json` invocation.
-// Zero-valued fields are omitted; set Target or Scheme, and a workspace needs a Scheme.
+// Zero-valued fields are omitted. Set either Target or Scheme; a workspace needs a Scheme.
 type ShowBuildSettingsParams struct {
 	ProjectPath       string // .xcodeproj, .xcworkspace or a Swift package (no flag; run in its directory)
 	Target            string
@@ -18,6 +23,17 @@ type ShowBuildSettingsParams struct {
 // not apply to the query (build actions, test-only and mode-switching flags, anything
 // unparseable) are left out, and the Command reports them in one informational line.
 func ShowBuildSettings(params ShowBuildSettingsParams) (Command, error) {
+	// xcodebuild: "You cannot specify both a scheme and targets.", "You cannot specify targets
+	// with a workspace.", "If you specify a workspace then you must also specify a scheme.";
+	// with neither on a project it reads the first target, which no caller means.
+	switch {
+	case params.Target != "" && params.Scheme != "":
+		return Command{}, fmt.Errorf("reading the build settings of %s takes a target or a scheme, not both", params.ProjectPath)
+	case params.Target == "" && params.Scheme == "":
+		return Command{}, fmt.Errorf("reading the build settings of %s needs a target or a scheme", params.ProjectPath)
+	case filepath.Ext(filepath.Clean(params.ProjectPath)) == xcworkspaceExtension && params.Scheme == "":
+		return Command{}, fmt.Errorf("reading the build settings of workspace %s needs a scheme", params.ProjectPath)
+	}
 	opts := containerOptions(params.ProjectPath)
 	opts = appendValue(opts, "-target", params.Target)
 	opts = appendValue(opts, "-scheme", params.Scheme)
