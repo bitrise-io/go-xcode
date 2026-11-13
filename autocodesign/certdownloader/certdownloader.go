@@ -16,7 +16,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 )
 
-// CertificateAndPassphrase contains a p12 file URL and passphrase
 type CertificateAndPassphrase struct {
 	URL, Passphrase string
 }
@@ -27,7 +26,6 @@ type downloader struct {
 	fileProvider stepconf.FileProvider
 }
 
-// NewDownloader ...
 func NewDownloader(certs []CertificateAndPassphrase, logger log.Logger) autocodesign.CertificateProvider {
 	fileDownloader := filedownloader.NewDownloader(logger)
 	fileProvider := stepconf.NewFileProvider(fileDownloader, fileutil.NewFileManager(), pathutil.NewPathProvider(), pathutil.NewPathModifier())
@@ -39,7 +37,6 @@ func NewDownloader(certs []CertificateAndPassphrase, logger log.Logger) autocode
 	}
 }
 
-// GetCertificates ...
 func (d downloader) GetCertificates() ([]certificateutil.CertificateInfoModel, error) {
 	var certInfos []certificateutil.CertificateInfoModel
 
@@ -58,7 +55,6 @@ func (d downloader) GetCertificates() ([]certificateutil.CertificateInfoModel, e
 	return certInfos, nil
 }
 
-// downloadAndParsePKCS12 downloads a pkcs12 format file and parses certificates and matching private keys.
 func (d downloader) downloadAndParsePKCS12(certificateURL, passphrase string) ([]certificateutil.CertificateInfoModel, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()

@@ -65,7 +65,6 @@ func testCaseMatching(test actionTestSummaryGroup, tcName string) bool {
 		tcName == fmt.Sprintf("-[%s %s]", class, method)
 }
 
-// failure returns the failure reason for the given test from the invocation record.
 func (r actionsInvocationRecord) failure(test actionTestSummaryGroup, testSuite testreport.TestSuite) string {
 	for _, failureSummary := range r.Issues.TestFailureSummaries.Values {
 		if failureSummary.ProducingTarget.Value == testSuite.Name && testCaseMatching(test, failureSummary.TestCaseName.Value) {

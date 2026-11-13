@@ -188,13 +188,11 @@ func (w *Workspace) isAutocreateSchemesEnabled() bool {
 		if !errors.Is(err, os.ErrNotExist) {
 			w.logger.Warnf("Failed to read the workspace's 'Autocreate schemes' setting, using Xcode's default (on): %s. Fix or remove %s.", err, pth)
 		}
-		// By default 'Autocreate Schemes' is enabled
 		return true
 	}
 	settings := serialized.Object(data)
 
 	if !settings.Has(autocreateSchemesSettingKey) {
-		// By default 'Autocreate Schemes' is enabled
 		return true
 	}
 

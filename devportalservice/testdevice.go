@@ -9,7 +9,6 @@ import (
 	"github.com/bitrise-io/go-utils/pathutil"
 )
 
-// TestDevice ...
 type TestDevice struct {
 	ID     int `json:"id"`
 	UserID int `json:"user_id"`
@@ -21,7 +20,6 @@ type TestDevice struct {
 	DeviceType string    `json:"device_type"`
 }
 
-// ParseTestDevicesFromFile ...
 func ParseTestDevicesFromFile(path string, currentTime time.Time) ([]TestDevice, error) {
 	absPath, err := pathutil.AbsPath(path)
 	if err != nil {

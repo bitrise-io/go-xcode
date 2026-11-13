@@ -12,13 +12,11 @@ import (
 	"github.com/bitrise-io/go-steputils/v2/testreport"
 )
 
-// Converter ...
 type Converter struct {
 	files                  []string
 	testSummariesPlistPath string
 }
 
-// Detect ...
 func (c *Converter) Detect(files []string) bool {
 	c.files = files
 	for _, file := range c.files {
@@ -62,7 +60,6 @@ func filterIllegalChars(data []byte) (filtered []byte) {
 	return
 }
 
-// Convert returns the test report parsed from the xcresult file.
 func (c *Converter) Convert() (testreport.TestReport, error) {
 	data, err := fileutil.ReadBytesFromFile(c.testSummariesPlistPath)
 	if err != nil {

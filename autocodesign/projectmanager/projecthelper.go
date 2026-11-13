@@ -24,16 +24,12 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace"
 )
 
-// BuildAction is the type of build action to be performed on the scheme.
 type BuildAction string
 
 const (
-	// BuildActionArchive is the archive build action.
 	BuildActionArchive BuildAction = "archive"
-	// BuildActionBuild is the build build action.
-	BuildActionBuild BuildAction = "build"
-	// BuildActionTest is the test build action.
-	BuildActionTest BuildAction = "test"
+	BuildActionBuild   BuildAction = "build"
+	BuildActionTest    BuildAction = "test"
 )
 
 type buildSettingsCacheKey struct {
@@ -41,7 +37,6 @@ type buildSettingsCacheKey struct {
 	configuration string
 }
 
-// ProjectHelper ...
 type ProjectHelper struct {
 	logger                      log.Logger
 	MainTarget                  xcodeproj.Target
@@ -58,9 +53,8 @@ type ProjectHelper struct {
 	buildSettingsCache map[buildSettingsCacheKey][]serialized.Object
 }
 
-// NewProjectHelper checks the provided project or workspace and generate a ProjectHelper with the provided scheme and configuration
-// Previously in the ruby version the initialize method did the same
-// It returns a new ProjectHelper, whose Configuration field contains is the selected configuration (even when configurationName parameter is empty)
+// NewProjectHelper's Configuration field holds the selected configuration, also when
+// configurationName is empty.
 func NewProjectHelper(projOrWSPath string, logger log.Logger, schemeName string, buildAction BuildAction, configurationName string, additionalXcodebuildOptions []string, isDebug bool) (*ProjectHelper, error) {
 	return newProjectHelper(projOrWSPath, logger, schemeName, buildAction, configurationName, additionalXcodebuildOptions, isDebug, env.NewRepository())
 }
@@ -156,12 +150,10 @@ func newProjectHelper(projOrWSPath string, logger log.Logger, schemeName string,
 	}, nil
 }
 
-// ArchivableTargets ...
 func (p *ProjectHelper) ArchivableTargets() []xcodeproj.Target {
 	return append([]xcodeproj.Target{p.MainTarget}, p.DependentTargets...)
 }
 
-// ArchivableTargetBundleIDToEntitlements ...
 func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]autocodesign.Entitlements, error) {
 	entitlementsByBundleID := map[string]autocodesign.Entitlements{}
 
@@ -182,7 +174,6 @@ func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]aut
 	return entitlementsByBundleID, nil
 }
 
-// UITestTargetBundleIDs ...
 func (p *ProjectHelper) UITestTargetBundleIDs() ([]string, error) {
 	var bundleIDs []string
 
@@ -214,7 +205,7 @@ func (p *ProjectHelper) Platform(configurationName string) (autocodesign.Platfor
 func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialized.Object, error) {
 	var settingsList []serialized.Object
 	var wsErr error
-	if p.XcWorkspace != nil { // workspace available
+	if p.XcWorkspace != nil {
 		var settings serialized.Object
 		settings, wsErr = p.XcWorkspace.SchemeBuildSettings(targetName, conf, p.additionalXcodebuildOptions...)
 		if wsErr == nil {
@@ -238,7 +229,6 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 		return settingsList, nil
 	}
 
-	// err != nil
 	projectErr = fmt.Errorf("failed to fetch build settings for target `%s` (project `%s`): %w", targetName, p.XcProj.Name(), projectErr)
 	if len(settingsList) != 0 {
 		p.logger.Errorf("buildSettings: %s", projectErr)
@@ -361,11 +351,8 @@ func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key stri
 	return settingValue, nil
 }
 
-// TargetBundleID returns the target bundle ID
-// First it tries to fetch the bundle ID from the `PRODUCT_BUNDLE_IDENTIFIER` build settings
-// If it's no available it will fetch the target's Info.plist and search for the `CFBundleIdentifier` key.
-// The CFBundleIdentifier's value is not resolved in the Info.plist, so it will try to resolve it by the resolveBundleID()
-// It returns  the target bundle ID
+// TargetBundleID falls back to the Info.plist's CFBundleIdentifier, resolving build setting
+// references in it, when PRODUCT_BUNDLE_IDENTIFIER is not set.
 func (p *ProjectHelper) TargetBundleID(name, conf string) (string, error) {
 	bundleID, err := p.buildSettingForKey(name, conf, "PRODUCT_BUNDLE_IDENTIFIER")
 	if err != nil && !errors.Is(err, serialized.ErrKeyNotFound) {

@@ -5,7 +5,6 @@ import (
 	"strings"
 )
 
-// FindXcodebuildErrors ...
 func FindXcodebuildErrors(out string) []string {
 	var errorLines []string       // single line errors with "error: " prefix
 	var xcodebuildErrors []string // multiline errors starting with "xcodebuild: error: " prefix

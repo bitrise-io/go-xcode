@@ -6,15 +6,13 @@ import (
 	"time"
 )
 
-// trackingRoundTripper wraps an http.RoundTripper and tracks metrics for each HTTP attempt,
-// including retries. It measures per-attempt duration without retry wait times included,
-// allowing accurate tracking even when requests are retried due to rate limits or other errors.
+// trackingRoundTripper reports each HTTP attempt, retries included, as its own metric event,
+// timed without the retry backoff, so alerts see real response times.
 type trackingRoundTripper struct {
 	wrapped http.RoundTripper
 	tracker Tracker
 }
 
-// isRetryContextKey is used to store whether a request is a retry attempt in the request context.
 type isRetryContextKey struct{}
 
 func newTrackingRoundTripper(wrapped http.RoundTripper, tracker Tracker) *trackingRoundTripper {
@@ -27,18 +25,12 @@ func newTrackingRoundTripper(wrapped http.RoundTripper, tracker Tracker) *tracki
 	}
 }
 
-// markAsRetry stores a flag in the request context indicating this is a retry attempt.
-// It returns a new request with the updated context. This approach avoids shared state
-// between concurrent requests (e.g., multiple POSTs to the same endpoint with different bodies).
+// A context value, not shared state: concurrent requests can hit the same endpoint.
 func (t *trackingRoundTripper) markAsRetry(req *http.Request) *http.Request {
 	ctx := context.WithValue(req.Context(), isRetryContextKey{}, true)
 	return req.WithContext(ctx)
 }
 
-// RoundTrip executes an HTTP request and tracks its duration and retry status.
-// Each HTTP attempt (including retries) generates a separate metric event, allowing
-// accurate alerting based on individual response times rather than aggregate times
-// that include retry backoff delays.
 func (t *trackingRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Check if this request was marked as a retry by RequestLogHook
 	isRetry := req.Context().Value(isRetryContextKey{}) != nil

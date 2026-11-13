@@ -6,7 +6,6 @@ import (
 	"strings"
 )
 
-// ErrorResponseError ...
 type ErrorResponseError struct {
 	Code   string      `json:"code,omitempty"`
 	Status string      `json:"status,omitempty"`
@@ -16,13 +15,11 @@ type ErrorResponseError struct {
 	Source interface{} `json:"source,omitempty"`
 }
 
-// ErrorResponse ...
 type ErrorResponse struct {
 	Response *http.Response
 	Errors   []ErrorResponseError `json:"errors,omitempty"`
 }
 
-// Error ...
 func (r ErrorResponse) Error() string {
 	var m string
 	if r.Response.Request != nil {
@@ -38,7 +35,6 @@ func (r ErrorResponse) Error() string {
 	return m
 }
 
-// IsCursorInvalid ...
 func (r ErrorResponse) IsCursorInvalid() bool {
 	// {"errors"=>[{"id"=>"[ ... ]", "status"=>"400", "code"=>"PARAMETER_ERROR.INVALID", "title"=>"A parameter has an invalid value", "detail"=>"'eyJvZmZzZXQiOiIyMCJ9' is not a valid cursor for this request", "source"=>{"parameter"=>"cursor"}}]}
 	for _, err := range r.Errors {
@@ -49,7 +45,6 @@ func (r ErrorResponse) IsCursorInvalid() bool {
 	return false
 }
 
-// IsRequiredAgreementMissingOrExpired ...
 func (r ErrorResponse) IsRequiredAgreementMissingOrExpired() bool {
 	// status code: 403
 	// code: FORBIDDEN.REQUIRED_AGREEMENTS_MISSING_OR_EXPIRED
@@ -65,12 +60,10 @@ func (r ErrorResponse) IsRequiredAgreementMissingOrExpired() bool {
 	return false
 }
 
-// DeviceRegistrationError ...
 type DeviceRegistrationError struct {
 	Reason string
 }
 
-// Error ...
 func (e DeviceRegistrationError) Error() string {
 	return e.Reason
 }

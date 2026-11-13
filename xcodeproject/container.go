@@ -26,7 +26,6 @@ type container struct {
 	schemes schemeSource
 }
 
-// Scheme implements Container.
 func (c *container) Scheme(name string) (xcscheme.Scheme, string, error) {
 	return c.schemes.Scheme(name)
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/hashicorp/go-version"
 )
 
-// Keychain describes a macOS Keychain
 type Keychain struct {
 	path     string
 	password stepconf.Secret
@@ -23,7 +22,6 @@ type Keychain struct {
 	factory command.Factory
 }
 
-// New ...
 func New(pth string, pass stepconf.Secret, factory command.Factory) (*Keychain, error) {
 	if exist, err := pathutil.IsPathExists(pth); err != nil {
 		return nil, err
@@ -49,7 +47,6 @@ func New(pth string, pass stepconf.Secret, factory command.Factory) (*Keychain, 
 	return createKeychain(pth, pass, factory)
 }
 
-// InstallCertificate ...
 func (k Keychain) InstallCertificate(cert certificateutil.CertificateInfoModel, pass stepconf.Secret) error {
 	b, err := cert.EncodeToP12("bitrise")
 	if err != nil {
@@ -121,7 +118,6 @@ func runSecurityCmd(factory command.Factory, args ...interface{}) error {
 	return nil
 }
 
-// listKeychains returns the paths of available keychains
 func (k Keychain) listKeychains() ([]string, error) {
 	cmd := k.factory.Create("security", []string{"list-keychain"}, nil)
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()
@@ -142,11 +138,6 @@ func (k Keychain) listKeychains() ([]string, error) {
 	return keychains, nil
 }
 
-// createKeychain creates a new keychain file at
-// path, protected by password. Returns an error
-// if the keychain could not be created, otherwise
-// a Keychain object representing the created
-// keychain is returned.
 func createKeychain(path string, password stepconf.Secret, factory command.Factory) (*Keychain, error) {
 	err := runSecurityCmd(factory, "-v", "create-keychain", "-p", password, path)
 	if err != nil {
@@ -160,8 +151,6 @@ func createKeychain(path string, password stepconf.Secret, factory command.Facto
 	}, nil
 }
 
-// importCertificate adds the certificate at path, protected by
-// passphrase to the k keychain.
 func (k Keychain) importCertificate(path string, passphrase stepconf.Secret) error {
 	return runSecurityCmd(k.factory, "import", path, "-k", k.path, "-P", passphrase, "-A")
 }
@@ -172,13 +161,10 @@ func (k Keychain) setKeyPartitionList() error {
 	return runSecurityCmd(k.factory, "set-key-partition-list", "-S", "apple-tool:,apple:", "-k", k.password, k.path)
 }
 
-// setLockSettings sets keychain autolocking.
 func (k Keychain) setLockSettings() error {
 	return runSecurityCmd(k.factory, "-v", "set-keychain-settings", "-lut", "72000", k.path)
 }
 
-// addToSearchPath registers the keychain
-// in the systemwide search path
 func (k Keychain) addToSearchPath() error {
 	keychains, err := k.listKeychains()
 	if err != nil {
@@ -188,19 +174,14 @@ func (k Keychain) addToSearchPath() error {
 	return runSecurityCmd(k.factory, "-v", "list-keychains", "-s", keychains)
 }
 
-// setAsDefault sets the keychain as the
-// default keychain for the system.
 func (k Keychain) setAsDefault() error {
 	return runSecurityCmd(k.factory, "-v", "default-keychain", "-s", k.path)
 }
 
-// unlock unlocks the keychain
 func (k Keychain) unlock() error {
 	return runSecurityCmd(k.factory, "-v", "unlock-keychain", "-p", k.password, k.path)
 }
 
-// isKeyPartitionListNeeded determines whether
-// key partition lists are used by the system.
 func (k Keychain) isKeyPartitionListNeeded() (bool, error) {
 	cmd := k.factory.Create("sw_vers", []string{"-productVersion"}, nil)
 	out, err := cmd.RunAndReturnTrimmedCombinedOutput()

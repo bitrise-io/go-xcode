@@ -6,7 +6,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
-// KnownProfileCapabilitiesMap ...
 var KnownProfileCapabilitiesMap = map[ProfileType]map[string]bool{
 	ProfileTypeMacOs: {
 		"com.apple.developer.networking.networkextension":                        true,
@@ -46,7 +45,6 @@ var KnownProfileCapabilitiesMap = map[ProfileType]map[string]bool{
 	},
 }
 
-// IsXcodeManaged ...
 func IsXcodeManaged(profileName string) bool {
 	if strings.HasPrefix(profileName, "XC") {
 		return true
@@ -62,7 +60,6 @@ func IsXcodeManaged(profileName string) bool {
 	return false
 }
 
-// MatchTargetAndProfileEntitlements ...
 func MatchTargetAndProfileEntitlements(targetEntitlements plistutil.PlistData, profileEntitlements plistutil.PlistData, profileType ProfileType) []string {
 	var missingEntitlements []string
 

@@ -5,13 +5,10 @@ import (
 	"net/http"
 )
 
-// CertificatesEndpoint ...
 const CertificatesEndpoint = "certificates"
 
-// ListCertificatesSortOption ...
 type ListCertificatesSortOption string
 
-// ListCertificatesSortOptions ...
 const (
 	ListCertificatesSortOptionDisplayName         ListCertificatesSortOption = "displayName"
 	ListCertificatesSortOptionDisplayNameDesc     ListCertificatesSortOption = "-displayName"
@@ -23,7 +20,6 @@ const (
 	ListCertificatesSortOptionIDDesc              ListCertificatesSortOption = "-id"
 )
 
-// ListCertificatesOptions ...
 type ListCertificatesOptions struct {
 	PagingOptions
 	FilterSerialNumber    string                     `url:"filter[serialNumber],omitempty"`
@@ -31,10 +27,8 @@ type ListCertificatesOptions struct {
 	Sort                  ListCertificatesSortOption `url:"sort,omitempty"`
 }
 
-// CertificateType ...
 type CertificateType string
 
-// CertificateTypes ...
 const (
 	Development              CertificateType = "DEVELOPMENT"
 	Distribution             CertificateType = "DISTRIBUTION"
@@ -47,7 +41,6 @@ const (
 	DeveloperIDApplication   CertificateType = "DEVELOPER_ID_APPLICATION"
 )
 
-// CertificateAttributes ...
 type CertificateAttributes struct {
 	CertificateContent []byte           `json:"certificateContent"`
 	DisplayName        string           `json:"displayName"`
@@ -58,21 +51,18 @@ type CertificateAttributes struct {
 	CertificateType    CertificateType  `json:"certificateType"`
 }
 
-// Certificate ...
 type Certificate struct {
 	Attributes CertificateAttributes `json:"attributes"`
 	ID         string                `json:"id"`
 	Type       string                `json:"type"`
 }
 
-// CertificatesResponse ...
 type CertificatesResponse struct {
 	Data  []Certificate      `json:"data"`
 	Links PagedDocumentLinks `json:"links,omitempty"`
 	Meta  PagingInformation  `json:"meta,omitempty"`
 }
 
-// ListCertificates ...
 func (s ProvisioningService) ListCertificates(opt *ListCertificatesOptions) (*CertificatesResponse, error) {
 	if err := opt.UpdateCursor(); err != nil {
 		return nil, err
@@ -96,7 +86,6 @@ func (s ProvisioningService) ListCertificates(opt *ListCertificatesOptions) (*Ce
 	return r, nil
 }
 
-// FetchCertificate fetch the certificate entity from the
 func (s ProvisioningService) FetchCertificate(serialNumber string) (Certificate, error) {
 	r, err := s.ListCertificates(&ListCertificatesOptions{
 		FilterSerialNumber: serialNumber,
@@ -113,7 +102,6 @@ func (s ProvisioningService) FetchCertificate(serialNumber string) (Certificate,
 	return r.Data[0], nil
 }
 
-// Certificates ...
 func (s ProvisioningService) Certificates(relationshipLink string, opt *PagingOptions) (*CertificatesResponse, error) {
 	if err := opt.UpdateCursor(); err != nil {
 		return nil, err

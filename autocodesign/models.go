@@ -4,7 +4,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 )
 
-// CertificateTypeByDistribution ...
 var CertificateTypeByDistribution = map[DistributionType]appstoreconnect.CertificateType{
 	Development: appstoreconnect.IOSDevelopment,
 	AppStore:    appstoreconnect.IOSDistribution,
@@ -12,7 +11,6 @@ var CertificateTypeByDistribution = map[DistributionType]appstoreconnect.Certifi
 	Enterprise:  appstoreconnect.IOSDistribution,
 }
 
-// ProfileTypeToPlatform ...
 var ProfileTypeToPlatform = map[appstoreconnect.ProfileType]Platform{
 	appstoreconnect.IOSAppDevelopment: IOS,
 	appstoreconnect.IOSAppStore:       IOS,
@@ -25,7 +23,6 @@ var ProfileTypeToPlatform = map[appstoreconnect.ProfileType]Platform{
 	appstoreconnect.TvOSAppInHouse:     TVOS,
 }
 
-// ProfileTypeToDistribution ...
 var ProfileTypeToDistribution = map[appstoreconnect.ProfileType]DistributionType{
 	appstoreconnect.IOSAppDevelopment: Development,
 	appstoreconnect.IOSAppStore:       AppStore,
@@ -38,7 +35,6 @@ var ProfileTypeToDistribution = map[appstoreconnect.ProfileType]DistributionType
 	appstoreconnect.TvOSAppInHouse:     Enterprise,
 }
 
-// PlatformToProfileTypeByDistribution ...
 var PlatformToProfileTypeByDistribution = map[Platform]map[DistributionType]appstoreconnect.ProfileType{
 	IOS: {
 		Development: appstoreconnect.IOSAppDevelopment,

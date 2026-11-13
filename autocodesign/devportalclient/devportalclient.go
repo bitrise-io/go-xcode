@@ -21,19 +21,16 @@ import (
 )
 
 const (
-	// NotConnectedWarning ...
 	NotConnectedWarning = `Bitrise Apple Service connection not found.
 Most likely because there is no configured Bitrise Apple Service connection.
 Read more: https://devcenter.bitrise.io/getting-started/configuring-bitrise-steps-that-require-apple-developer-account-data/`
 )
 
-// Factory ...
 type Factory struct {
 	logger      log.Logger
 	filemanager fileutil.FileManager
 }
 
-// NewFactory ...
 func NewFactory(logger log.Logger, filemanager fileutil.FileManager) Factory {
 	return Factory{
 		logger:      logger,
@@ -41,7 +38,6 @@ func NewFactory(logger log.Logger, filemanager fileutil.FileManager) Factory {
 	}
 }
 
-// CreateBitriseConnection ...
 func (f Factory) CreateBitriseConnection(buildURL, buildAPIToken string) (*devportalservice.AppleDeveloperConnection, error) {
 	f.logger.Println()
 	f.logger.Infof("Fetching Apple Service connection")
@@ -72,7 +68,6 @@ func (f Factory) CreateBitriseConnection(buildURL, buildAPIToken string) (*devpo
 	return conn, nil
 }
 
-// Create ...
 func (f Factory) Create(credentials devportalservice.Credentials, teamID string) (autocodesign.DevPortalClient, error) {
 	f.logger.Println()
 	f.logger.Infof("Initializing Developer Portal client")
@@ -90,7 +85,7 @@ func (f Factory) Create(credentials devportalservice.Credentials, teamID string)
 			f.logger,
 			tracker,
 		)
-		client.EnableDebugLogs = false // Turn off client debug logs including HTTP call debug logs
+		client.EnableDebugLogs = false
 		devportalClient = appstoreconnectclient.NewAPIDevPortalClient(client)
 		f.logger.Debugf("App Store Connect API client created with base URL: %s", client.BaseURL)
 	} else if credentials.AppleID != nil {

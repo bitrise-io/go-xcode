@@ -9,7 +9,7 @@ type TestParams struct {
 	Destination                    string // a user -destination is added, not replaced: test runs on several destinations
 	TestPlan                       string
 	XCConfigPath                   string
-	Clean                          bool // run clean first
+	Clean                          bool
 	ResultBundlePath               string
 	TestRepetitionMode             TestRepetitionMode
 	MaximumTestRepetitions         int
@@ -20,7 +20,6 @@ type TestParams struct {
 	AdditionalOptions              Options  // the step's xcodebuild_options, from ParseOptions
 }
 
-// Test renders params into a test Command.
 func Test(params TestParams) (Command, error) {
 	opts := containerOptions(params.ProjectPath)
 	opts = appendValue(opts, "-scheme", params.Scheme)

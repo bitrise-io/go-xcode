@@ -8,19 +8,16 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 )
 
-// Printer ...
 type Printer struct {
 	logger log.Logger
 }
 
-// NewPrinter ...
 func NewPrinter(logger log.Logger) *Printer {
 	return &Printer{
 		logger: logger,
 	}
 }
 
-// ListToDebugString ...
 func (printer *Printer) ListToDebugString(groups []SelectableCodeSignGroup) string {
 	var builder strings.Builder
 	for _, group := range groups {
@@ -30,7 +27,6 @@ func (printer *Printer) ListToDebugString(groups []SelectableCodeSignGroup) stri
 	return builder.String()
 }
 
-// ToDebugString ...
 func (printer *Printer) ToDebugString(group SelectableCodeSignGroup) string {
 	printable := map[string]any{}
 	printable["team"] = fmt.Sprintf("%s (%s)", group.Certificate.TeamName, group.Certificate.TeamID)

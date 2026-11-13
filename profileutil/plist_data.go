@@ -10,10 +10,8 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
 )
 
-// PlistData ...
 type PlistData plistutil.PlistData
 
-// GetProfileType ...
 func (profile PlistData) GetProfileType() (ProfileType, error) {
 	data := plistutil.PlistData(profile)
 	platforms, _ := data.GetStringArray("Platform")
@@ -38,21 +36,18 @@ func (profile PlistData) GetProfileType() (ProfileType, error) {
 	return profileType, nil
 }
 
-// GetUUID ...
 func (profile PlistData) GetUUID() string {
 	data := plistutil.PlistData(profile)
 	uuid, _ := data.GetString("UUID")
 	return uuid
 }
 
-// GetName ...
 func (profile PlistData) GetName() string {
 	data := plistutil.PlistData(profile)
 	name, _ := data.GetString("Name")
 	return name
 }
 
-// GetApplicationIdentifier ...
 func (profile PlistData) GetApplicationIdentifier() string {
 	data := plistutil.PlistData(profile)
 	entitlements, ok := data.GetMapStringInterface("Entitlements")
@@ -70,7 +65,6 @@ func (profile PlistData) GetApplicationIdentifier() string {
 	return applicationID
 }
 
-// GetBundleIdentifier ...
 func (profile PlistData) GetBundleIdentifier() string {
 	applicationID := profile.GetApplicationIdentifier()
 
@@ -86,7 +80,6 @@ func (profile PlistData) GetBundleIdentifier() string {
 	return strings.TrimPrefix(applicationID, teamID+".")
 }
 
-// GetExportMethod ...
 func (profile PlistData) GetExportMethod() exportoptions.Method {
 	data := plistutil.PlistData(profile)
 	entitlements, _ := data.GetMapStringInterface("Entitlements")
@@ -121,14 +114,12 @@ func (profile PlistData) GetExportMethod() exportoptions.Method {
 	return exportoptions.MethodDefault
 }
 
-// GetEntitlements ...
 func (profile PlistData) GetEntitlements() plistutil.PlistData {
 	data := plistutil.PlistData(profile)
 	entitlements, _ := data.GetMapStringInterface("Entitlements")
 	return entitlements
 }
 
-// GetTeamID ...
 func (profile PlistData) GetTeamID() string {
 	data := plistutil.PlistData(profile)
 	entitlements, ok := data.GetMapStringInterface("Entitlements")
@@ -139,28 +130,24 @@ func (profile PlistData) GetTeamID() string {
 	return ""
 }
 
-// GetExpirationDate ...
 func (profile PlistData) GetExpirationDate() time.Time {
 	data := plistutil.PlistData(profile)
 	expiry, _ := data.GetTime("ExpirationDate")
 	return expiry
 }
 
-// GetProvisionedDevices ...
 func (profile PlistData) GetProvisionedDevices() []string {
 	data := plistutil.PlistData(profile)
 	devices, _ := data.GetStringArray("ProvisionedDevices")
 	return devices
 }
 
-// GetDeveloperCertificates ...
 func (profile PlistData) GetDeveloperCertificates() [][]byte {
 	data := plistutil.PlistData(profile)
 	developerCertificates, _ := data.GetByteArrayArray("DeveloperCertificates")
 	return developerCertificates
 }
 
-// GetDeveloperCertificateInfo ...
 func (profile PlistData) GetDeveloperCertificateInfo() []certificateutil.CertificateInfoModel {
 	certificateBytesList := profile.GetDeveloperCertificates()
 
@@ -178,21 +165,18 @@ func (profile PlistData) GetDeveloperCertificateInfo() []certificateutil.Certifi
 	return certificateInfos
 }
 
-// GetTeamName ...
 func (profile PlistData) GetTeamName() string {
 	data := plistutil.PlistData(profile)
 	teamName, _ := data.GetString("TeamName")
 	return teamName
 }
 
-// GetCreationDate ...
 func (profile PlistData) GetCreationDate() time.Time {
 	data := plistutil.PlistData(profile)
 	creationDate, _ := data.GetTime("CreationDate")
 	return creationDate
 }
 
-// GetProvisionsAllDevices ...
 func (profile PlistData) GetProvisionsAllDevices() bool {
 	data := plistutil.PlistData(profile)
 	provisionsAlldevices, _ := data.GetBool("ProvisionsAllDevices")

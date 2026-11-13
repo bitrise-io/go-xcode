@@ -27,7 +27,6 @@ import (
 //go:embed spaceship
 var spaceship embed.FS
 
-// Client ...
 type Client struct {
 	workDir        string
 	authConfig     devportalservice.AppleID
@@ -37,7 +36,6 @@ type Client struct {
 	cmdFactory ruby.CommandFactory
 }
 
-// NewClient ...
 func NewClient(authConfig devportalservice.AppleID, teamID string, cmdFactory ruby.CommandFactory) (*Client, error) {
 	dir, err := prepareSpaceship(cmdFactory)
 	if err != nil {
@@ -52,7 +50,6 @@ func NewClient(authConfig devportalservice.AppleID, teamID string, cmdFactory ru
 	}, nil
 }
 
-// DevPortalClient ...
 type DevPortalClient struct {
 	*AuthClient
 	*CertificateSource
@@ -60,7 +57,6 @@ type DevPortalClient struct {
 	*DeviceClient
 }
 
-// NewSpaceshipDevportalClient ...
 func NewSpaceshipDevportalClient(client *Client) autocodesign.DevPortalClient {
 	return DevPortalClient{
 		AuthClient:        NewAuthClient(client),

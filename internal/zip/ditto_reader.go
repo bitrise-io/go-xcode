@@ -14,20 +14,17 @@ import (
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
-// DittoReader ...
 type DittoReader struct {
 	logger       log.Logger
 	archivePath  string
 	extractedDir string
 }
 
-// IsDittoReaderAvailable ...
 func IsDittoReaderAvailable() bool {
 	_, err := exec.LookPath("ditto")
 	return err == nil
 }
 
-// NewDittoReader ...
 func NewDittoReader(archivePath string, logger log.Logger) *DittoReader {
 	return &DittoReader{
 		logger:      logger,
@@ -35,7 +32,6 @@ func NewDittoReader(archivePath string, logger log.Logger) *DittoReader {
 	}
 }
 
-// ReadFile ...
 func (r *DittoReader) ReadFile(relPthPattern string) ([]byte, error) {
 	if r.extractedDir == "" {
 		if err := r.extractArchive(); err != nil {
@@ -73,7 +69,6 @@ func (r *DittoReader) ReadFile(relPthPattern string) ([]byte, error) {
 	return b, nil
 }
 
-// Close ...
 func (r *DittoReader) Close() error {
 	if r.extractedDir == "" {
 		return nil

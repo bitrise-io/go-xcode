@@ -12,14 +12,12 @@ import (
 	"google.golang.org/api/option"
 )
 
-// SecretAccessor ...
 type SecretAccessor struct {
 	ctx       context.Context
 	client    *secretmanager.Client
 	projectID string
 }
 
-// NewSecretAccessor ...
 func NewSecretAccessor(serviceAccountJSONContent, projectID string) (*SecretAccessor, error) {
 	ctx := context.Background()
 	client, err := secretmanager.NewClient(ctx, option.WithCredentialsJSON([]byte(serviceAccountJSONContent)))
@@ -34,7 +32,6 @@ func NewSecretAccessor(serviceAccountJSONContent, projectID string) (*SecretAcce
 	}, nil
 }
 
-// GetSecret ...
 func (m SecretAccessor) GetSecret(key string) (string, error) {
 	secretValue := ""
 	if err := retry.Times(3).Wait(30 * time.Second).Try(func(attempt uint) error {

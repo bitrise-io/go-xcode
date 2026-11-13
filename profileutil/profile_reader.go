@@ -12,13 +12,10 @@ import (
 )
 
 const (
-	// IOSExtension is the iOS provisioning profile extension
 	IOSExtension = ".mobileprovision"
-	// MacExtension is the macOS provisioning profile extension
 	MacExtension = ".provisionprofile"
 )
 
-// ProfileReader ...
 type ProfileReader struct {
 	logger       log.Logger
 	fileManager  fileutil.FileManager
@@ -26,7 +23,6 @@ type ProfileReader struct {
 	pathProvider pathutil.PathProvider
 }
 
-// NewProfileReader ...
 func NewProfileReader(logger log.Logger, fileManager fileutil.FileManager, pathModifier pathutil.PathModifier, pathProvider pathutil.PathProvider) ProfileReader {
 	return ProfileReader{
 		logger:       logger,
@@ -36,7 +32,6 @@ func NewProfileReader(logger log.Logger, fileManager fileutil.FileManager, pathM
 	}
 }
 
-// ProvisioningProfileInfoFromFile ...
 func (reader ProfileReader) ProvisioningProfileInfoFromFile(pth string) (ProvisioningProfileInfoModel, error) {
 	provisioningProfile, err := reader.provisioningProfileFromFile(pth)
 	if err != nil {
@@ -48,7 +43,6 @@ func (reader ProfileReader) ProvisioningProfileInfoFromFile(pth string) (Provisi
 	return ProvisioningProfileInfoModel{}, errors.New("failed to parse provisioning profile infos")
 }
 
-// InstalledProvisioningProfileInfos ...
 func (reader ProfileReader) InstalledProvisioningProfileInfos(profileType ProfileType) ([]ProvisioningProfileInfoModel, error) {
 	provisioningProfiles, err := reader.installedProvisioningProfiles(profileType)
 	if err != nil {
@@ -68,7 +62,6 @@ func (reader ProfileReader) InstalledProvisioningProfileInfos(profileType Profil
 	return infos, nil
 }
 
-// ListProfiles ...
 func (reader ProfileReader) ListProfiles(profileType ProfileType, uuid string) ([]string, error) {
 	ext := IOSExtension
 	if profileType == ProfileTypeMacOs {
@@ -101,11 +94,11 @@ func (reader ProfileReader) ListProfiles(profileType ProfileType, uuid string) (
 
 // ProvisioningProfilesDirPath returns the provisioning profile directory path based on the Xcode major version.
 func (reader ProfileReader) ProvisioningProfilesDirPath(xcodeMajorVersion int64) (string, error) {
-	if xcodeMajorVersion >= 16 || xcodeMajorVersion == 0 { // return the modern path used by Xcode 16 and later
+	if xcodeMajorVersion >= 16 || xcodeMajorVersion == 0 {
 		return reader.provisioningProfilesDirModernPath()
 	}
 
-	return reader.provisioningProfilesDirLegacyPath() // return the legacy path used by Xcode 15 and earlier
+	return reader.provisioningProfilesDirLegacyPath()
 }
 
 func (reader ProfileReader) provisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {
@@ -143,12 +136,12 @@ func (reader ProfileReader) installedProvisioningProfiles(profileType ProfileTyp
 	return profiles, nil
 }
 
-// ProvisioningProfilesDirModernPath is the absolute path used to store and look up provisioning profiles (used Xcode 16 and later)
+// Used by Xcode 16 and later.
 func (reader ProfileReader) provisioningProfilesDirModernPath() (string, error) {
 	return reader.pathModifier.AbsPath("~/Library/Developer/Xcode/UserData/Provisioning Profiles")
 }
 
-// ProvisioningProfilesDirLegacyPath is the absolute path used to store and look up provisioning profiles (used Xcode 15 and earlier)
+// Used by Xcode 15 and earlier.
 func (reader ProfileReader) provisioningProfilesDirLegacyPath() (string, error) {
 	return reader.pathModifier.AbsPath("~/Library/MobileDevice/Provisioning Profiles")
 }

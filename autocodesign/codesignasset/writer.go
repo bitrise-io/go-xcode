@@ -14,7 +14,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
-// Writer ...
 type Writer struct {
 	logger            log.Logger
 	keychain          keychain.Keychain
@@ -23,7 +22,6 @@ type Writer struct {
 	xcodeMajorVersion int64
 }
 
-// NewWriter ...
 func NewWriter(logger log.Logger, keychain keychain.Keychain, fileManager fileutil.FileManager, profileReader profileutil.ProfileReader, xcodeMajorVersion int64) Writer {
 	return Writer{
 		logger:            logger,
@@ -34,7 +32,6 @@ func NewWriter(logger log.Logger, keychain keychain.Keychain, fileManager fileut
 	}
 }
 
-// Write ...
 func (w Writer) Write(codesignAssetsByDistributionType map[autocodesign.DistributionType]autocodesign.AppCodesignAssets) error {
 	i := 0
 	for _, codesignAssets := range codesignAssetsByDistributionType {
@@ -70,14 +67,12 @@ func (w Writer) Write(codesignAssetsByDistributionType map[autocodesign.Distribu
 	return nil
 }
 
-// InstallCertificate installs the certificate to the Keychain
 func (w Writer) InstallCertificate(certificate certificateutil.CertificateInfoModel) error {
 	// Empty passphrase provided, as already parsed certificate + private key
 	return w.keychain.InstallCertificate(certificate, "")
 }
 
-// InstallProfile writes the provided profile under the `$HOME/Library/MobileDevice/Provisioning Profiles` directory.
-// Xcode uses profiles located in that directory.
+// InstallProfile writes the provided profile into the directory the given Xcode version reads profiles from.
 // The file extension depends on the profile's platform `IOS` => `.mobileprovision`, `MAC_OS` => `.provisionprofile`
 func (w Writer) InstallProfile(profile autocodesign.Profile) error {
 	var ext string

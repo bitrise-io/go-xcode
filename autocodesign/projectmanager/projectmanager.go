@@ -14,20 +14,17 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj"
 )
 
-// Project ...
 type Project struct {
 	logger     log.Logger
 	projHelper ProjectHelper
 }
 
-// Factory ...
 type Factory struct {
 	logger      log.Logger
 	envRepo     env.Repository
 	buildAction BuildAction
 }
 
-// InitParams ...
 type InitParams struct {
 	ProjectOrWorkspacePath                       string
 	SchemeName                                   string
@@ -35,12 +32,10 @@ type InitParams struct {
 	AdditionalXcodebuildShowbuildsettingsOptions []string
 }
 
-// NewFactory ...
 func NewFactory(logger log.Logger, envRepo env.Repository, buildAction BuildAction) Factory {
 	return Factory{logger: logger, envRepo: envRepo, buildAction: buildAction}
 }
 
-// Create ...
 func (f *Factory) Create(params InitParams) (Project, error) {
 	isCompatibilityModeValue := f.envRepo.Get("BITRISEIO_INTERNAL_XCODE_SHOWBUILDSETTINGS_COMPAT_MODE")
 	isCompatMode := isCompatibilityModeValue == "true"
@@ -77,12 +72,10 @@ func (p Project) Platform() (autocodesign.Platform, error) {
 	return platform, nil
 }
 
-// IsMainTargetProductTypeAppClip returns true if the main target is of App Clip product type
 func (p Project) IsMainTargetProductTypeAppClip() bool {
 	return p.projHelper.MainTarget.IsAppClipProduct()
 }
 
-// MainTargetBundleID returns the bundle ID of the main target
 func (p Project) MainTargetBundleID() (string, error) {
 	bundleID, err := p.projHelper.TargetBundleID(p.projHelper.MainTarget.Name, p.projHelper.Configuration)
 	if err != nil {
@@ -103,7 +96,6 @@ func (p Project) ReadSchemeBuildSettingString(key string) (string, error) {
 	return value, nil
 }
 
-// GetAppLayout ...
 func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error) {
 	p.logger.Printf("Configuration: %s", p.projHelper.Configuration)
 
@@ -149,7 +141,6 @@ func (p Project) GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error
 	}, nil
 }
 
-// ForceCodesignAssets ...
 func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType, codesignAssetsByDistributionType map[autocodesign.DistributionType]autocodesign.AppCodesignAssets) error {
 	archivableTargets := p.projHelper.ArchivableTargets()
 	var archivableTargetsCounter = 0
@@ -247,7 +238,6 @@ func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType,
 	return nil
 }
 
-// CanGenerateProfileWithEntitlements checks all entitlements, whether they can be generated
 func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]autocodesign.Entitlements) (ok bool, badEntitlement string, badBundleID string) {
 	for bundleID, entitlements := range entitlementsByBundleID {
 		for entitlementKey, value := range entitlements {

@@ -10,8 +10,6 @@ type CertificateValidityGroups struct {
 	DuplicatedCertificates []CertificateInfoModel
 }
 
-// GroupCertificatesByValidity partitions the certificate infos into valid, invalid
-// and duplicated common name groups.
 func GroupCertificatesByValidity(certificateInfos []CertificateInfoModel) CertificateValidityGroups {
 	var invalidCertificates []CertificateInfoModel
 	nameToCerts := map[string][]CertificateInfoModel{}

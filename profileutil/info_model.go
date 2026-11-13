@@ -11,17 +11,14 @@ import (
 	"github.com/smallstep/pkcs7"
 )
 
-// ProfileType ...
 type ProfileType string
 
-// ProfileTypes ...
 const (
 	ProfileTypeIos   ProfileType = "ios"
 	ProfileTypeMacOs ProfileType = "osx"
 	ProfileTypeTvOs  ProfileType = "tvos"
 )
 
-// ProvisioningProfileInfoModel ...
 type ProvisioningProfileInfoModel struct {
 	UUID                  string
 	Name                  string
@@ -38,7 +35,6 @@ type ProvisioningProfileInfoModel struct {
 	Type                  ProfileType
 }
 
-// NewProvisioningProfileInfo ...
 func NewProvisioningProfileInfo(profilePKCS7 pkcs7.PKCS7) (ProvisioningProfileInfoModel, error) {
 	var data plistutil.PlistData
 	if _, err := plist.Unmarshal(profilePKCS7.Content, &data); err != nil {
@@ -70,7 +66,6 @@ func NewProvisioningProfileInfo(profilePKCS7 pkcs7.PKCS7) (ProvisioningProfileIn
 	return info, nil
 }
 
-// NewProvisioningProfileInfoFromPKCS7Content ...
 func NewProvisioningProfileInfoFromPKCS7Content(content []byte) (ProvisioningProfileInfoModel, error) {
 	profilePKCS7, err := pkcs7.Parse(content)
 	if err != nil {
@@ -80,12 +75,10 @@ func NewProvisioningProfileInfoFromPKCS7Content(content []byte) (ProvisioningPro
 	return NewProvisioningProfileInfo(*profilePKCS7)
 }
 
-// IsXcodeManaged ...
 func (info ProvisioningProfileInfoModel) IsXcodeManaged() bool {
 	return IsXcodeManaged(info.Name)
 }
 
-// CheckValidity ...
 func (info ProvisioningProfileInfoModel) CheckValidity(currentTime func() time.Time) error {
 	timeNow := currentTime()
 	if !timeNow.Before(info.ExpirationDate) {
@@ -94,7 +87,6 @@ func (info ProvisioningProfileInfoModel) CheckValidity(currentTime func() time.T
 	return nil
 }
 
-// HasInstalledCertificate ...
 func (info ProvisioningProfileInfoModel) HasInstalledCertificate(installedCertificates []certificateutil.CertificateInfoModel) bool {
 	has := false
 	for _, certificate := range info.DeveloperCertificates {

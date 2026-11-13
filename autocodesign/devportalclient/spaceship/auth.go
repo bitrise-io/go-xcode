@@ -5,17 +5,14 @@ import (
 	"fmt"
 )
 
-// AuthClient ...
 type AuthClient struct {
 	client *Client
 }
 
-// NewAuthClient ...
 func NewAuthClient(client *Client) *AuthClient {
 	return &AuthClient{client: client}
 }
 
-// Login ...
 func (c *AuthClient) Login() error {
 	output, err := c.client.runSpaceshipCommand("login")
 	if err != nil {

@@ -15,7 +15,6 @@ type DefaultReader struct {
 	useFallbackZipReader bool
 }
 
-// NewDefaultReader ...
 func NewDefaultReader(archivePath string, logger log.Logger) (*DefaultReader, error) {
 	stdlibReader, err := zip.NewStdlibRead(archivePath, logger)
 	if err != nil {
@@ -35,7 +34,6 @@ func NewDefaultReader(archivePath string, logger log.Logger) (*DefaultReader, er
 	}, nil
 }
 
-// ReadFile ...
 func (r *DefaultReader) ReadFile(relPthPattern string) ([]byte, error) {
 	if !r.useFallbackZipReader {
 		b, err := r.stdlibZipReader.ReadFile(relPthPattern)
@@ -56,7 +54,6 @@ func (r *DefaultReader) ReadFile(relPthPattern string) ([]byte, error) {
 	}
 }
 
-// Close ...
 func (r *DefaultReader) Close() error {
 	stdlibZipReaderCloseErr := r.stdlibZipReader.Close()
 	if !r.useFallbackZipReader {

@@ -64,7 +64,6 @@ type httpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// AppleDeveloperConnectionProvider ...
 type AppleDeveloperConnectionProvider interface {
 	GetAppleDeveloperConnection() (*AppleDeveloperConnection, error)
 }
@@ -78,7 +77,6 @@ type BitriseClient struct {
 	buildURL, buildAPIToken string
 }
 
-// NewBitriseClient creates a new instance of BitriseClient.
 func NewBitriseClient(logger log.Logger, filemanager fileutil.FileManager, client httpClient, buildURL, buildAPIToken string) *BitriseClient {
 	return &BitriseClient{
 		log:           logger,
@@ -172,11 +170,9 @@ func (c *BitriseClient) download() ([]byte, error) {
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		// On error, any Response can be ignored
 		return nil, fmt.Errorf("failed to perform request: %s", err)
 	}
 
-	// The client must close the response body when finished with it
 	defer func() {
 		if cerr := resp.Body.Close(); cerr != nil {
 			c.log.Warnf("Failed to close response body: %s", cerr)

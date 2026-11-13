@@ -17,14 +17,12 @@ import (
 )
 
 const (
-	// XcodeProjExtension is the file extension of an Xcode project bundle.
 	XcodeProjExtension = ".xcodeproj"
 
 	pbxProjFileName = "project.pbxproj"
 	xcProjFileName  = "project.xcproj"
 )
 
-// Factory opens Xcode projects with a fixed set of dependencies.
 type Factory struct {
 	logger           log.Logger
 	buildSettings    BuildSettingsProvider
@@ -94,7 +92,6 @@ func NewFactory(
 	}
 }
 
-// IsXcodeProj reports whether the path has the .xcodeproj extension.
 func IsXcodeProj(pth string) bool {
 	return filepath.Ext(pth) == XcodeProjExtension
 }
@@ -197,7 +194,6 @@ func (p *Project) Targets() []Target {
 	return p.targets
 }
 
-// Target returns the target with the given ID.
 func (p *Project) Target(id string) (Target, bool) {
 	for _, target := range p.targets {
 		if target.ID == id {
@@ -207,7 +203,6 @@ func (p *Project) Target(id string) (Target, bool) {
 	return Target{}, false
 }
 
-// TargetByName returns the target with the given name.
 func (p *Project) TargetByName(name string) (Target, bool) {
 	for _, target := range p.targets {
 		if target.Name == name {
@@ -222,7 +217,6 @@ func (p *Project) BuildConfigurations() []BuildConfiguration {
 	return p.buildConfigurations
 }
 
-// DefaultConfigurationName returns the name of the project's default build configuration.
 func (p *Project) DefaultConfigurationName() string {
 	return p.defaultConfigurationName
 }

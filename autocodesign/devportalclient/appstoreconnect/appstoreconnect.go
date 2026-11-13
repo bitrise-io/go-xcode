@@ -42,7 +42,6 @@ var (
 	jwtDuration = 18 * time.Minute
 )
 
-// HTTPClient ...
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
@@ -51,7 +50,6 @@ type service struct {
 	client *Client
 }
 
-// Client communicate with the Apple API
 type Client struct {
 	EnableDebugLogs bool
 
@@ -73,18 +71,14 @@ type Client struct {
 	tracker Tracker
 }
 
-// NewRetryableHTTPClient create a new http client with retry settings.
 func NewRetryableHTTPClient(logger log.Logger, tracker Tracker) *http.Client {
 	client := retryhttp.NewClient(logger)
 
 	trackingTransport := newTrackingRoundTripper(client.HTTPClient.Transport, tracker)
 	client.HTTPClient.Transport = trackingTransport
 
-	// RequestLogHook is called before each retry (attemptNum > 0 for retries, 0 for initial request).
-	// We mark retry attempts in the request context so RoundTrip can track which attempts are retries.
-	// We use pointer dereference (*req = *...) to modify the request in-place because RequestLogHook
-	// doesn't return a value - it modifies the request through side effects. This updates the request's
-	// context field, which will be present when RoundTrip is called immediately after.
+	// The hook runs before every attempt (attemptNum is 0 for the first). It returns nothing, so a
+	// retry is marked by replacing *req with a copy whose context carries the flag for RoundTrip.
 	client.RequestLogHook = func(_ retryablehttp.Logger, req *http.Request, attemptNum int) {
 		if attemptNum > 0 {
 			*req = *trackingTransport.markAsRetry(req)
@@ -138,7 +132,6 @@ func NewRetryableHTTPClient(logger log.Logger, tracker Tracker) *http.Client {
 	return client.StandardClient()
 }
 
-// NewClient creates a new client
 func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte, isEnterpise bool, logger log.Logger, tracker Tracker) *Client {
 	targetURL := clientBaseURL
 	targetAudience := tokenAudience
@@ -175,8 +168,6 @@ func (c *Client) Tracker() Tracker {
 	return c.tracker
 }
 
-// ensureSignedToken makes sure that the JWT auth token is not expired
-// and return a signed key
 func (c *Client) ensureSignedToken() (string, error) {
 	if c.token != nil {
 		err := c.token.Claims.Valid()
@@ -198,14 +189,12 @@ func (c *Client) ensureSignedToken() (string, error) {
 	return c.signedToken, nil
 }
 
-// NewRequestWithRelationshipURL ...
 func (c *Client) NewRequestWithRelationshipURL(method, endpoint string, body interface{}) (*http.Request, error) {
 	endpoint = strings.TrimPrefix(endpoint, c.BaseURL.String()+apiVersion+"/")
 
 	return c.NewRequest(method, endpoint, body)
 }
 
-// NewRequest creates a new http.Request
 func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Request, error) {
 	endpoint = apiVersion + "/" + endpoint
 
@@ -263,14 +252,12 @@ func checkResponse(logger log.Logger, r *http.Response) error {
 	return errorResponse
 }
 
-// Debugf ...
 func (c *Client) Debugf(format string, v ...interface{}) {
 	if c.EnableDebugLogs {
 		c.logger.Debugf(format, v...)
 	}
 }
 
-// Do ...
 func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	c.Debugf("Request:")
 	if c.EnableDebugLogs {
@@ -317,14 +304,12 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	return resp, err
 }
 
-// PagingOptions ...
 type PagingOptions struct {
 	Limit  int    `url:"limit,omitempty"`
 	Cursor string `url:"cursor,omitempty"`
 	Next   string `url:"-"`
 }
 
-// UpdateCursor ...
 func (opt *PagingOptions) UpdateCursor() error {
 	if opt != nil && opt.Next != "" {
 		u, err := url.Parse(opt.Next)

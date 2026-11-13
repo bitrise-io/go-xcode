@@ -12,7 +12,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
-// BuildableReference ...
 type BuildableReference struct {
 	BuildableIdentifier string `xml:"BuildableIdentifier,attr"`
 	BlueprintIdentifier string `xml:"BlueprintIdentifier,attr"`
@@ -21,7 +20,6 @@ type BuildableReference struct {
 	ReferencedContainer string `xml:"ReferencedContainer,attr"`
 }
 
-// IsAppReference ...
 func (r BuildableReference) IsAppReference() bool {
 	return filepath.Ext(r.BuildableName) == ".app"
 }
@@ -30,7 +28,6 @@ func (r BuildableReference) isTestProduct() bool {
 	return filepath.Ext(r.BuildableName) == ".xctest"
 }
 
-// ReferencedContainerAbsPath ...
 func (r BuildableReference) ReferencedContainerAbsPath(schemeContainerDir string) (string, error) {
 	s := strings.Split(r.ReferencedContainer, ":")
 	if len(s) != 2 {
@@ -43,7 +40,6 @@ func (r BuildableReference) ReferencedContainerAbsPath(schemeContainerDir string
 	return pathutil.NewPathModifier().AbsPath(absPth)
 }
 
-// BuildActionEntry ...
 type BuildActionEntry struct {
 	BuildForTesting   string `xml:"buildForTesting,attr"`
 	BuildForRunning   string `xml:"buildForRunning,attr"`
@@ -54,14 +50,12 @@ type BuildActionEntry struct {
 	BuildableReference BuildableReference
 }
 
-// BuildAction ...
 type BuildAction struct {
 	ParallelizeBuildables     string             `xml:"parallelizeBuildables,attr"`
 	BuildImplicitDependencies string             `xml:"buildImplicitDependencies,attr"`
 	BuildActionEntries        []BuildActionEntry `xml:"BuildActionEntries>BuildActionEntry"`
 }
 
-// TestableReference ...
 type TestableReference struct {
 	Skipped        string `xml:"skipped,attr"`
 	Parallelizable string `xml:"parallelizable,attr,omitempty"`
@@ -73,18 +67,15 @@ func (r TestableReference) isTestable() bool {
 	return r.Skipped == "NO" && r.BuildableReference.isTestProduct()
 }
 
-// TestPlanReference ...
 type TestPlanReference struct {
 	Reference string `xml:"reference,attr,omitempty"`
 	Default   string `xml:"default,attr,omitempty"`
 }
 
-// IsDefault ...
 func (r TestPlanReference) IsDefault() bool {
 	return r.Default == "YES"
 }
 
-// Name ...
 func (r TestPlanReference) Name() string {
 	// reference = "container:FullTests.xctestplan"
 	idx := strings.Index(r.Reference, ":")
@@ -92,21 +83,17 @@ func (r TestPlanReference) Name() string {
 	return strings.TrimSuffix(testPlanFileName, filepath.Ext(testPlanFileName))
 }
 
-// MacroExpansion ...
 type MacroExpansion struct {
 	BuildableReference BuildableReference
 }
 
-// AdditionalOptions ...
 type AdditionalOptions struct {
 }
 
-// TestPlans ...
 type TestPlans struct {
 	TestPlanReferences []TestPlanReference `xml:"TestPlanReference,omitempty"`
 }
 
-// TestAction ...
 type TestAction struct {
 	BuildConfiguration           string `xml:"buildConfiguration,attr"`
 	SelectedDebuggerIdentifier   string `xml:"selectedDebuggerIdentifier,attr"`
@@ -125,13 +112,11 @@ type TestAction struct {
 	AdditionalOptions AdditionalOptions
 }
 
-// BuildableProductRunnable ...
 type BuildableProductRunnable struct {
 	RunnableDebuggingMode string `xml:"runnableDebuggingMode,attr"`
 	BuildableReference    BuildableReference
 }
 
-// LaunchAction ...
 type LaunchAction struct {
 	BuildConfiguration             string `xml:"buildConfiguration,attr"`
 	SelectedDebuggerIdentifier     string `xml:"selectedDebuggerIdentifier,attr"`
@@ -146,7 +131,6 @@ type LaunchAction struct {
 	AdditionalOptions              AdditionalOptions
 }
 
-// ProfileAction ...
 type ProfileAction struct {
 	BuildConfiguration           string `xml:"buildConfiguration,attr"`
 	ShouldUseLaunchSchemeArgsEnv string `xml:"shouldUseLaunchSchemeArgsEnv,attr"`
@@ -156,18 +140,15 @@ type ProfileAction struct {
 	BuildableProductRunnable     BuildableProductRunnable
 }
 
-// AnalyzeAction ...
 type AnalyzeAction struct {
 	BuildConfiguration string `xml:"buildConfiguration,attr"`
 }
 
-// ArchiveAction ...
 type ArchiveAction struct {
 	BuildConfiguration       string `xml:"buildConfiguration,attr"`
 	RevealArchiveInOrganizer string `xml:"revealArchiveInOrganizer,attr"`
 }
 
-// Scheme ...
 type Scheme struct {
 	// The last known Xcode version.
 	LastUpgradeVersion string `xml:"LastUpgradeVersion,attr"`
@@ -186,12 +167,10 @@ type Scheme struct {
 	IsShared bool   `xml:"-"`
 }
 
-// Factory opens scheme files with a fixed set of dependencies.
 type Factory struct {
 	fileManager fileutil.FileManager
 }
 
-// NewFactory returns a Factory that reads scheme files through fileManager.
 func NewFactory(fileManager fileutil.FileManager) Factory {
 	return Factory{
 		fileManager: fileManager,
@@ -224,19 +203,14 @@ func parse(reader io.Reader) (scheme Scheme, err error) {
 	return
 }
 
-// XMLToken ...
 type XMLToken int
 
 const (
-	// XMLStart ...
-	XMLStart XMLToken = 1
-	// XMLEnd ...
-	XMLEnd XMLToken = 2
-	// XMLAttribute ...
+	XMLStart     XMLToken = 1
+	XMLEnd       XMLToken = 2
 	XMLAttribute XMLToken = 3
 )
 
-// Marshal ...
 func (s Scheme) Marshal() ([]byte, error) {
 	contents, err := xml.Marshal(s)
 	if err != nil {
@@ -275,7 +249,6 @@ func (s Scheme) Marshal() ([]byte, error) {
 	return []byte(xml.Header + contentsIndented), nil
 }
 
-// AppBuildActionEntry ...
 func (s Scheme) AppBuildActionEntry() (BuildActionEntry, bool) {
 	var entry BuildActionEntry
 	for _, e := range s.BuildAction.BuildActionEntries {
@@ -292,7 +265,6 @@ func (s Scheme) AppBuildActionEntry() (BuildActionEntry, bool) {
 	return entry, (entry.BuildableReference.BlueprintIdentifier != "")
 }
 
-// IsTestable returns true if Test is a valid action
 func (s Scheme) IsTestable() bool {
 	for _, testEntry := range s.TestAction.Testables {
 		if testEntry.isTestable() {
@@ -303,7 +275,6 @@ func (s Scheme) IsTestable() bool {
 	return false
 }
 
-// DefaultTestPlan ...
 func (s Scheme) DefaultTestPlan() *TestPlanReference {
 	if s.TestAction.TestPlans == nil {
 		return nil

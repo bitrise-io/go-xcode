@@ -23,7 +23,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
-// Input ...
 type Input struct {
 	AuthType                     AuthType
 	DistributionMethod           string
@@ -43,7 +42,6 @@ type ConnectionOverrideInputs struct {
 	APIKeyEnterpriseAccount bool
 }
 
-// Config ...
 type Config struct {
 	CertificatesAndPassphrases   []certdownloader.CertificateAndPassphrase
 	Keychain                     keychain.Keychain
@@ -83,7 +81,6 @@ func ParseConfig(input Input, cmdFactory command.Factory) (Config, error) {
 	}, nil
 }
 
-// parseConnectionOverrideConfig validates and parses the step input-level connection parameters
 func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssuerID string, isEnterpriseAccount bool, logger log.Logger) (*devportalservice.APIKeyConnection, error) {
 	var key []byte
 	if strings.HasPrefix(string(keyPathOrURL), "https://") {
@@ -129,7 +126,6 @@ func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 	}, nil
 }
 
-// parseCertificatesAndPassphrases returns an array of p12 file URLs and passphrases
 func parseCertificatesAndPassphrases(certificateURLList, certificatePassphraseList string) ([]certdownloader.CertificateAndPassphrase, error) {
 	if strings.TrimSpace(certificateURLList) == "" {
 		return nil, fmt.Errorf("code signing certificate URL is not specified")
@@ -163,7 +159,6 @@ func splitCertificatesAndPassphrases(certURLList string, certPassphraseList stri
 	return pfxURLs, passphrases, nil
 }
 
-// SplitAndClean ...
 func splitAndClean(list string, sep string, omitEmpty bool) []string {
 	items := sliceutil.Map(strings.Split(list, sep), strings.TrimSpace)
 	if omitEmpty {

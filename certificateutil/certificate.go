@@ -34,12 +34,10 @@ func CertificatesFromPKCS12Content(content []byte, password string) ([]Certifica
 	return infos, nil
 }
 
-// NewCertificateFromDERContent parses a certificate from DER-encoded content.
 func NewCertificateFromDERContent(content []byte) (*x509.Certificate, error) {
 	return x509.ParseCertificate(content)
 }
 
-// NewCertificateFromPemContent parses a certificate from PEM-encoded content.
 func NewCertificateFromPemContent(content []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(content)
 	if block == nil || len(block.Bytes) == 0 {

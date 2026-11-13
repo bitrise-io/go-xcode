@@ -22,7 +22,6 @@ const (
 	TestNodeTypeTestValue      TestNodeType = "Test Value"
 )
 
-// TestResult represents the outcome of a test case.
 type TestResult string
 
 // TestResult values reported by xcresulttool.
@@ -41,7 +40,6 @@ type TestData struct {
 	TestPlanConfigurations []Configuration `json:"testPlanConfigurations"`
 }
 
-// Devices describes a device that participated in the test run.
 type Devices struct {
 	Identifier   string `json:"deviceId"`
 	Name         string `json:"deviceName"`
@@ -63,7 +61,6 @@ type TestNode struct {
 	Children   []TestNode   `json:"children"`
 }
 
-// Configuration describes a test plan configuration used during the test run.
 type Configuration struct {
 	Identifier string `json:"configurationId"`
 	Name       string `json:"configurationName"`

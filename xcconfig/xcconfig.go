@@ -9,7 +9,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
-// Writer ...
 type Writer interface {
 	Write(input string) (string, error)
 }
@@ -21,7 +20,6 @@ type writer struct {
 	pathModifier pathutil.PathModifier
 }
 
-// NewWriter ...
 func NewWriter(pathProvider pathutil.PathProvider, fileManager fileutil.FileManager, pathChecker pathutil.PathChecker, pathModifier pathutil.PathModifier) Writer {
 	return &writer{pathProvider: pathProvider, fileManager: fileManager, pathChecker: pathChecker, pathModifier: pathModifier}
 }

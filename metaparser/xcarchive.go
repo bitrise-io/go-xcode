@@ -8,10 +8,8 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/zip"
 )
 
-// MacOSProjectIsNotSupported ...
 var MacOSProjectIsNotSupported = errors.New("macOS project is not supported")
 
-// ParseXCArchiveData ...
 func (m *Parser) ParseXCArchiveData(pth string) (*ArtifactMetadata, error) {
 
 	appInfo, scheme, err := m.readXCArchiveDeploymentMeta(pth)

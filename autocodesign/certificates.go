@@ -59,7 +59,6 @@ func getValidCertificates(typeToLocalCerts LocalCertificates, client DevPortalCl
 		}
 	}
 
-	// only for debugging
 	if isDebugLog {
 		if err := logAllAPICertificates(client); err != nil {
 			log.Debugf("Failed to log all Developer Portal certificates: %s", err)
@@ -112,7 +111,6 @@ func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoMod
 	return localCertificates, nil
 }
 
-// matchLocalToAPICertificates ...
 func matchLocalToAPICertificates(client DevPortalClient, localCertificates []certificateutil.CertificateInfoModel) []Certificate {
 	var matchingCertificates []Certificate
 
@@ -131,7 +129,6 @@ func matchLocalToAPICertificates(client DevPortalClient, localCertificates []cer
 	return matchingCertificates
 }
 
-// logAllAPICertificates ...
 func logAllAPICertificates(client DevPortalClient) error {
 	certificates, err := client.QueryAllIOSCertificates()
 	if err != nil {
@@ -148,9 +145,7 @@ func logAllAPICertificates(client DevPortalClient) error {
 	return nil
 }
 
-// filterCertificates returns the certificates matching to the given common name, developer team ID, and distribution type.
 func filterCertificates(certificates []certificateutil.CertificateInfoModel, certificateType appstoreconnect.CertificateType) []certificateutil.CertificateInfoModel {
-	// filter by distribution type
 	var filteredCertificates []certificateutil.CertificateInfoModel
 	for _, certificate := range certificates {
 		if certificateType == appstoreconnect.IOSDistribution && isDistributionCertificate(certificate) {

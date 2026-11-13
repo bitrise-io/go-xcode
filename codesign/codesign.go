@@ -21,13 +21,10 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcarchive"
 )
 
-// AuthType ...
 type AuthType int
 
 const (
-	// APIKeyAuth ...
 	APIKeyAuth AuthType = iota
-	// AppleIDAuth ...
 	AppleIDAuth
 )
 
@@ -39,7 +36,6 @@ const (
 	codeSigningBitriseAppleID
 )
 
-// Opts ...
 type Opts struct {
 	AuthType                   AuthType
 	ShouldConsiderXcodeSigning bool
@@ -54,7 +50,6 @@ type Opts struct {
 	IsVerboseLog           bool
 }
 
-// Manager ...
 type Manager struct {
 	opts Opts
 
@@ -135,14 +130,12 @@ func NewManagerWithProject(
 	}
 }
 
-// DetailsProvider ...
 type DetailsProvider interface {
 	IsSigningManagedAutomatically() (bool, error)
 	Platform() (autocodesign.Platform, error)
 	GetAppLayout(uiTestTargets bool) (autocodesign.AppLayout, error)
 }
 
-// AssetWriter ...
 type AssetWriter interface {
 	ForceCodesignAssets(distribution autocodesign.DistributionType, codesignAssetsByDistributionType map[autocodesign.DistributionType]autocodesign.AppCodesignAssets) error
 }
@@ -330,7 +323,6 @@ func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfoModel
 
 func (m *Manager) installCertificates(certificates []certificateutil.CertificateInfoModel) error {
 	for _, cert := range certificates {
-		// Empty passphrase provided, as already parsed certificate + private key
 		if err := m.assetInstaller.InstallCertificate(cert); err != nil {
 			return err
 		}
@@ -562,7 +554,6 @@ func (m *Manager) installManualCodeSigningAssets(certificates []certificateutil.
 	m.logger.Printf("Installing %d certificate(s):", len(certificates))
 	for _, cert := range certificates {
 		m.logger.Printf("- %s", cert.String())
-		// Empty passphrase provided, as already parsed certificate + private key
 		if err := m.assetInstaller.InstallCertificate(cert); err != nil {
 			return nil, nil, err
 		}

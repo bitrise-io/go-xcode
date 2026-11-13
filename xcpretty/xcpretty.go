@@ -25,14 +25,12 @@ type xcpretty struct {
 	logger log.Logger
 }
 
-// NewXcpretty ...
 func NewXcpretty(logger log.Logger) Xcpretty {
 	return &xcpretty{
 		logger: logger,
 	}
 }
 
-// IsInstalled ...
 func (x xcpretty) IsInstalled() (bool, error) {
 	locator := env.NewCommandLocator()
 	factory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), locator, x.logger)
@@ -43,7 +41,6 @@ func (x xcpretty) IsInstalled() (bool, error) {
 	return ruby.NewEnvironment(factory, locator, x.logger).IsGemInstalled(toolName, "")
 }
 
-// Install ...
 func (x xcpretty) Install() ([]command.Command, error) {
 	locator := env.NewCommandLocator()
 	factory, err := ruby.NewCommandFactory(command.NewFactory(env.NewRepository()), locator, x.logger)
@@ -56,7 +53,6 @@ func (x xcpretty) Install() ([]command.Command, error) {
 	return cmds, nil
 }
 
-// Version ...
 func (x xcpretty) Version() (*version.Version, error) {
 	cmd := command.NewFactory(env.NewRepository()).Create(toolName, []string{"--version"}, nil)
 	versionOut, err := cmd.RunAndReturnTrimmedCombinedOutput()

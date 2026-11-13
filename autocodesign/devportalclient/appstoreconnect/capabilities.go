@@ -4,13 +4,10 @@ import (
 	"net/http"
 )
 
-// BundleIDCapabilitiesEndpoint ...
 const BundleIDCapabilitiesEndpoint = "bundleIdCapabilities"
 
-// CapabilityType ...
 type CapabilityType string
 
-// CapabilityTypes ...
 const (
 	Ignored                        CapabilityType = "-ignored-"
 	ProfileAttachedEntitlement     CapabilityType = "-profile-attached-"
@@ -46,13 +43,11 @@ const (
 	OnDemandInstallCapable         CapabilityType = "ON_DEMAND_INSTALL_CAPABLE"
 )
 
-// Entitlement keys ...
 const (
 	ParentApplicationIdentifierEntitlementKey = "com.apple.developer.parent-application-identifiers"
 	SignInWithAppleEntitlementKey             = "com.apple.developer.applesignin"
 )
 
-// ServiceTypeByKey ...
 var ServiceTypeByKey = map[string]CapabilityType{
 	"com.apple.security.application-groups":                                    AppGroups,
 	"com.apple.developer.in-app-payments":                                      ApplePay,
@@ -98,20 +93,16 @@ var ServiceTypeByKey = map[string]CapabilityType{
 	"com.apple.developer.exposure-notification":  ProfileAttachedEntitlement,
 }
 
-// CapabilitySettingAllowedInstances ...
 type CapabilitySettingAllowedInstances string
 
-// AllowedInstances ...
 const (
 	Entry    CapabilitySettingAllowedInstances = "ENTRY"
 	Single   CapabilitySettingAllowedInstances = "SINGLE"
 	Multiple CapabilitySettingAllowedInstances = "MULTIPLE"
 )
 
-// CapabilitySettingKey ...
 type CapabilitySettingKey string
 
-// CapabilitySettingKeys
 const (
 	IcloudVersion                 CapabilitySettingKey = "ICLOUD_VERSION"
 	DataProtectionPermissionLevel CapabilitySettingKey = "DATA_PROTECTION_PERMISSION_LEVEL"
@@ -119,10 +110,8 @@ const (
 	AppGroupIdentifiers           CapabilitySettingKey = "APP_GROUP_IDENTIFIERS"
 )
 
-// CapabilityOptionKey ...
 type CapabilityOptionKey string
 
-// CapabilityOptionKeys ...
 const (
 	Xcode5                      CapabilityOptionKey = "XCODE_5"
 	Xcode6                      CapabilityOptionKey = "XCODE_6"
@@ -131,7 +120,6 @@ const (
 	ProtectedUntilFirstUserAuth CapabilityOptionKey = "PROTECTED_UNTIL_FIRST_USER_AUTH"
 )
 
-// CapabilityOption ...
 type CapabilityOption struct {
 	Description      string              `json:"description,omitempty"`
 	Enabled          bool                `json:"enabled,omitempty"`
@@ -141,7 +129,6 @@ type CapabilityOption struct {
 	SupportsWildcard bool                `json:"supportsWildcard,omitempty"`
 }
 
-// CapabilitySetting ...
 type CapabilitySetting struct {
 	AllowedInstances CapabilitySettingAllowedInstances `json:"allowedInstances,omitempty"`
 	Description      string                            `json:"description,omitempty"`
@@ -153,88 +140,68 @@ type CapabilitySetting struct {
 	MinInstances     int                               `json:"minInstances,omitempty"`
 }
 
-//
-// BundleIDCapabilityCreateRequest
-
-// BundleIDCapabilityCreateRequestDataAttributes ...
 type BundleIDCapabilityCreateRequestDataAttributes struct {
 	CapabilityType CapabilityType      `json:"capabilityType"`
 	Settings       []CapabilitySetting `json:"settings"`
 }
 
-// BundleIDCapabilityCreateRequestDataRelationships ...
 type BundleIDCapabilityCreateRequestDataRelationships struct {
 	BundleID BundleIDCapabilityCreateRequestDataRelationshipsBundleID `json:"bundleId"`
 }
 
-// BundleIDCapabilityCreateRequestDataRelationshipsBundleID ...
 type BundleIDCapabilityCreateRequestDataRelationshipsBundleID struct {
 	Data BundleIDCapabilityCreateRequestDataRelationshipsBundleIDData `json:"data"`
 }
 
-// BundleIDCapabilityCreateRequestDataRelationshipsBundleIDData ...
 type BundleIDCapabilityCreateRequestDataRelationshipsBundleIDData struct {
 	ID   string `json:"id"`
 	Type string `json:"type"`
 }
 
-// BundleIDCapabilityCreateRequestData ...
 type BundleIDCapabilityCreateRequestData struct {
 	Attributes    BundleIDCapabilityCreateRequestDataAttributes    `json:"attributes"`
 	Relationships BundleIDCapabilityCreateRequestDataRelationships `json:"relationships"`
 	Type          string                                           `json:"type"`
 }
 
-// BundleIDCapabilityCreateRequest ...
 type BundleIDCapabilityCreateRequest struct {
 	Data BundleIDCapabilityCreateRequestData `json:"data"`
 }
 
-//
-// BundleIDCapabilityUpdateRequest
-
-// BundleIDCapabilityUpdateRequestDataAttributes ...
 type BundleIDCapabilityUpdateRequestDataAttributes struct {
 	CapabilityType CapabilityType      `json:"capabilityType"`
 	Settings       []CapabilitySetting `json:"settings"`
 }
 
-// BundleIDCapabilityUpdateRequestData ...
 type BundleIDCapabilityUpdateRequestData struct {
 	Attributes BundleIDCapabilityUpdateRequestDataAttributes `json:"attributes"`
 	ID         string                                        `json:"id"`
 	Type       string                                        `json:"type"`
 }
 
-// BundleIDCapabilityUpdateRequest ...
 type BundleIDCapabilityUpdateRequest struct {
 	Data BundleIDCapabilityUpdateRequestData `json:"data"`
 }
 
-// BundleIDCapabilityAttributes ...
 type BundleIDCapabilityAttributes struct {
 	CapabilityType CapabilityType      `json:"capabilityType"`
 	Settings       []CapabilitySetting `json:"settings"`
 }
 
-// BundleIDCapability ...
 type BundleIDCapability struct {
 	Attributes BundleIDCapabilityAttributes
 	ID         string `json:"id"`
 	Type       string `json:"type"`
 }
 
-// BundleIDCapabilityResponse ...
 type BundleIDCapabilityResponse struct {
 	Data BundleIDCapability `json:"data"`
 }
 
-// BundleIDCapabilitiesResponse ...
 type BundleIDCapabilitiesResponse struct {
 	Data []BundleIDCapability `json:"data"`
 }
 
-// EnableCapability ...
 func (s ProvisioningService) EnableCapability(body BundleIDCapabilityCreateRequest) (*BundleIDCapabilityResponse, error) {
 	req, err := s.client.NewRequest(http.MethodPost, BundleIDCapabilitiesEndpoint, body)
 	if err != nil {
@@ -249,7 +216,6 @@ func (s ProvisioningService) EnableCapability(body BundleIDCapabilityCreateReque
 	return r, nil
 }
 
-// UpdateCapability ...
 func (s ProvisioningService) UpdateCapability(id string, body BundleIDCapabilityUpdateRequest) (*BundleIDCapabilityResponse, error) {
 	req, err := s.client.NewRequest(http.MethodPatch, BundleIDCapabilitiesEndpoint+"/"+id, body)
 	if err != nil {
@@ -263,7 +229,6 @@ func (s ProvisioningService) UpdateCapability(id string, body BundleIDCapability
 	return r, nil
 }
 
-// Capabilities ...
 func (s ProvisioningService) Capabilities(relationshipLink string) (*BundleIDCapabilitiesResponse, error) {
 	req, err := s.client.NewRequestWithRelationshipURL(http.MethodGet, relationshipLink, nil)
 	if err != nil {

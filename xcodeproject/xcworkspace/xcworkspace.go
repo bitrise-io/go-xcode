@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	// XCWorkspaceExtension ...
 	XCWorkspaceExtension = ".xcworkspace"
 )
 
@@ -27,7 +26,6 @@ type BuildSettingsProvider interface {
 	SchemeBuildSettings(workspacePath, scheme, configuration string, extraArgs ...string) (serialized.Object, error)
 }
 
-// Factory opens Xcode workspaces with a fixed set of dependencies.
 type Factory struct {
 	logger           log.Logger
 	buildSettings    BuildSettingsProvider
@@ -65,7 +63,6 @@ func NewFactory(
 	}
 }
 
-// Workspace represents an Xcode workspace
 type Workspace struct {
 	FileRefs []FileRef `xml:"FileRef"`
 	Groups   []Group   `xml:"Group"`
@@ -84,7 +81,6 @@ type Workspace struct {
 	schemeFactory    xcscheme.Factory
 }
 
-// Open reads the workspace at pth.
 func (f Factory) Open(pth string) (*Workspace, error) {
 	absPth, err := f.pathModifier.AbsPath(pth)
 	if err != nil {

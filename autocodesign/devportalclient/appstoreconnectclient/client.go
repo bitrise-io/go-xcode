@@ -8,7 +8,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 )
 
-// Client ...
 type Client struct {
 	*AuthClient
 	*CertificateSource
@@ -16,7 +15,6 @@ type Client struct {
 	*ProfileClient
 }
 
-// NewAPIDevPortalClient ...
 func NewAPIDevPortalClient(client *appstoreconnect.Client) autocodesign.DevPortalClient {
 	return Client{
 		AuthClient:        NewAuthClient(),

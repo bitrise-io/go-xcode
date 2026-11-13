@@ -22,7 +22,6 @@ type PrefixFilter struct {
 	Matching *Sink
 	Filtered io.Writer
 
-	// closing
 	closeOnce sync.Once
 
 	done         chan struct{}
@@ -80,7 +79,6 @@ func (p *PrefixFilter) Write(data []byte) (int, error) {
 func (p *PrefixFilter) Close() error {
 	var errString string
 	p.closeOnce.Do(func() {
-		// Flush and close scanner input
 		if err := p.filterInput.Flush(); err != nil {
 			errString += fmt.Sprintf("failed to flush xcbuildoutput (%v)", err.Error())
 		}
@@ -102,7 +100,6 @@ func (p *PrefixFilter) Close() error {
 // run reads lines (and partial final chunk) and writes them.
 func (p *PrefixFilter) run() {
 	defer func() {
-		// Signal done and close signaling channels
 		p.done <- struct{}{}
 		close(p.done)
 		close(p.messageLost)
@@ -131,7 +128,6 @@ func (p *PrefixFilter) run() {
 		}
 	}
 
-	// handle any scanner error
 	if err := scanner.Err(); err != nil {
 		p.scannerError <- err
 	}

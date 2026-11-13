@@ -2,7 +2,6 @@ package destination
 
 import "fmt"
 
-// Simulator ...
 type Simulator struct {
 	Platform string
 	Name     string
@@ -10,7 +9,6 @@ type Simulator struct {
 	Arch     string
 }
 
-// NewSimulator ...
 func NewSimulator(destination string) (*Simulator, error) {
 	specifier, err := NewSpecifier(destination)
 	if err != nil {

@@ -14,7 +14,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/logio"
 )
 
-// XcprettyCommandRunner is an xcodebuild command runner that uses xcpretty as log formatter
 type XcprettyCommandRunner struct {
 	logger         log.Logger
 	commandFactory command.Factory
@@ -23,7 +22,6 @@ type XcprettyCommandRunner struct {
 	xcpretty       xcprettyManager // used by CheckInstall
 }
 
-// NewXcprettyCommandRunner crates a new XcprettyCommandRunner
 func NewXcprettyCommandRunner(logger log.Logger, commandFactory command.Factory, pathChecker pathutil.PathChecker, fileManager fileutil.FileManager, rubyCommandFactory ruby.CommandFactory, rubyEnv ruby.Environment) Runner {
 	return &XcprettyCommandRunner{
 		logger:         logger,
@@ -38,7 +36,6 @@ func NewXcprettyCommandRunner(logger log.Logger, commandFactory command.Factory,
 	}
 }
 
-// Run runs xcodebuild using xcpretty as a log formatter
 func (c *XcprettyCommandRunner) Run(workDir string, xcodebuildArgs []string, xcprettyArgs []string) (Output, error) {
 	loggingIO := logio.SetupPipeWiring(regexp.MustCompile(`^\[Bitrise.*\].*`))
 

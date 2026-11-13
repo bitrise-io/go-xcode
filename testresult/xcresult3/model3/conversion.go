@@ -15,7 +15,6 @@ type argumentRuns struct {
 	runs []TestNode
 }
 
-// Convert converts TestData into a TestSummary and a list of warnings.
 func Convert(data *TestData) (*TestSummary, []string, error) {
 	var warnings []string
 	summary := TestSummary{}

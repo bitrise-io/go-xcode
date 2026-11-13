@@ -11,14 +11,12 @@ import (
 	"golang.org/x/oauth2/jwt"
 )
 
-// BucketAccessor ...
 type BucketAccessor struct {
 	jwtConfig    *jwt.Config
 	bucket       string
 	objectExpiry time.Duration
 }
 
-// NewBucketAccessor ...
 func NewBucketAccessor(serviceAccountJSONContent, bucket string) (*BucketAccessor, error) {
 	conf, err := google.JWTConfigFromJSON([]byte(serviceAccountJSONContent))
 	if err != nil {
@@ -32,7 +30,6 @@ func NewBucketAccessor(serviceAccountJSONContent, bucket string) (*BucketAccesso
 	}, nil
 }
 
-// GetExpiringURL ...
 func (a BucketAccessor) GetExpiringURL(originalURL string) (string, error) {
 	artifactPath := strings.TrimPrefix(strings.TrimPrefix(originalURL, fmt.Sprintf("https://storage.googleapis.com/%s/", a.bucket)), fmt.Sprintf("https://storage.cloud.google.com/%s/", a.bucket))
 	opts := &storage.SignedURLOptions{

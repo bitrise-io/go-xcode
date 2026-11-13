@@ -10,13 +10,11 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/timeutil"
 )
 
-// ProfilePrinter ...
 type ProfilePrinter struct {
 	logger       log.Logger
 	timeProvider timeutil.TimeProvider
 }
 
-// NewProfilePrinter ...
 func NewProfilePrinter(logger log.Logger, timeProvider timeutil.TimeProvider) *ProfilePrinter {
 	return &ProfilePrinter{
 		logger:       logger,
@@ -24,7 +22,6 @@ func NewProfilePrinter(logger log.Logger, timeProvider timeutil.TimeProvider) *P
 	}
 }
 
-// PrintableProfile ...
 func (printer ProfilePrinter) PrintableProfile(profile ProvisioningProfileInfoModel, installedCertificates ...certificateutil.CertificateInfoModel) string {
 	printable := map[string]any{}
 	printable["name"] = fmt.Sprintf("%s (%s)", profile.Name, profile.UUID)

@@ -11,7 +11,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// signToken signs the JWT token with the given .p8 private key content
 func signToken(token *jwt.Token, privateKeyContent []byte) (string, error) {
 	block, _ := pem.Decode(privateKeyContent)
 	if block == nil {
@@ -30,7 +29,6 @@ func signToken(token *jwt.Token, privateKeyContent []byte) (string, error) {
 	return token.SignedString(privateKey)
 }
 
-// createToken creates a jwt.Token for the Apple API
 func createToken(keyID string, issuerID string, audience string) *jwt.Token {
 	issuedAt := time.Now()
 	expirationTime := time.Now().Add(jwtDuration)

@@ -9,10 +9,7 @@ import (
 	"sync"
 )
 
-// PipeWiring is a helper struct to define the setup and binding of tools and
-// xcbuild with a filter and stdout. It is purely boilerplate reduction and it is the
-// users responsibility to choose between this and manual hooking of the in/outputs.
-// It also provides a convenient Close() method that only closes things that can/should be closed.
+// PipeWiring connects xcodebuild's output to a log formatter and stdout through a prefix filter.
 type PipeWiring struct {
 	XcbuildRawout *bytes.Buffer
 	XcbuildStdout io.Writer
@@ -40,7 +37,6 @@ func (p *PipeWiring) CloseFilter() error {
 	return err
 }
 
-// Close ...
 func (p *PipeWiring) Close() error {
 	filterErr := p.CloseFilter()
 	toolSinkErr := p.toolInSink.Close()
@@ -54,14 +50,11 @@ func (p *PipeWiring) Close() error {
 // input/outputs that an xcodebuild command and a logging tool needs when we are also
 // using a logging filter.
 func SetupPipeWiring(filter *regexp.Regexp) *PipeWiring {
-	// Create a buffer to store raw xcbuild output
 	rawXcbuild := bytes.NewBuffer(nil)
 	// Pipe filtered logs to tool
 	toolPipeR, toolPipeW := io.Pipe()
 
-	// Add a buffer before stdout
 	bufferedStdout := NewSink(os.Stdout)
-	// Add a buffer before tool input
 	toolInSink := NewSink(toolPipeW)
 	xcbuildLogs := io.MultiWriter(rawXcbuild, toolInSink)
 	// Create a filter for [Bitrise ...] prefixes

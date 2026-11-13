@@ -11,17 +11,14 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 )
 
-// DeviceClient ...
 type DeviceClient struct {
 	client *appstoreconnect.Client
 }
 
-// NewDeviceClient ...
 func NewDeviceClient(client *appstoreconnect.Client) *DeviceClient {
 	return &DeviceClient{client: client}
 }
 
-// ListDevices returns the registered devices on the Apple Developer portal
 func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
 	var nextPageURL string
 	var devices []appstoreconnect.Device
@@ -98,7 +95,6 @@ func (d *DeviceClient) list400Devices(udid string, platform appstoreconnect.Devi
 	return devices, nil
 }
 
-// RegisterDevice ...
 func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error) {
 	// The API seems to recognize existing devices even with different casing and '-' separator removed.
 	// The Developer Portal UI does not let adding devices with unexpected casing or separators removed.

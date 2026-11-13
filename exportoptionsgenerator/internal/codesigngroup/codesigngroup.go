@@ -8,13 +8,11 @@ import (
 	"github.com/ryanuber/go-glob"
 )
 
-// SelectableCodeSignGroup ...
 type SelectableCodeSignGroup struct {
 	Certificate         certificateutil.CertificateInfoModel
 	BundleIDProfilesMap map[string][]profileutil.ProvisioningProfileInfoModel
 }
 
-// BuildFilterableList ...
 func BuildFilterableList(installedCertificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, bundleIDs []string) []SelectableCodeSignGroup {
 	var groups []SelectableCodeSignGroup
 

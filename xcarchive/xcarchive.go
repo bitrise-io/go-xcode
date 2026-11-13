@@ -7,13 +7,11 @@ import (
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 )
 
-// ArchiveReader ...
 type ArchiveReader struct {
 	pathChecker pathutil.PathChecker
 	logger      log.Logger
 }
 
-// NewArchiveReader ...
 func NewArchiveReader(pathChecker pathutil.PathChecker, logger log.Logger) ArchiveReader {
 	return ArchiveReader{
 		pathChecker: pathChecker,

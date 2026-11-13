@@ -2,20 +2,16 @@ package exportoptionsgenerator
 
 import "github.com/bitrise-io/go-xcode/certificateutil"
 
-// CodesignIdentityProvider can list certificate infos.
 type CodesignIdentityProvider interface {
 	ListCodesignIdentities() ([]certificateutil.CertificateInfoModel, error)
 }
 
-// LocalCodesignIdentityProvider ...
 type LocalCodesignIdentityProvider struct{}
 
-// NewLocalCodesignIdentityProvider ...
 func NewLocalCodesignIdentityProvider() LocalCodesignIdentityProvider {
 	return LocalCodesignIdentityProvider{}
 }
 
-// ListCodesignIdentities ...
 func (p LocalCodesignIdentityProvider) ListCodesignIdentities() ([]certificateutil.CertificateInfoModel, error) {
 	certs, err := certificateutil.InstalledCodesigningCertificateInfos()
 	if err != nil {
