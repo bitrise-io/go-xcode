@@ -20,7 +20,7 @@ func catalystPBXProj(t *testing.T) []byte {
 	return []byte("// !$*UTF8*$!\n{\n\tobjects = " + string(objects) + ";\n\trootObject = 13917C0A243F43D00087912B;\n}\n")
 }
 
-func TestXcodeProj_AppIconSetPaths(t *testing.T) {
+func TestProject_AppIconSetPaths(t *testing.T) {
 	simpleObjc, err := os.ReadFile(filepath.Join("testdata", "ios-simple-objc.pbxproj"))
 	require.NoError(t, err)
 

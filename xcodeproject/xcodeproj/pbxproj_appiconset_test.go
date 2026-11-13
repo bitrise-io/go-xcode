@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func projectObjects(t *testing.T, p *xcodeProject) serialized.Object {
+func projectObjects(t *testing.T, p *Project) serialized.Object {
 	t.Helper()
 	objects, ok := pbxFile(t, p).rawProj.Object("objects")
 	require.True(t, ok)

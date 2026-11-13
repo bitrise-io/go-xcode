@@ -29,7 +29,7 @@ const minimalSchemeXML = `<?xml version="1.0" encoding="UTF-8"?>
 </Scheme>
 `
 
-func schemesProject(t *testing.T, fixture string, user UserProvider) *xcodeProject {
+func schemesProject(t *testing.T, fixture string, user UserProvider) *Project {
 	t.Helper()
 
 	projectPath := filepath.Join(t.TempDir(), "XcodeProj.xcodeproj")
@@ -51,15 +51,15 @@ func writeFile(t *testing.T, pth, content string) {
 	require.NoError(t, os.WriteFile(pth, []byte(content), 0644))
 }
 
-func sharedSchemePath(p *xcodeProject, name string) string {
+func sharedSchemePath(p *Project, name string) string {
 	return filepath.Join(p.Path(), "xcshareddata", "xcschemes", name+".xcscheme")
 }
 
-func userSchemesPath(p *xcodeProject, file string) string {
+func userSchemesPath(p *Project, file string) string {
 	return filepath.Join(p.Path(), "xcuserdata", testUserName+".xcuserdatad", "xcschemes", file)
 }
 
-func writeAutocreateSetting(t *testing.T, p *xcodeProject, value string) {
+func writeAutocreateSetting(t *testing.T, p *Project, value string) {
 	t.Helper()
 	writeFile(t, filepath.Join(p.Path(), "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings"),
 		`<?xml version="1.0" encoding="UTF-8"?>
@@ -80,7 +80,7 @@ func schemeNames(schemes []xcscheme.Scheme) []string {
 	return names
 }
 
-func TestXcodeProj_Schemes_sharedAndUserSchemes(t *testing.T) {
+func TestProject_Schemes_sharedAndUserSchemes(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeFile(t, sharedSchemePath(project, "Shared"), minimalSchemeXML)
 	writeFile(t, userSchemesPath(project, "Mine.xcscheme"), minimalSchemeXML)
@@ -95,7 +95,7 @@ func TestXcodeProj_Schemes_sharedAndUserSchemes(t *testing.T) {
 	assert.Equal(t, sharedSchemePath(project, "Shared"), schemes[0].Path)
 }
 
-func TestXcodeProj_Schemes_otherUsersSchemesAreNotVisible(t *testing.T) {
+func TestProject_Schemes_otherUsersSchemesAreNotVisible(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, "someone-else", nil))
 	writeFile(t, sharedSchemePath(project, "Shared"), minimalSchemeXML)
 	writeFile(t, userSchemesPath(project, "Mine.xcscheme"), minimalSchemeXML)
@@ -105,7 +105,7 @@ func TestXcodeProj_Schemes_otherUsersSchemesAreNotVisible(t *testing.T) {
 	assert.Equal(t, []string{"Shared"}, schemeNames(schemes))
 }
 
-func TestXcodeProj_Schemes_autocreatedByDefault(t *testing.T) {
+func TestProject_Schemes_autocreatedByDefault(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 
 	schemes, err := project.Schemes()
@@ -126,7 +126,7 @@ func TestXcodeProj_Schemes_autocreatedByDefault(t *testing.T) {
 	assert.Equal(t, "Debug", app.LaunchAction.BuildConfiguration)
 }
 
-func TestXcodeProj_Schemes_schemeManagementFileMeansDefaults(t *testing.T) {
+func TestProject_Schemes_schemeManagementFileMeansDefaults(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeAutocreateSetting(t, project, "<false/>")
 	writeFile(t, userSchemesPath(project, "xcschememanagement.plist"), "")
@@ -137,7 +137,7 @@ func TestXcodeProj_Schemes_schemeManagementFileMeansDefaults(t *testing.T) {
 		"an existing scheme-management file yields the defaults even with autocreate off")
 }
 
-func TestXcodeProj_Schemes_autocreateOff(t *testing.T) {
+func TestProject_Schemes_autocreateOff(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeAutocreateSetting(t, project, "<false/>")
 
@@ -145,7 +145,7 @@ func TestXcodeProj_Schemes_autocreateOff(t *testing.T) {
 	require.ErrorContains(t, err, "'Autocreate schemes' option is disabled")
 }
 
-func TestXcodeProj_SchemesWithAutocreateOverride(t *testing.T) {
+func TestProject_SchemesWithAutocreateOverride(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	// The override must win over the project's own setting.
 	writeAutocreateSetting(t, project, "<true/>")
@@ -159,7 +159,7 @@ func TestXcodeProj_SchemesWithAutocreateOverride(t *testing.T) {
 	assert.Equal(t, []string{"XcodeProj", "TodayExtension"}, schemeNames(schemes))
 }
 
-func TestXcodeProj_Schemes_settingsNotReadWhenSchemesExist(t *testing.T) {
+func TestProject_Schemes_settingsNotReadWhenSchemesExist(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeFile(t, sharedSchemePath(project, "Shared"), minimalSchemeXML)
 	writeFile(t, filepath.Join(project.Path(), "project.xcworkspace", "xcshareddata", "WorkspaceSettings.xcsettings"), "not a plist")
@@ -169,7 +169,7 @@ func TestXcodeProj_Schemes_settingsNotReadWhenSchemesExist(t *testing.T) {
 	assert.Equal(t, []string{"Shared"}, schemeNames(schemes))
 }
 
-func TestXcodeProj_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
+func TestProject_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeAutocreateSetting(t, project, "<string>YES</string>")
 
@@ -177,8 +177,8 @@ func TestXcodeProj_Schemes_autocreateSettingThatIsNotABoolean(t *testing.T) {
 	require.ErrorContains(t, err, "not a boolean")
 }
 
-func TestXcodeProj_Schemes_autocreateWithNothingToGenerate(t *testing.T) {
-	project := &xcodeProject{
+func TestProject_Schemes_autocreateWithNothingToGenerate(t *testing.T) {
+	project := &Project{
 		path:             filepath.Join(t.TempDir(), "Tests.xcodeproj"),
 		logger:           log.NewLogger(),
 		fileManager:      fileutil.NewFileManager(),
@@ -194,7 +194,7 @@ func TestXcodeProj_Schemes_autocreateWithNothingToGenerate(t *testing.T) {
 	assert.Empty(t, schemes)
 }
 
-func TestXcodeProj_Schemes_malformedSchemeFile(t *testing.T) {
+func TestProject_Schemes_malformedSchemeFile(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	writeFile(t, sharedSchemePath(project, "Broken"), "<Scheme")
 
@@ -202,7 +202,7 @@ func TestXcodeProj_Schemes_malformedSchemeFile(t *testing.T) {
 	require.ErrorContains(t, err, "Broken.xcscheme")
 }
 
-func TestXcodeProj_Schemes_userProviderFailure(t *testing.T) {
+func TestProject_Schemes_userProviderFailure(t *testing.T) {
 	failure := errors.New("no such user")
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, "", failure))
 
@@ -210,7 +210,7 @@ func TestXcodeProj_Schemes_userProviderFailure(t *testing.T) {
 	assert.ErrorIs(t, err, failure)
 }
 
-func TestXcodeProj_Scheme(t *testing.T) {
+func TestProject_Scheme(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	// "Café" with a decomposed é (e + combining acute accent).
 	writeFile(t, sharedSchemePath(project, "Café"), minimalSchemeXML)

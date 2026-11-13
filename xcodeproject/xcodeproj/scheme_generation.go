@@ -23,8 +23,9 @@ const (
 // newSharedSchemeFileMode is the mode of a newly created scheme file; an existing one keeps its mode.
 const newSharedSchemeFileMode = 0o600
 
-// RecreateSchemes implements XcodeProj.
-func (p *xcodeProject) RecreateSchemes() []xcscheme.Scheme {
+// RecreateSchemes returns the schemes Xcode would create for the project, one per native,
+// non-test target. It only builds them in memory; use SaveSharedScheme to write them.
+func (p *Project) RecreateSchemes() []xcscheme.Scheme {
 	p.logger.Printf("Recreating Xcode schemes")
 
 	schemes := p.generateSchemes()
@@ -34,8 +35,9 @@ func (p *xcodeProject) RecreateSchemes() []xcscheme.Scheme {
 	return schemes
 }
 
-// SaveSharedScheme implements XcodeProj.
-func (p *xcodeProject) SaveSharedScheme(scheme xcscheme.Scheme) error {
+// SaveSharedScheme writes the scheme to <Path>/xcshareddata/xcschemes/<scheme name>.xcscheme,
+// overwriting an existing file. Missing directories are created.
+func (p *Project) SaveSharedScheme(scheme xcscheme.Scheme) error {
 	dir := p.sharedSchemesDir()
 	pth := filepath.Join(dir, scheme.Name+xcschemeExtension)
 
@@ -56,7 +58,7 @@ func (p *xcodeProject) SaveSharedScheme(scheme xcscheme.Scheme) error {
 }
 
 // generateSchemes builds the schemes Xcode would autocreate: one per native, non-test target.
-func (p *xcodeProject) generateSchemes() []xcscheme.Scheme {
+func (p *Project) generateSchemes() []xcscheme.Scheme {
 	projectName := path.Base(p.path)
 
 	var schemes []xcscheme.Scheme

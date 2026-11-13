@@ -24,7 +24,7 @@ func forceCodeSignOptions(target, configuration string) ForceCodeSignOptions {
 	return opts
 }
 
-func requireBuildSetting(t *testing.T, project XcodeProj, target, configuration, key, want string) {
+func requireBuildSetting(t *testing.T, project *Project, target, configuration, key, want string) {
 	t.Helper()
 
 	got, ok := requireBuildSettings(t, requireTarget(t, project, target), configuration).String(key)
@@ -45,14 +45,14 @@ func requireBuildSettings(t *testing.T, target Target, configuration string) ser
 	return nil
 }
 
-func requireTarget(t *testing.T, project XcodeProj, name string) Target {
+func requireTarget(t *testing.T, project *Project, name string) Target {
 	t.Helper()
 	target, ok := project.TargetByName(name)
 	require.True(t, ok, "target %s not found", name)
 	return target
 }
 
-func TestXcodeProj_ForceCodeSign(t *testing.T) {
+func TestProject_ForceCodeSign(t *testing.T) {
 	project := parseFixture(t, "without-target-attributes.pbxproj")
 
 	require.NoError(t, project.ForceCodeSign(forceCodeSignOptions("Target", "Debug")))
@@ -72,7 +72,7 @@ func TestXcodeProj_ForceCodeSign(t *testing.T) {
 	requireBuildSetting(t, project, "Target", "Debug", "PROVISIONING_PROFILE", "asdf56b6-e75a-4f86-bf25-101bfc2fasdf")
 }
 
-func TestXcodeProj_ForceCodeSign_targetWithoutTargetAttributes(t *testing.T) {
+func TestProject_ForceCodeSign_targetWithoutTargetAttributes(t *testing.T) {
 	project := parseFixture(t, "without-target-attributes.pbxproj")
 
 	require.NoError(t, project.ForceCodeSign(forceCodeSignOptions("TargetWithouthTargetAttributes", "Debug")))
@@ -88,7 +88,7 @@ func TestXcodeProj_ForceCodeSign_targetWithoutTargetAttributes(t *testing.T) {
 	assert.False(t, ok, "no TargetAttributes entry may be created for a target that had none")
 }
 
-func TestXcodeProj_ForceCodeSign_leavesOtherBuildSettingsAlone(t *testing.T) {
+func TestProject_ForceCodeSign_leavesOtherBuildSettingsAlone(t *testing.T) {
 	project := parseFixture(t, "without-target-attributes.pbxproj")
 
 	require.NoError(t, project.ForceCodeSign(forceCodeSignOptions("TargetWithouthTargetAttributes", "Debug")))
@@ -96,14 +96,14 @@ func TestXcodeProj_ForceCodeSign_leavesOtherBuildSettingsAlone(t *testing.T) {
 	requireBuildSetting(t, project, "TargetWithouthTargetAttributes", "Debug", "INFOPLIST_FILE", "Target copy-Info.plist")
 }
 
-func TestXcodeProj_ForceCodeSign_unknownTargetOrConfiguration(t *testing.T) {
+func TestProject_ForceCodeSign_unknownTargetOrConfiguration(t *testing.T) {
 	project := parseFixture(t, "without-target-attributes.pbxproj")
 
 	require.ErrorContains(t, project.ForceCodeSign(forceCodeSignOptions("Nope", "Debug")), "Nope")
 	require.ErrorContains(t, project.ForceCodeSign(forceCodeSignOptions("Target", "Nope")), "Nope")
 }
 
-func TestXcodeProj_SetBuildSetting(t *testing.T) {
+func TestProject_SetBuildSetting(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
 	// Fetched before the write: targets share their build settings with the project.
@@ -120,7 +120,7 @@ func TestXcodeProj_SetBuildSetting(t *testing.T) {
 	assert.NotEqual(t, "2.0", requireBuildSettings(t, requireTarget(t, project, "XcodeProj"), "Debug")["MARKETING_VERSION"])
 }
 
-func TestXcodeProj_SetBuildSetting_errors(t *testing.T) {
+func TestProject_SetBuildSetting_errors(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
 	require.ErrorContains(t, project.SetBuildSetting("Nope", "Release", "K", "V"), "Nope")
@@ -138,7 +138,7 @@ func TestKeysForAllSDKs(t *testing.T) {
 	assert.ElementsMatch(t, []string{"CODE_SIGN_IDENTITY", "CODE_SIGN_IDENTITY[sdk=iphoneos*]"}, keys)
 }
 
-func TestXcodeProj_Save(t *testing.T) {
+func TestProject_Save(t *testing.T) {
 	projectPath := filepath.Join(t.TempDir(), "XcodeProj.xcodeproj")
 	require.NoError(t, os.MkdirAll(projectPath, 0755))
 
@@ -163,7 +163,7 @@ func TestXcodeProj_Save(t *testing.T) {
 	assert.Equal(t, os.FileMode(0664), info.Mode().Perm(), "an existing file keeps its mode")
 }
 
-func TestXcodeProj_Save_newFileGetsDefaultMode(t *testing.T) {
+func TestProject_Save_newFileGetsDefaultMode(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
 	require.NoError(t, err)
 

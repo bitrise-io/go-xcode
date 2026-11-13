@@ -33,8 +33,8 @@ type xcprojFile struct {
 	files  []xcproj.Reference
 }
 
-func (f Factory) newXCProj(content []byte, projectPath string) (*xcodeProject, error) {
-	return parseXCProj(content, f.newXcodeProject(projectPath))
+func (f Factory) newXCProj(content []byte, projectPath string) (*Project, error) {
+	return parseXCProj(content, f.newProject(projectPath))
 }
 
 // setBuildSetting supports only string values.
@@ -69,7 +69,7 @@ func (p *xcprojFile) content() ([]byte, error) {
 	return p.editor.Content(), nil
 }
 
-func parseXCProj(content []byte, base xcodeProject) (*xcodeProject, error) {
+func parseXCProj(content []byte, base Project) (*Project, error) {
 	decoded, err := xcproj.Decode(content)
 	if err != nil {
 		return nil, err

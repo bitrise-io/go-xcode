@@ -14,7 +14,7 @@ import (
 )
 
 // Expected value of the schemes RecreateSchemes generates for ios-simple-objc.
-func TestXcodeProj_RecreateSchemes(t *testing.T) {
+func TestProject_RecreateSchemes(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join("testdata", "ios-simple-objc.pbxproj"))
 	require.NoError(t, err)
 
@@ -129,7 +129,7 @@ func TestXcodeProj_RecreateSchemes(t *testing.T) {
 	require.Equal(t, want, project.RecreateSchemes())
 }
 
-func TestXcodeProj_SaveSharedScheme(t *testing.T) {
+func TestProject_SaveSharedScheme(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 
 	schemes := project.RecreateSchemes()
@@ -161,7 +161,7 @@ func TestXcodeProj_SaveSharedScheme(t *testing.T) {
 
 // Missing scheme directories are created with os.ModePerm (0755 under the usual umask), not the
 // 0700 FileManager.Write would use.
-func TestXcodeProj_SaveSharedScheme_createsSchemesDirWithModePerm(t *testing.T) {
+func TestProject_SaveSharedScheme_createsSchemesDirWithModePerm(t *testing.T) {
 	project := schemesProject(t, "ios-sample.pbxproj", userProvider(t, testUserName, nil))
 	dirCreator := mocks.NewDirCreator(t)
 	dirCreator.On("MkdirAll", project.sharedSchemesDir(), os.ModePerm).Return(errors.New("mkdir failed"))

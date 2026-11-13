@@ -22,13 +22,13 @@ const (
 	xcprojFixtureFileName  = "ios-sample.xcproj"
 )
 
-func openXCProjFixture(t *testing.T) XcodeProj {
+func openXCProjFixture(t *testing.T) *Project {
 	t.Helper()
 
 	return openXCProjFixtureFile(t, xcprojFixtureFileName)
 }
 
-func openXCProjFixtureFile(t *testing.T, name string) XcodeProj {
+func openXCProjFixtureFile(t *testing.T, name string) *Project {
 	t.Helper()
 
 	content, err := os.ReadFile(filepath.Join("internal", "xcproj", "testdata", name))
@@ -201,7 +201,7 @@ func TestXCProjProductName(t *testing.T) {
 	assert.Empty(t, xcprojProductName("App", ""))
 }
 
-func productPaths(project XcodeProj) map[string]string {
+func productPaths(project *Project) map[string]string {
 	paths := map[string]string{}
 	for _, target := range project.Targets() {
 		paths[target.Name] = target.productPath

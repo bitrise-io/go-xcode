@@ -13,7 +13,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
 	"github.com/bitrise-io/go-xcode/v2/plistutil"
-	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcscheme"
 )
 
@@ -24,72 +23,6 @@ const (
 	pbxProjFileName = "project.pbxproj"
 	xcProjFileName  = "project.xcproj"
 )
-
-// XcodeProj is a parsed Xcode project.
-type XcodeProj interface {
-	// Name returns the bundle name without the .xcodeproj extension.
-	Name() string
-	// Path returns where the bundle is considered to live: relative build setting paths resolve
-	// against it and Save writes to it.
-	Path() string
-
-	// Targets returns the project's targets, in project file order.
-	Targets() []Target
-	// Target returns the target with the given ID.
-	Target(id string) (Target, bool)
-	// TargetByName returns the target with the given name.
-	TargetByName(name string) (Target, bool)
-	// BuildConfigurations returns the project-level build configurations.
-	BuildConfigurations() []BuildConfiguration
-	// DefaultConfigurationName returns the name of the project's default build configuration.
-	DefaultConfigurationName() string
-	// DependentTargetsOfTarget returns the direct and transitive dependencies of target, each once.
-	// Dependencies that cannot be resolved are logged and skipped.
-	DependentTargetsOfTarget(target Target) []Target
-
-	// TargetBuildSettings returns the target's effective build settings, looked up by target (not
-	// scheme) with xcodebuild. Destination-style extraArgs have no effect in target mode.
-	TargetBuildSettings(target, configuration string, extraArgs ...string) (serialized.Object, error)
-	// TargetBundleID returns the resolved bundle ID, falling back to the Info.plist's
-	// CFBundleIdentifier.
-	TargetBundleID(target, configuration string) (string, error)
-	// TargetCodeSignEntitlements returns the target's entitlements, or
-	// ErrCodeSignEntitlementsNotFound if the target declares none.
-	TargetCodeSignEntitlements(target, configuration string) (serialized.Object, error)
-	// TargetInfoplistPath returns the absolute path of the target's Info.plist, or
-	// ErrInfoPlistNotFound if the target declares none.
-	TargetInfoplistPath(target, configuration string) (string, error)
-	// AppIconSetPaths maps target IDs to the absolute paths of the targets' .appiconset directories.
-	AppIconSetPaths() (map[string][]string, error)
-
-	// Schemes returns the project's shared and user schemes. If there are none, it generates
-	// Xcode's default schemes, unless the "Autocreate schemes" option is off, in which case it
-	// returns an error.
-	Schemes() ([]xcscheme.Scheme, error)
-	// SchemesWithAutocreateOverride is Schemes with the "Autocreate schemes" option set by the
-	// caller, for use within a workspace. With no schemes and autocreate off it returns no schemes
-	// and no error.
-	SchemesWithAutocreateOverride(autocreateEnabled bool) ([]xcscheme.Scheme, error)
-	// Scheme returns the scheme with the given name and the path of its project. Names are compared
-	// after Unicode normalisation.
-	Scheme(name string) (xcscheme.Scheme, string, error)
-	// RecreateSchemes returns the schemes Xcode would create for the project, one per native,
-	// non-test target. It only builds them in memory; use SaveSharedScheme to write them.
-	RecreateSchemes() []xcscheme.Scheme
-	// SaveSharedScheme writes the scheme to <Path>/xcshareddata/xcschemes/<scheme name>.xcscheme,
-	// overwriting an existing file. Missing directories are created.
-	SaveSharedScheme(scheme xcscheme.Scheme) error
-
-	// ForceCodeSign switches a target configuration to manual code signing. Call Save to persist
-	// it.
-	ForceCodeSign(opts ForceCodeSignOptions) error
-	// SetBuildSetting sets a build setting of a target configuration, such as
-	// CURRENT_PROJECT_VERSION or PRODUCT_BUNDLE_IDENTIFIER, in the project file. Several settings
-	// can be set before one Save persists them. Targets fetched earlier see the change.
-	SetBuildSetting(targetName, configurationName, key string, value any) error
-	// Save writes the project file, changing only what the edits changed.
-	Save() error
-}
 
 // Factory opens Xcode projects with a fixed set of dependencies.
 type Factory struct {
@@ -113,8 +46,8 @@ type projectFile interface {
 	assetCatalogPaths(target Target) ([]string, error)
 }
 
-// xcodeProject implements XcodeProj for both project file formats.
-type xcodeProject struct {
+// Project is a parsed Xcode project, read from its project.pbxproj or project.xcproj.
+type Project struct {
 	name string
 	path string
 
@@ -168,7 +101,7 @@ func IsXcodeProj(pth string) bool {
 
 // Open reads and parses the project at pth: its project.pbxproj or its project.xcproj. A bundle
 // with both is an error, because xcodebuild refuses to read it.
-func (f Factory) Open(pth string) (XcodeProj, error) {
+func (f Factory) Open(pth string) (*Project, error) {
 	absPth, err := f.pathModifier.AbsPath(pth)
 	if err != nil {
 		return nil, fmt.Errorf("failed to expand path (%s): %w", pth, err)
@@ -193,22 +126,13 @@ func (f Factory) Open(pth string) (XcodeProj, error) {
 		if err != nil {
 			return nil, err
 		}
-		opened, err := f.newPBXProj(content, absPth)
-		if err != nil {
-			// Returning the nil *xcodeProject would make a non-nil XcodeProj.
-			return nil, err
-		}
-		return opened, nil
+		return f.newPBXProj(content, absPth)
 	case hasXCProj:
 		content, err := f.readProjectFile(xcProjPath)
 		if err != nil {
 			return nil, err
 		}
-		opened, err := f.newXCProj(content, absPth)
-		if err != nil {
-			return nil, err
-		}
-		return opened, nil
+		return f.newXCProj(content, absPth)
 	default:
 		return nil, fmt.Errorf("found neither %s nor %s in %s: %w", pbxProjFileName, xcProjFileName, absPth, fs.ErrNotExist)
 	}
@@ -241,8 +165,8 @@ func (f Factory) readProjectFile(pth string) ([]byte, error) {
 	return content, nil
 }
 
-func (f Factory) newXcodeProject(projectPath string) xcodeProject {
-	return xcodeProject{
+func (f Factory) newProject(projectPath string) Project {
+	return Project{
 		name:             strings.TrimSuffix(filepath.Base(projectPath), filepath.Ext(projectPath)),
 		path:             projectPath,
 		logger:           f.logger,
@@ -257,23 +181,24 @@ func (f Factory) newXcodeProject(projectPath string) xcodeProject {
 	}
 }
 
-// Name implements XcodeProj.
-func (p *xcodeProject) Name() string {
+// Name returns the bundle name without the .xcodeproj extension.
+func (p *Project) Name() string {
 	return p.name
 }
 
-// Path implements XcodeProj.
-func (p *xcodeProject) Path() string {
+// Path returns where the bundle is considered to live: relative build setting paths resolve
+// against it and Save writes to it.
+func (p *Project) Path() string {
 	return p.path
 }
 
-// Targets implements XcodeProj.
-func (p *xcodeProject) Targets() []Target {
+// Targets returns the project's targets, in project file order.
+func (p *Project) Targets() []Target {
 	return p.targets
 }
 
-// Target implements XcodeProj.
-func (p *xcodeProject) Target(id string) (Target, bool) {
+// Target returns the target with the given ID.
+func (p *Project) Target(id string) (Target, bool) {
 	for _, target := range p.targets {
 		if target.ID == id {
 			return target, true
@@ -282,8 +207,8 @@ func (p *xcodeProject) Target(id string) (Target, bool) {
 	return Target{}, false
 }
 
-// TargetByName implements XcodeProj.
-func (p *xcodeProject) TargetByName(name string) (Target, bool) {
+// TargetByName returns the target with the given name.
+func (p *Project) TargetByName(name string) (Target, bool) {
 	for _, target := range p.targets {
 		if target.Name == name {
 			return target, true
@@ -292,24 +217,25 @@ func (p *xcodeProject) TargetByName(name string) (Target, bool) {
 	return Target{}, false
 }
 
-// BuildConfigurations implements XcodeProj.
-func (p *xcodeProject) BuildConfigurations() []BuildConfiguration {
+// BuildConfigurations returns the project-level build configurations.
+func (p *Project) BuildConfigurations() []BuildConfiguration {
 	return p.buildConfigurations
 }
 
-// DefaultConfigurationName implements XcodeProj.
-func (p *xcodeProject) DefaultConfigurationName() string {
+// DefaultConfigurationName returns the name of the project's default build configuration.
+func (p *Project) DefaultConfigurationName() string {
 	return p.defaultConfigurationName
 }
 
-// DependentTargetsOfTarget implements XcodeProj.
-func (p *xcodeProject) DependentTargetsOfTarget(target Target) []Target {
+// DependentTargetsOfTarget returns the direct and transitive dependencies of target, each once.
+// Dependencies that cannot be resolved are logged and skipped.
+func (p *Project) DependentTargetsOfTarget(target Target) []Target {
 	// visited guards against dependency cycles in malformed project files.
 	visited := map[string]bool{target.ID: true}
 	return deduplicateTargets(p.dependentTargetsOfTarget(target, visited))
 }
 
-func (p *xcodeProject) dependentTargetsOfTarget(target Target, visited map[string]bool) []Target {
+func (p *Project) dependentTargetsOfTarget(target Target, visited map[string]bool) []Target {
 	var dependents []Target
 
 	for _, dependencyTargetID := range target.dependencyTargetIDs {

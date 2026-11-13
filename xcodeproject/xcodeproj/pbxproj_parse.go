@@ -11,7 +11,7 @@ import (
 
 const pbxProjectISA = "PBXProject"
 
-func parsePBXProj(content []byte, base xcodeProject) (*xcodeProject, error) {
+func parsePBXProj(content []byte, base Project) (*Project, error) {
 	rawProj, format, err := decodePBXProj(content)
 	if err != nil {
 		return nil, err

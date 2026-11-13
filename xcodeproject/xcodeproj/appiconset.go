@@ -17,8 +17,8 @@ const assetCatalogExtension = ".xcassets"
 
 var buildSettingReferenceRegexp = regexp.MustCompile(`\$\{(.+)\}`)
 
-// AppIconSetPaths implements XcodeProj.
-func (p *xcodeProject) AppIconSetPaths() (map[string][]string, error) {
+// AppIconSetPaths maps target IDs to the absolute paths of the targets' .appiconset directories.
+func (p *Project) AppIconSetPaths() (map[string][]string, error) {
 	targetToAppIcons := map[string][]string{}
 	for _, target := range p.targets {
 		// Only native targets build resources such as asset catalogs.
@@ -54,7 +54,7 @@ func (p *xcodeProject) AppIconSetPaths() (map[string][]string, error) {
 	return targetToAppIcons, nil
 }
 
-func (p *xcodeProject) globAppIconSets(catalogPaths []string, appIconSetName string) ([]string, error) {
+func (p *Project) globAppIconSets(catalogPaths []string, appIconSetName string) ([]string, error) {
 	pattern := buildSettingReferenceRegexp.ReplaceAllString(appIconSetName, "*")
 
 	var icons []string

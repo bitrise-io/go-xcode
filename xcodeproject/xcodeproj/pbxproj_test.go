@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func pbxFile(t *testing.T, p *xcodeProject) *pbxprojFile {
+func pbxFile(t *testing.T, p *Project) *pbxprojFile {
 	t.Helper()
 
 	file, ok := projectFileOf(p).(*pbxprojFile)
@@ -18,7 +18,7 @@ func pbxFile(t *testing.T, p *xcodeProject) *pbxprojFile {
 	return file
 }
 
-func TestXcodeProj_perObjectModify(t *testing.T) {
+func TestProject_perObjectModify(t *testing.T) {
 	tests := []struct {
 		name          string
 		fixture       string
@@ -57,7 +57,7 @@ func TestXcodeProj_perObjectModify(t *testing.T) {
 	}
 }
 
-func TestXcodeProj_perObjectModify_noChangesReturnsOriginalBytes(t *testing.T) {
+func TestProject_perObjectModify_noChangesReturnsOriginalBytes(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
 	got, err := pbxFile(t, project).perObjectModify()
@@ -68,19 +68,19 @@ func TestXcodeProj_perObjectModify_noChangesReturnsOriginalBytes(t *testing.T) {
 	require.Equal(t, string(want), string(got))
 }
 
-func openPBXProj(t *testing.T, projectPath string) *xcodeProject {
+func openPBXProj(t *testing.T, projectPath string) *Project {
 	t.Helper()
 
 	opened, err := testFactory().Open(projectPath)
 	require.NoError(t, err)
 
-	p := opened.(*xcodeProject)
+	p := opened
 	pbxFile(t, p)
 
 	return p
 }
 
-func TestXcodeProj_Save_fallsBackToFullRewrite(t *testing.T) {
+func TestProject_Save_fallsBackToFullRewrite(t *testing.T) {
 	projectPath := filepath.Join(t.TempDir(), "App.xcodeproj")
 	require.NoError(t, os.MkdirAll(projectPath, 0755))
 

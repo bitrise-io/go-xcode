@@ -34,8 +34,8 @@ type pbxprojFile struct {
 	buildPhaseIDs map[string][]string
 }
 
-func (f Factory) newPBXProj(content []byte, projectPath string) (*xcodeProject, error) {
-	return parsePBXProj(content, f.newXcodeProject(projectPath))
+func (f Factory) newPBXProj(content []byte, projectPath string) (*Project, error) {
+	return parsePBXProj(content, f.newProject(projectPath))
 }
 
 func (p *pbxprojFile) setBuildSetting(target Target, configuration BuildConfiguration, key string, value any) error {

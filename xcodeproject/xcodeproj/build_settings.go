@@ -32,13 +32,15 @@ var ErrCodeSignEntitlementsNotFound = errors.New("target has no code sign entitl
 // Info.plist.
 var ErrInfoPlistNotFound = errors.New("target has no Info.plist file")
 
-// TargetBuildSettings implements XcodeProj.
-func (p *xcodeProject) TargetBuildSettings(target, configuration string, extraArgs ...string) (serialized.Object, error) {
+// TargetBuildSettings returns the target's effective build settings, looked up by target (not
+// scheme) with xcodebuild. Destination-style extraArgs have no effect in target mode.
+func (p *Project) TargetBuildSettings(target, configuration string, extraArgs ...string) (serialized.Object, error) {
 	return p.buildSettings.TargetBuildSettings(p.path, target, configuration, extraArgs...)
 }
 
-// TargetBundleID implements XcodeProj.
-func (p *xcodeProject) TargetBundleID(target, configuration string) (string, error) {
+// TargetBundleID returns the resolved bundle ID, falling back to the Info.plist's
+// CFBundleIdentifier.
+func (p *Project) TargetBundleID(target, configuration string) (string, error) {
 	buildSettings, err := p.TargetBuildSettings(target, configuration)
 	if err != nil {
 		return "", err
@@ -61,8 +63,9 @@ func (p *xcodeProject) TargetBundleID(target, configuration string) (string, err
 	return resolveBundleID(bundleID, buildSettings)
 }
 
-// TargetCodeSignEntitlements implements XcodeProj.
-func (p *xcodeProject) TargetCodeSignEntitlements(target, configuration string) (serialized.Object, error) {
+// TargetCodeSignEntitlements returns the target's entitlements, or
+// ErrCodeSignEntitlementsNotFound if the target declares none.
+func (p *Project) TargetCodeSignEntitlements(target, configuration string) (serialized.Object, error) {
 	buildSettings, err := p.TargetBuildSettings(target, configuration)
 	if err != nil {
 		return nil, err
@@ -81,8 +84,9 @@ func (p *xcodeProject) TargetCodeSignEntitlements(target, configuration string) 
 	return entitlements, nil
 }
 
-// TargetInfoplistPath implements XcodeProj.
-func (p *xcodeProject) TargetInfoplistPath(target, configuration string) (string, error) {
+// TargetInfoplistPath returns the absolute path of the target's Info.plist, or
+// ErrInfoPlistNotFound if the target declares none.
+func (p *Project) TargetInfoplistPath(target, configuration string) (string, error) {
 	buildSettings, err := p.TargetBuildSettings(target, configuration)
 	if err != nil {
 		return "", err
@@ -96,7 +100,7 @@ func (p *xcodeProject) TargetInfoplistPath(target, configuration string) (string
 	return pth, nil
 }
 
-func (p *xcodeProject) readTargetInfoPlist(target string, buildSettings serialized.Object) (serialized.Object, error) {
+func (p *Project) readTargetInfoPlist(target string, buildSettings serialized.Object) (serialized.Object, error) {
 	pth, ok := p.buildSettingPath(buildSettings, infoPlistBuildSettingKey)
 	if !ok {
 		return nil, fmt.Errorf("target %s: %w", target, ErrInfoPlistNotFound)
@@ -104,7 +108,7 @@ func (p *xcodeProject) readTargetInfoPlist(target string, buildSettings serializ
 	return p.readPlist(pth)
 }
 
-func (p *xcodeProject) buildSettingPath(buildSettings serialized.Object, key string) (string, bool) {
+func (p *Project) buildSettingPath(buildSettings serialized.Object, key string) (string, bool) {
 	pth, ok := buildSettings.String(key)
 	if !ok || pth == "" {
 		return "", false
@@ -131,7 +135,7 @@ func isRelativePath(pth string) bool {
 	}
 }
 
-func (p *xcodeProject) readPlist(pth string) (serialized.Object, error) {
+func (p *Project) readPlist(pth string) (serialized.Object, error) {
 	data, _, err := p.plistFileHandler.Read(pth)
 	if err != nil {
 		return nil, err

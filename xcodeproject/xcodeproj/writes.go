@@ -20,11 +20,14 @@ type ForceCodeSignOptions struct {
 	ProvisioningProfileUUID string
 }
 
-// ForceCodeSign implements XcodeProj. It sets CODE_SIGN_STYLE, DEVELOPMENT_TEAM, CODE_SIGN_IDENTITY
+// ForceCodeSign switches a target configuration to manual code signing. Call Save to persist
+// it.
+//
+// It sets CODE_SIGN_STYLE, DEVELOPMENT_TEAM, CODE_SIGN_IDENTITY
 // and PROVISIONING_PROFILE, including their existing [sdk=...] variants, clears
 // PROVISIONING_PROFILE_SPECIFIER, and records manual signing where the format has a place for it
 // outside the build settings.
-func (p *xcodeProject) ForceCodeSign(opts ForceCodeSignOptions) error {
+func (p *Project) ForceCodeSign(opts ForceCodeSignOptions) error {
 	target, configuration, err := p.targetConfiguration(opts.TargetName, opts.Configuration)
 	if err != nil {
 		return err
@@ -43,8 +46,10 @@ func (p *xcodeProject) ForceCodeSign(opts ForceCodeSignOptions) error {
 	return nil
 }
 
-// SetBuildSetting implements XcodeProj.
-func (p *xcodeProject) SetBuildSetting(targetName, configurationName, key string, value any) error {
+// SetBuildSetting sets a build setting of a target configuration, such as
+// CURRENT_PROJECT_VERSION or PRODUCT_BUNDLE_IDENTIFIER, in the project file. Several settings
+// can be set before one Save persists them. Targets fetched earlier see the change.
+func (p *Project) SetBuildSetting(targetName, configurationName, key string, value any) error {
 	target, configuration, err := p.targetConfiguration(targetName, configurationName)
 	if err != nil {
 		return err
@@ -55,7 +60,7 @@ func (p *xcodeProject) SetBuildSetting(targetName, configurationName, key string
 
 // setBuildSetting writes to the project file first and to memory only if the file accepted the
 // value, so a rejected edit leaves the two in agreement.
-func (p *xcodeProject) setBuildSetting(target Target, configuration BuildConfiguration, key string, value any) error {
+func (p *Project) setBuildSetting(target Target, configuration BuildConfiguration, key string, value any) error {
 	if err := p.file.setBuildSetting(target, configuration, key, value); err != nil {
 		return err
 	}
@@ -64,8 +69,8 @@ func (p *xcodeProject) setBuildSetting(target Target, configuration BuildConfigu
 	return nil
 }
 
-// Save implements XcodeProj.
-func (p *xcodeProject) Save() error {
+// Save writes the project file, changing only what the edits changed.
+func (p *Project) Save() error {
 	content, err := p.file.content()
 	if err != nil {
 		return err
@@ -78,7 +83,7 @@ func (p *xcodeProject) Save() error {
 	return nil
 }
 
-func (p *xcodeProject) targetConfiguration(targetName, configurationName string) (Target, BuildConfiguration, error) {
+func (p *Project) targetConfiguration(targetName, configurationName string) (Target, BuildConfiguration, error) {
 	target, ok := p.TargetByName(targetName)
 	if !ok {
 		return Target{}, BuildConfiguration{}, fmt.Errorf("failed to find target with name: %s", targetName)
