@@ -357,11 +357,8 @@ func (p *ProjectHelper) buildSettingPathForKey(targetName, conf string, key stri
 	return settingValue, nil
 }
 
-// TargetBundleID returns the target bundle ID
-// First it tries to fetch the bundle ID from the `PRODUCT_BUNDLE_IDENTIFIER` build settings
-// If it's no available it will fetch the target's Info.plist and search for the `CFBundleIdentifier` key.
-// The CFBundleIdentifier's value is not resolved in the Info.plist, so it will try to resolve it by the resolveBundleID()
-// It returns  the target bundle ID
+// TargetBundleID falls back to the Info.plist's CFBundleIdentifier, resolving build setting
+// references in it, when PRODUCT_BUNDLE_IDENTIFIER is not set.
 func (p *ProjectHelper) TargetBundleID(name, conf string) (string, error) {
 	bundleID, err := p.buildSettingForKey(name, conf, "PRODUCT_BUNDLE_IDENTIFIER")
 	if err != nil && !errors.Is(err, serialized.ErrKeyNotFound) {

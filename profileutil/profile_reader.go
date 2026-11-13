@@ -138,12 +138,12 @@ func (reader ProfileReader) installedProvisioningProfiles(profileType ProfileTyp
 	return profiles, nil
 }
 
-// ProvisioningProfilesDirModernPath is the absolute path used to store and look up provisioning profiles (used Xcode 16 and later)
+// Used by Xcode 16 and later.
 func (reader ProfileReader) provisioningProfilesDirModernPath() (string, error) {
 	return reader.pathModifier.AbsPath("~/Library/Developer/Xcode/UserData/Provisioning Profiles")
 }
 
-// ProvisioningProfilesDirLegacyPath is the absolute path used to store and look up provisioning profiles (used Xcode 15 and earlier)
+// Used by Xcode 15 and earlier.
 func (reader ProfileReader) provisioningProfilesDirLegacyPath() (string, error) {
 	return reader.pathModifier.AbsPath("~/Library/MobileDevice/Provisioning Profiles")
 }

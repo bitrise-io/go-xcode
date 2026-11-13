@@ -146,7 +146,6 @@ func logAllAPICertificates(client DevPortalClient) error {
 	return nil
 }
 
-// filterCertificates returns the certificates matching to the given common name, developer team ID, and distribution type.
 func filterCertificates(certificates []certificateutil.CertificateInfoModel, certificateType appstoreconnect.CertificateType) []certificateutil.CertificateInfoModel {
 	// filter by distribution type
 	var filteredCertificates []certificateutil.CertificateInfoModel

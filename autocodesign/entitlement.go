@@ -113,7 +113,7 @@ func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 	}, nil
 }
 
-// IsProfileAttached returns an error if an entitlement does not match a Capability but needs to be addded to the profile
+// IsProfileAttached reports whether an entitlement does not match a Capability but needs to be added to the profile
 // as an additional entitlement, after submitting a request to Apple.
 func (e Entitlement) IsProfileAttached() bool {
 	if len(e) == 0 {

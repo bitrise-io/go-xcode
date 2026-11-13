@@ -323,7 +323,6 @@ func (m *Manager) downloadCertificates() ([]certificateutil.CertificateInfoModel
 
 func (m *Manager) installCertificates(certificates []certificateutil.CertificateInfoModel) error {
 	for _, cert := range certificates {
-		// Empty passphrase provided, as already parsed certificate + private key
 		if err := m.assetInstaller.InstallCertificate(cert); err != nil {
 			return err
 		}
@@ -555,7 +554,6 @@ func (m *Manager) installManualCodeSigningAssets(certificates []certificateutil.
 	m.logger.Printf("Installing %d certificate(s):", len(certificates))
 	for _, cert := range certificates {
 		m.logger.Printf("- %s", cert.String())
-		// Empty passphrase provided, as already parsed certificate + private key
 		if err := m.assetInstaller.InstallCertificate(cert); err != nil {
 			return nil, nil, err
 		}

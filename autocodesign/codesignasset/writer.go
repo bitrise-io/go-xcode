@@ -73,8 +73,7 @@ func (w Writer) InstallCertificate(certificate certificateutil.CertificateInfoMo
 	return w.keychain.InstallCertificate(certificate, "")
 }
 
-// InstallProfile writes the provided profile under the `$HOME/Library/MobileDevice/Provisioning Profiles` directory.
-// Xcode uses profiles located in that directory.
+// InstallProfile writes the provided profile into the directory the given Xcode version reads profiles from.
 // The file extension depends on the profile's platform `IOS` => `.mobileprovision`, `MAC_OS` => `.provisionprofile`
 func (w Writer) InstallProfile(profile autocodesign.Profile) error {
 	var ext string

@@ -122,7 +122,6 @@ func (ch *ChanWriterCloser) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-// Close stops the interceptor and closes the pipe.
 func (ch *ChanWriterCloser) Close() error {
 	close(ch.channel)
 	return nil
