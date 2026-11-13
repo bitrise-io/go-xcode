@@ -41,19 +41,8 @@ func ShowBuildSettings(params ShowBuildSettingsParams) (Command, error) {
 	opts = append(opts, Option{Kind: Switch, Name: "-showBuildSettings"}, Option{Kind: Switch, Name: "-json"})
 
 	// archive -test-iterations 2 -skipPackagePluginValidation FOO=1 -> -skipPackagePluginValidation FOO=1
-	var user, leftOut Options
-	for _, o := range params.AdditionalOptions {
-		if _, rejected := showBuildSettingsPolicy.rejects(o); o.Kind == Action || o.Kind == Unknown || rejected {
-			leftOut = append(leftOut, o)
-		} else {
-			user = append(user, o)
-		}
-	}
-	cmd := Command{args: merge(opts, user).Args()}
-	if len(leftOut) > 0 {
-		cmd.diagnostics = []Diagnostic{report(LeftOut, leftOut[0], "%s left out of the build settings query; the Step's main command gets the full xcodebuild_options.", leftOut.quoted())}
-	}
-	return cmd, nil
+	user, diagnostics := leaveOut(showBuildSettingsPolicy, params.AdditionalOptions, "the build settings query")
+	return Command{args: merge(opts, user).Args(), diagnostics: diagnostics}, nil
 }
 
 // The query sets -json itself: it is what makes the output machine-readable.
