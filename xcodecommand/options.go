@@ -120,8 +120,6 @@ func ParseOptions(input string) (Options, error) {
 	return parse(args), nil
 }
 
-// parse turns shell-split arguments into typed Options. Whatever fits no form is kept
-// verbatim as Unknown, so the command line stays as the user wrote it.
 func parse(args []string) Options {
 	var opts Options
 	for i := 0; i < len(args); i++ {

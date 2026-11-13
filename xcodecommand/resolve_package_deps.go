@@ -14,13 +14,9 @@ type ResolvePackagesParams struct {
 	AdditionalOptions Options // the step's xcodebuild_options, from ParseOptions, as given to its main command
 }
 
-// ResolvePackages renders params into a package resolution Command; run it with a Runner.
-//
-// A step resolves packages as a preparation for its main command and passes it the same
-// xcodebuild_options. Options that do not apply to resolution (build actions, test-only
-// and mode-switching flags, anything unparseable) are left out, and the Command reports
-// them in one informational line: the options still reach the main command, which reports
-// any that are wrong there.
+// ResolvePackages runs before a step's main command, with the same xcodebuild_options. Options
+// that don't apply to resolution are left out and reported in one informational line; the main
+// command still gets them and reports any that are wrong there.
 func ResolvePackages(params ResolvePackagesParams) (Command, error) {
 	if filepath.Ext(filepath.Clean(params.ProjectPath)) == xcworkspaceExtension && params.Scheme == "" {
 		// xcodebuild: "If you specify a workspace then you must also specify a scheme."

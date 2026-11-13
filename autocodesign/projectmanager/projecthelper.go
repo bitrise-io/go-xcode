@@ -53,9 +53,8 @@ type ProjectHelper struct {
 	buildSettingsCache map[buildSettingsCacheKey][]serialized.Object
 }
 
-// NewProjectHelper checks the provided project or workspace and generate a ProjectHelper with the provided scheme and configuration
-// Previously in the ruby version the initialize method did the same
-// It returns a new ProjectHelper, whose Configuration field contains is the selected configuration (even when configurationName parameter is empty)
+// NewProjectHelper's Configuration field holds the selected configuration, also when
+// configurationName is empty.
 func NewProjectHelper(projOrWSPath string, logger log.Logger, schemeName string, buildAction BuildAction, configurationName string, additionalXcodebuildOptions []string, isDebug bool) (*ProjectHelper, error) {
 	return newProjectHelper(projOrWSPath, logger, schemeName, buildAction, configurationName, additionalXcodebuildOptions, isDebug, env.NewRepository())
 }

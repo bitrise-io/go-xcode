@@ -1,29 +1,15 @@
-// Package serialized provides typed, map-like accessors over the loosely-typed
-// maps produced when decoding Xcode's plist and pbxproj object graphs. A
-// serialized.Object wraps a map[string]any and lets callers read nested values
-// by key using the comma-ok idiom: each accessor returns the value and a bool
-// that reports whether a usable value of the requested type was present.
-//
-// A false result means either the key was absent or the stored value was not
-// of the requested type. Callers that need to tell those two cases apart can
-// check Has first, or use the Optional accessors, which tolerate an absent key
-// and report a value of the wrong type as a WrongTypeError.
+// Package serialized reads typed values from the maps that decoding plist and pbxproj files
+// produces. A false ok means the key is absent or holds another type; Has, or the Optional
+// accessors' WrongTypeError, tell the two apart.
 package serialized
 
 // Object is a decoded plist/pbxproj node: a set of string keys mapped to
 // arbitrary values.
 type Object map[string]any
 
-// Get returns the value stored at key in o as type T via a direct type
-// assertion. ok is false — and value is the zero value of T — if key is absent
-// or the stored value's concrete type is not exactly T.
-//
-// Because it asserts rather than converts, T must match the concrete type the
-// decoder produced. For plist/JSON input that is a scalar: string, bool, int64
-// or float64. Get does NOT handle the two composite cases that require
-// conversion, so use the dedicated accessors for those:
-//   - nested dictionaries decode as map[string]any, not Object — use Object.
-//   - arrays decode as []any, not []string — use StringSlice.
+// Get type-asserts rather than converts, so T must be the decoder's concrete type: string,
+// bool, int64 or float64. Use Object for nested dictionaries (map[string]any) and StringSlice
+// for arrays ([]any).
 func Get[T any](o Object, key string) (value T, ok bool) {
 	raw, exists := o[key]
 	if !exists {

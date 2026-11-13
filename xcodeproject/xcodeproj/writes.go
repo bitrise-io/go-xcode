@@ -20,13 +20,8 @@ type ForceCodeSignOptions struct {
 	ProvisioningProfileUUID string
 }
 
-// ForceCodeSign switches a target configuration to manual code signing. Call Save to persist
-// it.
-//
-// It sets CODE_SIGN_STYLE, DEVELOPMENT_TEAM, CODE_SIGN_IDENTITY
-// and PROVISIONING_PROFILE, including their existing [sdk=...] variants, clears
-// PROVISIONING_PROFILE_SPECIFIER, and records manual signing where the format has a place for it
-// outside the build settings.
+// ForceCodeSign switches a target configuration to manual code signing, including the
+// [sdk=...] variants of the settings it sets. Call Save to persist it.
 func (p *Project) ForceCodeSign(opts ForceCodeSignOptions) error {
 	target, configuration, err := p.targetConfiguration(opts.TargetName, opts.Configuration)
 	if err != nil {

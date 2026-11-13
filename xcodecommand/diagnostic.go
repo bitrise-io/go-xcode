@@ -192,12 +192,9 @@ func (m merged) byFlag() []flagGroup {
 // ignoredUserDefault opens the message about a "-flag=value" the user meant as "-flag value".
 const ignoredUserDefault = "%q is written with \"=\". xcodebuild reads it as a user default and ignores it, "
 
-// findings says what became of a flag the user set: what the merge did with the Step's
-// copy, then each "-flag=value" form of it, then whether a Step input should set it
-// instead. A copy xcodebuild refuses gets no line, since the build fails on it with
-// xcodebuild's own message: a repeated value option ("may only be provided once"), a
-// value given to a switch as "-quiet YES" (an unknown build action) or "-quiet:YES" (an
-// invalid option). Every fact is in the group, so no rule needs another pass.
+// findings reports what became of a flag the user set. A copy xcodebuild refuses gets no
+// line, as the build fails with xcodebuild's own message: a repeated value option, "-quiet YES"
+// (an unknown build action) or "-quiet:YES" (an invalid option).
 func (g flagGroup) findings(all merged, policy actionPolicy) []Diagnostic {
 	if len(g.user) == 0 {
 		return nil
@@ -205,9 +202,6 @@ func (g flagGroup) findings(all merged, policy actionPolicy) []Diagnostic {
 	var diagnostics []Diagnostic
 	user := g.user.options()
 
-	// The Step's copy yielded to the user's copies of the same form: identical ones are
-	// redundant, a different one overrides it. A copy of another form ("-quiet YES" next to
-	// the Step's -quiet) is one xcodebuild refuses.
 	if len(g.step) > 0 && g.step[0].dropped {
 		step := g.step[0].Option
 		same := user.Filter(func(o Option) bool { return o.Kind == step.Kind && o.Name == step.Name })
@@ -220,10 +214,7 @@ func (g flagGroup) findings(all merged, policy actionPolicy) []Diagnostic {
 		}
 	}
 
-	// "-flag=value": xcodebuild reads it as a user default and ignores it. A switch in the
-	// group, the Step's or the user's, says the flag takes no value; otherwise the message
-	// names the value the build uses instead: the Step's copy while it is on the command
-	// line, else the user's own, unless the policy rejects it.
+	// "-flag=value" is a user default to xcodebuild, which ignores it.
 	sw, isSwitch := g.all().last(func(p placed) bool { return p.Kind == Switch })
 	applied, found := g.step.last(func(p placed) bool { return p.Kind == ValueOption && !p.dropped })
 	if !found {
@@ -252,10 +243,7 @@ func (g flagGroup) findings(all merged, policy actionPolicy) []Diagnostic {
 		}
 	}
 
-	// A flag a Step input renders, passed here instead: -allowProvisioningUpdates without the
-	// Step's API key flags, or the user's own. One line, for the user's copy in the form the
-	// flag takes; "-allowProvisioningUpdates YES" is one xcodebuild refuses. A command whose
-	// Step lacks the input gets the hint's otherwise text, if it has one.
+	// A flag a Step input renders, such as -allowProvisioningUpdates without the Step's API key flags.
 	if in, ok := stepInputFlags[g.name]; ok && len(g.step) == 0 && !setsAll(all.options(), in.satisfied) {
 		hint := in.hint
 		if !in.appliesTo(policy.name) {

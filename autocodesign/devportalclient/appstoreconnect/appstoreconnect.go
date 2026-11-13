@@ -77,11 +77,8 @@ func NewRetryableHTTPClient(logger log.Logger, tracker Tracker) *http.Client {
 	trackingTransport := newTrackingRoundTripper(client.HTTPClient.Transport, tracker)
 	client.HTTPClient.Transport = trackingTransport
 
-	// RequestLogHook is called before each retry (attemptNum > 0 for retries, 0 for initial request).
-	// We mark retry attempts in the request context so RoundTrip can track which attempts are retries.
-	// We use pointer dereference (*req = *...) to modify the request in-place because RequestLogHook
-	// doesn't return a value - it modifies the request through side effects. This updates the request's
-	// context field, which will be present when RoundTrip is called immediately after.
+	// The hook runs before every attempt (attemptNum is 0 for the first). It returns nothing, so a
+	// retry is marked by replacing *req with a copy whose context carries the flag for RoundTrip.
 	client.RequestLogHook = func(_ retryablehttp.Logger, req *http.Request, attemptNum int) {
 		if attemptNum > 0 {
 			*req = *trackingTransport.markAsRetry(req)
