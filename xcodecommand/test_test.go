@@ -101,6 +101,8 @@ func TestTest_repetition(t *testing.T) {
 			cmd, err := Test(params)
 			if tt.wantErr != "" {
 				require.ErrorContains(t, err, tt.wantErr)
+				_, err = TestWithoutBuilding(TestWithoutBuildingParams{XCTestRun: "a.xctestrun", TestRepetitionMode: tt.mode, MaximumTestRepetitions: tt.max, RelaunchTestsForEachRepetition: tt.relaunch})
+				require.ErrorContains(t, err, tt.wantErr, "test-without-building shares the validation")
 				return
 			}
 			require.NoError(t, err)
