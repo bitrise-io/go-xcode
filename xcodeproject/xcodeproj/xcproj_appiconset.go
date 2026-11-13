@@ -12,24 +12,13 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcodeproj/internal/xcproj"
 )
 
-const (
-	assetCatalogExtension = ".xcassets"
-	projectPathBase       = "<PROJECT>/"
-)
+const projectPathBase = "<PROJECT>/"
 
 var filePathUnescaper = strings.NewReplacer(`\\`, `\`, `\<`, `<`)
 
-// AppIconSetPaths implements XcodeProj. It looks for asset catalogs in the targets' resources
-// build phases and, on disk, in the targets' synchronized folders.
-func (p *XCProj) AppIconSetPaths() (map[string][]string, error) {
-	return p.appIconSetPaths(p.assetCatalogPaths)
-}
-
-func (p *XCProj) assetCatalogPaths(target Target) ([]string, error) {
-	if !target.isNativeTarget() {
-		return nil, nil
-	}
-
+// assetCatalogPaths looks for asset catalogs in the target's resources build phase and, on disk, in
+// the target's synchronized folders.
+func (p *xcprojFile) assetCatalogPaths(target Target) ([]string, error) {
 	resources := xcproj.BuildPhaseReference{Target: target.Name, Kind: xcproj.BuildPhaseKindResources}
 	projectDir := filepath.Dir(p.path)
 
@@ -100,7 +89,7 @@ func resolveXCProjFilePath(pth, groupDir string, groupErr error, projectDir stri
 
 // findAssetCatalogs uses Lstat so that a symbolic link cycle cannot loop. A missing dir has no
 // catalogs: git does not keep an empty synchronized folder.
-func (p *XCProj) findAssetCatalogs(dir string) ([]string, error) {
+func (p *xcprojFile) findAssetCatalogs(dir string) ([]string, error) {
 	names, err := p.fileManager.ReadDirEntryNames(dir)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil

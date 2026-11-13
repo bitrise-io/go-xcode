@@ -17,10 +17,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func projectWithProvider(t *testing.T, provider BuildSettingsProvider) *baseProj {
+func projectWithProvider(t *testing.T, provider BuildSettingsProvider) *Project {
 	t.Helper()
 
-	return &baseProj{
+	return &Project{
 		name:             "App",
 		path:             "/projects/App.xcodeproj",
 		logger:           log.NewLogger(),
@@ -29,7 +29,7 @@ func projectWithProvider(t *testing.T, provider BuildSettingsProvider) *baseProj
 	}
 }
 
-func projectWithBuildSettings(t *testing.T, settings serialized.Object) *baseProj {
+func projectWithBuildSettings(t *testing.T, settings serialized.Object) *Project {
 	t.Helper()
 
 	provider := mocks.NewBuildSettingsProvider(t)
@@ -39,12 +39,12 @@ func projectWithBuildSettings(t *testing.T, settings serialized.Object) *basePro
 }
 
 // expectPlistRead makes reading the plist at pth, relative to the project directory, return data and err.
-func expectPlistRead(project *baseProj, pth string, data plistutil.PlistData, err error) {
-	handler := project.plistFileHandler.(*plistmocks.FileHandler)
-	handler.On("Read", filepath.Join(filepath.Dir(project.Path()), pth)).Return(data, plist.XMLFormat, err).Once()
+func expectPlistRead(p *Project, pth string, data plistutil.PlistData, err error) {
+	handler := p.plistFileHandler.(*plistmocks.FileHandler)
+	handler.On("Read", filepath.Join(filepath.Dir(p.Path()), pth)).Return(data, plist.XMLFormat, err).Once()
 }
 
-func TestXcodeProj_TargetBuildSettings(t *testing.T) {
+func TestProject_TargetBuildSettings(t *testing.T) {
 	provider := mocks.NewBuildSettingsProvider(t)
 	project := projectWithProvider(t, provider)
 	provider.On("TargetBuildSettings", project.Path(), "App", "Release", []string{"-destination", "generic/platform=iOS"}).
@@ -55,7 +55,7 @@ func TestXcodeProj_TargetBuildSettings(t *testing.T) {
 	assert.Equal(t, serialized.Object{"SDKROOT": "iphoneos"}, settings)
 }
 
-func TestXcodeProj_TargetBuildSettings_providerFailure(t *testing.T) {
+func TestProject_TargetBuildSettings_providerFailure(t *testing.T) {
 	failure := errors.New("xcodebuild exploded")
 	provider := mocks.NewBuildSettingsProvider(t)
 	provider.On("TargetBuildSettings", mock.Anything, mock.Anything, mock.Anything).Return(nil, failure)
@@ -64,7 +64,7 @@ func TestXcodeProj_TargetBuildSettings_providerFailure(t *testing.T) {
 	assert.ErrorIs(t, err, failure)
 }
 
-func TestXcodeProj_TargetBundleID(t *testing.T) {
+func TestProject_TargetBundleID(t *testing.T) {
 	t.Run("from the build setting", func(t *testing.T) {
 		project := projectWithBuildSettings(t, serialized.Object{
 			"PRODUCT_BUNDLE_IDENTIFIER": "io.bitrise.App",
@@ -129,7 +129,7 @@ func TestXcodeProj_TargetBundleID(t *testing.T) {
 	})
 }
 
-func TestXcodeProj_TargetCodeSignEntitlements(t *testing.T) {
+func TestProject_TargetCodeSignEntitlements(t *testing.T) {
 	t.Run("reads the entitlements file", func(t *testing.T) {
 		project := projectWithBuildSettings(t, serialized.Object{
 			"CODE_SIGN_ENTITLEMENTS": "App/App.entitlements",
@@ -162,7 +162,7 @@ func TestXcodeProj_TargetCodeSignEntitlements(t *testing.T) {
 	})
 }
 
-func TestXcodeProj_TargetInfoplistPath(t *testing.T) {
+func TestProject_TargetInfoplistPath(t *testing.T) {
 	t.Run("relative paths resolve against the project directory", func(t *testing.T) {
 		project := projectWithBuildSettings(t, serialized.Object{
 			"INFOPLIST_FILE": "App/Info.plist",
@@ -295,7 +295,7 @@ func TestIsRelativePath(t *testing.T) {
 	}
 }
 
-func TestXcodeProj_TargetInfoplistPath_unexpandedReferenceIsLeftAlone(t *testing.T) {
+func TestProject_TargetInfoplistPath_unexpandedReferenceIsLeftAlone(t *testing.T) {
 	project := projectWithBuildSettings(t, serialized.Object{
 		"INFOPLIST_FILE": "$(SRCROOT)/App/Info.plist",
 	})

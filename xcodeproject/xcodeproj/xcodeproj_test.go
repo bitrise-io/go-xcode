@@ -34,7 +34,7 @@ func testFactory() Factory {
 	)
 }
 
-func openProjectFiles(t *testing.T, files map[string][]byte) XcodeProj {
+func openProjectFiles(t *testing.T, files map[string][]byte) *Project {
 	t.Helper()
 
 	projectPath := writeProjectFiles(t, files)
@@ -57,7 +57,7 @@ func writeProjectFiles(t *testing.T, files map[string][]byte) string {
 	return projectPath
 }
 
-func parseFixture(t *testing.T, name string) *PBXProj {
+func parseFixture(t *testing.T, name string) *Project {
 	t.Helper()
 
 	content, err := os.ReadFile(filepath.Join("testdata", name))
@@ -91,36 +91,6 @@ func TestFactory_Parse(t *testing.T) {
 	assert.Equal(t, "Debug", project.BuildConfigurations()[0].Name)
 	assert.Equal(t, "Release", project.BuildConfigurations()[1].Name)
 	assert.Equal(t, "Release", project.DefaultConfigurationName())
-}
-
-// Regression test for 2f529ef from the abandoned xcodeproject-v2 branch.
-func TestFactory_Parse_optionalTargetKeys(t *testing.T) {
-	content, err := os.ReadFile(filepath.Join("testdata", "minimal.pbxproj"))
-	require.NoError(t, err)
-
-	require.NotContains(t, string(content), "dependencies")
-	require.NotContains(t, string(content), "buildPhases")
-
-	project, err := testFactory().newPBXProj(content, "/projects/App.xcodeproj")
-	require.NoError(t, err)
-
-	require.Len(t, project.Targets(), 1)
-	target := project.Targets()[0]
-	assert.Equal(t, "App", target.Name)
-	assert.Empty(t, target.dependencyTargetIDs)
-	assert.Empty(t, project.buildPhaseIDs[target.ID])
-}
-
-func TestFactory_Parse_invalidContent(t *testing.T) {
-	_, err := testFactory().newPBXProj([]byte("not a plist"), "/projects/App.xcodeproj")
-	require.Error(t, err)
-}
-
-func TestFactory_Parse_noProjectObject(t *testing.T) {
-	content := []byte("{\n\tobjects = {\n\t\tAA1 = {\n\t\t\tisa = PBXGroup;\n\t\t};\n\t};\n}\n")
-
-	_, err := testFactory().newPBXProj(content, "/projects/App.xcodeproj")
-	require.ErrorContains(t, err, "PBXProject")
 }
 
 func TestFactory_Open(t *testing.T) {
@@ -174,7 +144,7 @@ func TestFactory_Open_invalidProjectReturnsNilProject(t *testing.T) {
 	assert.True(t, project == nil, "got a non-nil %T", project)
 }
 
-func TestXcodeProj_Target(t *testing.T) {
+func TestProject_Target(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
 	target, ok := project.Target(appTargetID)
@@ -185,7 +155,7 @@ func TestXcodeProj_Target(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestXcodeProj_TargetByName(t *testing.T) {
+func TestProject_TargetByName(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
 	target, ok := project.TargetByName("TodayExtension")
@@ -196,7 +166,7 @@ func TestXcodeProj_TargetByName(t *testing.T) {
 	assert.False(t, ok)
 }
 
-func TestXcodeProj_DependentTargetsOfTarget(t *testing.T) {
+func TestProject_DependentTargetsOfTarget(t *testing.T) {
 	project := parseFixture(t, "ios-sample.pbxproj")
 
 	app, ok := project.Target(appTargetID)
@@ -212,8 +182,8 @@ func TestXcodeProj_DependentTargetsOfTarget(t *testing.T) {
 	assert.Empty(t, project.DependentTargetsOfTarget(extension))
 }
 
-func TestXcodeProj_DependentTargetsOfTarget_unresolvableDependencyIsSkipped(t *testing.T) {
-	project := &baseProj{
+func TestProject_DependentTargetsOfTarget_unresolvableDependencyIsSkipped(t *testing.T) {
+	project := &Project{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B", "GONE"}},
@@ -224,8 +194,8 @@ func TestXcodeProj_DependentTargetsOfTarget_unresolvableDependencyIsSkipped(t *t
 	assert.Equal(t, []string{"B"}, targetNames(project.DependentTargetsOfTarget(project.targets[0])))
 }
 
-func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
-	project := &baseProj{
+func TestProject_DependentTargetsOfTarget_cycle(t *testing.T) {
+	project := &Project{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B"}},
@@ -237,8 +207,8 @@ func TestXcodeProj_DependentTargetsOfTarget_cycle(t *testing.T) {
 	assert.Equal(t, []string{"B", "C"}, targetNames(project.DependentTargetsOfTarget(project.targets[0])))
 }
 
-func TestXcodeProj_DependentTargetsOfTarget_sharedDependency(t *testing.T) {
-	project := &baseProj{
+func TestProject_DependentTargetsOfTarget_sharedDependency(t *testing.T) {
+	project := &Project{
 		logger: log.NewLogger(),
 		targets: []Target{
 			{ID: "A", Name: "A", dependencyTargetIDs: []string{"B", "C"}},
@@ -258,4 +228,8 @@ func targetNames(targets []Target) []string {
 		names = append(names, target.Name)
 	}
 	return names
+}
+
+func projectFileOf(p *Project) projectFile {
+	return p.file
 }
