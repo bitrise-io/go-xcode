@@ -73,6 +73,19 @@ func TestReader_Scheme(t *testing.T) {
 	require.Contains(t, targets, "ios-simple-objcTests")
 }
 
+// A trailing separator, as directory completion leaves it, does not hide the extension.
+func TestReader_trailingSeparator(t *testing.T) {
+	r, factory := newReader(t, `[{"action": "build", "target": "App", "buildSettings": {"SDKROOT": "iphoneos"}}]`, "", nil)
+
+	_, err := r.Target("App.xcodeproj/", "App", "", nil)
+	require.NoError(t, err)
+	factory.AssertCalled(t, "Create", "xcodebuild", []string{"-project", "App.xcodeproj/", "-target", "App", "-showBuildSettings", "-json"}, mock.Anything)
+
+	_, err = r.Scheme("App.xcworkspace/", "App", "", nil)
+	require.NoError(t, err)
+	factory.AssertCalled(t, "Create", "xcodebuild", []string{"-workspace", "App.xcworkspace/", "-scheme", "App", "-showBuildSettings", "-json"}, mock.Anything)
+}
+
 func TestReader_rejectsPathsWithoutBuildSettings(t *testing.T) {
 	r, factory := newReader(t, "[]", "", nil)
 

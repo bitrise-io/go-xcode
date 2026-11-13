@@ -36,7 +36,7 @@ func NewReader(commandFactory command.Factory, logger log.Logger) Reader {
 }
 
 func (r reader) Target(projectPath, target, configuration string, additionalOptions xcodecommand.Options) (Settings, error) {
-	if filepath.Ext(projectPath) != ".xcodeproj" {
+	if filepath.Ext(filepath.Clean(projectPath)) != ".xcodeproj" {
 		return nil, fmt.Errorf("reading a target's build settings needs an .xcodeproj, got %s", projectPath)
 	}
 	targets, err := r.read(xcodecommand.ShowBuildSettingsParams{ProjectPath: projectPath, Target: target, Configuration: configuration, AdditionalOptions: additionalOptions})
@@ -55,7 +55,7 @@ func (r reader) SchemeTarget(projectPath, scheme, target, configuration string, 
 }
 
 func (r reader) Scheme(projectPath, scheme, configuration string, additionalOptions xcodecommand.Options) (map[string]Settings, error) {
-	if ext := filepath.Ext(projectPath); ext != ".xcodeproj" && ext != ".xcworkspace" {
+	if ext := filepath.Ext(filepath.Clean(projectPath)); ext != ".xcodeproj" && ext != ".xcworkspace" {
 		// A Swift package has no build settings to read: xcodebuild prints none for its schemes.
 		return nil, fmt.Errorf("reading build settings needs an .xcodeproj or .xcworkspace, got %s", projectPath)
 	}
