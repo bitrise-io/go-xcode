@@ -16,8 +16,8 @@ func readFixture(t *testing.T, name string) []byte {
 
 // The fixtures are reduced from real Xcode 26.5 output: a scheme with its test target
 // (sample-apps-ios-simple-objc) and a CocoaPods workspace (sample-apps-ios-workspace-swift).
-func TestParse(t *testing.T) {
-	targets, err := Parse(readFixture(t, "scheme_with_test_target.json"))
+func Test_parse(t *testing.T) {
+	targets, err := parse(readFixture(t, "scheme_with_test_target.json"))
 	require.NoError(t, err)
 	require.Len(t, targets, 2)
 
@@ -27,14 +27,14 @@ func TestParse(t *testing.T) {
 	require.NotContains(t, app, "BUNDLE_LOADER", "the test target's own settings stay with the test target")
 	require.Equal(t, "Bitrise.ios-simple-objcTests", targets["ios-simple-objcTests"]["PRODUCT_BUNDLE_IDENTIFIER"])
 
-	targets, err = Parse(readFixture(t, "quoted_value.json"))
+	targets, err = parse(readFixture(t, "quoted_value.json"))
 	require.NoError(t, err)
 	require.Equal(t, `-framework "SnapKit"`, targets["sample-apps-ios-workspace-swift"]["OTHER_LDFLAGS"], "quotes inside a value stay")
 
-	targets, err = Parse([]byte("[\n\n]"))
+	targets, err = parse([]byte("[\n\n]"))
 	require.NoError(t, err)
 	require.Empty(t, targets)
 
-	_, err = Parse([]byte("Build settings for action build and target App:\n    SDKROOT = iphoneos"))
+	_, err = parse([]byte("Build settings for action build and target App:\n    SDKROOT = iphoneos"))
 	require.Error(t, err)
 }

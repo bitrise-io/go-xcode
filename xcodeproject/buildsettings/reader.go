@@ -100,7 +100,7 @@ func (r reader) read(params xcodecommand.ShowBuildSettingsParams) (map[string]Se
 		return nil, fmt.Errorf("%s: %w\n%s", run.PrintableCommandArgs(), runErr, strings.TrimSpace(stderr.String()+"\n"+stdout.String()))
 	}
 
-	targets, err := Parse(stdout.Bytes())
+	targets, err := parse(stdout.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("%s printed no build settings JSON: %w", run.PrintableCommandArgs(), err)
 	}

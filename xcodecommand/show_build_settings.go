@@ -16,7 +16,7 @@ type ShowBuildSettingsParams struct {
 }
 
 // ShowBuildSettings renders params into a settings query Command. Its stdout is JSON, one
-// entry per target the query covers; buildsettings.Parse reads it.
+// entry per target the query covers; buildsettings.Reader runs and reads it.
 //
 // A step reads build settings as a preparation for its main command and passes it the same
 // xcodebuild_options: build settings and package flags change the result. Options that do

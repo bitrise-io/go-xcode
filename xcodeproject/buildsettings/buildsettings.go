@@ -10,10 +10,10 @@ import (
 // Settings is one target's effective build settings, by setting name.
 type Settings map[string]string
 
-// Parse reads the JSON that `xcodebuild -showBuildSettings -json` prints on stdout: the
+// parse reads the JSON that `xcodebuild -showBuildSettings -json` prints on stdout: the
 // settings of every target the query covers, by target name. Values are trimmed; xcodebuild
 // pads list values with spaces (" @executable_path/Frameworks").
-func Parse(out []byte) (map[string]Settings, error) {
+func parse(out []byte) (map[string]Settings, error) {
 	var entries []struct {
 		Target        string            `json:"target"`
 		BuildSettings map[string]string `json:"buildSettings"`
