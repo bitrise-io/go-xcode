@@ -86,7 +86,6 @@ func (s ProvisioningService) ListCertificates(opt *ListCertificatesOptions) (*Ce
 	return r, nil
 }
 
-// FetchCertificate fetch the certificate entity from the
 func (s ProvisioningService) FetchCertificate(serialNumber string) (Certificate, error) {
 	r, err := s.ListCertificates(&ListCertificatesOptions{
 		FilterSerialNumber: serialNumber,

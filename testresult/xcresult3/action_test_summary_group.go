@@ -53,7 +53,6 @@ func (g actionTestSummaryGroup) references() (class, method string) {
 	return
 }
 
-// testsWithStatus returns actionTestSummaryGroup entries with TestStatus set.
 func (g actionTestSummaryGroup) testsWithStatus() (result []actionTestSummaryGroup) {
 	if g.TestStatus.Value != "" {
 		result = append(result, g)

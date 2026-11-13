@@ -25,7 +25,6 @@ type CertificateInfoModel struct {
 	PrivateKey  PrivateKey
 }
 
-// CheckValidity checks whether the certificate is valid at the current time.
 func CheckValidity(certificate x509.Certificate) error {
 	return checkValidityAt(time.Now(), certificate)
 }
@@ -46,7 +45,6 @@ func (info CertificateInfoModel) CheckValidity() error {
 	return CheckValidity(info.Certificate)
 }
 
-// EncodeToP12 encodes a CertificateInfoModel in pkcs12 (.p12) format.
 func (info CertificateInfoModel) EncodeToP12(passphrase string) ([]byte, error) {
 	return pkcs12.Encode(rand.Reader, info.PrivateKey.Key(), &info.Certificate, nil, passphrase)
 }

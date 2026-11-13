@@ -36,7 +36,6 @@ func (s *CertificateSource) QueryCertificateBySerial(serial big.Int) (autocodesi
 	return certs[0], nil
 }
 
-// QueryAllIOSCertificates returns all iOS certificates from App Store Connect API
 func (s *CertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]autocodesign.Certificate, error) {
 	typeToCertificates := map[appstoreconnect.CertificateType][]autocodesign.Certificate{}
 

@@ -11,7 +11,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
-// ProvisioningProfileProvider can list profile infos.
 type ProvisioningProfileProvider interface {
 	ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error)
 	GetDefaultProvisioningProfile() (profileutil.ProvisioningProfileInfoModel, error)

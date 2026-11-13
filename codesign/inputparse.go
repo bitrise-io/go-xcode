@@ -81,7 +81,6 @@ func ParseConfig(input Input, cmdFactory command.Factory) (Config, error) {
 	}, nil
 }
 
-// parseConnectionOverrideConfig validates and parses the step input-level connection parameters
 func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssuerID string, isEnterpriseAccount bool, logger log.Logger) (*devportalservice.APIKeyConnection, error) {
 	var key []byte
 	if strings.HasPrefix(string(keyPathOrURL), "https://") {
@@ -127,7 +126,6 @@ func parseConnectionOverrideConfig(keyPathOrURL stepconf.Secret, keyID, keyIssue
 	}, nil
 }
 
-// parseCertificatesAndPassphrases returns an array of p12 file URLs and passphrases
 func parseCertificatesAndPassphrases(certificateURLList, certificatePassphraseList string) ([]certdownloader.CertificateAndPassphrase, error) {
 	if strings.TrimSpace(certificateURLList) == "" {
 		return nil, fmt.Errorf("code signing certificate URL is not specified")

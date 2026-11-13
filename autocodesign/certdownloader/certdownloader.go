@@ -16,7 +16,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign"
 )
 
-// CertificateAndPassphrase contains a p12 file URL and passphrase
 type CertificateAndPassphrase struct {
 	URL, Passphrase string
 }
@@ -56,7 +55,6 @@ func (d downloader) GetCertificates() ([]certificateutil.CertificateInfoModel, e
 	return certInfos, nil
 }
 
-// downloadAndParsePKCS12 downloads a pkcs12 format file and parses certificates and matching private keys.
 func (d downloader) downloadAndParsePKCS12(certificateURL, passphrase string) ([]certificateutil.CertificateInfoModel, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()

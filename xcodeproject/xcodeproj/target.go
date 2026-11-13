@@ -16,7 +16,6 @@ const (
 
 const appClipProductType = "com.apple.product-type.application.on-demand-install-capable"
 
-// Target is a build target of the project.
 type Target struct {
 	ID   string
 	Name string
@@ -41,12 +40,10 @@ func (t Target) IsExecutableProduct() bool {
 	return t.isAppProduct() || t.isAppExtensionProduct()
 }
 
-// IsUITestProduct reports whether the target is a UI test bundle.
 func (t Target) IsUITestProduct() bool {
 	return filepath.Ext(t.productType) == ".ui-testing"
 }
 
-// IsAppClipProduct reports whether the target produces an App Clip.
 func (t Target) IsAppClipProduct() bool {
 	return t.productType == appClipProductType
 }

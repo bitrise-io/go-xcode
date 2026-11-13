@@ -19,7 +19,6 @@ func NewDeviceClient(client *appstoreconnect.Client) *DeviceClient {
 	return &DeviceClient{client: client}
 }
 
-// ListDevices returns the registered devices on the Apple Developer portal
 func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
 	var nextPageURL string
 	var devices []appstoreconnect.Device

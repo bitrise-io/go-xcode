@@ -18,7 +18,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// Profile represents a provisioning profiles
 type Profile interface {
 	ID() string
 	Attributes() appstoreconnect.ProfileAttributes
@@ -28,7 +27,6 @@ type Profile interface {
 	Entitlements() (Entitlements, error)
 }
 
-// AppCodesignAssets is the result of ensuring codesigning assets
 type AppCodesignAssets struct {
 	ArchivableTargetProfilesByBundleID map[string]Profile
 	UITestTargetProfilesByBundleID     map[string]Profile
@@ -54,7 +52,6 @@ var (
 
 type Entitlement serialized.Object
 
-// Entitlements is all the entitlements that are contained in a target or profile
 type Entitlements serialized.Object
 
 // Certificate is certificate present on Apple App Store Connect API, could match a local certificate
@@ -69,7 +66,6 @@ type DeviceIDs []string
 // DeviceUDIDs are used in the provisioning profiles, as unique device identifiers
 type DeviceUDIDs []string
 
-// DevPortalClient abstract away the Apple Developer Portal API
 type DevPortalClient interface {
 	Login() error
 
@@ -99,7 +95,6 @@ type LocalCodeSignAssetManager interface {
 	FindCodesignAssets(appLayout AppLayout, distrType DistributionType, certsByType map[appstoreconnect.CertificateType][]Certificate, deviceIDs []string, minProfileDaysValid int) (*AppCodesignAssets, *AppLayout, error)
 }
 
-// AppLayout contains codesigning related settings that are needed to ensure codesigning files
 type AppLayout struct {
 	Platform                               Platform
 	EntitlementsByArchivableTargetBundleID map[string]Entitlements
@@ -111,7 +106,6 @@ type CertificateProvider interface {
 	GetCertificates() ([]certificateutil.CertificateInfoModel, error)
 }
 
-// LocalCertificates is a map from the certificate type (development, distribution) to an array of installed certs
 type LocalCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
 
 type LocalProfile struct {
@@ -119,7 +113,6 @@ type LocalProfile struct {
 	Info    profileutil.ProvisioningProfileInfoModel
 }
 
-// ProfileProvider returns provisioning profiles
 type ProfileProvider interface {
 	IsAvailable() bool
 	GetProfiles() ([]LocalProfile, error)
@@ -208,7 +201,6 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 		if missingAppLayout != nil {
 			printMissingCodeSignAssets(missingAppLayout)
 
-			// Ensure Profiles
 			newCodesignAssets, err := ensureProfiles(m.logger, m.sleeper, m.devPortalClient, distrType, certsByType, *missingAppLayout, devPortalDeviceIDs, devPortalDeviceUDIDs, opts.MinProfileValidityDays)
 			if err != nil {
 				switch {
@@ -223,14 +215,12 @@ func (m codesignAssetManager) EnsureCodesignAssets(appLayout AppLayout, opts Cod
 				return nil, fmt.Errorf("failed to ensure profiles: %w", err)
 			}
 
-			// Install new certificates and profiles
 			m.logger.Println()
 			m.logger.Infof("Installing certificates and profiles")
 			if err := m.assetWriter.Write(map[DistributionType]AppCodesignAssets{distrType: *newCodesignAssets}); err != nil {
 				return nil, fmt.Errorf("failed to install codesigning files: %w", err)
 			}
 
-			// Merge local and recently generated code signing assets
 			finalAssets = mergeCodeSignAssets(localCodesignAssets, newCodesignAssets)
 		}
 

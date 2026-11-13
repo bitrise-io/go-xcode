@@ -17,7 +17,6 @@ import (
 // Keep it in sync with https://github.com/bitrise-io/image-build-utils/blob/master/roles/simulators/defaults/main.yml#L14
 const defaultDeviceName = "Bitrise iOS default"
 
-// DeviceFinder is an interface that find a matching device for a given destination
 type DeviceFinder interface {
 	FindDevice(destination Simulator) (Device, error)
 	ListDevices() (*DeviceList, error)
@@ -31,7 +30,6 @@ type deviceFinder struct {
 	list *DeviceList
 }
 
-// NewDeviceFinder retruns the default implementation of DeviceFinder
 func NewDeviceFinder(log log.Logger, commandFactory command.Factory, xcodeVersion xcodeversion.Version) DeviceFinder {
 	return &deviceFinder{
 		logger:         log,
@@ -87,7 +85,6 @@ func (d deviceFinder) ListDevices() (*DeviceList, error) {
 	return &list, nil
 }
 
-// FindDevice returns a Simulator matching the destination
 func (d deviceFinder) FindDevice(destination Simulator) (Device, error) {
 	var (
 		device Device

@@ -18,7 +18,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 )
 
-// fileContentHash returns file's md5 content hash.
 func fileContentHash(pth string) (string, error) {
 	f, err := os.Open(pth)
 	if err != nil {
@@ -167,7 +166,6 @@ func TestCollectSwiftPackages(t *testing.T) {
 }
 
 func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir string) (resolveTime time.Duration, packagesPath string) {
-	// Remove and copy new Xcode project directory
 	if err := os.RemoveAll(projectPath); err != nil {
 		t.Fatalf("failed to remove temp dir, error: %s", err)
 	}
@@ -184,7 +182,6 @@ func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir stri
 		t.Fatalf("failed to get Swift packages path, err: %s", err)
 	}
 
-	// Remove DerivedData
 	projectDerivedData, err := xcodeProjectDerivedDataPath(xcodeProjPath)
 	if err != nil {
 		t.Fatalf("failed to get project DerivedData path, error: %s", err)
@@ -201,7 +198,6 @@ func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir stri
 		t.Fatalf("failed to sync directory, error: %s", err)
 	}
 
-	// Resolve Xcode packages
 	resolveStart := time.Now()
 	log.Donef("$ %s", getXcodebuildCmd(xcodeProjPath).PrintableCommandArgs())
 	exitCode, err := getXcodebuildCmd(xcodeProjPath).RunAndReturnExitCode()
@@ -215,7 +211,6 @@ func resolveProject(t *testing.T, projectPath, cacheDir, xcodeProjSourceDir stri
 
 	t.Logf("Resolution time: %s, source %s", resolveTime, xcodeProjSourceDir)
 
-	// Check that swift packages path exists.
 	if _, err := os.Stat(packagesPath); err != nil {
 		if os.IsNotExist(err) {
 			t.Fatalf("swift packages directory path does not exist, error: %s", err)

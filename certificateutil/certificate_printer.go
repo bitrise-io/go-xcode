@@ -8,7 +8,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/timeutil"
 )
 
-// CertificatePrinter renders certificate infos for logging.
 type CertificatePrinter struct {
 	logger       log.Logger
 	timeProvider timeutil.TimeProvider

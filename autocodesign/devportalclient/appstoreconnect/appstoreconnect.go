@@ -50,7 +50,6 @@ type service struct {
 	client *Client
 }
 
-// Client communicate with the Apple API
 type Client struct {
 	EnableDebugLogs bool
 
@@ -72,7 +71,6 @@ type Client struct {
 	tracker Tracker
 }
 
-// NewRetryableHTTPClient create a new http client with retry settings.
 func NewRetryableHTTPClient(logger log.Logger, tracker Tracker) *http.Client {
 	client := retryhttp.NewClient(logger)
 
@@ -137,7 +135,6 @@ func NewRetryableHTTPClient(logger log.Logger, tracker Tracker) *http.Client {
 	return client.StandardClient()
 }
 
-// NewClient creates a new client
 func NewClient(httpClient HTTPClient, keyID, issuerID string, privateKey []byte, isEnterpise bool, logger log.Logger, tracker Tracker) *Client {
 	targetURL := clientBaseURL
 	targetAudience := tokenAudience
@@ -174,8 +171,6 @@ func (c *Client) Tracker() Tracker {
 	return c.tracker
 }
 
-// ensureSignedToken makes sure that the JWT auth token is not expired
-// and return a signed key
 func (c *Client) ensureSignedToken() (string, error) {
 	if c.token != nil {
 		err := c.token.Claims.Valid()
@@ -203,7 +198,6 @@ func (c *Client) NewRequestWithRelationshipURL(method, endpoint string, body int
 	return c.NewRequest(method, endpoint, body)
 }
 
-// NewRequest creates a new http.Request
 func (c *Client) NewRequest(method, endpoint string, body interface{}) (*http.Request, error) {
 	endpoint = apiVersion + "/" + endpoint
 

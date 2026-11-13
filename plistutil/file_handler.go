@@ -23,7 +23,6 @@ type fileHandler struct {
 	fileManager fileutil.FileManager
 }
 
-// NewFileHandler returns a FileHandler that accesses files through fileManager.
 func NewFileHandler(fileManager fileutil.FileManager) FileHandler {
 	return fileHandler{fileManager: fileManager}
 }

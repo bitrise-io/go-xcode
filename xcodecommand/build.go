@@ -9,12 +9,11 @@ type BuildParams struct {
 	XCConfigPath       string
 	SDK                string
 	DisableCodeSigning bool // CODE_SIGNING_ALLOWED=NO
-	Clean              bool // run clean first
+	Clean              bool
 	Authentication     *Authentication
 	AdditionalOptions  Options // the step's xcodebuild_options, from ParseOptions
 }
 
-// Build renders params into a build Command.
 func Build(params BuildParams) (Command, error) {
 	opts := actions(params.Clean, ActionBuild)
 	opts = append(opts, projectOptions{

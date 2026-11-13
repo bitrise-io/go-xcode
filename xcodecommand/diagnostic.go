@@ -16,7 +16,6 @@ import (
 // DiagnosticKind classifies a finding about a command's additional options.
 type DiagnosticKind int
 
-// Diagnostic kinds.
 const (
 	MissingValue          DiagnosticKind = iota // a value flag with no value; xcodebuild takes the next flag as its value
 	RejectedOption                              // a mode switch, or a flag of another action; xcodebuild ignores it here
@@ -289,7 +288,6 @@ func (g flagGroup) all() merged {
 	return append(slices.Clone(g.step), g.user...)
 }
 
-// last is the last option for which keep is true.
 func (opts Options) last(keep func(Option) bool) (Option, bool) {
 	for i := len(opts) - 1; i >= 0; i-- {
 		if keep(opts[i]) {
@@ -299,7 +297,6 @@ func (opts Options) last(keep func(Option) bool) (Option, bool) {
 	return Option{}, false
 }
 
-// last is the last placed option for which keep is true.
 func (m merged) last(keep func(placed) bool) (placed, bool) {
 	for i := len(m) - 1; i >= 0; i-- {
 		if keep(m[i]) {

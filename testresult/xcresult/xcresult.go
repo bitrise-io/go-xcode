@@ -60,7 +60,6 @@ func filterIllegalChars(data []byte) (filtered []byte) {
 	return
 }
 
-// Convert returns the test report parsed from the xcresult file.
 func (c *Converter) Convert() (testreport.TestReport, error) {
 	data, err := fileutil.ReadBytesFromFile(c.testSummariesPlistPath)
 	if err != nil {

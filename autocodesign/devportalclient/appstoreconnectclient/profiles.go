@@ -241,7 +241,6 @@ func (c *ProfileClient) list200Profiles(bundleID *appstoreconnect.BundleID) ([]a
 }
 
 func (c *ProfileClient) createProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
-	// Create new Bitrise profile on App Store Connect
 	r, err := c.client.Provisioning.CreateProfile(
 		appstoreconnect.NewProfileCreateRequest(
 			profileType,
@@ -367,7 +366,6 @@ func (c *ProfileClient) CreateBundleID(bundleIDIdentifier, appIDName string) (*a
 	return &r.Data, nil
 }
 
-// CheckBundleIDEntitlements checks if a given Bundle ID has every capability enabled, required by the project.
 func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, appEntitlements autocodesign.Entitlements) error {
 	response, err := c.client.Provisioning.Capabilities(bundleID.Relationships.Capabilities.Links.Related)
 	if err != nil {

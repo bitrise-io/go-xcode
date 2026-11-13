@@ -80,14 +80,12 @@ type BuildPhaseReference struct {
 	Kind   string
 }
 
-// Configuration is one build configuration of the project.
 type Configuration struct {
 	// ID is usually empty: Xcode writes one only when the name alone would be ambiguous.
 	ID   string
 	Name string
 }
 
-// Target is one target of the project.
 type Target struct {
 	ID   string
 	Name string
@@ -173,7 +171,6 @@ type rawDependency struct {
 	Target string `json:"target"`
 }
 
-// Decode parses the content of a project.xcproj file.
 func Decode(content []byte) (Project, error) {
 	standard, err := hujson.Standardize(bytes.Clone(content))
 	if err != nil {
@@ -232,7 +229,6 @@ func (r *rawGroupTreeReference) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// UnmarshalJSON implements json.Unmarshaler.
 func (b *rawBuildFile) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &b.BuildPhase); err == nil {
 		return nil

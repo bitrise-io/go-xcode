@@ -103,7 +103,6 @@ const (
 
 type CapabilitySettingKey string
 
-// CapabilitySettingKeys
 const (
 	IcloudVersion                 CapabilitySettingKey = "ICLOUD_VERSION"
 	DataProtectionPermissionLevel CapabilitySettingKey = "DATA_PROTECTION_PERMISSION_LEVEL"
@@ -141,9 +140,6 @@ type CapabilitySetting struct {
 	MinInstances     int                               `json:"minInstances,omitempty"`
 }
 
-//
-// BundleIDCapabilityCreateRequest
-
 type BundleIDCapabilityCreateRequestDataAttributes struct {
 	CapabilityType CapabilityType      `json:"capabilityType"`
 	Settings       []CapabilitySetting `json:"settings"`
@@ -171,9 +167,6 @@ type BundleIDCapabilityCreateRequestData struct {
 type BundleIDCapabilityCreateRequest struct {
 	Data BundleIDCapabilityCreateRequestData `json:"data"`
 }
-
-//
-// BundleIDCapabilityUpdateRequest
 
 type BundleIDCapabilityUpdateRequestDataAttributes struct {
 	CapabilityType CapabilityType      `json:"capabilityType"`

@@ -9,12 +9,11 @@ type ArchiveParams struct {
 	XCConfigPath      string
 	SDK               string
 	ArchivePath       string
-	Clean             bool // run clean first
+	Clean             bool
 	Authentication    *Authentication
 	AdditionalOptions Options // the step's xcodebuild_options, from ParseOptions
 }
 
-// Archive renders params into an archive Command.
 func Archive(params ArchiveParams) (Command, error) {
 	opts := actions(params.Clean, ActionArchive)
 	opts = append(opts, projectOptions{

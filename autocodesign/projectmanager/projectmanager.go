@@ -72,12 +72,10 @@ func (p Project) Platform() (autocodesign.Platform, error) {
 	return platform, nil
 }
 
-// IsMainTargetProductTypeAppClip returns true if the main target is of App Clip product type
 func (p Project) IsMainTargetProductTypeAppClip() bool {
 	return p.projHelper.MainTarget.IsAppClipProduct()
 }
 
-// MainTargetBundleID returns the bundle ID of the main target
 func (p Project) MainTargetBundleID() (string, error) {
 	bundleID, err := p.projHelper.TargetBundleID(p.projHelper.MainTarget.Name, p.projHelper.Configuration)
 	if err != nil {
@@ -240,7 +238,6 @@ func (p Project) ForceCodesignAssets(distribution autocodesign.DistributionType,
 	return nil
 }
 
-// CanGenerateProfileWithEntitlements checks all entitlements, whether they can be generated
 func CanGenerateProfileWithEntitlements(entitlementsByBundleID map[string]autocodesign.Entitlements) (ok bool, badEntitlement string, badBundleID string) {
 	for bundleID, entitlements := range entitlementsByBundleID {
 		for entitlementKey, value := range entitlements {

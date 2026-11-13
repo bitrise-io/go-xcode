@@ -144,7 +144,6 @@ func firstLines(out string, count int) string {
 	return strings.Join(lines, "\n")
 }
 
-// xcresulttoolExport exports a file with the given id at the given output path.
 func xcresulttoolExport(xcresultPth, id, outputPth string, useLegacyFlag bool) error {
 	args := []string{"xcresulttool", "export"}
 

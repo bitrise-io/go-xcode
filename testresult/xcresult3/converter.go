@@ -99,7 +99,6 @@ func (c *Converter) Detect(files []string) bool {
 	return false
 }
 
-// Convert returns the test report parsed from the xcresult file.
 func (c *Converter) Convert() (testreport.TestReport, error) {
 	supportsNewMethod, err := supportsNewExtractionMethods()
 	if err != nil {
@@ -316,7 +315,6 @@ func extractAttachments(xcresultPath, outputPath string) (map[string][]string, e
 	return attachmentsMap, nil
 }
 
-// Create unique filename using timestamp as suffix
 func createUniqueFilename(attachment model3.Attachment) string {
 	timestamp := time.Time(attachment.Timestamp).UnixNano()
 
@@ -361,7 +359,6 @@ func connectAttachmentsToTestCases(xml testreport.TestReport, attachmentsMap map
 
 			testIdentifier = appendRepetitionToTestIdentifier(testIdentifier, testRepetitionMap[testIdentifier])
 
-			// Add attachments if any exist for this test and repetition
 			if attachments, exists := attachmentsMap[testIdentifier]; exists {
 				if testCase.Properties == nil {
 					testCase.Properties = &testreport.Properties{
@@ -369,7 +366,6 @@ func connectAttachmentsToTestCases(xml testreport.TestReport, attachmentsMap map
 					}
 				}
 
-				// Add each attachment as a property
 				for i, fileName := range attachments {
 					testCase.Properties.Property = append(
 						testCase.Properties.Property,

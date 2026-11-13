@@ -39,7 +39,6 @@ type showBuildSettingsProvider struct {
 	logger         log.Logger
 }
 
-// NewShowBuildSettingsProvider returns a BuildSettingsProvider backed by xcodebuild.
 func NewShowBuildSettingsProvider(commandFactory command.Factory, logger log.Logger) BuildSettingsProvider {
 	return showBuildSettingsProvider{
 		commandFactory: commandFactory,
@@ -47,12 +46,10 @@ func NewShowBuildSettingsProvider(commandFactory command.Factory, logger log.Log
 	}
 }
 
-// TargetBuildSettings returns the effective build settings of one target.
 func (p showBuildSettingsProvider) TargetBuildSettings(projectPath, target, configuration string, extraArgs ...string) (serialized.Object, error) {
 	return p.run(showBuildSettingsArgs(projectPath, targetFlag, target, configuration, extraArgs))
 }
 
-// SchemeBuildSettings returns the effective build settings of one scheme.
 func (p showBuildSettingsProvider) SchemeBuildSettings(projectPath, scheme, configuration string, extraArgs ...string) (serialized.Object, error) {
 	return p.run(showBuildSettingsArgs(projectPath, schemeFlag, scheme, configuration, extraArgs))
 }

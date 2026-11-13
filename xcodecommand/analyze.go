@@ -8,13 +8,12 @@ type AnalyzeParams struct {
 	Destination        string // a default: a -destination in AdditionalOptions replaces it
 	XCConfigPath       string
 	SDK                string
-	ResultBundlePath   string  // a default: a -resultBundlePath in AdditionalOptions replaces it
-	DisableCodeSigning bool    // CODE_SIGNING_ALLOWED=NO
-	Clean              bool    // run clean first
+	ResultBundlePath   string // a default: a -resultBundlePath in AdditionalOptions replaces it
+	DisableCodeSigning bool   // CODE_SIGNING_ALLOWED=NO
+	Clean              bool
 	AdditionalOptions  Options // the step's xcodebuild_options, from ParseOptions
 }
 
-// Analyze renders params into an analyze Command.
 func Analyze(params AnalyzeParams) (Command, error) {
 	opts := actions(params.Clean, ActionAnalyze)
 	opts = append(opts, projectOptions{

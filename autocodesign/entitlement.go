@@ -185,7 +185,6 @@ func (e Entitlements) iCloudServices() (iCloudDocuments, iCloudKit, keyValueStor
 	return
 }
 
-// ICloudContainers returns the list of iCloud containers
 func (e Entitlements) ICloudContainers() ([]string, error) {
 	usesDocuments, usesCloudKit, _, err := e.iCloudServices()
 	if err != nil {

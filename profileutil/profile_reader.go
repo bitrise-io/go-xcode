@@ -12,9 +12,7 @@ import (
 )
 
 const (
-	// IOSExtension is the iOS provisioning profile extension
 	IOSExtension = ".mobileprovision"
-	// MacExtension is the macOS provisioning profile extension
 	MacExtension = ".provisionprofile"
 )
 
@@ -96,11 +94,11 @@ func (reader ProfileReader) ListProfiles(profileType ProfileType, uuid string) (
 
 // ProvisioningProfilesDirPath returns the provisioning profile directory path based on the Xcode major version.
 func (reader ProfileReader) ProvisioningProfilesDirPath(xcodeMajorVersion int64) (string, error) {
-	if xcodeMajorVersion >= 16 || xcodeMajorVersion == 0 { // return the modern path used by Xcode 16 and later
+	if xcodeMajorVersion >= 16 || xcodeMajorVersion == 0 {
 		return reader.provisioningProfilesDirModernPath()
 	}
 
-	return reader.provisioningProfilesDirLegacyPath() // return the legacy path used by Xcode 15 and earlier
+	return reader.provisioningProfilesDirLegacyPath()
 }
 
 func (reader ProfileReader) provisioningProfileFromFile(pth string) (*pkcs7.PKCS7, error) {

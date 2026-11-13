@@ -16,7 +16,6 @@ const (
 	exitCodeAlreadyDone = 149 // Simulator already shutdown/booted
 )
 
-// Manager provides methods for issuing Simulator commands
 type Manager interface {
 	LaunchWithGUI(simulatorID string) error
 	Boot(device destination.Device) error
@@ -107,7 +106,7 @@ func (m manager) Boot(device destination.Device) error {
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
-			if exitCode == exitCodeAlreadyDone { // Simulator already booted
+			if exitCode == exitCodeAlreadyDone {
 				return nil
 			}
 
@@ -120,7 +119,6 @@ func (m manager) Boot(device destination.Device) error {
 	return nil
 }
 
-// WaitForBootFinished waits until simulator finsihed boot
 func (m manager) WaitForBootFinished(id string, timeout time.Duration) error {
 	timer := time.NewTimer(timeout)
 	defer func() {
@@ -155,7 +153,6 @@ func (m manager) WaitForBootFinished(id string, timeout time.Duration) error {
 	}
 }
 
-// Shutdown shuts down the Simulator
 func (m manager) Shutdown(id string) error {
 	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "shutdown", id}, &command.Opts{
 		Stdout: os.Stdout,
@@ -166,7 +163,7 @@ func (m manager) Shutdown(id string) error {
 	exitCode, err := cmd.RunAndReturnExitCode()
 	if err != nil {
 		if errorutil.IsExitStatusError(err) {
-			if exitCode == exitCodeAlreadyDone { // Simulator already shut down
+			if exitCode == exitCodeAlreadyDone {
 				return nil
 			}
 			m.logger.Warnf("Failed to shutdown Simulator, command exited with code %d", exitCode)
@@ -179,7 +176,6 @@ func (m manager) Shutdown(id string) error {
 	return nil
 }
 
-// Erase erases Simulator content
 func (m manager) Erase(id string) error {
 	cmd := m.commandFactory.Create("xcrun", []string{"simctl", "erase", id}, &command.Opts{
 		Stdout: os.Stdout,

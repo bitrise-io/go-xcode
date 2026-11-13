@@ -85,7 +85,7 @@ func (f Factory) Create(credentials devportalservice.Credentials, teamID string)
 			f.logger,
 			tracker,
 		)
-		client.EnableDebugLogs = false // Turn off client debug logs including HTTP call debug logs
+		client.EnableDebugLogs = false
 		devportalClient = appstoreconnectclient.NewAPIDevPortalClient(client)
 		f.logger.Debugf("App Store Connect API client created with base URL: %s", client.BaseURL)
 	} else if credentials.AppleID != nil {

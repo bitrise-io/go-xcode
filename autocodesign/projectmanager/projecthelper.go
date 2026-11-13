@@ -24,16 +24,12 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace"
 )
 
-// BuildAction is the type of build action to be performed on the scheme.
 type BuildAction string
 
 const (
-	// BuildActionArchive is the archive build action.
 	BuildActionArchive BuildAction = "archive"
-	// BuildActionBuild is the build build action.
-	BuildActionBuild BuildAction = "build"
-	// BuildActionTest is the test build action.
-	BuildActionTest BuildAction = "test"
+	BuildActionBuild   BuildAction = "build"
+	BuildActionTest    BuildAction = "test"
 )
 
 type buildSettingsCacheKey struct {
@@ -210,7 +206,7 @@ func (p *ProjectHelper) Platform(configurationName string) (autocodesign.Platfor
 func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialized.Object, error) {
 	var settingsList []serialized.Object
 	var wsErr error
-	if p.XcWorkspace != nil { // workspace available
+	if p.XcWorkspace != nil {
 		var settings serialized.Object
 		settings, wsErr = p.XcWorkspace.SchemeBuildSettings(targetName, conf, p.additionalXcodebuildOptions...)
 		if wsErr == nil {
@@ -234,7 +230,6 @@ func (p *ProjectHelper) fetchBuildSettings(targetName, conf string) ([]serialize
 		return settingsList, nil
 	}
 
-	// err != nil
 	projectErr = fmt.Errorf("failed to fetch build settings for target `%s` (project `%s`): %w", targetName, p.XcProj.Name(), projectErr)
 	if len(settingsList) != 0 {
 		p.logger.Errorf("buildSettings: %s", projectErr)

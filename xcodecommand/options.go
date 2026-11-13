@@ -33,7 +33,6 @@ type Option struct {
 	fallback bool // a Step default, marked by appendDefault: a copy in the additional options replaces it
 }
 
-// String renders the option as it appears on the command line.
 func (o Option) String() string {
 	return strings.Join(o.args(), " ")
 }
@@ -53,10 +52,8 @@ func (o Option) args() []string {
 	}
 }
 
-// Options is an ordered list of xcodebuild arguments.
 type Options []Option
 
-// Args renders the options as xcodebuild arguments.
 func (opts Options) Args() []string {
 	var args []string
 	for _, o := range opts {
@@ -74,7 +71,6 @@ func (opts Options) sets(o Option) bool {
 	return slices.ContainsFunc(opts, func(u Option) bool { return u.Kind == o.Kind && u.Name == o.Name && !u.tookFlag })
 }
 
-// Filter returns the options for which keep is true, in order.
 func (opts Options) Filter(keep func(Option) bool) Options {
 	var kept Options
 	for _, o := range opts {

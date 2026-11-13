@@ -167,12 +167,10 @@ type Scheme struct {
 	IsShared bool   `xml:"-"`
 }
 
-// Factory opens scheme files with a fixed set of dependencies.
 type Factory struct {
 	fileManager fileutil.FileManager
 }
 
-// NewFactory returns a Factory that reads scheme files through fileManager.
 func NewFactory(fileManager fileutil.FileManager) Factory {
 	return Factory{
 		fileManager: fileManager,
@@ -267,7 +265,6 @@ func (s Scheme) AppBuildActionEntry() (BuildActionEntry, bool) {
 	return entry, (entry.BuildableReference.BlueprintIdentifier != "")
 }
 
-// IsTestable returns true if Test is a valid action
 func (s Scheme) IsTestable() bool {
 	for _, testEntry := range s.TestAction.Testables {
 		if testEntry.isTestable() {

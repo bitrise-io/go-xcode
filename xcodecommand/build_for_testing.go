@@ -10,12 +10,11 @@ type BuildForTestingParams struct {
 	XCConfigPath      string
 	SDK               string
 	TestPlan          string
-	Clean             bool // run clean first
+	Clean             bool
 	Authentication    *Authentication
 	AdditionalOptions Options // the step's xcodebuild_options, from ParseOptions
 }
 
-// BuildForTesting renders params into a build-for-testing Command.
 func BuildForTesting(params BuildForTestingParams) (Command, error) {
 	opts := actions(params.Clean, ActionBuildForTesting)
 	opts = append(opts, projectOptions{

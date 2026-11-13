@@ -71,7 +71,6 @@ func (e *Editor) SetTargetBuildSetting(targetName, configuration, key, value str
 	return nil
 }
 
-// Content returns the edited project.xcproj.
 func (e *Editor) Content() []byte {
 	return e.root.Pack()
 }

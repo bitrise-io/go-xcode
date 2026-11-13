@@ -53,14 +53,11 @@ func (p *PipeWiring) Close() error {
 // input/outputs that an xcodebuild command and a logging tool needs when we are also
 // using a logging filter.
 func SetupPipeWiring(filter *regexp.Regexp) *PipeWiring {
-	// Create a buffer to store raw xcbuild output
 	rawXcbuild := bytes.NewBuffer(nil)
 	// Pipe filtered logs to tool
 	toolPipeR, toolPipeW := io.Pipe()
 
-	// Add a buffer before stdout
 	bufferedStdout := NewSink(os.Stdout)
-	// Add a buffer before tool input
 	toolInSink := NewSink(toolPipeW)
 	xcbuildLogs := io.MultiWriter(rawXcbuild, toolInSink)
 	// Create a filter for [Bitrise ...] prefixes

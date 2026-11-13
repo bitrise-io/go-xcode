@@ -55,20 +55,14 @@ func (o Object) Value(key string) (value any, ok bool) {
 	return value, ok
 }
 
-// Bool returns the bool stored at key. ok is false if key is absent or the
-// value is not a bool.
 func (o Object) Bool(key string) (bool, bool) {
 	return Get[bool](o, key)
 }
 
-// String returns the string stored at key. ok is false if key is absent or the
-// value is not a string.
 func (o Object) String(key string) (string, bool) {
 	return Get[string](o, key)
 }
 
-// Int64 returns the int64 stored at key. ok is false if key is absent or the
-// value is not an int64.
 func (o Object) Int64(key string) (int64, bool) {
 	return Get[int64](o, key)
 }

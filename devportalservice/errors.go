@@ -2,7 +2,6 @@ package devportalservice
 
 import "fmt"
 
-// NetworkError represents a networking issue.
 type NetworkError struct {
 	Status int
 }

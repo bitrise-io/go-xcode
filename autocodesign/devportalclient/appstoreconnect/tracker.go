@@ -7,15 +7,12 @@ import (
 	"github.com/bitrise-io/go-utils/v2/env"
 )
 
-// Tracker defines the interface for tracking App Store Connect API usage and errors.
 type Tracker interface {
 	// TrackAPIRequest tracks one HTTP request+response. This is called for each individual attempt in case of automatic retries.
 	TrackAPIRequest(method, host, endpoint string, statusCode int, duration time.Duration, isRetry bool)
 
-	// TrackAPIError tracks a failed API request with error details
 	TrackAPIError(method, host, endpoint string, statusCode int, errorMessage string)
 
-	// TrackAuthError tracks authentication-specific errors
 	TrackAuthError(errorMessage string)
 
 	// TrackUnknownEntitlement is fired when a project uses an entitlement key
@@ -37,7 +34,6 @@ func (n NoOpAnalyticsTracker) TrackAuthError(errorMessage string) {}
 
 func (n NoOpAnalyticsTracker) TrackUnknownEntitlement(key string) {}
 
-// DefaultTracker is the main implementation of Tracker
 type DefaultTracker struct {
 	tracker analytics.Tracker
 	envRepo env.Repository

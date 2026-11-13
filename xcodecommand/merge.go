@@ -22,7 +22,6 @@ func (m merged) options() Options {
 	return opts
 }
 
-// Args renders the command line as xcodebuild arguments.
 func (m merged) Args() []string {
 	var args []string
 	for _, p := range m {

@@ -29,7 +29,6 @@ func ensureProfiles(logger log.Logger, retrySleeper retry.Sleeper,
 	profileClient DevPortalClient, distrType DistributionType,
 	certsByType map[appstoreconnect.CertificateType][]Certificate, app AppLayout,
 	devPortalDeviceIDs DeviceIDs, devPortalDeviceUDIDs DeviceUDIDs, minProfileDaysValid int) (*AppCodesignAssets, error) {
-	// Ensure Profiles
 
 	bundleIDByBundleIDIdentifer := map[string]*appstoreconnect.BundleID{}
 	containersByBundleID := map[string][]string{}
@@ -155,7 +154,6 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 
 		m.bundleIDByBundleIDIdentifer[bundleIDIdentifier] = bundleID
 
-		// Check if BundleID is sync with the project
 		err := m.client.CheckBundleIDEntitlements(*bundleID, entitlements)
 		if err != nil {
 			if mErr, ok := err.(NonmatchingProfileError); ok {
@@ -180,7 +178,6 @@ func (m profileManager) ensureBundleID(bundleIDIdentifier string, entitlements E
 		return bundleID, nil
 	}
 
-	// Create BundleID
 	m.logger.Warnf("  app ID not found, generating...")
 
 	bundleID, err := m.client.CreateBundleID(bundleIDIdentifier, appIDName(bundleIDIdentifier))
@@ -244,7 +241,6 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 		m.logger.Printf("  - %s: %v", k, v)
 	}
 
-	// Search for Bitrise managed Profile
 	name := profileName(profileType, bundleIDIdentifier)
 	profile, err := m.client.FindProfile(name, profileType)
 	if err != nil {
@@ -257,7 +253,6 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 		m.logger.Printf("  Bitrise managed profile found: %s ID: %s UUID: %s Expiry: %s", profile.Attributes().Name, profile.ID(), profile.Attributes().UUID, time.Time(profile.Attributes().ExpirationDate))
 
 		if profile.Attributes().ProfileState == appstoreconnect.Active {
-			// Check if Bitrise managed Profile is sync with the project
 			err := checkProfile(m.client, profile, entitlements, deviceUDIDs, certIDs, minProfileDaysValid)
 			if err != nil {
 				if mErr, ok := err.(NonmatchingProfileError); ok {
@@ -265,7 +260,7 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 				} else {
 					return nil, fmt.Errorf("failed to check if profile is valid: %w", err)
 				}
-			} else { // Profile matches
+			} else {
 				m.logger.Donef("  profile is in sync with the project requirements")
 				return &profile, nil
 			}
@@ -281,13 +276,11 @@ func (m profileManager) ensureProfile(profileType appstoreconnect.ProfileType, b
 		}
 	}
 
-	// Search for BundleID
 	bundleID, err := m.ensureBundleID(bundleIDIdentifier, entitlements)
 	if err != nil {
 		return nil, fmt.Errorf("failed to ensure application identifier for %s: %w", bundleIDIdentifier, err)
 	}
 
-	// Create Bitrise managed Profile
 	fmt.Println()
 	m.logger.Infof("  Creating profile for bundle id: %s", bundleID.Attributes.Name)
 
@@ -318,7 +311,6 @@ func hasSignInWithAppleEntitlement(entitlements Entitlements) bool {
 	return false
 }
 
-// DistributionTypeRequiresDeviceList returns true if the provided distribution method requires a provisioning profile with a device list.
 func DistributionTypeRequiresDeviceList(distrTypes []DistributionType) bool {
 	for _, distrType := range distrTypes {
 		if distrType == Development || distrType == AdHoc {
@@ -384,7 +376,6 @@ func checkProfileEntitlements(client DevPortalClient, prof Profile, appEntitleme
 	return client.CheckBundleIDEntitlements(bundleID, appEntitlements)
 }
 
-// ParseRawProfileDeviceUDIDs reads the device UDIDs from the provisioning profile.
 func ParseRawProfileDeviceUDIDs(profileContents []byte) (DeviceUDIDs, error) {
 	profile, err := profileutil.NewProvisioningProfileInfoFromPKCS7Content(profileContents)
 	if err != nil {

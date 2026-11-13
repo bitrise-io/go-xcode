@@ -128,7 +128,6 @@ func (l keyChainCertificateLister) getInstalledCertificates(name string) ([]*x50
 	return certificates, nil
 }
 
-// ListCertificateInfos returns the installed certificate infos for the given policy.
 func (l keyChainCertificateLister) ListCertificateInfos(policy FindIdentityPolicy) ([]CertificateInfoModel, error) {
 	certificates, err := l.listCertificates(policy)
 	if err != nil {

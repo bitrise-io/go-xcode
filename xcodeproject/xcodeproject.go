@@ -9,13 +9,11 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/xcworkspace"
 )
 
-// Factory opens projects and workspaces with the factories it was given.
 type Factory struct {
 	project   xcodeproj.Factory
 	workspace xcworkspace.Factory
 }
 
-// NewFactory returns a Factory that opens projects with project and workspaces with workspace.
 func NewFactory(project xcodeproj.Factory, workspace xcworkspace.Factory) Factory {
 	return Factory{
 		project:   project,

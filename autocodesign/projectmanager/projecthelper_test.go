@@ -329,7 +329,6 @@ func TestProjectHelper_TargetBundleID(t *testing.T) {
 }
 
 func initTestCases(t *testing.T, logger log.Logger) ([]string, []string, []ProjectHelper, []string, []string, error) {
-	// If the test cases already initialized return them
 	if len(schemeCases) > 0 {
 		return schemeCases, targetCases, projHelpCases, configCases, projectCases, nil
 	}
@@ -351,8 +350,6 @@ func initTestCases(t *testing.T, logger log.Logger) ([]string, []string, []Proje
 	if err := cmd.Run(); err != nil {
 		t.Errorf("Failed to git clone the sample project files error: %s", err)
 	}
-	//
-	// Init test cases
 	targetCases = []string{
 		"Xcode-10_default",
 		"Xcode-10_default",

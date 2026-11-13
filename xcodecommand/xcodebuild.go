@@ -2,7 +2,6 @@ package xcodecommand
 
 const toolName = "xcodebuild"
 
-// Build actions xcodebuild accepts.
 const (
 	ActionBuild               = "build"
 	ActionBuildForTesting     = "build-for-testing"

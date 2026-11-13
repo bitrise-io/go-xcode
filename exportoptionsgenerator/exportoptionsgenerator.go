@@ -18,7 +18,6 @@ const (
 	AppClipProductType = "com.apple.product-type.application.on-demand-install-capable"
 )
 
-// Opts contains options for the exportOptions generator.
 type Opts struct {
 	ContainerEnvironment             string
 	TeamID                           string
@@ -29,7 +28,6 @@ type Opts struct {
 	ManageVersionAndBuildNumber      bool
 }
 
-// ExportOptionsGenerator generates an exportOptions.plist file.
 type ExportOptionsGenerator struct {
 	xcodeVersionReader    xcodeversion.Reader
 	logger                log.Logger
@@ -38,7 +36,6 @@ type ExportOptionsGenerator struct {
 	codeSignGroupProvider CodeSignGroupProvider
 }
 
-// New constructs a new ExportOptionsGenerator.
 func New(xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOptionsGenerator {
 	pathProvider := pathutil.NewPathProvider()
 	profileReader := profileutil.NewProfileReader(logger, fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
@@ -52,7 +49,6 @@ func New(xcodeVersionReader xcodeversion.Reader, logger log.Logger) ExportOption
 	}
 }
 
-// GenerateApplicationExportOptions generates exportOptions for an application export.
 func (g ExportOptionsGenerator) GenerateApplicationExportOptions(
 	exportedProduct ExportProduct,
 	archiveInfo ArchiveInfo,
@@ -152,7 +148,6 @@ func (g ExportOptionsGenerator) determineCodesignGroup(bundleIDEntitlementsMap m
 	return g.codeSignGroupProvider.DetermineCodesignGroup(certs, profs, defaultProfile, bundleIDEntitlementsMap, exportMethod, teamID, xcodeManaged)
 }
 
-// determineIcloudContainerEnvironment calculates the value of iCloudContainerEnvironment.
 func determineIcloudContainerEnvironment(desiredIcloudContainerEnvironment string, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, xcodeMajorVersion int64) (string, error) {
 	// iCloudContainerEnvironment: If the app is using CloudKit, this configures the "com.apple.developer.icloud-container-environment" entitlement.
 	// Available options vary depending on the type of provisioning profile used, but may include: Development and Production.
@@ -178,7 +173,6 @@ func determineIcloudContainerEnvironment(desiredIcloudContainerEnvironment strin
 	return desiredIcloudContainerEnvironment, nil
 }
 
-// projectUsesCloudKit determines whether the project uses any CloudKit capability or not.
 func projectUsesCloudKit(bundleIDEntitlementsMap map[string]plistutil.PlistData) bool {
 	fmt.Printf("Checking if project uses CloudKit")
 

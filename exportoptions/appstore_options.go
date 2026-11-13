@@ -17,7 +17,6 @@ type AppStoreOptionsModel struct {
 	ICloudContainerEnvironment         ICloudContainerEnvironment
 	DistributionBundleIdentifier       string
 
-	// for app-store exports
 	UploadBitcode bool
 	UploadSymbols bool
 	// Should Xcode manage the app's build number when uploading to App Store Connect? Defaults to YES.

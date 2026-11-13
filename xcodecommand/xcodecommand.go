@@ -18,7 +18,6 @@ type Output struct {
 	ExitCode int
 }
 
-// Runner abstarcts an xcodebuild command runner, it can use any log formatter
 type Runner interface {
 	CheckInstall() (*version.Version, error)
 	Run(workDir string, xcodebuildOpts []string, logFormatterOpts []string) (Output, error)

@@ -36,7 +36,6 @@ func TestKeychain_importCertificate(t *testing.T) {
 		testKeychainPassword = "password"
 	)
 
-	// Create test keychain
 	dirTmp, err := os.MkdirTemp("", "test-import-certificate")
 	if err != nil {
 		t.Fatalf("setup: create temp dir for keychain: %s", err)
@@ -62,7 +61,6 @@ func TestKeychain_importCertificate(t *testing.T) {
 		t.Fatalf("failed to unlock keychain: %s", err)
 	}
 
-	// Create test p12 file
 	const teamID = "MYTEAMID"
 	const commonNameIOSDevelopment = "iPhone Developer: test"
 	const teamName = "BITFALL FEJLESZTO KORLATOLT FELELOSSEGU TARSASAG"

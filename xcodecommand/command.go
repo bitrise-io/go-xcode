@@ -12,7 +12,6 @@ const (
 	xcodeprojExtension   = ".xcodeproj"
 )
 
-// Command is an assembled xcodebuild invocation.
 type Command struct {
 	args        []string
 	diagnostics []Diagnostic

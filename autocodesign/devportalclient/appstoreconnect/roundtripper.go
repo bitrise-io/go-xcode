@@ -14,7 +14,6 @@ type trackingRoundTripper struct {
 	tracker Tracker
 }
 
-// isRetryContextKey is used to store whether a request is a retry attempt in the request context.
 type isRetryContextKey struct{}
 
 func newTrackingRoundTripper(wrapped http.RoundTripper, tracker Tracker) *trackingRoundTripper {

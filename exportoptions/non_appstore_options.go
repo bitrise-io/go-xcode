@@ -16,7 +16,6 @@ type NonAppStoreOptionsModel struct {
 	ICloudContainerEnvironment         ICloudContainerEnvironment
 	DistributionBundleIdentifier       string
 
-	// for non app-store exports
 	CompileBitcode                           bool
 	EmbedOnDemandResourcesAssetPacksInBundle bool
 	Manifest                                 Manifest

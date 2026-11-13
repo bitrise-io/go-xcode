@@ -59,7 +59,6 @@ func getValidCertificates(typeToLocalCerts LocalCertificates, client DevPortalCl
 		}
 	}
 
-	// only for debugging
 	if isDebugLog {
 		if err := logAllAPICertificates(client); err != nil {
 			log.Debugf("Failed to log all Developer Portal certificates: %s", err)
@@ -147,7 +146,6 @@ func logAllAPICertificates(client DevPortalClient) error {
 }
 
 func filterCertificates(certificates []certificateutil.CertificateInfoModel, certificateType appstoreconnect.CertificateType) []certificateutil.CertificateInfoModel {
-	// filter by distribution type
 	var filteredCertificates []certificateutil.CertificateInfoModel
 	for _, certificate := range certificates {
 		if certificateType == appstoreconnect.IOSDistribution && isDistributionCertificate(certificate) {
