@@ -7,13 +7,11 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 )
 
-// Manager ...
 type Manager struct {
 	profileProvider  ProvisioningProfileProvider
 	profileConverter ProvisioningProfileConverter
 }
 
-// NewManager ...
 func NewManager(provisioningProfileProvider ProvisioningProfileProvider, provisioningProfileConverter ProvisioningProfileConverter) Manager {
 	return Manager{
 		profileProvider:  provisioningProfileProvider,
@@ -21,7 +19,6 @@ func NewManager(provisioningProfileProvider ProvisioningProfileProvider, provisi
 	}
 }
 
-// FindCodesignAssets ...
 func (m Manager) FindCodesignAssets(appLayout autocodesign.AppLayout, distrType autocodesign.DistributionType, certsByType map[appstoreconnect.CertificateType][]autocodesign.Certificate, deviceIDs []string, minProfileDaysValid int) (*autocodesign.AppCodesignAssets, *autocodesign.AppLayout, error) {
 	profiles, err := m.profileProvider.ListProvisioningProfiles()
 	if err != nil {

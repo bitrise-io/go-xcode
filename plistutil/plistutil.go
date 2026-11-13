@@ -7,10 +7,8 @@ import (
 	"github.com/bitrise-io/go-plist"
 )
 
-// PlistData ...
 type PlistData map[string]interface{}
 
-// NewPlistDataFromContent ...
 func NewPlistDataFromContent(plistContent string) (PlistData, error) {
 	var data PlistData
 	if _, err := plist.Unmarshal([]byte(plistContent), &data); err != nil {
@@ -19,7 +17,6 @@ func NewPlistDataFromContent(plistContent string) (PlistData, error) {
 	return data, nil
 }
 
-// GetString ...
 func (data PlistData) GetString(forKey string) (string, bool) {
 	value, ok := data[forKey]
 	if !ok {
@@ -34,7 +31,6 @@ func (data PlistData) GetString(forKey string) (string, bool) {
 	return casted, true
 }
 
-// GetUInt64 ...
 func (data PlistData) GetUInt64(forKey string) (uint64, bool) {
 	value, ok := data[forKey]
 	if !ok {
@@ -48,7 +44,6 @@ func (data PlistData) GetUInt64(forKey string) (uint64, bool) {
 	return casted, true
 }
 
-// GetFloat64 ...
 func (data PlistData) GetFloat64(forKey string) (float64, bool) {
 	value, ok := data[forKey]
 	if !ok {
@@ -62,7 +57,6 @@ func (data PlistData) GetFloat64(forKey string) (float64, bool) {
 	return casted, true
 }
 
-// GetBool ...
 func (data PlistData) GetBool(forKey string) (bool, bool) {
 	value, ok := data[forKey]
 	if !ok {
@@ -77,7 +71,6 @@ func (data PlistData) GetBool(forKey string) (bool, bool) {
 	return casted, true
 }
 
-// GetTime ...
 func (data PlistData) GetTime(forKey string) (time.Time, bool) {
 	value, ok := data[forKey]
 	if !ok {
@@ -91,7 +84,6 @@ func (data PlistData) GetTime(forKey string) (time.Time, bool) {
 	return casted, true
 }
 
-// GetUInt64Array ...
 func (data PlistData) GetUInt64Array(forKey string) ([]uint64, bool) {
 	value, ok := data[forKey]
 	if !ok {
@@ -119,7 +111,6 @@ func (data PlistData) GetUInt64Array(forKey string) ([]uint64, bool) {
 	return array, true
 }
 
-// GetStringArray ...
 func (data PlistData) GetStringArray(forKey string) ([]string, bool) {
 	value, ok := data[forKey]
 	if !ok {
@@ -147,7 +138,6 @@ func (data PlistData) GetStringArray(forKey string) ([]string, bool) {
 	return array, true
 }
 
-// GetByteArrayArray ...
 func (data PlistData) GetByteArrayArray(forKey string) ([][]byte, bool) {
 	value, ok := data[forKey]
 	if !ok {
@@ -175,7 +165,6 @@ func (data PlistData) GetByteArrayArray(forKey string) ([][]byte, bool) {
 	return array, true
 }
 
-// GetMapStringInterface ...
 func (data PlistData) GetMapStringInterface(forKey string) (PlistData, bool) {
 	value, ok := data[forKey]
 	if !ok {
@@ -206,7 +195,6 @@ func castToMapStringInterfaceArray(obj interface{}) ([]PlistData, error) {
 	return casted, nil
 }
 
-// GetMapStringInterfaceArray ...
 func (data PlistData) GetMapStringInterfaceArray(forKey string) ([]PlistData, bool) {
 	value, ok := data[forKey]
 	if !ok {

@@ -20,7 +20,6 @@ type macosBaseApplication struct {
 	ProvisioningProfile *profileutil.ProvisioningProfileInfoModel
 }
 
-// BundleIdentifier ...
 func (app macosBaseApplication) BundleIdentifier() string {
 	bundleID, _ := app.InfoPlist.GetString("CFBundleIdentifier")
 	return bundleID
@@ -80,12 +79,10 @@ func newMacosBaseApplication(path string) (macosBaseApplication, error) {
 	}, nil
 }
 
-// MacosExtension ...
 type MacosExtension struct {
 	macosBaseApplication
 }
 
-// NewMacosExtension ...
 func NewMacosExtension(path string) (MacosExtension, error) {
 	baseApp, err := newMacosBaseApplication(path)
 	if err != nil {
@@ -97,13 +94,11 @@ func NewMacosExtension(path string) (MacosExtension, error) {
 	}, nil
 }
 
-// MacosApplication ...
 type MacosApplication struct {
 	macosBaseApplication
 	Extensions []MacosExtension
 }
 
-// NewMacosApplication ...
 func NewMacosApplication(path string) (MacosApplication, error) {
 	baseApp, err := newMacosBaseApplication(path)
 	if err != nil {
@@ -133,14 +128,12 @@ func NewMacosApplication(path string) (MacosApplication, error) {
 	}, nil
 }
 
-// MacosArchive ...
 type MacosArchive struct {
 	Path        string
 	InfoPlist   plistutil.PlistData
 	Application MacosApplication
 }
 
-// NewMacosArchive ...
 func NewMacosArchive(path string) (MacosArchive, error) {
 	pathChecker := pathutil.NewPathChecker()
 
@@ -188,7 +181,6 @@ func NewMacosArchive(path string) (MacosArchive, error) {
 	}, nil
 }
 
-// IsXcodeManaged ...
 func (archive MacosArchive) IsXcodeManaged() bool {
 	if archive.Application.ProvisioningProfile != nil {
 		return archive.Application.ProvisioningProfile.IsXcodeManaged()
@@ -196,7 +188,6 @@ func (archive MacosArchive) IsXcodeManaged() bool {
 	return false
 }
 
-// SigningIdentity ...
 func (archive MacosArchive) SigningIdentity() string {
 	properties, found := archive.InfoPlist.GetMapStringInterface("ApplicationProperties")
 	if found {
@@ -206,7 +197,6 @@ func (archive MacosArchive) SigningIdentity() string {
 	return ""
 }
 
-// BundleIDEntitlementsMap ...
 func (archive MacosArchive) BundleIDEntitlementsMap() map[string]plistutil.PlistData {
 	bundleIDEntitlementsMap := map[string]plistutil.PlistData{}
 
@@ -221,7 +211,6 @@ func (archive MacosArchive) BundleIDEntitlementsMap() map[string]plistutil.Plist
 	return bundleIDEntitlementsMap
 }
 
-// BundleIDProfileInfoMap ...
 func (archive MacosArchive) BundleIDProfileInfoMap() map[string]profileutil.ProvisioningProfileInfoModel {
 	bundleIDProfileMap := map[string]profileutil.ProvisioningProfileInfoModel{}
 
@@ -240,7 +229,6 @@ func (archive MacosArchive) BundleIDProfileInfoMap() map[string]profileutil.Prov
 	return bundleIDProfileMap
 }
 
-// FindDSYMs ...
 func (archive MacosArchive) FindDSYMs() ([]string, []string, error) {
 	return findDSYMs(archive.Path)
 }

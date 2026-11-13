@@ -6,7 +6,6 @@ import (
 	"howett.net/plist"
 )
 
-// NonAppStoreOptionsModel ...
 type NonAppStoreOptionsModel struct {
 	Method                             Method
 	TeamID                             string
@@ -25,7 +24,6 @@ type NonAppStoreOptionsModel struct {
 	Thinning                                 string
 }
 
-// NewNonAppStoreOptions ...
 func NewNonAppStoreOptions(method Method) NonAppStoreOptionsModel {
 	return NonAppStoreOptionsModel{
 		Method:                                   method,
@@ -35,7 +33,6 @@ func NewNonAppStoreOptions(method Method) NonAppStoreOptionsModel {
 	}
 }
 
-// Hash ...
 func (options NonAppStoreOptionsModel) Hash() map[string]interface{} {
 	hash := map[string]interface{}{}
 	if options.Method != "" {
@@ -82,7 +79,6 @@ func (options NonAppStoreOptionsModel) Hash() map[string]interface{} {
 	return hash
 }
 
-// String ...
 func (options NonAppStoreOptionsModel) String() (string, error) {
 	hash := options.Hash()
 	plistBytes, err := plist.MarshalIndent(hash, plist.XMLFormat, "\t")
@@ -92,12 +88,10 @@ func (options NonAppStoreOptionsModel) String() (string, error) {
 	return string(plistBytes), err
 }
 
-// WriteToFile ...
 func (options NonAppStoreOptionsModel) WriteToFile(pth string) error {
 	return WritePlistToFile(options.Hash(), pth)
 }
 
-// WriteToTmpFile ...
 func (options NonAppStoreOptionsModel) WriteToTmpFile() (string, error) {
 	return WritePlistToTmpFile(options.Hash())
 }

@@ -6,10 +6,8 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
-// SelectableCodeSignGroupFilter ...
 type SelectableCodeSignGroupFilter func(group *SelectableCodeSignGroup) bool
 
-// Filter ...
 func Filter(groups []SelectableCodeSignGroup, filterFunc SelectableCodeSignGroupFilter) []SelectableCodeSignGroup {
 	if filterFunc == nil {
 		return groups
@@ -25,7 +23,6 @@ func Filter(groups []SelectableCodeSignGroup, filterFunc SelectableCodeSignGroup
 	return filteredGroups
 }
 
-// CreateEntitlementsSelectableCodeSignGroupFilter ...
 func CreateEntitlementsSelectableCodeSignGroupFilter(bundleIDEntitlementsMap map[string]plistutil.PlistData) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
@@ -56,7 +53,6 @@ func CreateEntitlementsSelectableCodeSignGroupFilter(bundleIDEntitlementsMap map
 	}
 }
 
-// CreateExportMethodSelectableCodeSignGroupFilter ...
 func CreateExportMethodSelectableCodeSignGroupFilter(exportMethod exportoptions.Method) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
@@ -86,14 +82,12 @@ func CreateExportMethodSelectableCodeSignGroupFilter(exportMethod exportoptions.
 	}
 }
 
-// CreateTeamSelectableCodeSignGroupFilter ...
 func CreateTeamSelectableCodeSignGroupFilter(teamID string) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
 		return group.Certificate.TeamID == teamID
 	}
 }
 
-// CreateNotXcodeManagedSelectableCodeSignGroupFilter ...
 func CreateNotXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
@@ -123,7 +117,6 @@ func CreateNotXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGrou
 	}
 }
 
-// CreateXcodeManagedSelectableCodeSignGroupFilter ...
 func CreateXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}
@@ -153,7 +146,6 @@ func CreateXcodeManagedSelectableCodeSignGroupFilter() SelectableCodeSignGroupFi
 	}
 }
 
-// CreateExcludeProfileNameSelectableCodeSignGroupFilter ...
 func CreateExcludeProfileNameSelectableCodeSignGroupFilter(name string) SelectableCodeSignGroupFilter {
 	return func(group *SelectableCodeSignGroup) bool {
 		filteredBundleIDProfilesMap := map[string][]profileutil.ProvisioningProfileInfoModel{}

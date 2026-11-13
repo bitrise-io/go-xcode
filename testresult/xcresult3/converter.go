@@ -25,7 +25,6 @@ import (
 	"github.com/bitrise-io/go-xcode/xcodeproject/serialized"
 )
 
-// Converter ...
 type Converter struct {
 	xcresultPth               string
 	useLegacyExtractionMethod bool
@@ -63,7 +62,6 @@ func NewConverter(useLegacy bool) *Converter {
 	return &Converter{useLegacyExtractionMethod: useLegacy}
 }
 
-// Detect ...
 func (c *Converter) Detect(files []string) bool {
 	if !isXcresulttoolAvailable() {
 		log.Debugf("xcresult tool is not available")

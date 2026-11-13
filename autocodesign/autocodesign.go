@@ -35,20 +35,16 @@ type AppCodesignAssets struct {
 	Certificate                        certificateutil.CertificateInfoModel
 }
 
-// Platform ...
 type Platform string
 
-// Const
 const (
 	IOS   Platform = "iOS"
 	TVOS  Platform = "tvOS"
 	MacOS Platform = "macOS"
 )
 
-// DistributionType ...
 type DistributionType string
 
-// DistributionTypes ...
 var (
 	Development DistributionType = "development"
 	AppStore    DistributionType = "app-store"
@@ -56,7 +52,6 @@ var (
 	Enterprise  DistributionType = "enterprise"
 )
 
-// Entitlement ...
 type Entitlement serialized.Object
 
 // Entitlements is all the entitlements that are contained in a target or profile
@@ -94,14 +89,12 @@ type DevPortalClient interface {
 	CreateBundleID(bundleIDIdentifier, appIDName string) (*appstoreconnect.BundleID, error)
 }
 
-// AssetWriter ...
 type AssetWriter interface {
 	Write(codesignAssetsByDistributionType map[DistributionType]AppCodesignAssets) error
 	InstallCertificate(certificate certificateutil.CertificateInfoModel) error
 	InstallProfile(profile Profile) error
 }
 
-// LocalCodeSignAssetManager ...
 type LocalCodeSignAssetManager interface {
 	FindCodesignAssets(appLayout AppLayout, distrType DistributionType, certsByType map[appstoreconnect.CertificateType][]Certificate, deviceIDs []string, minProfileDaysValid int) (*AppCodesignAssets, *AppLayout, error)
 }
@@ -121,7 +114,6 @@ type CertificateProvider interface {
 // LocalCertificates is a map from the certificate type (development, distribution) to an array of installed certs
 type LocalCertificates map[appstoreconnect.CertificateType][]certificateutil.CertificateInfoModel
 
-// LocalProfile ...
 type LocalProfile struct {
 	Profile Profile
 	Info    profileutil.ProvisioningProfileInfoModel
@@ -143,7 +135,6 @@ type CodesignAssetsOpts struct {
 	VerboseLog                        bool
 }
 
-// CodesignAssetManager ...
 type CodesignAssetManager interface {
 	EnsureCodesignAssets(appLayout AppLayout, opts CodesignAssetsOpts) (map[DistributionType]AppCodesignAssets, error)
 }
@@ -156,7 +147,6 @@ type codesignAssetManager struct {
 	sleeper                   retry.Sleeper
 }
 
-// NewCodesignAssetManager ...
 func NewCodesignAssetManager(devPortalClient DevPortalClient, assetWriter AssetWriter, localCodeSignAssetManager LocalCodeSignAssetManager, logger log.Logger, sleeper retry.Sleeper) CodesignAssetManager {
 	return codesignAssetManager{
 		devPortalClient:           devPortalClient,

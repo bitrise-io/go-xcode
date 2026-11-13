@@ -22,7 +22,6 @@ const (
 	entitlementsArgKey       = "--entitlements"
 )
 
-// Profile ...
 type Profile struct {
 	attributes     appstoreconnect.ProfileAttributes
 	id             string
@@ -31,27 +30,22 @@ type Profile struct {
 	certificateIDs []string
 }
 
-// ID ...
 func (p Profile) ID() string {
 	return p.id
 }
 
-// Attributes ...
 func (p Profile) Attributes() appstoreconnect.ProfileAttributes {
 	return p.attributes
 }
 
-// CertificateIDs ...
 func (p Profile) CertificateIDs() ([]string, error) {
 	return p.certificateIDs, nil
 }
 
-// DeviceUDIDs ...
 func (p Profile) DeviceUDIDs() ([]string, error) {
 	return autocodesign.ParseRawProfileDeviceUDIDs(p.attributes.ProfileContent)
 }
 
-// BundleID ...
 func (p Profile) BundleID() (appstoreconnect.BundleID, error) {
 	return appstoreconnect.BundleID{
 		ID: p.id,
@@ -62,22 +56,18 @@ func (p Profile) BundleID() (appstoreconnect.BundleID, error) {
 	}, nil
 }
 
-// Entitlements ...
 func (p Profile) Entitlements() (autocodesign.Entitlements, error) {
 	return autocodesign.ParseRawProfileEntitlements(p.attributes.ProfileContent)
 }
 
-// ProfileClient ...
 type ProfileClient struct {
 	client *Client
 }
 
-// NewSpaceshipProfileClient ...
 func NewSpaceshipProfileClient(client *Client) *ProfileClient {
 	return &ProfileClient{client: client}
 }
 
-// ProfileInfo ...
 type ProfileInfo struct {
 	ID           string                           `json:"id"`
 	UUID         string                           `json:"uuid"`
@@ -114,14 +104,12 @@ func newProfile(p ProfileInfo) (autocodesign.Profile, error) {
 	}, nil
 }
 
-// AppInfo ...
 type AppInfo struct {
 	ID       string `json:"id"`
 	BundleID string `json:"bundleID"`
 	Name     string `json:"name"`
 }
 
-// FindProfile ...
 func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (autocodesign.Profile, error) {
 	log.Debugf("Locating provision profile")
 
@@ -155,7 +143,6 @@ func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.Pro
 	return profile, nil
 }
 
-// DeleteProfile ...
 func (c *ProfileClient) DeleteProfile(id string) error {
 	log.Debugf("Deleting provisioning profile: %s", id)
 
@@ -167,7 +154,6 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 	return nil
 }
 
-// CreateProfile ...
 func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
 	log.Debugf("Creating provisioning profile with name: %s", name)
 
@@ -200,7 +186,6 @@ func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.P
 	return profile, nil
 }
 
-// FindBundleID ...
 func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
 	log.Debugf("Locating bundle id: %s", bundleIDIdentifier)
 
@@ -232,7 +217,6 @@ func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnec
 	}, nil
 }
 
-// CreateBundleID ...
 func (c *ProfileClient) CreateBundleID(bundleIDIdentifier, appIDName string) (*appstoreconnect.BundleID, error) {
 	log.Debugf("Creating new bundle id with name: %s", bundleIDIdentifier)
 
@@ -260,7 +244,6 @@ func (c *ProfileClient) CreateBundleID(bundleIDIdentifier, appIDName string) (*a
 	}, nil
 }
 
-// CheckBundleIDEntitlements ...
 func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.BundleID, appEntitlements autocodesign.Entitlements) error {
 	log.Debugf("Vaildating bundle id entitlements: %s", bundleID.ID)
 
@@ -281,7 +264,6 @@ func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.Bundl
 	return nil
 }
 
-// SyncBundleID ...
 func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, appEntitlements autocodesign.Entitlements) error {
 	log.Debugf("Syncing bundle id for: %s", bundleID.ID)
 

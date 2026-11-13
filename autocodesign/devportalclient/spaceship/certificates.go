@@ -11,20 +11,17 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 )
 
-// CertificateSource ...
 type CertificateSource struct {
 	client       *Client
 	certificates map[appstoreconnect.CertificateType][]autocodesign.Certificate
 }
 
-// NewSpaceshipCertificateSource ...
 func NewSpaceshipCertificateSource(client *Client) *CertificateSource {
 	return &CertificateSource{
 		client: client,
 	}
 }
 
-// QueryCertificateBySerial ...
 func (s *CertificateSource) QueryCertificateBySerial(serial big.Int) (autocodesign.Certificate, error) {
 	if s.certificates == nil {
 		if err := s.downloadAll(); err != nil {
@@ -42,7 +39,6 @@ func (s *CertificateSource) QueryCertificateBySerial(serial big.Int) (autocodesi
 	return autocodesign.Certificate{}, fmt.Errorf("can not find certificate with serial (%s)", serial.Text(16))
 }
 
-// QueryAllIOSCertificates ...
 func (s *CertificateSource) QueryAllIOSCertificates() (map[appstoreconnect.CertificateType][]autocodesign.Certificate, error) {
 	if s.certificates == nil {
 		if err := s.downloadAll(); err != nil {

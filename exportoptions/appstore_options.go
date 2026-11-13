@@ -6,7 +6,6 @@ import (
 	"howett.net/plist"
 )
 
-// AppStoreOptionsModel ...
 type AppStoreOptionsModel struct {
 	Method                             Method
 	TeamID                             string
@@ -47,7 +46,6 @@ func NewAppStoreConnectOptions(method Method) AppStoreOptionsModel {
 	}
 }
 
-// Hash ...
 func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	hash := map[string]interface{}{}
 	hash[MethodKey] = options.Method
@@ -94,7 +92,6 @@ func (options AppStoreOptionsModel) Hash() map[string]interface{} {
 	return hash
 }
 
-// String ...
 func (options AppStoreOptionsModel) String() (string, error) {
 	hash := options.Hash()
 	plistBytes, err := plist.MarshalIndent(hash, plist.XMLFormat, "\t")
@@ -104,12 +101,10 @@ func (options AppStoreOptionsModel) String() (string, error) {
 	return string(plistBytes), err
 }
 
-// WriteToFile ...
 func (options AppStoreOptionsModel) WriteToFile(pth string) error {
 	return WritePlistToFile(options.Hash(), pth)
 }
 
-// WriteToTmpFile ...
 func (options AppStoreOptionsModel) WriteToTmpFile() (string, error) {
 	return WritePlistToTmpFile(options.Hash())
 }

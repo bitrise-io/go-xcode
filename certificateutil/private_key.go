@@ -10,7 +10,6 @@ type PrivateKey struct {
 	key any
 }
 
-// NewPrivateKey ...
 func NewPrivateKey(key any) PrivateKey {
 	return PrivateKey{key: key}
 }

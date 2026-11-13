@@ -14,7 +14,6 @@ type CertificatePrinter struct {
 	timeProvider timeutil.TimeProvider
 }
 
-// NewCertificatePrinter ...
 func NewCertificatePrinter(logger log.Logger, timeProvider timeutil.TimeProvider) *CertificatePrinter {
 	return &CertificatePrinter{
 		logger:       logger,

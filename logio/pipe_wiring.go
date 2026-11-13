@@ -40,7 +40,6 @@ func (p *PipeWiring) CloseFilter() error {
 	return err
 }
 
-// Close ...
 func (p *PipeWiring) Close() error {
 	filterErr := p.CloseFilter()
 	toolSinkErr := p.toolInSink.Close()

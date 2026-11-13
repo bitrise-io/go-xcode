@@ -23,7 +23,6 @@ type Keychain struct {
 	factory command.Factory
 }
 
-// New ...
 func New(pth string, pass stepconf.Secret, factory command.Factory) (*Keychain, error) {
 	if exist, err := pathutil.IsPathExists(pth); err != nil {
 		return nil, err
@@ -49,7 +48,6 @@ func New(pth string, pass stepconf.Secret, factory command.Factory) (*Keychain, 
 	return createKeychain(pth, pass, factory)
 }
 
-// InstallCertificate ...
 func (k Keychain) InstallCertificate(cert certificateutil.CertificateInfoModel, pass stepconf.Secret) error {
 	b, err := cert.EncodeToP12("bitrise")
 	if err != nil {

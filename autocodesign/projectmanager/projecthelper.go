@@ -41,7 +41,6 @@ type buildSettingsCacheKey struct {
 	configuration string
 }
 
-// ProjectHelper ...
 type ProjectHelper struct {
 	logger                      log.Logger
 	MainTarget                  xcodeproj.Target
@@ -156,12 +155,10 @@ func newProjectHelper(projOrWSPath string, logger log.Logger, schemeName string,
 	}, nil
 }
 
-// ArchivableTargets ...
 func (p *ProjectHelper) ArchivableTargets() []xcodeproj.Target {
 	return append([]xcodeproj.Target{p.MainTarget}, p.DependentTargets...)
 }
 
-// ArchivableTargetBundleIDToEntitlements ...
 func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]autocodesign.Entitlements, error) {
 	entitlementsByBundleID := map[string]autocodesign.Entitlements{}
 
@@ -182,7 +179,6 @@ func (p *ProjectHelper) ArchivableTargetBundleIDToEntitlements() (map[string]aut
 	return entitlementsByBundleID, nil
 }
 
-// UITestTargetBundleIDs ...
 func (p *ProjectHelper) UITestTargetBundleIDs() ([]string, error) {
 	var bundleIDs []string
 

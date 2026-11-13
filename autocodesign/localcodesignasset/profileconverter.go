@@ -11,7 +11,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
-// ProvisioningProfileConverter ...
 type ProvisioningProfileConverter interface {
 	ProfileInfoToProfile(info profileutil.ProvisioningProfileInfoModel) (autocodesign.Profile, error)
 }
@@ -22,7 +21,6 @@ type provisioningProfileConverter struct {
 	profileReader profileutil.ProfileReader
 }
 
-// NewProvisioningProfileConverter ...
 func NewProvisioningProfileConverter() ProvisioningProfileConverter {
 	logger := log.NewLogger()
 	fileManager := fileutil.NewFileManager()
@@ -37,7 +35,6 @@ func NewProvisioningProfileConverter() ProvisioningProfileConverter {
 	}
 }
 
-// ProfileInfoToProfile ...
 func (c provisioningProfileConverter) ProfileInfoToProfile(info profileutil.ProvisioningProfileInfoModel) (autocodesign.Profile, error) {
 	pth, err := c.findProvisioningProfile(info.UUID)
 	if err != nil {

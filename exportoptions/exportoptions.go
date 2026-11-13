@@ -9,7 +9,6 @@ import (
 	"howett.net/plist"
 )
 
-// ExportOptions ...
 type ExportOptions interface {
 	Hash() map[string]interface{}
 	String() (string, error)
@@ -17,7 +16,6 @@ type ExportOptions interface {
 	WriteToTmpFile() (string, error)
 }
 
-// WritePlistToFile ...
 func WritePlistToFile(options map[string]interface{}, pth string) error {
 	plistBytes, err := plist.MarshalIndent(options, plist.XMLFormat, "\t")
 	if err != nil {
@@ -30,7 +28,6 @@ func WritePlistToFile(options map[string]interface{}, pth string) error {
 	return nil
 }
 
-// WritePlistToTmpFile ...
 func WritePlistToTmpFile(options map[string]interface{}) (string, error) {
 	tmpDir, err := pathutil.NewPathProvider().CreateTempDir("output")
 	if err != nil {

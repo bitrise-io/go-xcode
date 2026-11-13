@@ -13,10 +13,8 @@ const (
 	archKey            = "arch"
 )
 
-// Platform ...
 type Platform string
 
-// Platforms ...
 const (
 	MacOS             Platform = "macOS"
 	IOS               Platform = "iOS"
@@ -30,10 +28,8 @@ const (
 	VisionOSSimulator Platform = "visionOS Simulator"
 )
 
-// Specifier ...
 type Specifier map[string]string
 
-// NewSpecifier ...
 func NewSpecifier(destination string) (Specifier, error) {
 	specifier := Specifier{}
 
@@ -64,17 +60,14 @@ func (s Specifier) Platform() (Platform, bool) {
 	return Platform(s[platformKey]), false
 }
 
-// Name ...
 func (s Specifier) Name() string {
 	return s[nameKey]
 }
 
-// OS ...
 func (s Specifier) OS() string {
 	return s[osKey]
 }
 
-// Arch ...
 func (s Specifier) Arch() string {
 	return s[archKey]
 }

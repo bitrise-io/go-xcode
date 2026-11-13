@@ -11,7 +11,6 @@ import (
 	"github.com/bitrise-io/go-pkcs12"
 )
 
-// CertificateInfoModel ...
 type CertificateInfoModel struct {
 	CommonName string
 	TeamName   string
@@ -43,7 +42,6 @@ func checkValidityAt(now time.Time, certificate x509.Certificate) error {
 	return nil
 }
 
-// CheckValidity ...
 func (info CertificateInfoModel) CheckValidity() error {
 	return CheckValidity(info.Certificate)
 }
@@ -53,7 +51,6 @@ func (info CertificateInfoModel) EncodeToP12(passphrase string) ([]byte, error) 
 	return pkcs12.Encode(rand.Reader, info.PrivateKey.Key(), &info.Certificate, nil, passphrase)
 }
 
-// NewCertificateInfo ...
 func NewCertificateInfo(certificate x509.Certificate, privateKey any) CertificateInfoModel {
 	fingerprint := sha1.Sum(certificate.Raw)
 	fingerprintStr := fmt.Sprintf("%x", fingerprint)

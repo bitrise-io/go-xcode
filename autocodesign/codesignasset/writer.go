@@ -14,7 +14,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
-// Writer ...
 type Writer struct {
 	logger            log.Logger
 	keychain          keychain.Keychain
@@ -23,7 +22,6 @@ type Writer struct {
 	xcodeMajorVersion int64
 }
 
-// NewWriter ...
 func NewWriter(logger log.Logger, keychain keychain.Keychain, fileManager fileutil.FileManager, profileReader profileutil.ProfileReader, xcodeMajorVersion int64) Writer {
 	return Writer{
 		logger:            logger,
@@ -34,7 +32,6 @@ func NewWriter(logger log.Logger, keychain keychain.Keychain, fileManager fileut
 	}
 }
 
-// Write ...
 func (w Writer) Write(codesignAssetsByDistributionType map[autocodesign.DistributionType]autocodesign.AppCodesignAssets) error {
 	i := 0
 	for _, codesignAssets := range codesignAssetsByDistributionType {

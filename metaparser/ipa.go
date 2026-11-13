@@ -7,7 +7,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/zip"
 )
 
-// ParseIPAData ...
 func (m *Parser) ParseIPAData(pth string) (*ArtifactMetadata, error) {
 	appInfo, provisioningInfo, err := m.readIPADeploymentMeta(pth)
 	if err != nil {

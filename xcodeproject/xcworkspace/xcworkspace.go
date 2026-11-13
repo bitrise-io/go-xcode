@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	// XCWorkspaceExtension ...
 	XCWorkspaceExtension = ".xcworkspace"
 )
 

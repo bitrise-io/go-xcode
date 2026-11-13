@@ -6,7 +6,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/command"
 )
 
-// Version ...
 type Version struct {
 	Version      string
 	BuildVersion string
@@ -14,7 +13,6 @@ type Version struct {
 	Minor        int64
 }
 
-// Reader ...
 type Reader interface {
 	GetVersion() (Version, error)
 }
@@ -23,14 +21,12 @@ type reader struct {
 	commandFactory command.Factory
 }
 
-// NewXcodeVersionProvider ...
 func NewXcodeVersionProvider(commandFactory command.Factory) Reader {
 	return &reader{
 		commandFactory: commandFactory,
 	}
 }
 
-// GetVersion ...
 func (b *reader) GetVersion() (Version, error) {
 	cmd := b.commandFactory.Create("xcodebuild", []string{"-version"}, &command.Opts{})
 

@@ -11,13 +11,11 @@ import (
 	"github.com/ryanuber/go-glob"
 )
 
-// StdlibRead ...
 type StdlibRead struct {
 	zipReader *zip.ReadCloser
 	logger    log.Logger
 }
 
-// NewStdlibRead ...
 func NewStdlibRead(archivePath string, logger log.Logger) (*StdlibRead, error) {
 	zipReader, err := zip.OpenReader(archivePath)
 	if err != nil {
@@ -30,7 +28,6 @@ func NewStdlibRead(archivePath string, logger log.Logger) (*StdlibRead, error) {
 	}, nil
 }
 
-// ReadFile ...
 func (r StdlibRead) ReadFile(relPthPattern string) ([]byte, error) {
 	var files []*zip.File
 	for _, f := range r.zipReader.File {
@@ -66,12 +63,10 @@ func (r StdlibRead) ReadFile(relPthPattern string) ([]byte, error) {
 	return b, nil
 }
 
-// Close ...
 func (r StdlibRead) Close() error {
 	return r.zipReader.Close()
 }
 
-// IsErrFormat ...
 func IsErrFormat(err error) bool {
 	return errors.Is(err, zip.ErrFormat)
 }

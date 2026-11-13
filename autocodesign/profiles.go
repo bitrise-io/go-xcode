@@ -394,7 +394,6 @@ func ParseRawProfileDeviceUDIDs(profileContents []byte) (DeviceUDIDs, error) {
 	return profile.ProvisionedDevices, nil
 }
 
-// ParseRawProfileEntitlements ...
 func ParseRawProfileEntitlements(profileContents []byte) (Entitlements, error) {
 	profile, err := profileutil.NewProvisioningProfileInfoFromPKCS7Content(profileContents)
 	if err != nil {
@@ -403,7 +402,6 @@ func ParseRawProfileEntitlements(profileContents []byte) (Entitlements, error) {
 	return Entitlements(profile.Entitlements), nil
 }
 
-// FindMissingContainers ...
 func FindMissingContainers(projectEnts, profileEnts Entitlements) ([]string, error) {
 	projContainerIDs, err := serialized.Object(projectEnts).OptionalStringSlice(ICloudIdentifiersEntitlementKey)
 	if err != nil {

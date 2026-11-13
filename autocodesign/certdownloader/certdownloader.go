@@ -27,7 +27,6 @@ type downloader struct {
 	fileProvider stepconf.FileProvider
 }
 
-// NewDownloader ...
 func NewDownloader(certs []CertificateAndPassphrase, logger log.Logger) autocodesign.CertificateProvider {
 	fileDownloader := filedownloader.NewDownloader(logger)
 	fileProvider := stepconf.NewFileProvider(fileDownloader, fileutil.NewFileManager(), pathutil.NewPathProvider(), pathutil.NewPathModifier())
@@ -39,7 +38,6 @@ func NewDownloader(certs []CertificateAndPassphrase, logger log.Logger) autocode
 	}
 }
 
-// GetCertificates ...
 func (d downloader) GetCertificates() ([]certificateutil.CertificateInfoModel, error) {
 	var certInfos []certificateutil.CertificateInfoModel
 

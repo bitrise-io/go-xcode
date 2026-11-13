@@ -42,7 +42,6 @@ var (
 	jwtDuration = 18 * time.Minute
 )
 
-// HTTPClient ...
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
@@ -198,7 +197,6 @@ func (c *Client) ensureSignedToken() (string, error) {
 	return c.signedToken, nil
 }
 
-// NewRequestWithRelationshipURL ...
 func (c *Client) NewRequestWithRelationshipURL(method, endpoint string, body interface{}) (*http.Request, error) {
 	endpoint = strings.TrimPrefix(endpoint, c.BaseURL.String()+apiVersion+"/")
 
@@ -263,14 +261,12 @@ func checkResponse(logger log.Logger, r *http.Response) error {
 	return errorResponse
 }
 
-// Debugf ...
 func (c *Client) Debugf(format string, v ...interface{}) {
 	if c.EnableDebugLogs {
 		c.logger.Debugf(format, v...)
 	}
 }
 
-// Do ...
 func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	c.Debugf("Request:")
 	if c.EnableDebugLogs {
@@ -317,14 +313,12 @@ func (c *Client) Do(req *http.Request, v interface{}) (*http.Response, error) {
 	return resp, err
 }
 
-// PagingOptions ...
 type PagingOptions struct {
 	Limit  int    `url:"limit,omitempty"`
 	Cursor string `url:"cursor,omitempty"`
 	Next   string `url:"-"`
 }
 
-// UpdateCursor ...
 func (opt *PagingOptions) UpdateCursor() error {
 	if opt != nil && opt.Next != "" {
 		u, err := url.Parse(opt.Next)

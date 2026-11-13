@@ -30,7 +30,6 @@ type manager struct {
 	logger         log.Logger
 }
 
-// NewManager ...
 func NewManager(logger log.Logger, commandFactory command.Factory) Manager {
 	return manager{
 		logger:         logger,

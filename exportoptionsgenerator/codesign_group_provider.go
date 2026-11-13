@@ -10,7 +10,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/timeutil"
 )
 
-// CodeSignGroupProvider ...
 type CodeSignGroupProvider interface {
 	DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*codesigngroup.Ios, error)
 }
@@ -20,7 +19,6 @@ type codeSignGroupProvider struct {
 	printer *codesigngroup.Printer
 }
 
-// NewCodeSignGroupProvider ...
 func NewCodeSignGroupProvider(logger log.Logger) CodeSignGroupProvider {
 	return &codeSignGroupProvider{
 		logger:  logger,
@@ -28,7 +26,6 @@ func NewCodeSignGroupProvider(logger log.Logger) CodeSignGroupProvider {
 	}
 }
 
-// DetermineCodesignGroup ....
 func (g codeSignGroupProvider) DetermineCodesignGroup(certificates []certificateutil.CertificateInfoModel, profiles []profileutil.ProvisioningProfileInfoModel, defaultProfile *profileutil.ProvisioningProfileInfoModel, bundleIDEntitlementsMap map[string]plistutil.PlistData, exportMethod exportoptions.Method, teamID string, xcodeManaged bool) (*codesigngroup.Ios, error) {
 	g.logger.Println()
 	g.logger.Printf("Target Bundle ID - Entitlements map")

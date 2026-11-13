@@ -17,14 +17,12 @@ type ProvisioningProfileProvider interface {
 	GetDefaultProvisioningProfile() (profileutil.ProvisioningProfileInfoModel, error)
 }
 
-// LocalProvisioningProfileProvider ...
 type LocalProvisioningProfileProvider struct {
 	logger        log.Logger
 	pathProvider  pathutil.PathProvider
 	profileReader profileutil.ProfileReader
 }
 
-// NewLocalProvisioningProfileProvider ...
 func NewLocalProvisioningProfileProvider(profileReader profileutil.ProfileReader, pathProvider pathutil.PathProvider, logger log.Logger) LocalProvisioningProfileProvider {
 	return LocalProvisioningProfileProvider{
 		logger:        logger,
@@ -33,12 +31,10 @@ func NewLocalProvisioningProfileProvider(profileReader profileutil.ProfileReader
 	}
 }
 
-// ListProvisioningProfiles ...
 func (p LocalProvisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
 	return p.profileReader.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
 }
 
-// GetDefaultProvisioningProfile ...
 func (p LocalProvisioningProfileProvider) GetDefaultProvisioningProfile() (profileutil.ProvisioningProfileInfoModel, error) {
 	defaultProfileURL := os.Getenv("BITRISE_DEFAULT_PROVISION_URL")
 	if defaultProfileURL == "" {

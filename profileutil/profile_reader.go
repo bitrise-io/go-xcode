@@ -18,7 +18,6 @@ const (
 	MacExtension = ".provisionprofile"
 )
 
-// ProfileReader ...
 type ProfileReader struct {
 	logger       log.Logger
 	fileManager  fileutil.FileManager
@@ -26,7 +25,6 @@ type ProfileReader struct {
 	pathProvider pathutil.PathProvider
 }
 
-// NewProfileReader ...
 func NewProfileReader(logger log.Logger, fileManager fileutil.FileManager, pathModifier pathutil.PathModifier, pathProvider pathutil.PathProvider) ProfileReader {
 	return ProfileReader{
 		logger:       logger,
@@ -36,7 +34,6 @@ func NewProfileReader(logger log.Logger, fileManager fileutil.FileManager, pathM
 	}
 }
 
-// ProvisioningProfileInfoFromFile ...
 func (reader ProfileReader) ProvisioningProfileInfoFromFile(pth string) (ProvisioningProfileInfoModel, error) {
 	provisioningProfile, err := reader.provisioningProfileFromFile(pth)
 	if err != nil {
@@ -48,7 +45,6 @@ func (reader ProfileReader) ProvisioningProfileInfoFromFile(pth string) (Provisi
 	return ProvisioningProfileInfoModel{}, errors.New("failed to parse provisioning profile infos")
 }
 
-// InstalledProvisioningProfileInfos ...
 func (reader ProfileReader) InstalledProvisioningProfileInfos(profileType ProfileType) ([]ProvisioningProfileInfoModel, error) {
 	provisioningProfiles, err := reader.installedProvisioningProfiles(profileType)
 	if err != nil {
@@ -68,7 +64,6 @@ func (reader ProfileReader) InstalledProvisioningProfileInfos(profileType Profil
 	return infos, nil
 }
 
-// ListProfiles ...
 func (reader ProfileReader) ListProfiles(profileType ProfileType, uuid string) ([]string, error) {
 	ext := IOSExtension
 	if profileType == ProfileTypeMacOs {

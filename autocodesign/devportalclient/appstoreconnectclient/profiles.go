@@ -11,13 +11,11 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 )
 
-// APIProfile ...
 type APIProfile struct {
 	profile *appstoreconnect.Profile
 	client  *appstoreconnect.Client
 }
 
-// NewAPIProfile ...
 func NewAPIProfile(client *appstoreconnect.Client, profile *appstoreconnect.Profile) autocodesign.Profile {
 	return &APIProfile{
 		profile: profile,
@@ -25,17 +23,14 @@ func NewAPIProfile(client *appstoreconnect.Client, profile *appstoreconnect.Prof
 	}
 }
 
-// ID ...
 func (p APIProfile) ID() string {
 	return p.profile.ID
 }
 
-// Attributes ...
 func (p APIProfile) Attributes() appstoreconnect.ProfileAttributes {
 	return p.profile.Attributes
 }
 
-// CertificateIDs ...
 func (p APIProfile) CertificateIDs() ([]string, error) {
 	var nextPageURL string
 	var certificates []appstoreconnect.Certificate
@@ -74,7 +69,6 @@ func (p APIProfile) CertificateIDs() ([]string, error) {
 	return ids, nil
 }
 
-// CertificateIDs ...
 func (p APIProfile) list200CertificateIDs() ([]string, error) {
 	response, err := p.client.Provisioning.Certificates(
 		p.profile.Relationships.Certificates.Links.Related,
@@ -98,12 +92,10 @@ func (p APIProfile) list200CertificateIDs() ([]string, error) {
 	return ids, nil
 }
 
-// DeviceUDIDs ...
 func (p APIProfile) DeviceUDIDs() ([]string, error) {
 	return autocodesign.ParseRawProfileDeviceUDIDs(p.profile.Attributes.ProfileContent)
 }
 
-// BundleID ...
 func (p APIProfile) BundleID() (appstoreconnect.BundleID, error) {
 	bundleIDresp, err := p.client.Provisioning.BundleID(p.profile.Relationships.BundleID.Links.Related)
 	if err != nil {
@@ -113,22 +105,18 @@ func (p APIProfile) BundleID() (appstoreconnect.BundleID, error) {
 	return bundleIDresp.Data, nil
 }
 
-// Entitlements ...
 func (p APIProfile) Entitlements() (autocodesign.Entitlements, error) {
 	return autocodesign.ParseRawProfileEntitlements(p.profile.Attributes.ProfileContent)
 }
 
-// ProfileClient ...
 type ProfileClient struct {
 	client *appstoreconnect.Client
 }
 
-// NewProfileClient ...
 func NewProfileClient(client *appstoreconnect.Client) *ProfileClient {
 	return &ProfileClient{client: client}
 }
 
-// FindProfile ...
 func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.ProfileType) (autocodesign.Profile, error) {
 	opt := &appstoreconnect.ListProfilesOptions{
 		PagingOptions: appstoreconnect.PagingOptions{
@@ -149,7 +137,6 @@ func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.Pro
 	return NewAPIProfile(c.client, &r.Data[0]), nil
 }
 
-// DeleteProfile ...
 func (c *ProfileClient) DeleteProfile(id string) error {
 	if err := c.client.Provisioning.DeleteProfile(id); err != nil {
 		var respErr *appstoreconnect.ErrorResponse
@@ -165,7 +152,6 @@ func (c *ProfileClient) DeleteProfile(id string) error {
 	return nil
 }
 
-// CreateProfile ...
 func (c *ProfileClient) CreateProfile(name string, profileType appstoreconnect.ProfileType, bundleID appstoreconnect.BundleID, certificateIDs []string, deviceIDs []string) (autocodesign.Profile, error) {
 	profile, err := c.createProfile(name, profileType, bundleID, certificateIDs, deviceIDs)
 	if err != nil {
@@ -272,7 +258,6 @@ func (c *ProfileClient) createProfile(name string, profileType appstoreconnect.P
 	return NewAPIProfile(c.client, &r.Data), nil
 }
 
-// FindBundleID ...
 func (c *ProfileClient) FindBundleID(bundleIDIdentifier string) (*appstoreconnect.BundleID, error) {
 	var nextPageURL string
 	var bundleIDs []appstoreconnect.BundleID
@@ -362,7 +347,6 @@ func (c *ProfileClient) list400BundleIDs(bundleIDIdentifier string) ([]appstorec
 	return bundleIDs, nil
 }
 
-// CreateBundleID ...
 func (c *ProfileClient) CreateBundleID(bundleIDIdentifier, appIDName string) (*appstoreconnect.BundleID, error) {
 	r, err := c.client.Provisioning.CreateBundleID(
 		appstoreconnect.BundleIDCreateRequest{
@@ -393,7 +377,6 @@ func (c *ProfileClient) CheckBundleIDEntitlements(bundleID appstoreconnect.Bundl
 	return checkBundleIDEntitlements(response.Data, appEntitlements)
 }
 
-// SyncBundleID ...
 func (c *ProfileClient) SyncBundleID(bundleID appstoreconnect.BundleID, appEntitlements autocodesign.Entitlements) error {
 	for key, value := range appEntitlements {
 		ent := autocodesign.Entitlement{key: value}

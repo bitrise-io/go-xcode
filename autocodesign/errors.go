@@ -6,7 +6,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 )
 
-// DetailedError ...
 type DetailedError struct {
 	ErrorMessage   string
 	Title          string
@@ -34,7 +33,6 @@ func (e DetailedError) Error() string {
 	return message
 }
 
-// missingCertificateError ...
 type missingCertificateError struct {
 	Type appstoreconnect.CertificateType
 }
@@ -58,7 +56,6 @@ type ProfilesInconsistentError struct {
 	wrapErr error
 }
 
-// NewProfilesInconsistentError ...
 func NewProfilesInconsistentError(wrapErr error) ProfilesInconsistentError {
 	return ProfilesInconsistentError{
 		wrapErr: wrapErr,
@@ -73,20 +70,16 @@ func (e ProfilesInconsistentError) Unwrap() error {
 	return e.wrapErr
 }
 
-// ErrAppClipAppID ...
 type ErrAppClipAppID struct {
 }
 
-// Error ...
 func (ErrAppClipAppID) Error() string {
 	return "can't create Application Identifier for App Clip target"
 }
 
-// ErrAppClipAppIDWithAppleSigning ...
 type ErrAppClipAppIDWithAppleSigning struct {
 }
 
-// Error ...
 func (ErrAppClipAppIDWithAppleSigning) Error() string {
 	return "can't manage Application Identifier for App Clip target with 'Sign In With Apple' capability"
 }

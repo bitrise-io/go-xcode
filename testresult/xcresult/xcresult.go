@@ -12,13 +12,11 @@ import (
 	"github.com/bitrise-io/go-steputils/v2/testreport"
 )
 
-// Converter ...
 type Converter struct {
 	files                  []string
 	testSummariesPlistPath string
 }
 
-// Detect ...
 func (c *Converter) Detect(files []string) bool {
 	c.files = files
 	for _, file := range c.files {

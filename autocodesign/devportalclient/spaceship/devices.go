@@ -11,17 +11,14 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/devportalservice"
 )
 
-// DeviceClient ...
 type DeviceClient struct {
 	client *Client
 }
 
-// NewDeviceClient ...
 func NewDeviceClient(client *Client) *DeviceClient {
 	return &DeviceClient{client: client}
 }
 
-// DeviceInfo ...
 type DeviceInfo struct {
 	ID       string                           `json:"id"`
 	UDID     string                           `json:"udid"`
@@ -47,7 +44,6 @@ func newDevice(d DeviceInfo) appstoreconnect.Device {
 	}
 }
 
-// ListDevices ...
 func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DevicePlatform) ([]appstoreconnect.Device, error) {
 	log.Debugf("Fetching devices")
 
@@ -85,7 +81,6 @@ func (d *DeviceClient) ListDevices(udid string, platform appstoreconnect.DeviceP
 	return filteredDevices, nil
 }
 
-// RegisterDevice ...
 func (d *DeviceClient) RegisterDevice(testDevice devportalservice.TestDevice) (*appstoreconnect.Device, error) {
 	log.Debugf("Registering device")
 

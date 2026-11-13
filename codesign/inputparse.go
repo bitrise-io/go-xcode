@@ -23,7 +23,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
-// Input ...
 type Input struct {
 	AuthType                     AuthType
 	DistributionMethod           string
@@ -43,7 +42,6 @@ type ConnectionOverrideInputs struct {
 	APIKeyEnterpriseAccount bool
 }
 
-// Config ...
 type Config struct {
 	CertificatesAndPassphrases   []certdownloader.CertificateAndPassphrase
 	Keychain                     keychain.Keychain
@@ -163,7 +161,6 @@ func splitCertificatesAndPassphrases(certURLList string, certPassphraseList stri
 	return pfxURLs, passphrases, nil
 }
 
-// SplitAndClean ...
 func splitAndClean(list string, sep string, omitEmpty bool) []string {
 	items := sliceutil.Map(strings.Split(list, sep), strings.TrimSpace)
 	if omitEmpty {

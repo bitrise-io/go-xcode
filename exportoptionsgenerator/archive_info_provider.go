@@ -4,17 +4,13 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcarchive"
 )
 
-// ExportProduct ...
 type ExportProduct string
 
 const (
-	// ExportProductApp ...
-	ExportProductApp ExportProduct = "app"
-	// ExportProductAppClip ...
+	ExportProductApp     ExportProduct = "app"
 	ExportProductAppClip ExportProduct = "app-clip"
 )
 
-// ReadArchiveExportInfo ...
 func ReadArchiveExportInfo(archive xcarchive.IosArchive) (ArchiveInfo, error) {
 	appClipBundleID := ""
 	if archive.Application.ClipApplication != nil {

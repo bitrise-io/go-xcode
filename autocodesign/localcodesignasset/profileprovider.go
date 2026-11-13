@@ -16,7 +16,6 @@ type provisioningProfileProvider struct {
 	profileReader profileutil.ProfileReader
 }
 
-// NewProvisioningProfileProvider ...
 func NewProvisioningProfileProvider() ProvisioningProfileProvider {
 	profileReader := profileutil.NewProfileReader(log.NewLogger(), fileutil.NewFileManager(), pathutil.NewPathModifier(), pathutil.NewPathProvider())
 	return provisioningProfileProvider{
@@ -24,7 +23,6 @@ func NewProvisioningProfileProvider() ProvisioningProfileProvider {
 	}
 }
 
-// ListProvisioningProfiles ...
 func (p provisioningProfileProvider) ListProvisioningProfiles() ([]profileutil.ProvisioningProfileInfoModel, error) {
 	return p.profileReader.InstalledProvisioningProfileInfos(profileutil.ProfileTypeIos)
 }

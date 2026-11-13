@@ -6,10 +6,8 @@ import (
 	"time"
 )
 
-// Time ...
 type Time time.Time
 
-// UnmarshalJSON ...
 func (t *Time) UnmarshalJSON(b []byte) error {
 	timeStr := strings.Trim(string(b), `"`)
 	var errors []error

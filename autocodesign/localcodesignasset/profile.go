@@ -7,7 +7,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
-// Profile ...
 type Profile struct {
 	attributes     appstoreconnect.ProfileAttributes
 	id             string
@@ -33,27 +32,22 @@ func NewProfile(info profileutil.ProvisioningProfileInfoModel, content []byte) a
 	}
 }
 
-// ID ...
 func (p Profile) ID() string {
 	return p.id
 }
 
-// Attributes ...
 func (p Profile) Attributes() appstoreconnect.ProfileAttributes {
 	return p.attributes
 }
 
-// CertificateIDs ...
 func (p Profile) CertificateIDs() ([]string, error) {
 	return p.certificateIDs, nil
 }
 
-// DeviceUDIDs ...
 func (p Profile) DeviceUDIDs() ([]string, error) {
 	return p.deviceUDIDs, nil
 }
 
-// BundleID ...
 func (p Profile) BundleID() (appstoreconnect.BundleID, error) {
 	return appstoreconnect.BundleID{
 		ID: p.id,
@@ -64,7 +58,6 @@ func (p Profile) BundleID() (appstoreconnect.BundleID, error) {
 	}, nil
 }
 
-// Entitlements ...
 func (p Profile) Entitlements() (autocodesign.Entitlements, error) {
 	return autocodesign.ParseRawProfileEntitlements(p.attributes.ProfileContent)
 }

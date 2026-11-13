@@ -64,7 +64,6 @@ type httpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// AppleDeveloperConnectionProvider ...
 type AppleDeveloperConnectionProvider interface {
 	GetAppleDeveloperConnection() (*AppleDeveloperConnection, error)
 }

@@ -27,18 +27,14 @@ type Tracker interface {
 // NoOpAnalyticsTracker is a dummy implementation used in tests.
 type NoOpAnalyticsTracker struct{}
 
-// TrackAPIRequest ...
 func (n NoOpAnalyticsTracker) TrackAPIRequest(method, host, endpoint string, statusCode int, duration time.Duration, isRetry bool) {
 }
 
-// TrackAPIError ...
 func (n NoOpAnalyticsTracker) TrackAPIError(method, host, endpoint string, statusCode int, errorMessage string) {
 }
 
-// TrackAuthError ...
 func (n NoOpAnalyticsTracker) TrackAuthError(errorMessage string) {}
 
-// TrackUnknownEntitlement ...
 func (n NoOpAnalyticsTracker) TrackUnknownEntitlement(key string) {}
 
 // DefaultTracker is the main implementation of Tracker
@@ -47,7 +43,6 @@ type DefaultTracker struct {
 	envRepo env.Repository
 }
 
-// NewDefaultTracker ...
 func NewDefaultTracker(tracker analytics.Tracker, envRepo env.Repository) *DefaultTracker {
 	return &DefaultTracker{
 		tracker: tracker,
@@ -55,7 +50,6 @@ func NewDefaultTracker(tracker analytics.Tracker, envRepo env.Repository) *Defau
 	}
 }
 
-// TrackAPIRequest ...
 func (d *DefaultTracker) TrackAPIRequest(method, host, endpoint string, statusCode int, duration time.Duration, isRetry bool) {
 	d.tracker.Enqueue("step_appstoreconnect_request", analytics.Properties{
 		"build_slug":        d.envRepo.Get("BITRISE_BUILD_SLUG"),
@@ -69,7 +63,6 @@ func (d *DefaultTracker) TrackAPIRequest(method, host, endpoint string, statusCo
 	})
 }
 
-// TrackAPIError ...
 func (d *DefaultTracker) TrackAPIError(method, host, endpoint string, statusCode int, errorMessage string) {
 	d.tracker.Enqueue("step_appstoreconnect_error", analytics.Properties{
 		"build_slug":        d.envRepo.Get("BITRISE_BUILD_SLUG"),
@@ -82,7 +75,6 @@ func (d *DefaultTracker) TrackAPIError(method, host, endpoint string, statusCode
 	})
 }
 
-// TrackAuthError ...
 func (d *DefaultTracker) TrackAuthError(errorMessage string) {
 	d.tracker.Enqueue("step_appstoreconnect_auth_error", analytics.Properties{
 		"build_slug":        d.envRepo.Get("BITRISE_BUILD_SLUG"),
@@ -91,7 +83,6 @@ func (d *DefaultTracker) TrackAuthError(errorMessage string) {
 	})
 }
 
-// TrackUnknownEntitlement ...
 func (d *DefaultTracker) TrackUnknownEntitlement(key string) {
 	d.tracker.Enqueue("step_appstoreconnect_unknown_entitlement", analytics.Properties{
 		"build_slug":        d.envRepo.Get("BITRISE_BUILD_SLUG"),

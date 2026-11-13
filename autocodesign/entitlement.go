@@ -10,7 +10,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 )
 
-// ICloudIdentifiersEntitlementKey ...
 const ICloudIdentifiersEntitlementKey = "com.apple.developer.icloud-container-identifiers"
 
 // ErrUnknownEntitlementKey signals that an entitlement key is not present in
@@ -19,14 +18,12 @@ const ICloudIdentifiersEntitlementKey = "com.apple.developer.icloud-container-id
 // with a warning instead of aborting the code signing flow.
 var ErrUnknownEntitlementKey = errors.New("unknown entitlement key")
 
-// DataProtections ...
 var DataProtections = map[string]appstoreconnect.CapabilityOptionKey{
 	"NSFileProtectionComplete":                             appstoreconnect.CompleteProtection,
 	"NSFileProtectionCompleteUnlessOpen":                   appstoreconnect.ProtectedUnlessOpen,
 	"NSFileProtectionCompleteUntilFirstUserAuthentication": appstoreconnect.ProtectedUntilFirstUserAuth,
 }
 
-// Capability ...
 func (e Entitlement) Capability() (*appstoreconnect.BundleIDCapability, error) {
 	if len(e) == 0 {
 		return nil, nil
@@ -140,7 +137,6 @@ func (e Entitlement) AppearsOnDeveloperPortal() bool {
 	return ok && capType != appstoreconnect.Ignored && capType != appstoreconnect.ProfileAttachedEntitlement
 }
 
-// Equal ...
 func (e Entitlement) Equal(cap appstoreconnect.BundleIDCapability, allEntitlements Entitlements) (bool, error) {
 	if len(e) == 0 {
 		return false, nil

@@ -15,7 +15,6 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/profileutil"
 )
 
-// IosBaseApplication ...
 type IosBaseApplication struct {
 	Path                string
 	InfoPlist           plistutil.PlistData
@@ -23,13 +22,11 @@ type IosBaseApplication struct {
 	ProvisioningProfile profileutil.ProvisioningProfileInfoModel
 }
 
-// BundleIdentifier ...
 func (app IosBaseApplication) BundleIdentifier() string {
 	bundleID, _ := app.InfoPlist.GetString("CFBundleIdentifier")
 	return bundleID
 }
 
-// NewIosBaseApplication ...
 func NewIosBaseApplication(path string) (IosBaseApplication, error) {
 	// TODO: wire in as a dep on the struct
 	logger := log.NewLogger()
@@ -86,12 +83,10 @@ func NewIosBaseApplication(path string) (IosBaseApplication, error) {
 	}, nil
 }
 
-// IosExtension ...
 type IosExtension struct {
 	IosBaseApplication
 }
 
-// NewIosExtension ...
 func NewIosExtension(path string) (IosExtension, error) {
 	baseApp, err := NewIosBaseApplication(path)
 	if err != nil {
@@ -103,18 +98,15 @@ func NewIosExtension(path string) (IosExtension, error) {
 	}, nil
 }
 
-// IosWatchApplication ...
 type IosWatchApplication struct {
 	IosBaseApplication
 	Extensions []IosExtension
 }
 
-// IosClipApplication ...
 type IosClipApplication struct {
 	IosBaseApplication
 }
 
-// NewIosWatchApplication ...
 func NewIosWatchApplication(path string) (IosWatchApplication, error) {
 
 	baseApp, err := NewIosBaseApplication(path)
@@ -143,7 +135,6 @@ func NewIosWatchApplication(path string) (IosWatchApplication, error) {
 	}, nil
 }
 
-// NewIosClipApplication ...
 func NewIosClipApplication(path string) (IosClipApplication, error) {
 	baseApp, err := NewIosBaseApplication(path)
 	if err != nil {
@@ -155,7 +146,6 @@ func NewIosClipApplication(path string) (IosClipApplication, error) {
 	}, nil
 }
 
-// IosApplication ...
 type IosApplication struct {
 	IosBaseApplication
 	WatchApplication *IosWatchApplication
@@ -163,7 +153,6 @@ type IosApplication struct {
 	Extensions       []IosExtension
 }
 
-// NewIosApplication ...
 func NewIosApplication(path string) (IosApplication, error) {
 	baseApp, err := NewIosBaseApplication(path)
 	if err != nil {
@@ -229,14 +218,12 @@ func NewIosApplication(path string) (IosApplication, error) {
 	}, nil
 }
 
-// IosArchive ...
 type IosArchive struct {
 	Path        string
 	InfoPlist   plistutil.PlistData
 	Application IosApplication
 }
 
-// NewIosArchive ...
 func NewIosArchive(path string) (IosArchive, error) {
 	pathChecker := pathutil.NewPathChecker()
 
@@ -305,17 +292,14 @@ func applicationFromArchive(path string) (string, error) {
 	return pths[0], nil
 }
 
-// IsXcodeManaged ...
 func (archive IosArchive) IsXcodeManaged() bool {
 	return archive.Application.ProvisioningProfile.IsXcodeManaged()
 }
 
-// IsSigningManagedAutomatically ...
 func (archive IosArchive) IsSigningManagedAutomatically() (bool, error) {
 	return archive.IsXcodeManaged(), nil
 }
 
-// SigningIdentity ...
 func (archive IosArchive) SigningIdentity() string {
 	if properties, found := archive.InfoPlist.GetMapStringInterface("ApplicationProperties"); found {
 		identity, _ := properties.GetString("SigningIdentity")
@@ -324,7 +308,6 @@ func (archive IosArchive) SigningIdentity() string {
 	return ""
 }
 
-// BundleIDEntitlementsMap ...
 func (archive IosArchive) BundleIDEntitlementsMap() map[string]plistutil.PlistData {
 	bundleIDEntitlementsMap := map[string]plistutil.PlistData{}
 
@@ -358,7 +341,6 @@ func (archive IosArchive) BundleIDEntitlementsMap() map[string]plistutil.PlistDa
 	return bundleIDEntitlementsMap
 }
 
-// BundleIDProfileInfoMap ...
 func (archive IosArchive) BundleIDProfileInfoMap() map[string]profileutil.ProvisioningProfileInfoModel {
 	bundleIDProfileMap := map[string]profileutil.ProvisioningProfileInfoModel{}
 
@@ -392,12 +374,10 @@ func (archive IosArchive) BundleIDProfileInfoMap() map[string]profileutil.Provis
 	return bundleIDProfileMap
 }
 
-// FindDSYMs ...
 func (archive IosArchive) FindDSYMs() ([]string, []string, error) {
 	return findDSYMs(archive.Path)
 }
 
-// TeamID ...
 func (archive IosArchive) TeamID() (string, error) {
 	bundleIDProfileInfoMap := archive.BundleIDProfileInfoMap()
 	for _, profileInfo := range bundleIDProfileInfoMap {
@@ -406,7 +386,6 @@ func (archive IosArchive) TeamID() (string, error) {
 	return "", errors.New("team id not found")
 }
 
-// Platform ...
 func (archive IosArchive) Platform() (autocodesign.Platform, error) {
 	platformName := archive.Application.InfoPlist["DTPlatformName"]
 	switch platformName {
@@ -419,7 +398,6 @@ func (archive IosArchive) Platform() (autocodesign.Platform, error) {
 	}
 }
 
-// GetAppLayout ...
 func (archive IosArchive) GetAppLayout(_ bool) (autocodesign.AppLayout, error) {
 	platform, err := archive.Platform()
 	if err != nil {

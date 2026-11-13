@@ -112,7 +112,6 @@ func GetValidLocalCertificates(certificates []certificateutil.CertificateInfoMod
 	return localCertificates, nil
 }
 
-// matchLocalToAPICertificates ...
 func matchLocalToAPICertificates(client DevPortalClient, localCertificates []certificateutil.CertificateInfoModel) []Certificate {
 	var matchingCertificates []Certificate
 
@@ -131,7 +130,6 @@ func matchLocalToAPICertificates(client DevPortalClient, localCertificates []cer
 	return matchingCertificates
 }
 
-// logAllAPICertificates ...
 func logAllAPICertificates(client DevPortalClient) error {
 	certificates, err := client.QueryAllIOSCertificates()
 	if err != nil {

@@ -12,19 +12,16 @@ import (
 	"github.com/bitrise-io/go-xcode/v2/autocodesign/devportalclient/appstoreconnect"
 )
 
-// CertificateSource ...
 type CertificateSource struct {
 	client *appstoreconnect.Client
 }
 
-// NewCertificateSource ...
 func NewCertificateSource(client *appstoreconnect.Client) *CertificateSource {
 	return &CertificateSource{
 		client: client,
 	}
 }
 
-// QueryCertificateBySerial ...
 func (s *CertificateSource) QueryCertificateBySerial(serial big.Int) (autocodesign.Certificate, error) {
 	response, err := s.client.Provisioning.FetchCertificate(serial.Text(16))
 	if err != nil {
