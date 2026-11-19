@@ -40,7 +40,7 @@ func (r *DefaultReader) ReadFile(relPthPattern string) ([]byte, error) {
 	if !r.useFallbackZipReader {
 		b, err := r.stdlibZipReader.ReadFile(relPthPattern)
 		if err != nil {
-			if zip.IsErrFormat(err) {
+			if r.dittoZipReader != nil && zip.IsErrFormat(err) {
 				r.logger.Warnf("stdlib zip reader failed to read %s: %s", relPthPattern, err)
 				r.logger.Warnf("Retrying with ditto zip reader...")
 
