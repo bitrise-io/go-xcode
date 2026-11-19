@@ -161,22 +161,13 @@ func Test_deviceFinder_FindDevice(t *testing.T) {
 			},
 		},
 		{
-			name: "default device, but not yet created",
+			name: "default device, not created for the runtime",
 			wantedDevice: Simulator{
 				Platform: "iOS Simulator",
 				OS:       "latest",
-				Name:     "Bitrise iOS default",
+				Name:     defaultDeviceName,
 			},
-			want: Device{
-				UDID:           "D64FA78C-5A25-4BF3-9EE8-855761042DEE",
-				State:          "Shutdown",
-				TypeIdentifier: "com.apple.CoreSimulator.SimDeviceType.iPhone-8",
-				Type:           "iPhone 8",
-				Platform:       "iOS Simulator",
-				Name:           "iPhone 8",
-				OS:             "16.0",
-				IsAvailable:    true,
-			},
+			wantErr: true,
 		},
 		{
 			name: "device type not available",

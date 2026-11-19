@@ -183,25 +183,12 @@ func (d deviceFinder) deviceForDestination(wantedDestination Simulator) (Device,
 	}
 
 	// As the name of the device matches the device type ('iPhone 11') for factory created devices, look up device by name.
-	// If the default name is required and already created, it will use that.
+	// The Bitrise stacks create the default device (defaultDeviceName) for every runtime, so it is found by name as well.
 	for _, runtime := range runtimes {
 		for _, device := range d.list.Devices[runtime.Identifier] {
 			if device.Name == wantedDestination.Name {
 				if !device.IsAvailable {
 					d.logger.Warnf("device %s for %s is unavailable: %s", device.Name, runtime.Identifier, device.AvailabilityError)
-					continue
-				}
-
-				return newDevice(device, runtime), nil
-			}
-		}
-	}
-
-	// Returns the first available device in case the default device name is specified, but not yet created.
-	if wantedDestination.Name == defaultDeviceName {
-		for _, runtime := range runtimes {
-			for _, device := range d.list.Devices[runtime.Identifier] {
-				if !device.IsAvailable {
 					continue
 				}
 
