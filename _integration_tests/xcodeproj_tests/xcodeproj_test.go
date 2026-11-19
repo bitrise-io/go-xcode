@@ -35,7 +35,7 @@ func TestXcodeProj_simpleObjc(t *testing.T) {
 
 	bundleID, err := project.TargetBundleID(target.Name, "Release")
 	require.NoError(t, err)
-	assert.Equal(t, "Bitrise.ios-simple-objc", bundleID)
+	assert.Equal(t, "io.bitrise.samples.simple-objc", bundleID)
 
 	infoPlistPath, err := project.TargetInfoplistPath(target.Name, "Release")
 	require.NoError(t, err)
