@@ -116,6 +116,64 @@ func TestEnsureProfile_ExpiredProfile(t *testing.T) {
 	mockClient.AssertExpectations(t)
 }
 
+func TestFindProfile_ExactNameMatch(t *testing.T) {
+	const (
+		name         = "Bitrise iOS development - (io.bitrise.testapp)"
+		wildcardName = "Wildcard Bitrise iOS development - (io.bitrise.testapp)"
+	)
+
+	tests := []struct {
+		name     string
+		profiles []string
+		wantID   string
+	}{
+		{
+			name:     "returns the exact match when a wildcard profile is listed first",
+			profiles: []string{wildcardName, name},
+			wantID:   "2",
+		},
+		{
+			name:     "returns nil when only a wildcard profile contains the name",
+			profiles: []string{wildcardName},
+			wantID:   "",
+		},
+		{
+			name:     "returns nil when no profile is found",
+			profiles: nil,
+			wantID:   "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var data []interface{}
+			for i, profileName := range tt.profiles {
+				data = append(data, map[string]interface{}{
+					"attributes": map[string]interface{}{"name": profileName},
+					"id":         fmt.Sprintf("%d", i+1),
+				})
+			}
+
+			mockClient := &MockClient{}
+			mockClient.
+				On("GetProfiles", mock.AnythingOfType("*http.Request")).
+				Return(newResponse(t, http.StatusOK, map[string]interface{}{"data": data}), nil)
+
+			client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"), false, log.NewLogger(), appstoreconnect.NoOpAnalyticsTracker{})
+			profile, err := NewProfileClient(client).FindProfile(name, appstoreconnect.IOSAppDevelopment)
+
+			require.NoError(t, err)
+			if tt.wantID == "" {
+				require.Nil(t, profile)
+			} else {
+				require.NotNil(t, profile)
+				require.Equal(t, tt.wantID, profile.ID())
+				require.Equal(t, name, profile.Attributes().Name)
+			}
+			mockClient.AssertExpectations(t)
+		})
+	}
+}
+
 type MockClient struct {
 	mock.Mock
 	postProfileSuccess bool
