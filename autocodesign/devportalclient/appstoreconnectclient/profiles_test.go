@@ -123,40 +123,60 @@ func TestFindProfile_ExactNameMatch(t *testing.T) {
 	)
 
 	tests := []struct {
-		name     string
-		profiles []string
-		wantID   string
+		name   string
+		pages  [][]string
+		wantID string
 	}{
 		{
-			name:     "returns the exact match when a wildcard profile is listed first",
-			profiles: []string{wildcardName, name},
-			wantID:   "2",
+			name:   "returns the exact match when a wildcard profile is listed first",
+			pages:  [][]string{{wildcardName, name}},
+			wantID: "1-2",
 		},
 		{
-			name:     "returns nil when only a wildcard profile contains the name",
-			profiles: []string{wildcardName},
-			wantID:   "",
+			name:   "returns the exact match from a later page",
+			pages:  [][]string{{wildcardName}, {name}},
+			wantID: "2-1",
 		},
 		{
-			name:     "returns nil when no profile is found",
-			profiles: nil,
-			wantID:   "",
+			name:   "returns nil when only a wildcard profile contains the name",
+			pages:  [][]string{{wildcardName}, {wildcardName}},
+			wantID: "",
+		},
+		{
+			name:   "returns nil when no profile is found",
+			pages:  [][]string{nil},
+			wantID: "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var data []interface{}
-			for i, profileName := range tt.profiles {
-				data = append(data, map[string]interface{}{
-					"attributes": map[string]interface{}{"name": profileName},
-					"id":         fmt.Sprintf("%d", i+1),
-				})
-			}
-
 			mockClient := &MockClient{}
-			mockClient.
-				On("GetProfiles", mock.AnythingOfType("*http.Request")).
-				Return(newResponse(t, http.StatusOK, map[string]interface{}{"data": data}), nil)
+			for pageIdx, page := range tt.pages {
+				var data []interface{}
+				for i, profileName := range page {
+					data = append(data, map[string]interface{}{
+						"attributes": map[string]interface{}{"name": profileName},
+						"id":         fmt.Sprintf("%d-%d", pageIdx+1, i+1),
+					})
+				}
+				body := map[string]interface{}{"data": data}
+				if pageIdx < len(tt.pages)-1 {
+					body["links"] = map[string]interface{}{
+						"next": fmt.Sprintf("https://api.appstoreconnect.apple.com/v1/profiles?cursor=page%d&limit=200", pageIdx+2),
+					}
+				}
+
+				wantCursor := ""
+				if pageIdx > 0 {
+					wantCursor = fmt.Sprintf("page%d", pageIdx+1)
+				}
+				mockClient.
+					On("GetProfiles", mock.MatchedBy(func(req *http.Request) bool {
+						return req.URL.Query().Get("cursor") == wantCursor && req.URL.Query().Get("filter[name]") == name
+					})).
+					Return(newResponse(t, http.StatusOK, body), nil).
+					Once()
+			}
 
 			client := appstoreconnect.NewClient(mockClient, "keyID", "issueID", []byte("privateKey"), false, log.NewLogger(), appstoreconnect.NoOpAnalyticsTracker{})
 			profile, err := NewProfileClient(client).FindProfile(name, appstoreconnect.IOSAppDevelopment)

@@ -141,18 +141,23 @@ func (c *ProfileClient) FindProfile(name string, profileType appstoreconnect.Pro
 		FilterName:        name,
 	}
 
-	r, err := c.client.Provisioning.ListProfiles(opt)
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range r.Data {
-		if r.Data[i].Attributes.Name == name {
-			return NewAPIProfile(c.client, &r.Data[i]), nil
+	for {
+		r, err := c.client.Provisioning.ListProfiles(opt)
+		if err != nil {
+			return nil, err
 		}
-	}
 
-	return nil, nil
+		for i := range r.Data {
+			if r.Data[i].Attributes.Name == name {
+				return NewAPIProfile(c.client, &r.Data[i]), nil
+			}
+		}
+
+		if r.Links.Next == "" {
+			return nil, nil
+		}
+		opt.Next = r.Links.Next
+	}
 }
 
 // DeleteProfile ...
