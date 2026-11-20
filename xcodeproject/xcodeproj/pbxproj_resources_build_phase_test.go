@@ -65,7 +65,7 @@ const rawFileReference = `
 func Test_resolveObjectAbsolutePath(t *testing.T) {
 	project := parseFixture(t, "ios-simple-objc.pbxproj")
 
-	got, err := resolveObjectAbsolutePath("BA3CBE8819F7A93900CED4D5", project.projectID, path.Join("parent", "project_root"), projectObjects(t, project))
+	got, err := resolveObjectAbsolutePath("BA3CBE8819F7A93900CED4D5", pbxFile(t, project).projectID, path.Join("parent", "project_root"), projectObjects(t, project))
 	require.NoError(t, err)
 	assert.Equal(t, path.Join("parent", "ios-simple-objc", "Images.xcassets"), got)
 }
@@ -135,7 +135,7 @@ func Test_findInProjectTree(t *testing.T) {
 	project := parseFixture(t, "ios-simple-objc.pbxproj")
 	objects := projectObjects(t, project)
 
-	rawProject, ok := objects.Object(project.projectID)
+	rawProject, ok := objects.Object(pbxFile(t, project).projectID)
 	require.True(t, ok)
 	mainGroupID, ok := rawProject.String("mainGroup")
 	require.True(t, ok)

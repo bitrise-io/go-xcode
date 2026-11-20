@@ -25,7 +25,7 @@ const (
 	iosSampleRepoURL  = "https://github.com/bitrise-io/newly-generated-ios-sample-project.git"
 )
 
-func TestXcodeProj_simpleObjc(t *testing.T) {
+func TestProject_simpleObjc(t *testing.T) {
 	projectPath := simpleObjcProjectPath(t)
 	project, err := newFactory().Open(projectPath)
 	require.NoError(t, err)
@@ -53,7 +53,7 @@ func TestXcodeProj_simpleObjc(t *testing.T) {
 	assert.Equal(t, []string{filepath.Join(filepath.Dir(projectPath), "ios-simple-objc", "Images.xcassets", "AppIcon.appiconset")}, icons[target.ID])
 }
 
-func TestXcodeProj_iosSample(t *testing.T) {
+func TestProject_iosSample(t *testing.T) {
 	projectPath := filepath.Join(_integration_tests.GetRepository(t, iosSampleRepoURL, "main"), "ios-sample.xcodeproj")
 	project, err := newFactory().Open(projectPath)
 	require.NoError(t, err)
@@ -81,7 +81,7 @@ func TestShowBuildSettingsProvider_SchemeBuildSettings(t *testing.T) {
 }
 
 // Edits a copy, so the shared clone stays untouched, and reads the result back through xcodebuild.
-func TestXcodeProj_ForceCodeSignRoundTrip(t *testing.T) {
+func TestProject_ForceCodeSignRoundTrip(t *testing.T) {
 	content, err := os.ReadFile(filepath.Join(simpleObjcProjectPath(t), "project.pbxproj"))
 	require.NoError(t, err)
 

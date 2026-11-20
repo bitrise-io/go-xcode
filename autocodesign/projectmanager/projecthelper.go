@@ -48,7 +48,7 @@ type ProjectHelper struct {
 	DependentTargets            []xcodeproj.Target
 	UITestTargets               []xcodeproj.Target
 	XcWorkspace                 *xcworkspace.Workspace // nil if working with standalone project
-	XcProj                      xcodeproj.XcodeProj
+	XcProj                      *xcodeproj.Project
 	Configuration               string
 	additionalXcodebuildOptions []string
 	isCompatMode                bool
@@ -512,7 +512,7 @@ func expandTargetSetting(value string, buildSettings serialized.Object) (string,
 	return prefix + envValue + suffix, nil
 }
 
-func configuration(logger log.Logger, configurationName string, scheme xcscheme.Scheme, xcproj xcodeproj.XcodeProj) (string, error) {
+func configuration(logger log.Logger, configurationName string, scheme xcscheme.Scheme, xcproj *xcodeproj.Project) (string, error) {
 	defaultConfiguration := scheme.ArchiveAction.BuildConfiguration
 	var configuration string
 	if configurationName == "" || configurationName == defaultConfiguration {
@@ -566,10 +566,10 @@ func getBuildActionEntryFromScheme(logger log.Logger, scheme xcscheme.Scheme, bu
 }
 
 // findBuiltProject returns the Xcode project which will be built for the provided scheme, plus the scheme.
-// The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the XcodeProj would fail.
+// The scheme is returned as it could be found under the .xcworkspace, and opening based on name from the Project would fail.
 // containerPath is the path container was opened from; the Container does not expose it, and the
 // log line and the scheme error name it so a wrong project path is visible in the step log.
-func findBuiltProject(logger log.Logger, container xcodeproject.Container, containerPath string, projectFactory xcodeproj.Factory, buildAction BuildAction, schemeName string) (xcodeproj.XcodeProj, xcscheme.Scheme, xcodeproj.Target, error) {
+func findBuiltProject(logger log.Logger, container xcodeproject.Container, containerPath string, projectFactory xcodeproj.Factory, buildAction BuildAction, schemeName string) (*xcodeproj.Project, xcscheme.Scheme, xcodeproj.Target, error) {
 	logger.TInfof("Locating built project for scheme `%s`, Xcode project (%s)", schemeName, containerPath)
 
 	scheme, schemeContainerPath, err := container.Scheme(schemeName)
