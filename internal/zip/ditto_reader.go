@@ -2,7 +2,6 @@ package zip
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -65,12 +64,7 @@ func (r *DittoReader) ReadFile(relPthPattern string) ([]byte, error) {
 		}
 	}()
 
-	b, err := io.ReadAll(f)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", pth, err)
-	}
-
-	return b, nil
+	return readAll(f, pth)
 }
 
 // Close ...
