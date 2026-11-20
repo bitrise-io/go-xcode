@@ -34,13 +34,21 @@ type Input struct {
 	FallbackProvisioningProfiles string
 }
 
-// ConnectionOverrideInputs are used in steps to control the API key based auth credentials
-// This overrides the global API connection defined on Bitrise.io
+// ConnectionOverrideInputs are used in steps to override the global Apple Service
+// connection defined on Bitrise.io, for both App Store Connect API key and Apple ID
+// based authentication.
+//
+// Apple ID field names mirror devportalservice.AppleID.
 type ConnectionOverrideInputs struct {
 	APIKeyPath              stepconf.Secret
 	APIKeyID                string
 	APIKeyIssuerID          string
 	APIKeyEnterpriseAccount bool
+
+	AppleIDUsername            string
+	AppleIDPassword            stepconf.Secret
+	AppleIDAppSpecificPassword stepconf.Secret
+	WantsFastlaneSession       bool
 }
 
 // Config ...
