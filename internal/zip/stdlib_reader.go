@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"io"
 	"sort"
 
 	"github.com/bitrise-io/go-utils/v2/log"
@@ -58,12 +57,7 @@ func (r StdlibRead) ReadFile(relPthPattern string) ([]byte, error) {
 		}
 	}()
 
-	b, err := io.ReadAll(f)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read %s: %w", file.Name, err)
-	}
-
-	return b, nil
+	return readAll(f, file.Name)
 }
 
 // Close ...
