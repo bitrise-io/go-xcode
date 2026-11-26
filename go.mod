@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/secretmanager v1.14.3
 	cloud.google.com/go/storage v1.50.0
 	github.com/bitrise-io/go-pkcs12 v0.0.0-20230815095624-feb898696e02
-	github.com/bitrise-io/go-plist v0.0.0-20210301100253-4b1a112ccd10
+	github.com/bitrise-io/go-plist v1.0.0
 	github.com/bitrise-io/go-steputils v1.0.5
 	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.55
 	github.com/bitrise-io/go-utils v1.0.13
