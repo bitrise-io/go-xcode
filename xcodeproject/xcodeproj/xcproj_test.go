@@ -22,13 +22,13 @@ const (
 	xcprojFixtureFileName  = "ios-sample.xcproj"
 )
 
-func openXCProjFixture(t *testing.T) XcodeProj {
+func openXCProjFixture(t *testing.T) *Project {
 	t.Helper()
 
 	return openXCProjFixtureFile(t, xcprojFixtureFileName)
 }
 
-func openXCProjFixtureFile(t *testing.T, name string) XcodeProj {
+func openXCProjFixtureFile(t *testing.T, name string) *Project {
 	t.Helper()
 
 	content, err := os.ReadFile(filepath.Join("internal", "xcproj", "testdata", name))
@@ -40,7 +40,7 @@ func openXCProjFixtureFile(t *testing.T, name string) XcodeProj {
 func TestXCProj_Targets(t *testing.T) {
 	project := openXCProjFixture(t)
 
-	require.IsType(t, &XCProj{}, project)
+	require.IsType(t, &xcprojFile{}, projectFileOf(project))
 	assert.Equal(t, "App", project.Name())
 
 	targets := project.Targets()
@@ -201,7 +201,7 @@ func TestXCProjProductName(t *testing.T) {
 	assert.Empty(t, xcprojProductName("App", ""))
 }
 
-func productPaths(project XcodeProj) map[string]string {
+func productPaths(project *Project) map[string]string {
 	paths := map[string]string{}
 	for _, target := range project.Targets() {
 		paths[target.Name] = target.productPath
@@ -267,9 +267,7 @@ func TestXCProj_SetBuildSetting(t *testing.T) {
 	require.NoError(t, project.SetBuildSetting(xcprojAppTargetName, "Release", "CODE_SIGN_IDENTITY[sdk=iphoneos*]", "Apple Distribution"))
 	require.NoError(t, project.SetBuildSetting(xcprojAppTargetName, "Debug", "MARKETING_VERSION", "2.0"))
 
-	release, err := targetBuildSettings(fetchedBefore, "Release")
-	require.NoError(t, err)
-	value, ok := release.String("CODE_SIGN_STYLE")
+	value, ok := requireBuildSettings(t, fetchedBefore, "Release").String("CODE_SIGN_STYLE")
 	assert.True(t, ok)
 	assert.Equal(t, "Manual", value, "targets fetched earlier see the change")
 
@@ -312,8 +310,7 @@ func TestXCProj_SetBuildSetting_targetWithoutBuildSettings(t *testing.T) {
 	requireBuildSetting(t, reopened, target, "Release", "PROVISIONING_PROFILE", testForceCodeSignOptions.ProvisioningProfileUUID)
 	requireBuildSetting(t, reopened, target, "Debug", "CURRENT_PROJECT_VERSION", "2")
 
-	debug, err := targetBuildSettings(requireTarget(t, reopened, target), "Debug")
-	require.NoError(t, err)
+	debug := requireBuildSettings(t, requireTarget(t, reopened, target), "Debug")
 	_, ok := debug.String("CODE_SIGN_STYLE")
 	assert.False(t, ok, "the Release edit leaves Debug alone")
 }

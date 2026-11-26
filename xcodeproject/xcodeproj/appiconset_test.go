@@ -8,7 +8,6 @@ import (
 	"github.com/bitrise-io/go-utils/v2/fileutil"
 	"github.com/bitrise-io/go-utils/v2/log"
 	"github.com/bitrise-io/go-utils/v2/pathutil"
-	"github.com/bitrise-io/go-xcode/v2/xcodeproject/serialized"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,22 +20,7 @@ func catalystPBXProj(t *testing.T) []byte {
 	return []byte("// !$*UTF8*$!\n{\n\tobjects = " + string(objects) + ";\n\trootObject = 13917C0A243F43D00087912B;\n}\n")
 }
 
-func projectObjects(t *testing.T, project *PBXProj) serialized.Object {
-	t.Helper()
-	objects, ok := project.rawProj.Object("objects")
-	require.True(t, ok)
-	return objects
-}
-
-func Test_assetCatalogs(t *testing.T) {
-	project := parseFixture(t, "ios-simple-objc.pbxproj")
-
-	got, err := assetCatalogs(project.Targets()[0], project.buildPhaseIDs[project.Targets()[0].ID], projectObjects(t, project))
-	require.NoError(t, err)
-	assert.Equal(t, []fileReference{{id: "BA3CBE8819F7A93900CED4D5", path: "Images.xcassets"}}, got)
-}
-
-func TestXcodeProj_AppIconSetPaths(t *testing.T) {
+func TestProject_AppIconSetPaths(t *testing.T) {
 	simpleObjc, err := os.ReadFile(filepath.Join("testdata", "ios-simple-objc.pbxproj"))
 	require.NoError(t, err)
 

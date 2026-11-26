@@ -29,11 +29,11 @@ type projectModel struct {
 
 // testdata/format-parity holds one project saved by Xcode as project.pbxproj and, converted, as
 // project.xcproj.
-func TestXcodeProj_formatParity(t *testing.T) {
+func TestProject_formatParity(t *testing.T) {
 	pbxProj := openParityFixture(t, pbxProjFileName)
 	xcProj := openParityFixture(t, xcProjFileName)
-	require.IsType(t, &PBXProj{}, pbxProj)
-	require.IsType(t, &XCProj{}, xcProj)
+	require.IsType(t, &pbxprojFile{}, projectFileOf(pbxProj))
+	require.IsType(t, &xcprojFile{}, projectFileOf(xcProj))
 
 	want := readProjectModel(t, pbxProj)
 	assert.Equal(t, "BullsEye", want.name)
@@ -44,7 +44,7 @@ func TestXcodeProj_formatParity(t *testing.T) {
 	}, want.appIconSetPaths)
 	assert.Equal(t, want, readProjectModel(t, xcProj))
 
-	for _, project := range []XcodeProj{pbxProj, xcProj} {
+	for _, project := range []*Project{pbxProj, xcProj} {
 		require.NoError(t, project.ForceCodeSign(forceCodeSignOptions(parityAppTargetName, "Release")))
 		require.NoError(t, project.ForceCodeSign(forceCodeSignOptions(parityUITestTargetName, "Debug")))
 	}
@@ -54,15 +54,15 @@ func TestXcodeProj_formatParity(t *testing.T) {
 	want = readProjectModel(t, pbxProj)
 	assert.Equal(t, want, readProjectModel(t, xcProj), "after ForceCodeSign")
 
-	for _, project := range []XcodeProj{pbxProj, xcProj} {
+	for _, project := range []*Project{pbxProj, xcProj} {
 		require.NoError(t, project.Save())
 		reopened, err := testFactory().Open(project.Path())
 		require.NoError(t, err)
-		assert.Equal(t, want, readProjectModel(t, reopened), "%T after Save", project)
+		assert.Equal(t, want, readProjectModel(t, reopened), "%T after Save", projectFileOf(project))
 	}
 }
 
-func openParityFixture(t *testing.T, projectFileName string) XcodeProj {
+func openParityFixture(t *testing.T, projectFileName string) *Project {
 	t.Helper()
 
 	fixtureDir := filepath.Join("testdata", "format-parity")
@@ -81,7 +81,7 @@ func openParityFixture(t *testing.T, projectFileName string) XcodeProj {
 	return project
 }
 
-func readProjectModel(t *testing.T, project XcodeProj) projectModel {
+func readProjectModel(t *testing.T, project *Project) projectModel {
 	t.Helper()
 
 	model := projectModel{
